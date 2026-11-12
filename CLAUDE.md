@@ -83,6 +83,7 @@ pnpm format         # Prettier: rewrite files in place
 pnpm db:generate    # drizzle-kit: create a migration from schema changes
 pnpm db:migrate     # apply migrations to the local database
 pnpm seed           # load fixture data (LFR teams, Season 3 fixtures/results)
+pnpm fixtures:score7    # refresh the Season 3 fixture CSVs from score7 (run by hand, needs network)
 pnpm discord:register   # register slash commands to the staging guild only
 ```
 

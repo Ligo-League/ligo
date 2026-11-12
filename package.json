@@ -17,6 +17,7 @@
     "db:generate": "pnpm --filter @ligo/db generate",
     "db:migrate": "node --env-file-if-exists=.env packages/db/src/cli/migrate.ts",
     "seed": "node --env-file-if-exists=.env packages/db/src/cli/seed.ts",
+    "fixtures:score7": "node packages/db/src/cli/score7-export.ts",
     "discord:register": "node --env-file-if-exists=.env apps/server/src/discord/register.ts"
   },
   "devDependencies": {
