@@ -26,7 +26,8 @@ try {
     console.log(
       `Created ${created.orgs} org, ${created.competitions} competition, ${created.seasons} season, ` +
         `${created.divisions} divisions, ${created.teams} teams, ${created.slots} slots; ` +
-        `updated ${updated.teams} teams, ${updated.slots} slots.`,
+        `updated ${updated.competitions} competition settings, ${updated.teams} teams, ` +
+        `${updated.slots} slots.`,
     );
   } else {
     console.log(`No changes: ${path} already matches ${TEAMS_FILE}.`);

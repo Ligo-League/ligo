@@ -140,7 +140,7 @@ describe('seedLfr', () => {
 
     expect(summary).toEqual({
       created: { orgs: 1, competitions: 1, seasons: 1, divisions: 2, teams: 2, slots: 2 },
-      updated: { teams: 0, slots: 0 },
+      updated: { competitions: 0, teams: 0, slots: 0 },
     });
     expect(db.select().from(org).all()).toMatchObject([{ name: 'LFR', slug: 'lfr', locale: 'fr' }]);
     expect(db.select().from(competition).all()).toMatchObject([
@@ -149,8 +149,8 @@ describe('seedLfr', () => {
         participantMode: 'team',
         rulesetJson: { result_validation: 'staff' },
         pointsJson: {
-          outcomes: { win: 1, loss: 0 },
-          forfeit: { winner: 1, loser: 0, counts_as_played: true },
+          outcomes: { win: 3, loss: 0 },
+          forfeit: { winner: 3, loser: 0, counts_as_played: true },
         },
         tiebreakJson: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
         schedulingJson: { rounds_per_week: 1 },
@@ -211,7 +211,7 @@ describe('seedLfr', () => {
 
     expect(summary).toEqual({
       created: { orgs: 0, competitions: 0, seasons: 0, divisions: 0, teams: 0, slots: 0 },
-      updated: { teams: 0, slots: 0 },
+      updated: { competitions: 0, teams: 0, slots: 0 },
     });
     expect(dump()).toBe(before);
   });
@@ -233,7 +233,7 @@ describe('seedLfr', () => {
     const summary = seedLfr(db, edited, 2000);
 
     expect(summary.created.teams).toBe(0);
-    expect(summary.updated).toEqual({ teams: 1, slots: 1 });
+    expect(summary.updated).toEqual({ competitions: 0, teams: 1, slots: 1 });
     expect(db.select().from(team).all()).toMatchObject([
       { tag: 'ALP', name: 'Alpha Esport', slug: 'alpha-esport', colorsJson: [] },
       { tag: 'BRV', name: 'Bravo' },
@@ -243,6 +243,19 @@ describe('seedLfr', () => {
       { teamId: 2, divisionId: 2 },
     ]);
     expect(db.select().from(auditLog).all()).toHaveLength(2);
+  });
+
+  it('brings rule settings seeded by an earlier version back to the current ones', () => {
+    const db = openTestDatabase();
+    seedLfr(db, TEAMS, 1000);
+    const old = { outcomes: { win: 1, loss: 0 }, forfeit: { winner: 1, loser: 0 } };
+    db.$client.prepare('UPDATE competition SET points_json = ?').run(JSON.stringify(old));
+
+    const summary = seedLfr(db, TEAMS, 2000);
+
+    expect(summary.updated).toEqual({ competitions: 1, teams: 0, slots: 0 });
+    expect(db.select().from(competition).get()?.pointsJson.outcomes.win).toBe(3);
+    expect(seedLfr(db, TEAMS, 3000).updated.competitions).toBe(0);
   });
 
   it('rolls everything back when a team cannot be stored', () => {

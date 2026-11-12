@@ -12,9 +12,10 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   slug: 'lfr',
   participantMode: 'team',
   rulesetJson: { result_validation: 'staff' },
+  // 3 points per win in Season 3, as the league's score7 tables are configured.
   pointsJson: {
-    outcomes: { win: 1, loss: 0 },
-    forfeit: { winner: 1, loser: 0, counts_as_played: true },
+    outcomes: { win: 3, loss: 0 },
+    forfeit: { winner: 3, loser: 0, counts_as_played: true },
   },
   tiebreakJson: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
   schedulingJson: { rounds_per_week: 1 },
@@ -36,6 +37,26 @@ const DIVISIONS: Omit<typeof division.$inferInsert, 'seasonId'>[] = [
 
 export const LFR_DIVISION_NAMES = DIVISIONS.map((entry) => entry.name);
 
+/** LFR plays and schedules in French time. */
+export const LFR_TIME_ZONE = 'Europe/Paris';
+
+/** The seeded season with its competition, or undefined before `seedLfr` has run. */
+export function findLfrSeason(db: Pick<Db, 'select'>) {
+  return db
+    .select({ season, competition })
+    .from(season)
+    .innerJoin(competition, eq(season.competitionId, competition.id))
+    .innerJoin(org, eq(competition.orgId, org.id))
+    .where(
+      and(
+        eq(org.slug, ORG.slug),
+        eq(competition.slug, COMPETITION.slug),
+        eq(season.name, SEASON.name),
+      ),
+    )
+    .get();
+}
+
 export interface SeedSummary {
   created: {
     orgs: number;
@@ -45,18 +66,19 @@ export interface SeedSummary {
     teams: number;
     slots: number;
   };
-  updated: { teams: number; slots: number };
+  updated: { competitions: number; teams: number; slots: number };
 }
 
 /**
  * Loads the LFR skeleton and the given teams. Running it again changes nothing; editing the CSV
- * and running it again updates teams (matched by tag) and moves their slot. It never deletes.
+ * and running it again updates teams (matched by tag) and moves their slot. A competition whose
+ * rule settings differ from the ones above is brought back to them. It never deletes.
  */
 export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSummary {
   return db.transaction((tx) => {
     const summary: SeedSummary = {
       created: { orgs: 0, competitions: 0, seasons: 0, divisions: 0, teams: 0, slots: 0 },
-      updated: { teams: 0, slots: 0 },
+      updated: { competitions: 0, teams: 0, slots: 0 },
     };
 
     let orgRow = tx.select().from(org).where(eq(org.slug, ORG.slug)).get();
@@ -78,6 +100,10 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
         .returning()
         .get();
       summary.created.competitions += 1;
+    } else if (RULE_SETTINGS.some((key) => !sameJson(competitionRow?.[key], COMPETITION[key]))) {
+      const settings = Object.fromEntries(RULE_SETTINGS.map((key) => [key, COMPETITION[key]]));
+      tx.update(competition).set(settings).where(eq(competition.id, competitionRow.id)).run();
+      summary.updated.competitions += 1;
     }
     const competitionId = competitionRow.id;
 
@@ -167,6 +193,9 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
     return summary;
   });
 }
+
+const RULE_SETTINGS = ['rulesetJson', 'pointsJson', 'tiebreakJson', 'schedulingJson'] as const;
+const sameJson = (x: unknown, y: unknown) => JSON.stringify(x) === JSON.stringify(y);
 
 export function hasChanges(summary: SeedSummary): boolean {
   return [...Object.values(summary.created), ...Object.values(summary.updated)].some((n) => n > 0);
