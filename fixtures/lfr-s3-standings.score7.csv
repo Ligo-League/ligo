@@ -1,0 +1,23 @@
+division,rank,team,played,wins,draws,losses,score_for,score_against,diff,points
+Ligue 1,1,WMATES,6,6,0,0,28,14,14,18
+Ligue 1,2,CIVITAS,6,5,0,1,24,11,13,15
+Ligue 1,3,GREED1,6,5,0,1,26,15,11,15
+Ligue 1,4,RPV,7,5,0,2,29,22,7,15
+Ligue 1,5,DEVIL,5,3,0,2,18,19,-1,9
+Ligue 1,6,RCK,6,3,0,3,10,21,-11,9
+Ligue 1,7,GREED2,6,3,0,3,10,26,-16,9
+Ligue 1,8,NTS,5,1,0,4,3,14,-11,3
+Ligue 1,9,NIGHTWOLVES,9,0,1,8,0,0,0,1
+Ligue 1,10,OUTSOUKI,8,0,1,7,1,7,-6,1
+Ligue 2,1,MIXNCHILL,6,6,0,0,35,16,19,18
+Ligue 2,2,PANARIA,6,6,0,0,28,11,17,18
+Ligue 2,3,NOVA2,6,5,0,1,19,18,1,15
+Ligue 2,4,LUNARIA,6,4,0,2,28,19,9,12
+Ligue 2,5,CLICK,6,3,0,3,16,26,-10,9
+Ligue 2,6,IGURU,2,2,0,0,7,3,4,6
+Ligue 2,7,ASKIUM,4,2,0,2,23,20,3,6
+Ligue 2,8,SPECTRUM,5,2,0,3,17,23,-6,6
+Ligue 2,9,ORIGINS,5,2,0,3,21,30,-9,6
+Ligue 2,10,STARLY,5,1,0,4,0,0,0,3
+Ligue 2,11,SHADE,6,1,0,5,11,21,-10,3
+Ligue 2,12,NOVA1,11,0,0,11,10,28,-18,0
