@@ -77,10 +77,12 @@ pnpm worker         # job worker
 pnpm test           # all tests
 pnpm test:core      # packages/core only
 pnpm typecheck
-pnpm lint
+pnpm lint           # ESLint, then Prettier in check mode
+pnpm format         # Prettier: rewrite files in place
 pnpm db:generate    # drizzle-kit: create a migration from schema changes
 pnpm db:migrate     # apply migrations to the local database
 pnpm seed           # load fixture data (LFR teams, Season 3 fixtures/results)
+pnpm discord:register   # register slash commands to the staging guild only
 ```
 
 Keep this list in sync with `package.json` when scripts change.
@@ -152,6 +154,39 @@ Review these areas line by line and flag anything uncertain in your summary:
 - Never log tokens, cookies, or presigned URLs. Secrets come from environment variables only;
   never commit `.env`.
 - MOSS files and other staff-only evidence are never served publicly.
+
+## Hosting and domain: notify the maintainer
+
+The maintainer has **not bought a domain or a VPS yet**. Development runs on localhost.
+
+In every task, check whether the work reaches one of the triggers below. If it does, **say so
+explicitly at the start of your plan**, before anything else: which trigger, why a public website,
+domain or VPS is now useful or necessary, and the cheapest option that covers it. Never assume
+hosting exists, and never bury this in the middle of a plan.
+
+Triggers:
+
+- Discord OAuth login needs a stable public redirect URL (not localhost) for real users (phase 3).
+- Teams or staff outside the maintainer's machine need to open pages, e.g. to test registration or
+  the veto.
+- Browser uploads to R2 need a fixed origin for CORS (phase 5).
+- The bot must run 24/7, not only while the maintainer's PC is on (before Season 4, or any shadow
+  run with real teams).
+- The league announcement, where a public address appears on social media.
+
+Until a trigger is reached:
+
+- Prefer local development: localhost, the staging Discord server, a local SQLite file.
+- When something must be reachable briefly, prefer a free temporary option, such as a free
+  Cloudflare quick tunnel (`cloudflared tunnel --url http://localhost:3000`). Its address changes
+  on every run, so it suits a test session, not a redirect URL stored in Discord.
+
+Known cheap options to suggest:
+
+- Domain: `ligoleague.be` or `ligoleague.eu` (about €10 a year); `ligo.gg` later if the league grows.
+- Server: the OVHcloud VPS-1 from design doc section 13.
+
+When no trigger applies, one line in the plan is enough: "Hosting: nothing needed for this task."
 
 ## Don't
 
