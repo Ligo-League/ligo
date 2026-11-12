@@ -17,3 +17,6 @@ export function openDatabase(path: string) {
 }
 
 export type Db = ReturnType<typeof openDatabase>;
+
+/** The handle a `db.transaction` callback receives; it reads and writes like `Db`. */
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
