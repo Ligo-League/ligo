@@ -22,7 +22,7 @@ The platform runs LFR's competitions end to end: schedule, Discord match channel
 | Term        | Meaning                                                                                                                  |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Org         | The group running the leagues (LFR, LFV, LFRL, FRFL); the tenant every record belongs to                                 |
-| Title       | The video game: `r6`, `valorant`, `rocket_league`                                                                        |
+| Title       | The video game: `r6`, `valorant`, `rocket_league`; `lol` and `cs` are reserved for later                                 |
 | Competition | One league in one title (LFR, LFV, LFRL, FRFL) with its own rules and its own Discord server                             |
 | Season      | A time-boxed edition of a competition (LFR Season 3 started 19 October 2026)                                             |
 | Division    | A tier or region inside a season: Ligue 1, Ligue 2, a National region                                                    |
@@ -128,7 +128,8 @@ Everything hangs off org → competition → season → division → stage → m
 **Conventions**
 
 - Primary keys are `INTEGER` autoincrement; teams, players and competitions also get a URL `slug`.
-- Timestamps are `INTEGER` Unix milliseconds in UTC; display in Europe/Paris.
+- Timestamps are `INTEGER` Unix milliseconds in UTC; display in Europe/Paris. Calendar dates (`starts_on`, `ends_on`) are `TEXT` `YYYY-MM-DD`.
+- Discord IDs are `TEXT`: snowflakes exceed JavaScript's safe integers.
 - `*_json` columns are `TEXT` validated by a zod schema on every read and write.
 - Top-level entities carry `org_id`; children reach it through their parent.
 - Results are never hard-deleted: a match or game gets `status = 'void'`.
@@ -138,8 +139,8 @@ Everything hangs off org → competition → season → division → stage → m
 ```
 -- tenancy, people, teams
 org            id, name, slug, locale, settings_json
-league_guild   guild_id PK, org_id, competition_id, staff_role_id, alerts_channel_id,
-               results_channel_id, mercato_channel_id
+league_guild   guild_id PK, org_id, competition_id, staff_role_id, alerts_channel_id NULL,
+               results_channel_id NULL, mercato_channel_id NULL
 player         id, org_id, slug, display_name, discord_user_id UNIQUE NULL, nationality NULL,
                stats_consent_at NULL, created_at
 game_account   id, player_id, title, external_id, display_name, rank_at_registration NULL, verified,
@@ -172,7 +173,7 @@ roster_move    id, window_id, team_id, player_id, direction ('in'|'out'), form_j
 stage          id, season_id, division_id NULL, ord,
                kind ('round_robin'|'single_elim'|'double_elim'|'barrage'|'ladder'),
                config_json, status ('draft'|'published'|'closed')
-stage_entry    stage_id, slot_id NULL, player_id NULL, seed
+stage_entry    id, stage_id, slot_id NULL, player_id NULL, seed   -- match_slot.source_ref points at id
 
 -- matches and results
 match          id, stage_id, week NULL, bracket_node NULL, best_of, host_side NULL, side_chooser NULL, ot_side_chooser NULL,
@@ -249,19 +250,30 @@ image_cache    key PK, object_key, created_at
 
 **Points and standings**
 
+The rules are split by owner: points and tie-breaks belong to the competition, the forfeit score to the season.
+
+`competition.points_json`:
+
 ```json
-{
-    "outcomes": { "win": 1, "loss": 0 },
-    "forfeit": { "winner": 1, "loser": 0, "score": [0, 0] },
-    "tiebreak": ["points", "diff"],
-    "unresolved_tie": "shared"
-}
+{ "outcomes": { "win": 1, "loss": 0 }, "forfeit": { "winner": 1, "loser": 0 } }
+```
+
+`competition.tiebreak_json`:
+
+```json
+{ "criteria": ["points", "diff"], "unresolved_tie": "shared" }
+```
+
+`season.settings_json`:
+
+```json
+{ "forfeit_score": [0, 0], "map_pool": [] }
 ```
 
 - Each win is worth 1 point. There are no draws in R6 competitive settings; score7's N column is an artifact and is not shown.
 - F counts rounds won, C rounds lost, and D = F − C. Columns: J, V, D, F, C, D, PTS.
 - Ranking: points, then D. Season 2 shows it: Vaevictis and Origin's Esport both have 8 points; D 23 beats D 21.
-- **Forfeit score** is a season setting: `[0, 0]` (Season 3) or `[7, 0]` (Season 2). It feeds F and C, so it changes D.
+- **Forfeit score** is a season setting, `forfeit_score`: `[0, 0]` (Season 3) or `[7, 0]` (Season 2). It feeds F and C, so it changes D.
 - **Unresolved ties** (same points and same D) follow `unresolved_tie`:
     - `shared`: both teams show the same rank (default);
     - `tiebreak_match`: when the tie touches a place that matters (title, promotion, barrage, relegation, cup seeding), the engine creates a BO1 tie-break match after the last week;
@@ -424,7 +436,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 
 **Bot setup**
 
-- Permissions: Manage Channels, Manage Roles, View Channels, Send Messages, Embed Links, Attach Files, Read Message History, Manage Messages (for pinning).
+- Permissions: Manage Channels, Manage Roles, View Channels, Send Messages, Embed Links, Attach Files, Read Message History, Pin Messages (a separate permission since 23 February 2026; Manage Messages no longer allows pinning).
 - Gateway intents: Guilds and Guild Members. Guild Members is privileged: enable it in the Developer Portal so the reconciler can read role membership.
 - The bot's role must sit above every team role in each server.
 
