@@ -110,6 +110,9 @@ These are summaries; the design doc (sections 4, 5, 8, 9) has the details.
   leaderboards.
 - **Discord objects are found by stored ID, never by name.** All channel/role changes go through
   the reconciler.
+- **Avoid set in stone rules.** Whenever possible, as long as it doesn't overly complexify the
+  server, propose a way to turn a rules into multiple settings so that different league kinds
+  can exist.
 
 ## Code conventions
 
