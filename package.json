@@ -15,8 +15,8 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "db:generate": "pnpm --filter @ligo/db generate",
-    "db:migrate": "pnpm --filter @ligo/db migrate",
-    "seed": "pnpm --filter @ligo/db seed",
+    "db:migrate": "node --env-file-if-exists=.env packages/db/src/cli/migrate.ts",
+    "seed": "node -e \"console.error('not implemented yet (phase 0, step 5)'); process.exit(1)\"",
     "discord:register": "pnpm --filter @ligo/server register"
   },
   "devDependencies": {
