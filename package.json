@@ -16,7 +16,7 @@
     "format": "prettier --write .",
     "db:generate": "pnpm --filter @ligo/db generate",
     "db:migrate": "node --env-file-if-exists=.env packages/db/src/cli/migrate.ts",
-    "seed": "node -e \"console.error('not implemented yet (phase 0, step 5)'); process.exit(1)\"",
+    "seed": "node --env-file-if-exists=.env packages/db/src/cli/seed.ts",
     "discord:register": "pnpm --filter @ligo/server register"
   },
   "devDependencies": {
