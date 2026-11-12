@@ -13,30 +13,34 @@ The platform runs LFR's competitions end to end: schedule, Discord match channel
 3. Website: public standings, fixtures, brackets and stats; Discord login; team registration with rules acceptance; mercato; replay, MOSS and screenshot uploads; manual stat entry; staff validation and sanctions.
 4. R6 replays parsed in the player's browser (WebAssembly), producing per-round stats, with the same parser on the server for verification.
 5. The group's other leagues: LFV (Valorant), LFRL (Rocket League) and FRFL (FACEIT mixed-team R6), with manual stats wherever no replay route exists.
-6. Other organisations, much later.
+6. Team development tools, R6 first: a private practice book for scrims and friendlies, a playbook, team reports, scouting, a recruitment board, external results, a team level and awards (section 17).
+7. Other organisations, much later.
 
 **Out of scope for v1:** public self-service signup for other leagues, live in-match tracking (a desktop companion app is a long-term idea if the league grows), mobile apps, fantasy or betting features, and the Valorant API before Riot grants a production key.
 
 **Glossary**
 
-| Term        | Meaning                                                                                                                  |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Org         | The group running the leagues (LFR, LFV, LFRL, FRFL); the tenant every record belongs to                                 |
-| Title       | The video game: `r6`, `valorant`, `rocket_league`; `lol` and `cs` are reserved for later                                 |
-| Competition | One league in one title (LFR, LFV, LFRL, FRFL) with its own rules and its own Discord server                             |
-| Season      | A time-boxed edition of a competition (LFR Season 3 started 19 October 2026)                                             |
-| Division    | A tier or region inside a season: Ligue 1, Ligue 2, a National region                                                    |
-| Slot        | The rulebook's SLOT: a team's sporting and administrative place in a division; it can be transferred with staff approval |
-| Stage       | A phase with one format: round robin, National playoffs, barrage, Coupe de France                                        |
-| Barrage     | A play-off between a higher-tier and a lower-tier team for a place in the higher tier                                    |
-| Match       | A fixture between two lineups                                                                                            |
-| Game        | One map (R6, Valorant) or one game of a series (Rocket League) inside a match                                            |
-| Lineup      | The players who played for one side of one match; linked to a team in team leagues, standalone in mixed leagues          |
-| Segment     | The replays of one lobby, identified by r6-dissect's `matchID`; a re-hosted map has several                              |
-| Round facts | Per-player, per-round stats derived from R6 replays                                                                      |
-| Stitch plan | The mapping from segment rounds to a game's official round list                                                          |
-| MOSS        | Anti-cheat capture file each team must submit for every match                                                            |
-| Mercato     | A transfer window; the only time rosters may change                                                                      |
+| Term           | Meaning                                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Org            | The group running the leagues (LFR, LFV, LFRL, FRFL); the tenant every record belongs to                                        |
+| Title          | The video game: `r6`, `valorant`, `rocket_league`; `lol` and `cs` are reserved for later                                        |
+| Competition    | One league in one title (LFR, LFV, LFRL, FRFL) with its own rules and its own Discord server                                    |
+| Season         | A time-boxed edition of a competition (LFR Season 3 started 19 October 2026)                                                    |
+| Division       | A tier or region inside a season: Ligue 1, Ligue 2, a National region                                                           |
+| Slot           | The rulebook's SLOT: a team's sporting and administrative place in a division; it can be transferred with staff approval        |
+| Stage          | A phase with one format: round robin, National playoffs, barrage, Coupe de France                                               |
+| Barrage        | A play-off between a higher-tier and a lower-tier team for a place in the higher tier                                           |
+| Match          | A fixture between two lineups                                                                                                   |
+| Game           | One map (R6, Valorant) or one game of a series (Rocket League) inside a match                                                   |
+| Lineup         | The players who played for one side of one match; linked to a team in team leagues, standalone in mixed leagues                 |
+| Segment        | The replays of one lobby, identified by r6-dissect's `matchID`; a re-hosted map has several                                     |
+| Round facts    | Per-player, per-round stats derived from R6 replays                                                                             |
+| Stitch plan    | The mapping from segment rounds to a game's official round list                                                                 |
+| MOSS           | Anti-cheat capture file each team must submit for every match                                                                   |
+| Mercato        | A transfer window; the only time rosters may change                                                                             |
+| Practice match | A scrim, friendly or cross-league match a team records for itself; private to that team and outside every standing (section 17) |
+| Workspace      | A team's private pages: practice book, playbook and team report                                                                 |
+| Strat          | A named plan in a team's playbook, tagged on rounds to get its win rate                                                         |
 
 ## 2. Constraints and verified facts
 
@@ -234,6 +238,8 @@ image_cache    key PK, object_key, created_at
 - Every staff mutation writes `audit_log` in the same transaction.
 - Every stored metric is additive. Averages such as Valorant ACS are converted to totals at entry (ACS × rounds = combat score).
 - Players without `stats_consent_at` appear in rosters and results, but their stat pages and leaderboard rows stay hidden.
+
+The team development tools add tables and change three existing ones (practice matches, playbook, listings, external results, awards). Those additions are listed in section 17 and are not part of schema v1.
 
 ## 5. League engine
 
@@ -474,6 +480,8 @@ The website is the public face of every league (standings, fixtures, brackets, s
 | `/matches/:id/games/:n/stitch` | team staff and staff    | Re-host review                                                                                                                 |
 | `/me`                          | logged-in player        | Linked accounts, nationality, stats consent                                                                                    |
 | `/staff/*`                     | staff                   | Validation queue, registrations, mercato approvals, sanctions, forfeits, accreditations, unknown players, jobs, rules versions |
+
+The team workspace, recruitment and awards pages are listed in section 17.
 
 **Registration** (replaces the rulebook's form posted in the registration channel)
 
@@ -917,31 +925,35 @@ Volume `/data` holds the SQLite database and the image cache.
 
 Pure league logic gets exhaustive unit and property tests. Replay handling gets golden tests on real LFR replays. Discord and R2 sit behind interfaces with in-memory fakes, so almost everything runs without network access.
 
-| Area                   | Tests                                                              | Must cover                                                                                                                                                          |
-| ---------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Round robin            | fast-check properties over 2–20 entries and random seeds           | Every pair meets exactly once; one match per entry per round; same seed gives the same schedule; `rounds_per_week` grouping                                         |
-| Scheduling deadlines   | Clock-injected tests                                               | Extension week granted; Sunday 21:00 auto-scheduling; cup's 7-day rule with no extension                                                                            |
-| Standings              | Table-driven cases, including Season 2's real table                | 1 point per win, F/C/D, ties broken by D, `sanction` point deltas, forfeit score setting (0–0 or 7–0), shared ranks and tie-break matches                           |
-| Tie-breakers           | Hand-built tables                                                  | D tie-break; generic criteria: 3-way cycle, partial split with restart, `staff_decision`                                                                            |
-| Forfeits and exclusion | Scenario tests                                                     | Warning at 2 forfeits, exclusion at 3, the 50% rule both ways with retroactive forfeits                                                                             |
-| Promotion and barrages | `closeSeason()` on fixture standings                               | L1 9th–10th down, L2 1st–2nd up, both barrage pairings, National promotions                                                                                         |
-| Brackets               | Generated brackets for 4–64 seeds                                  | Byes to top seeds, `advance`, BO1 → BO3 → BO5 by round, cup no-show disqualifications                                                                               |
-| Mercato                | Rule tests                                                         | Window only, 3 moves per team, 1-day block, one roster per competition                                                                                              |
-| R6 normaliser          | Golden files: real replays checked once against the in-game replay | Opening kills, trades, KOST, clutches, plant/defuse, non-kill death, disconnect, overtime                                                                           |
-| Parser builds          | Every stored replay through the WASM build and the native CLI      | Identical JSON; any difference blocks a parser release                                                                                                              |
-| Verification           | Tampered JSON fixtures                                             | Server re-parse flags edited kills, scores and players as `mismatch`                                                                                                |
-| Stitching              | Synthetic segment fixtures                                         | Single lobby; crash mid-round; full restart; swapped team indices; extra rounds after the end; more lobbies than recorded re-hosts                                  |
-| Stat grid              | Validation per title                                               | Range checks, kills/deaths consistency, goals = score                                                                                                               |
-| Reconciler             | Fake guild states                                                  | Fresh server, renamed channel, deleted role, missing permission, archived week, MOSS channels                                                                       |
-| Database               | Migrations                                                         | From empty, and from the previous release's snapshot                                                                                                                |
-| End to end             | Staging Discord server and staging bucket                          | Publish a week, report, confirm and validate a result, upload a re-hosted map, see standings update                                                                 |
-| Map veto               | State-machine tests per format                                     | BO1/BO3/BO5 sequences on a 9-map pool, wrong-team and already-banned choices refused, timeouts, side and overtime-side assignment, decider side by round difference |
+| Area                   | Tests                                                                     | Must cover                                                                                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Round robin            | fast-check properties over 2–20 entries and random seeds                  | Every pair meets exactly once; one match per entry per round; same seed gives the same schedule; `rounds_per_week` grouping                                                     |
+| Scheduling deadlines   | Clock-injected tests                                                      | Extension week granted; Sunday 21:00 auto-scheduling; cup's 7-day rule with no extension                                                                                        |
+| Standings              | Table-driven cases, including Season 2's real table                       | 1 point per win, F/C/D, ties broken by D, `sanction` point deltas, forfeit score setting (0–0 or 7–0), shared ranks and tie-break matches                                       |
+| Tie-breakers           | Hand-built tables                                                         | D tie-break; generic criteria: 3-way cycle, partial split with restart, `staff_decision`                                                                                        |
+| Forfeits and exclusion | Scenario tests                                                            | Warning at 2 forfeits, exclusion at 3, the 50% rule both ways with retroactive forfeits                                                                                         |
+| Promotion and barrages | `closeSeason()` on fixture standings                                      | L1 9th–10th down, L2 1st–2nd up, both barrage pairings, National promotions                                                                                                     |
+| Brackets               | Generated brackets for 4–64 seeds                                         | Byes to top seeds, `advance`, BO1 → BO3 → BO5 by round, cup no-show disqualifications                                                                                           |
+| Mercato                | Rule tests                                                                | Window only, 3 moves per team, 1-day block, one roster per competition                                                                                                          |
+| R6 normaliser          | Golden files: real replays checked once against the in-game replay        | Opening kills, trades, KOST, clutches, plant/defuse, non-kill death, disconnect, overtime                                                                                       |
+| Parser builds          | Every stored replay through the WASM build and the native CLI             | Identical JSON; any difference blocks a parser release                                                                                                                          |
+| Verification           | Tampered JSON fixtures                                                    | Server re-parse flags edited kills, scores and players as `mismatch`                                                                                                            |
+| Stitching              | Synthetic segment fixtures                                                | Single lobby; crash mid-round; full restart; swapped team indices; extra rounds after the end; more lobbies than recorded re-hosts                                              |
+| Stat grid              | Validation per title                                                      | Range checks, kills/deaths consistency, goals = score                                                                                                                           |
+| Reconciler             | Fake guild states                                                         | Fresh server, renamed channel, deleted role, missing permission, archived week, MOSS channels                                                                                   |
+| Database               | Migrations                                                                | From empty, and from the previous release's snapshot                                                                                                                            |
+| End to end             | Staging Discord server and staging bucket                                 | Publish a week, report, confirm and validate a result, upload a re-hosted map, see standings update                                                                             |
+| Map veto               | State-machine tests per format                                            | BO1/BO3/BO5 sequences on a 9-map pool, wrong-team and already-banned choices refused, timeouts, side and overtime-side assignment, decider side by round difference             |
+| Practice privacy       | Query and route tests on a database holding official and practice matches | No practice match, game, stat or round in standings, public stats, leaderboards, awards, scouting or the team level; workspace routes refuse non-members, league staff included |
+| Practice grouping      | Synthetic segment fixtures                                                | Owning side resolved from 3 roster accounts; a folder matching neither side refused; rounds after the map is decided still counted; lobbies grouped by opponent and day         |
+| Team report            | Hand-built round facts                                                    | Win % per map, side, site and strat; opening duel and player-count states; plants; minimum sample hiding; sum first, divide last                                                |
+| Team level             | Table-driven cases and fast-check properties                              | Anchors move the whole group without reordering it; forfeits ignored; a level hidden under the minimum matches; same inputs give the same level                                 |
 
 **Acceptance for standings:** a shadow run against score7 for the rest of the current season, with identical tables every week.
 
 ## 15. Roadmap
 
-The work is ten phases; phase 1 alone replaces score7's standings. Season 3 runs 9 weeks from 19 October, so weeks 5–9 (16 November to 20 December) and the Coupe de France are available for a shadow run against score7. Season 4 starts late December or early January at the earliest, which leaves about 6–7 weeks; the Season 4 cut below says what must be ready by then.
+The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 runs 9 weeks from 19 October, so weeks 5–9 (16 November to 20 December) and the Coupe de France are available for a shadow run against score7. Season 4 starts late December or early January at the earliest, which leaves about 6–7 weeks; the Season 4 cut below says what must be ready by then.
 
 0. **Foundation.** Monorepo, tooling, schema v1, Discord application, staging server, seed data. Done when `pnpm test` passes in CI, migrations create an empty database, and the bot comes online in the staging server.
 1. **Results and standings.** Staff result entry, standings (1 point per win, F/C/D, D tie-break, forfeit score setting, shared ranks), `/standings` as text, then as an image. Done when Season 3's results reproduce score7's tables every week from week 5.
@@ -956,6 +968,14 @@ The work is ten phases; phase 1 alone replaces score7's standings. Season 3 runs
 7. **FRFL mixed mode.** Lineups per match, balanced proposals, OpenSkill, player standings, per-user channels. Done when one FRFL week runs end to end.
 8. **LFRL Rocket League.** boxcars WebAssembly build, RL normaliser, metric schema and images. Done when a PC series' stats arrive from replays with no manual typing.
 9. **Polish and expansion.** Styled images, leaderboards with coverage, impact rating, National regions and playoffs, LFV replays and the Riot API once possible, other organisations.
+10. **Team development tools (R6, section 17).** In this order:
+    - the practice book (replay upload and manual entry) and the team report;
+    - the playbook and round tags;
+    - the tendencies tab and the match preview;
+    - external results and the results tab;
+    - the recruitment board;
+    - awards;
+    - the team level, once its formula is agreed. Done when a team uploads a week of scrims and reads its site and strat win rates next to the division average, and no practice data is visible outside that team. The first two steps need only phases 3 and 5, so they can move ahead of phases 7–9.
 
 **Season 4 cut**
 
@@ -964,7 +984,7 @@ The work is ten phases; phase 1 alone replaces score7's standings. Season 3 runs
 | Blocking                                  | Phases 0–2, phase 4, and from phase 3: Discord login, public standings and fixtures, registration with rules acceptance and stats consent | Season 4 registration opens                                                                                  |
 | Blocking only if replays become mandatory | Phase 5, tested on Season 3 replays                                                                                                       | Mid-December go/no-go: not verified by then means replays stay optional in Season 4, but are still collected |
 | Before first use                          | Mercato pages (first Season 4 window); phase 6 (Season 4 end and cup)                                                                     | When each is first needed                                                                                    |
-| Later                                     | Phases 7–9                                                                                                                                | After Season 4 runs smoothly                                                                                 |
+| Later                                     | Phases 7–10                                                                                                                               | After Season 4 runs smoothly                                                                                 |
 
 **Start here today**
 
@@ -985,31 +1005,35 @@ Most configuration is now settled by the Season 3 rulebook and your answers. The
 
 **Settled**
 
-| Topic                 | Decision                                                                                                                             | Source        |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
-| Season length         | 9 weeks, 1 match per team per week; the rulebook's "4 weeks × 2" is a Season 2 leftover                                              | You           |
-| Division size         | Not fixed. A division has as many teams as it has slots (10 in Ligue 1, 12 in Ligue 2 in Season 3); any limit is a setting           | You           |
-| Points                | 1 point per win; F rounds won, C rounds lost, D = F − C; no draws                                                                    | Rulebook, you |
-| Tie-break             | D; then a setting: shared rank (default), a BO1 tie-break match, or staff decision                                                   | Rulebook, you |
-| Forfeit score         | Season setting: 0–0 (Season 3) or 7–0 (Season 2)                                                                                     | You           |
-| L1/L2 matches         | BO1, one map after bans; teams pick date and time                                                                                    | Rulebook, you |
-| Scheduling            | One extra week if no agreement, then Sunday 21:00 of the second week                                                                 | Rulebook      |
-| League sides and host | Lower-ranked team picks the starting side and bans first; the other picks the overtime side; higher-ranked team hosts                | Rulebook, you |
-| Map veto              | Official competitive pool; alternate bans down to one map (BO1); standard R6 sequences for BO3 and BO5                               | You           |
-| Coupe de France       | All teams, single elimination; BO1 before the round of 16, BO3 for the round of 16 and quarter-finals, BO5 for semi-finals and final | Rulebook, you |
-| Cup sides and host    | Staff designate the starting-side team; the other picks the overtime side; teams agree on the host                                   | You           |
-| Results               | Screenshot proof, both teams check, administration validates                                                                         | Rulebook      |
-| Re-host               | Score kept; one per team, staff may order more                                                                                       | Rulebook, you |
-| Forfeits              | Staff only; warning at the 2nd, exclusion at the 3rd; the 50% rule on exclusion                                                      | Rulebook      |
-| Promotion             | L1 9th–10th down, L2 1st–2nd up; barrages L1 8th vs L2 3rd and L2 8th vs National                                                    | Rulebook, you |
-| National              | Later; not needed until the owner launches it                                                                                        | You           |
-| Rosters               | 5 players and up to 2 substitutes; one manager and up to 3 team staff                                                                | Rulebook form |
-| Mercato               | Announced windows only, 3 moves per team, 1-day block for a transferred player                                                       | Rulebook      |
-| MOSS                  | Mandatory for every match                                                                                                            | Rulebook      |
-| Replays               | Likely mandatory, ideally from Season 4 (late December or early January at the earliest)                                             | You           |
-| Staff                 | 3–5 people; staff cannot play in the championship                                                                                    | You, rulebook |
-| Discord               | One server per league: LFR, LFV, FRFL, LFRL                                                                                          | You           |
-| Cheating              | A ban covers LFR, LFV and LFRL                                                                                                       | Rulebook      |
+| Topic                 | Decision                                                                                                                                  | Source        |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| Season length         | 9 weeks, 1 match per team per week; the rulebook's "4 weeks × 2" is a Season 2 leftover                                                   | You           |
+| Division size         | Not fixed. A division has as many teams as it has slots (10 in Ligue 1, 12 in Ligue 2 in Season 3); any limit is a setting                | You           |
+| Points                | 1 point per win; F rounds won, C rounds lost, D = F − C; no draws                                                                         | Rulebook, you |
+| Tie-break             | D; then a setting: shared rank (default), a BO1 tie-break match, or staff decision                                                        | Rulebook, you |
+| Forfeit score         | Season setting: 0–0 (Season 3) or 7–0 (Season 2)                                                                                          | You           |
+| L1/L2 matches         | BO1, one map after bans; teams pick date and time                                                                                         | Rulebook, you |
+| Scheduling            | One extra week if no agreement, then Sunday 21:00 of the second week                                                                      | Rulebook      |
+| League sides and host | Lower-ranked team picks the starting side and bans first; the other picks the overtime side; higher-ranked team hosts                     | Rulebook, you |
+| Map veto              | Official competitive pool; alternate bans down to one map (BO1); standard R6 sequences for BO3 and BO5                                    | You           |
+| Coupe de France       | All teams, single elimination; BO1 before the round of 16, BO3 for the round of 16 and quarter-finals, BO5 for semi-finals and final      | Rulebook, you |
+| Cup sides and host    | Staff designate the starting-side team; the other picks the overtime side; teams agree on the host                                        | You           |
+| Results               | Screenshot proof, both teams check, administration validates                                                                              | Rulebook      |
+| Re-host               | Score kept; one per team, staff may order more                                                                                            | Rulebook, you |
+| Forfeits              | Staff only; warning at the 2nd, exclusion at the 3rd; the 50% rule on exclusion                                                           | Rulebook      |
+| Promotion             | L1 9th–10th down, L2 1st–2nd up; barrages L1 8th vs L2 3rd and L2 8th vs National                                                         | Rulebook, you |
+| National              | Later; not needed until the owner launches it                                                                                             | You           |
+| Rosters               | 5 players and up to 2 substitutes; one manager and up to 3 team staff                                                                     | Rulebook form |
+| Mercato               | Announced windows only, 3 moves per team, 1-day block for a transferred player                                                            | Rulebook      |
+| MOSS                  | Mandatory for every match                                                                                                                 | Rulebook      |
+| Replays               | Likely mandatory, ideally from Season 4 (late December or early January at the earliest)                                                  | You           |
+| Staff                 | 3–5 people; staff cannot play in the championship                                                                                         | You, rulebook |
+| Discord               | One server per league: LFR, LFV, FRFL, LFRL                                                                                               | You           |
+| Cheating              | A ban covers LFR, LFV and LFRL                                                                                                            | Rulebook      |
+| Team tools            | Private practice book, playbook, team report, scouting, recruitment board, external results, team level and awards (section 17); R6 first | You           |
+| Team obligations      | None: no team is required to upload scrims or enter external events; external results are shown on team pages and never worth points      | You           |
+| Match volume          | FRFL and the cup provide the extra matches; the league stays at one BO1 per week                                                          | You           |
+| Team level scale      | The 0–10 rubric of section 17                                                                                                             | You           |
 
 **Still open**
 
@@ -1025,6 +1049,13 @@ Most configuration is now settled by the Season 3 rulebook and your answers. The
 - [ ] Rulebook source text (coming). Fix the "4 weeks × 2 matches" leftover and drop the draw column at the same time.
 - [ ] Veto: check the BLAST R6 Global Rulebook's 2026 map-ban change before Season 4.
 - [ ] National: regions and playoff qualifiers, once the owner launches it.
+- [ ] Team level: the formula from results and external anchors to the 0–10 scale, the baseline of each division, the tier list of external events and what a placement is worth, and who sees the level (section 17).
+- [ ] Workspace access: confirm that league staff cannot open a team's workspace.
+- [ ] Practice stats inside a team: confirm that teammates may see each other's practice figures without public stats consent.
+- [ ] Scouting for LFR: public, registered teams only, or off (ask the owner).
+- [ ] Recruitment: may a player on a roster post a listing, and does the rulebook say anything about approaching rostered players (ask the owner)?
+- [ ] Awards: the metric and the minimum rounds for player of the week, and the list of season awards.
+- [ ] Whether the first two steps of phase 10 move ahead of phases 7–9.
 
 **Sources**
 
@@ -1037,3 +1068,191 @@ Most configuration is now settled by the Season 3 rulebook and your answers. The
 - [ballchasing.com API](https://ballchasing.com/doc/api) and [FAQ](https://ballchasing.com/doc/faq)
 - [Cloudflare R2 pricing](https://upstash.com/kb/cloudflare-r2-pricing-in-2026-storage-operations-and-real-monthly-bills)
 - VPS prices: [OVHcloud](https://www.itechguides.com/?p=708588), [netcup](https://notes.nicolasdeville.com/helpers/netcup/), [Hetzner](https://agentdeals.dev/digest/2026-w25), [Oracle Always Free](https://standardcompute.com/guides/run-openclaw-on-oracle-cloud-free-tier)
+
+## 17. Team development tools
+
+The league raises its level only if its teams get better, and teams at this level have no analyst and no time to build their own spreadsheets. The platform already collects what they need, so this section turns it into tools a team uses between matches. R6 comes first; nothing here is mandatory for a team, and nothing here changes a standing.
+
+| Tool                    | What a team gets                                                                  | Reads                                      | Visible to          |
+| ----------------------- | --------------------------------------------------------------------------------- | ------------------------------------------ | ------------------- |
+| Practice book           | Its scrims, friendlies and cross-league matches, with the stats of a league match | Replays the team uploads, or manual entry  | The team only       |
+| Playbook and round tags | A win rate for each of its own strats                                             | The team's tags on rounds it played        | The team only       |
+| Team report             | Maps, sides, sites and round situations, next to the division average             | Round facts of official and practice games | The team only       |
+| Scouting                | What the next opponent bans, picks and plays                                      | Official matches only                      | Competition setting |
+| Recruitment board       | Players looking for a team, teams looking for a player                            | Listings posted by players and managers    | Everyone            |
+| External results        | A record of results outside the league on the team page                           | Manager submissions approved by staff      | Everyone            |
+| Team level              | A position on the 0–10 scale                                                      | Official results and external results      | Competition setting |
+| Awards                  | Player of the week and season awards                                              | Official stats                             | Everyone            |
+
+**Rules that hold for all of it**
+
+- **Practice data stays inside the team.** It never reaches standings, public stats, leaderboards, awards, scouting pages, the team level or any image the bot posts. Two guards enforce it: a practice match has no stage (`stage_id IS NULL`) and its own status (`practice`), and every public query selects by stage and by `validated` status.
+- **The workspace is private.** It opens for the owning team's current roster (players, substitutes, coach) and `team_staff`, checked on the server on every request. League staff cannot open it by default (`workspace_staff_access: false`): teams will not upload their strats if a rival's friend can read them.
+- **No obligation.** No rule requires a team to upload scrims, enter external events or post a listing. External results are shown, never worth points, seeding or promotion.
+- **Access follows the roster.** A player who leaves a team loses access that day; the data stays with the team.
+- **Opponents stay anonymous outside the match.** Accounts seen in a practice replay that belong to no platform player are stored as unclaimed `game_account` rows and shown only inside that practice match.
+
+**Practice book**
+
+A practice match is a scrim, a friendly or a cross-league match that one team records for itself. It reuses `match`, `game` and the replay tables, so the pipeline of section 8 produces the same round facts; the differences are below.
+
+|                 | Official match (section 8)                                  | Practice match                                                                                                                  |
+| --------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Raw files       | Uploaded to R2 and re-parsed by the worker                  | Not uploaded (`raw_upload: 'never'`); only the parsed JSON is sent                                                              |
+| Trust           | `unverified` until the re-parse matches                     | Always `unverified`, which is acceptable for data only the uploader's team reads                                                |
+| Team resolution | Both sides must be the match's two lineups                  | One side must hold at least 3 accounts of the owning team's roster; the other side is the opponent                              |
+| Round list      | Stitched to the win condition and checked against the score | Every complete round counts, in time order; no win-condition check, since scrims often play on or play a fixed number of rounds |
+| Result          | Reported, confirmed and validated by staff                  | The rounds are the result; nobody validates                                                                                     |
+| Unknown players | Staff alert                                                 | Stored as unclaimed accounts                                                                                                    |
+| Deletion        | Never; status `void`                                        | The team manager can delete it for good                                                                                         |
+
+- **Upload:** the uploader of section 8, opened from the workspace. A folder where neither side matches the team's roster is refused on the spot.
+- **Grouping:** one game per lobby (`lobby_id`); lobbies against the same opponent on the same day form one practice match. The team can merge or split them afterwards.
+- **Opponent:** linked to a platform team when at least 3 of its accounts are on that team's roster; otherwise a name typed by the uploader.
+- **Stats:** level 1 `stat` rows are written for the owning team's players only. Round facts cover both sides, as in any replay.
+- **Storage:** one recording per round is kept, at 6–8 KB of JSON per round, so a 12-round map is under 100 KB. A per-team quota (`practice_quota_mb`) protects the database.
+- **Manual entry:** date, opponent, map, score and starting side, for sessions without replays. A manual round sheet (side, site, strat, won) comes later.
+- **File already used:** a replay whose `sha256` belongs to an official match is refused; that match is already in the report.
+
+**Playbook and round tags**
+
+A replay knows the map, the site, the operators and who won the round. It does not know which strat the team called, so the team says so.
+
+- **Playbook:** the team's own list of strats, each with a name, map, side, optional site and notes. Strats are archived, not deleted, so old rounds keep their tag.
+- **Round tags:** one strat and an optional note per round, on any round the team played, practice or official. Tags are the team's private data even on an official match.
+- **Tagging page:** the round list of a game with side, site, operators and outcome. The team picks a strat per round, and "same as the previous round on this site" fills runs quickly.
+- Untagged rounds still count in the map, side and site views.
+
+**Team report**
+
+The report is the workspace's home page. Filters: scope (official, practice or both), dates, map, opponent and the five players on the round.
+
+| View            | Shows                                                                                                           | From                            |
+| --------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Map pool        | Games and rounds per map, map win %, attack and defence round win %                                             | `game`, `game_round`            |
+| Sides and sites | Defence: how often each site is picked and its round win %. Attack: round win % against each site               | `segment_round.site`            |
+| Strats          | Rounds and win % per strat, next to the team's average on the same map, side and site                           | `round_tag`                     |
+| Opening duel    | Share of rounds with the opening kill; round win % after winning it and after losing it                         | `round_player`                  |
+| Player counts   | Round win % from each (own alive, opponents alive) state reached, the states the impact rating uses (section 9) | `kill_event`                    |
+| Trades          | Share of the team's deaths that were traded; trades given                                                       | `round_player`                  |
+| Plants          | Attack: share of rounds with a plant and win % after it. Defence: win % after the opponent's plant              | `round_player`, `segment_round` |
+| Round endings   | How rounds are won and lost: eliminations, defuser, time                                                        | `segment_round.win_condition`   |
+| Operators       | Pick counts and round win % per operator, per side and map                                                      | `round_player.operator`         |
+| Players         | The metrics of section 9 per player, on the selected scope                                                      | `stat`, `round_player`          |
+
+- **Benchmark:** each figure sits next to the division's average for the same metric, computed from official matches only.
+- **Sample size:** the number of rounds is always shown. A percentage is hidden under a minimum (`report_min_rounds`, default 10), because nine BO1s give about 100 rounds a season and a site may have five.
+- **Computation:** pure functions in `packages/core` over round facts. Counts are summed first and divided last, as everywhere else.
+- **Players in the report:** teammates see each other's figures inside the workspace. Public pages still follow `stats_consent_at`.
+
+**Scouting**
+
+Preparation is where organised teams separate from the others, and the data is already public in spirit: anyone who played the team has seen it.
+
+- **Tendencies tab on `/teams/:slug`**, from official validated matches only: veto history (bans in order, maps left open), record per map, attack and defence round win % per map, defence sites picked and their win %, operator pick counts per map and side.
+- **Match preview on `/matches/:id`** before the match is played: the two teams' tendencies side by side and their past meetings.
+- **Team-level figures only.** A split per player appears only for players with stats consent.
+- **Coverage** is shown ("7/9 maps with replays"). One team's upload covers both sides of a match, so a team cannot hide by not uploading.
+- **Setting:** `scouting` is `'public'`, `'teams'` (logged-in members of registered teams) or `'off'`.
+
+**Recruitment board**
+
+Good players in the lower division should be easy to find, and teams short of a player should not have to fold.
+
+- **Player listing**, from `/me`: roles, availability, languages and a short note. It shows the rank from `game_account`, a link to the player page (stats only with consent) and a link to the Discord profile.
+- **Team listing**, from `/teams/:slug/manage`: the role wanted and a short note.
+- Listings expire after 30 days unless renewed (`listing_days`). The bot posts new ones in the league's recruitment channel when one is configured.
+- **A listing is an advert, not a move.** Every roster change still goes through a mercato window and staff approval (section 7).
+- **Who may list:** `listing_requires_free_agent` (default true) limits player listings to players on no roster in that competition. Whether a rostered player may list is a question for the owner (section 16).
+- The player page doubles as a CV: seasons, teams, divisions, awards and results (below).
+
+**External results**
+
+Teams are encouraged to play outside the league by showing what they achieve there, in the manner of a Liquipedia results table.
+
+- **Submission:** the team manager picks or creates the event, then enters the placement (3rd, 5th–8th), the number of teams, the date, the players who took part and a link to the bracket or results page as proof.
+- **Approval:** staff approve or reject each submission, audited. Nothing appears in public before approval. Staff also set the event's tier.
+- **Results tab on `/teams/:slug`:** approved external results together with the team's results on the platform (final ranks, cup runs, titles). Platform results are derived from closed seasons and brackets, never typed.
+- **Player pages** show the results a player earned while on the roster.
+- The platform calls no external API for this.
+
+**Team level**
+
+The scale is the maintainer's 0–10 rubric:
+
+| Level   | Meaning                                                              |
+| ------- | -------------------------------------------------------------------- |
+| 0       | High-rank five-stack with no structure or practice                   |
+| 1–2     | Very weak organised team, barely above ranked                        |
+| 2.5–3.0 | Low amateur, bottom of a local league                                |
+| 3.0–3.5 | Typical organised grassroots team, competitive within a local league |
+| 3.5–4.0 | Strong side of a local amateur league                                |
+| 4.0–5.0 | Top national amateur, regular in decent open qualifiers              |
+| 5.0–6.5 | Solid Challenger or tier 2                                           |
+| 7.0–8.5 | Regional league standard                                             |
+| 9.0–10  | Major and Six Invitational contenders                                |
+
+The formula is not settled (section 16). Its shape follows from one limit: results inside a closed group only rank its teams against each other; they cannot say where the group sits on the scale. So the level has two parts.
+
+1. **Relative strength.** One rating per team and title, updated on every validated official match, carried across seasons and shared by every competition of that title on the instance. OpenSkill is already a dependency (mixed mode). Forfeits do not move it.
+2. **Position on the scale.** Anchors place the group:
+    - a baseline per division and season, set by staff (`level_baselines`);
+    - approved external results: each event tier maps a placement to a level band (`event_tiers`), and a team whose results sit outside its computed level moves toward that band.
+
+- The level is computed from matches, results and settings; it is never stored or edited by hand.
+- A cross-league event run on the platform as its own competition is official and counts. A cross-league match a team uploads to its practice book does not.
+- **Display:** one decimal with the band's label, hidden until the team has played a minimum number of matches.
+- **Setting:** `team_level` is `'public'`, `'teams'`, `'staff'` or `'off'`. It starts at `'staff'` until the formula has been checked against a full season: a public "2.6" can cost the league a team.
+
+**Awards**
+
+- **Player of the week**, per division: the best value of one metric among consenting players, over that week's validated games with replay stats, above a minimum number of rounds. Metric and minimum live in `competition.awards_json`.
+- **Season awards** use the same rule over the whole season; the list of awards is a setting.
+- An award is computed when the week's last match is validated, posted by the bot with an `award-card` image (section 11), and kept as an `award` row, so the announcement stays true if a later correction changes the numbers.
+- Leaderboards (section 9) are unchanged.
+
+**Pages**
+
+| Route                                | Who                  | Content                                                        |
+| ------------------------------------ | -------------------- | -------------------------------------------------------------- |
+| `/teams/:slug/workspace`             | team members         | Team report                                                    |
+| `/teams/:slug/workspace/matches`     | team members         | Practice book: list, replay upload, manual entry               |
+| `/teams/:slug/workspace/matches/:id` | team members         | Games, rounds and round tags of one practice or official match |
+| `/teams/:slug/workspace/playbook`    | team members         | Strats                                                         |
+| `/teams/:slug` (tabs)                | everyone, or setting | Tendencies, results                                            |
+| `/c/:comp/recruitment`               | everyone             | Player and team listings                                       |
+| `/c/:comp/:season/awards`            | everyone             | Weekly and season awards                                       |
+| `/staff/external-results`            | staff                | Approval queue, events and tiers                               |
+
+**Schema additions** (not part of schema v1; each needs its migration)
+
+```
+-- changes to existing tables
+match           + kind ('official'|'practice'), default 'official'; stage_id becomes NULL for practice;
+                status gains 'practice'; CHECK ((kind = 'official') = (stage_id IS NOT NULL))
+game_account    player_id becomes NULL          -- an account seen in a replay, with no platform player
+league_guild    + recruitment_channel_id NULL
+
+-- practice book and playbook
+practice_match  match_id PK, owner_team_id, kind ('scrim'|'friendly'|'cross_league'),
+                opponent_team_id NULL, opponent_name NULL, played_at, notes NULL, created_by
+strat           id, team_id, title, map, side ('attack'|'defense'), site NULL, name, notes NULL, archived
+round_tag       team_id, segment_id, local_n, strat_id NULL, note NULL, tagged_by, at,
+                PRIMARY KEY (team_id, segment_id, local_n)
+
+-- recruitment, external results, awards
+listing         id, competition_id, kind ('player'|'team'), player_id NULL, team_id NULL, roles_json,
+                note, status ('open'|'closed'), created_at, expires_at
+external_event  id, org_id, title, name, organiser NULL, url, tier NULL, ended_on
+external_result id, event_id, team_id, placement_from, placement_to, teams_count NULL, roster_json,
+                proof_url, status ('submitted'|'approved'|'rejected'), submitted_by, reviewed_by NULL, at
+award           id, season_id, division_id NULL, kind, week NULL, player_id NULL, team_id NULL,
+                metric, value, at
+```
+
+The team level adds no table: baselines and event tiers are settings, and the rating is recomputed from matches and cached by the data version counter.
+
+**Other titles**
+
+- The practice book with map and score, the recruitment board, external results, the team level and awards need nothing specific to a title.
+- The site, strat and round-situation views need round facts, which only R6 replays produce today. Another shooter gets them when its normaliser emits round facts; its title folder then names its own dimensions (R6's site and operator are another game's bomb site and agent).
