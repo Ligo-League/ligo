@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Command } from './commands/types.ts';
 import { routeCommand } from './router.ts';
-import { fakeInteraction } from './testing.ts';
+import { fakeContext, fakeInteraction } from './testing.ts';
 
-const context = { locale: 'fr' as const, gatewayPingMs: 10 };
+const context = fakeContext();
 const command = (name: string, execute: Command['execute']): Command => ({
   data: { name, description: name },
   execute,

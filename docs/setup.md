@@ -106,13 +106,13 @@ Leave `DATABASE_PATH` and `LOG_LEVEL` as they are, and leave the commented lines
 
 Run these from the repository folder, in order:
 
-| Command                 | What you should see                                                             |
-| ----------------------- | ------------------------------------------------------------------------------- |
-| `pnpm install`          | Ends with `Done`                                                                |
-| `pnpm db:migrate`       | `Migrations applied to …/data/ligo.db`                                          |
-| `pnpm seed`             | `Created 1 org, 1 competition, 1 season, 2 divisions, 2 teams, 2 slots; …`      |
-| `pnpm discord:register` | `Registered 1 command(s) in guild …: /ping`, then the invite URL                |
-| `pnpm dev`              | A log line containing `"msg":"Discord client ready"`; the command keeps running |
+| Command                 | What you should see                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| `pnpm install`          | Ends with `Done`                                                                                          |
+| `pnpm db:migrate`       | `Migrations applied to …/data/ligo.db`                                                                    |
+| `pnpm seed`             | `Created 1 org, 1 competition, 1 season, 2 divisions, 22 teams, 22 slots; …`, then a line for the matches |
+| `pnpm discord:register` | `Registered 2 command(s) in guild …: /ping, /standings`, then the invite URL                              |
+| `pnpm dev`              | A log line containing `"msg":"Discord client ready"`; the command keeps running                           |
 
 Then, in any channel of `Ligo Staging`, type `/ping` and press Enter. The bot answers, visible only
 to you:
@@ -160,6 +160,35 @@ The website's Discord login arrives in phase 3. You can register its local addre
 2. Under **Redirects**, click **Add Redirect** and enter `http://localhost:3000/auth/callback`.
 3. Click **Save Changes**.
 
+## 9. Phase 1: the staff role, the matches and `/standings`
+
+The bot now reads the database, and it needs to know which server is LFR's and who its staff are.
+
+1. In `Ligo Staging`, open **Server Settings** > **Roles** > **Create Role**, name it `Staff` and
+   save. Give the role to yourself (right-click your name > **Roles**).
+2. Right-click the `Staff` role in the role list and choose **Copy Role ID**.
+3. Add it to `.env`:
+
+   ```
+   DISCORD_STAFF_ROLE_ID=the Role ID you just copied
+   ```
+
+4. Run these, in order:
+
+| Command                 | What you should see                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `pnpm seed`             | `Created 2 stages, 22 entries, 111 matches; …` and `Discord server …: link to LFR created.` |
+| `pnpm discord:register` | `Registered 2 command(s) in guild …: /ping, /standings`                                     |
+| `pnpm dev`              | `"msg":"Database ready"`, then `"msg":"Discord client ready"`                               |
+
+Then type `/standings` in any channel of `Ligo Staging`: the bot posts the Ligue 1 and Ligue 2
+tables, visible to everyone. `/standings division:L2` posts one division.
+
+The matches come from `fixtures/lfr-s3-matches.csv`, a copy of score7 taken with
+`pnpm fixtures:score7`. To follow score7 during the shadow run, run that command and then
+`pnpm seed` again: new results are added, and a result already stored is never rewritten. If a
+stored result differs from score7, `pnpm seed` lists it and changes nothing.
+
 ## If something goes wrong
 
 | Message or symptom                                                  | Cause and fix                                                                                              |
@@ -170,5 +199,6 @@ The website's Discord login arrives in phase 3. You can register its local addre
 | `Discord refused the Guild Members intent`                          | Server Members Intent is off. Redo step 2.5 and click **Save Changes**.                                    |
 | `Could not register commands: Missing Access`                       | The bot is not in that server, or `DISCORD_GUILD_ID` is another server's ID. Redo step 4, check step 3.5.  |
 | `Could not register commands: 401: Unauthorized`                    | Wrong token. Redo step 2.3.                                                                                |
+| `/standings` answers "Ce serveur n'est relié à aucune ligue."       | The server is not linked. Redo step 9: `DISCORD_STAFF_ROLE_ID` in `.env`, then `pnpm seed`.                |
 | `/ping` does not appear when typing `/`                             | Run `pnpm discord:register` again, then reload Discord (Ctrl+R).                                           |
 | `/ping` appears but answers "The application did not respond"       | `pnpm dev` is not running, or it stopped with an error. Look at its terminal.                              |

@@ -1,3 +1,4 @@
+import type { Db } from '@ligo/db';
 import { Client, Events, GatewayIntentBits, MessageFlags, type Interaction } from 'discord.js';
 import type { Logger } from 'pino';
 import { DEFAULT_LOCALE } from '../i18n/index.ts';
@@ -11,8 +12,9 @@ import { routeCommand } from './router.ts';
 export function createDiscordClient(deps: {
   commands: readonly Command[];
   logger: Logger;
+  db: Db;
 }): Client {
-  const { commands, logger } = deps;
+  const { commands, logger, db } = deps;
   const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   });
@@ -30,6 +32,8 @@ export function createDiscordClient(deps: {
 
     const adapter: CommandInteraction = {
       commandName: interaction.commandName,
+      guildId: interaction.guildId,
+      options: { getString: (name) => interaction.options.getString(name) },
       get answered() {
         return interaction.replied || interaction.deferred;
       },
@@ -39,7 +43,7 @@ export function createDiscordClient(deps: {
         );
       },
     };
-    const context = { locale: DEFAULT_LOCALE, gatewayPingMs: client.ws.ping };
+    const context = { locale: DEFAULT_LOCALE, gatewayPingMs: client.ws.ping, db };
 
     routeCommand(commands, adapter, context, logger).catch((error: unknown) => {
       // Reached only when even the error reply could not be sent (e.g. the interaction expired).

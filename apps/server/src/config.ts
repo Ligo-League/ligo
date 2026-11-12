@@ -6,6 +6,7 @@ const envSchema = z.object({
   DISCORD_TOKEN: z.string().min(1),
   DISCORD_CLIENT_ID: snowflake,
   DISCORD_GUILD_ID: snowflake,
+  DATABASE_PATH: z.string().min(1).default('./data/ligo.db'),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
 });
 
@@ -14,6 +15,8 @@ export interface Config {
   discordClientId: string;
   /** The staging server: slash commands are registered to this guild only. */
   discordGuildId: string;
+  /** SQLite file, relative to the directory the server is started from. */
+  databasePath: string;
   logLevel: z.infer<typeof envSchema>['LOG_LEVEL'];
 }
 
@@ -38,6 +41,7 @@ export function loadConfig(env: Record<string, string | undefined>): ConfigResul
       discordToken: parsed.data.DISCORD_TOKEN,
       discordClientId: parsed.data.DISCORD_CLIENT_ID,
       discordGuildId: parsed.data.DISCORD_GUILD_ID,
+      databasePath: parsed.data.DATABASE_PATH,
       logLevel: parsed.data.LOG_LEVEL,
     },
   };

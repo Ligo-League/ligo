@@ -199,6 +199,12 @@ importers:
 
   apps/server:
     dependencies:
+      '@ligo/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@ligo/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       discord.js:
         specifier: ^14.28.1
         version: 14.28.1

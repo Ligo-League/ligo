@@ -1,10 +1,13 @@
+import { mkdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { applyMigrations, openDatabase } from '@ligo/db';
 import { loadConfig } from './config.ts';
 import { createDiscordClient } from './discord/client.ts';
 import { commands } from './discord/commands/index.ts';
 import { loginHint } from './discord/login-hint.ts';
 import { createLogger } from './logger.ts';
 
-// Server entry point (`pnpm dev`). Phase 0: the Discord bot only.
+// Server entry point (`pnpm dev`): the database and the Discord bot.
 const loaded = loadConfig(process.env);
 if (!loaded.ok) {
   console.error(`Invalid configuration: ${loaded.errors.join('; ')}. See .env.example.`);
@@ -13,11 +16,22 @@ if (!loaded.ok) {
 const { config } = loaded;
 
 const logger = createLogger(config.logLevel);
-const client = createDiscordClient({ commands, logger });
+
+// The server owns the schema: it applies pending migrations before anything reads the database.
+const databasePath = resolve(config.databasePath);
+mkdirSync(dirname(databasePath), { recursive: true });
+const db = openDatabase(databasePath);
+applyMigrations(db);
+logger.info({ path: databasePath }, 'Database ready');
+
+const client = createDiscordClient({ commands, logger, db });
 
 const shutdown = (signal: string) => {
   logger.info({ signal }, 'Shutting down');
-  void client.destroy().finally(() => process.exit(0));
+  void client.destroy().finally(() => {
+    db.$client.close();
+    process.exit(0);
+  });
 };
 process.once('SIGINT', shutdown);
 process.once('SIGTERM', shutdown);

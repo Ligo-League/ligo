@@ -9,13 +9,14 @@ const valid = {
 };
 
 describe('loadConfig', () => {
-  it('reads the Discord settings and defaults the log level to info', () => {
+  it('reads the Discord settings and defaults the database path and the log level', () => {
     expect(loadConfig(valid)).toEqual({
       ok: true,
       config: {
         discordToken: SECRET,
         discordClientId: '123456789012345678',
         discordGuildId: '876543210987654321',
+        databasePath: './data/ligo.db',
         logLevel: 'info',
       },
     });
@@ -25,6 +26,13 @@ describe('loadConfig', () => {
     expect(loadConfig({ ...valid, PATH: '/usr/bin', LOG_LEVEL: 'debug' })).toMatchObject({
       ok: true,
       config: { logLevel: 'debug' },
+    });
+  });
+
+  it('reads the database path', () => {
+    expect(loadConfig({ ...valid, DATABASE_PATH: '/var/lib/ligo/ligo.db' })).toMatchObject({
+      ok: true,
+      config: { databasePath: '/var/lib/ligo/ligo.db' },
     });
   });
 

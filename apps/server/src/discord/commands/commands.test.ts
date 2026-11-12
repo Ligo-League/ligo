@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { fakeInteraction } from '../testing.ts';
+import { fakeContext, fakeInteraction } from '../testing.ts';
 import { commands } from './index.ts';
 import { pingCommand } from './ping.ts';
 
 describe('/ping', () => {
   it('answers privately, in French, with the gateway latency', async () => {
     const interaction = fakeInteraction('ping');
-    await pingCommand.execute(interaction, { locale: 'fr', gatewayPingMs: 41.6 });
+    await pingCommand.execute(interaction, fakeContext({ gatewayPingMs: 41.6 }));
     expect(interaction.replies).toEqual([
       { content: 'Pong ! Latence de la passerelle : 42 ms.', ephemeral: true },
     ]);
@@ -14,7 +14,7 @@ describe('/ping', () => {
 
   it('answers in English when asked to', async () => {
     const interaction = fakeInteraction('ping');
-    await pingCommand.execute(interaction, { locale: 'en', gatewayPingMs: 7 });
+    await pingCommand.execute(interaction, fakeContext({ locale: 'en', gatewayPingMs: 7 }));
     expect(interaction.replies).toEqual([
       { content: 'Pong! Gateway latency: 7 ms.', ephemeral: true },
     ]);
@@ -22,7 +22,7 @@ describe('/ping', () => {
 
   it('leaves the latency out before the first gateway heartbeat (-1)', async () => {
     const interaction = fakeInteraction('ping');
-    await pingCommand.execute(interaction, { locale: 'fr', gatewayPingMs: -1 });
+    await pingCommand.execute(interaction, fakeContext({ gatewayPingMs: -1 }));
     expect(interaction.replies).toEqual([{ content: 'Pong !', ephemeral: true }]);
   });
 });
