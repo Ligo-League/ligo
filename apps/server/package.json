@@ -7,11 +7,10 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "dev": "node -e \"console.error('not implemented yet (phase 0, step 4)'); process.exit(1)\"",
-    "register": "node -e \"console.error('not implemented yet (phase 0, step 4)'); process.exit(1)\""
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "discord.js": "^14.28.1",
     "pino": "^10.4.0",
     "zod": "^4.6.7"
   }

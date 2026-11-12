@@ -7,7 +7,7 @@
     "node": ">=26"
   },
   "scripts": {
-    "dev": "pnpm --filter @ligo/server dev",
+    "dev": "node --watch --env-file-if-exists=.env apps/server/src/main.ts",
     "worker": "pnpm --filter @ligo/worker start",
     "test": "vitest run",
     "test:core": "vitest run --project core",
@@ -17,7 +17,7 @@
     "db:generate": "pnpm --filter @ligo/db generate",
     "db:migrate": "node --env-file-if-exists=.env packages/db/src/cli/migrate.ts",
     "seed": "node --env-file-if-exists=.env packages/db/src/cli/seed.ts",
-    "discord:register": "pnpm --filter @ligo/server register"
+    "discord:register": "node --env-file-if-exists=.env apps/server/src/discord/register.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
