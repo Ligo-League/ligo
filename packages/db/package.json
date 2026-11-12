@@ -1,0 +1,15 @@
+{
+  "name": "@ligo/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "node -e \"console.error('not implemented yet (phase 0, step 3)'); process.exit(1)\"",
+    "migrate": "node -e \"console.error('not implemented yet (phase 0, step 3)'); process.exit(1)\"",
+    "seed": "node -e \"console.error('not implemented yet (phase 0, step 5)'); process.exit(1)\""
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "ligo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.19.0",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @ligo/server dev",
+    "worker": "pnpm --filter @ligo/worker start",
+    "typecheck": "pnpm --recursive typecheck",
+    "db:generate": "pnpm --filter @ligo/db generate",
+    "db:migrate": "pnpm --filter @ligo/db migrate",
+    "seed": "pnpm --filter @ligo/db seed",
+    "discord:register": "pnpm --filter @ligo/server register"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "~6.0.3"
+  }
+}

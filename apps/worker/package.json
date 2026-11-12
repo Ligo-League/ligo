@@ -1,0 +1,13 @@
+{
+  "name": "@ligo/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "node -e \"console.error('not implemented yet (phase 5)'); process.exit(1)\""
+  }
+}
