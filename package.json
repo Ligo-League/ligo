@@ -9,7 +9,9 @@
   "scripts": {
     "dev": "pnpm --filter @ligo/server dev",
     "worker": "pnpm --filter @ligo/worker start",
-    "typecheck": "pnpm --recursive typecheck",
+    "test": "vitest run",
+    "test:core": "vitest run --project core",
+    "typecheck": "tsc --noEmit && pnpm --recursive typecheck",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "db:generate": "pnpm --filter @ligo/db generate",
@@ -23,6 +25,7 @@
     "eslint": "^10.14.0",
     "prettier": "~3.9.10",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.72.2"
+    "typescript-eslint": "^8.72.2",
+    "vitest": "^5.1.0"
   }
 }
