@@ -1,2 +1,3 @@
 // Pure league logic. No I/O: see "Dependency rules" in CLAUDE.md.
-export {};
+export * from './settings.ts';
+export * from './slug.ts';
