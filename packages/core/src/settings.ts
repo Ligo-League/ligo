@@ -7,7 +7,12 @@ import { z } from 'zod';
 /** `competition.points_json`: standings points per match outcome. */
 export const pointsSchema = z.strictObject({
   outcomes: z.strictObject({ win: z.int(), loss: z.int() }),
-  forfeit: z.strictObject({ winner: z.int(), loser: z.int() }),
+  forfeit: z.strictObject({
+    winner: z.int(),
+    loser: z.int(),
+    /** Whether a forfeit shows in the played, won and lost columns of both teams. */
+    counts_as_played: z.boolean().default(true),
+  }),
 });
 export type PointsSettings = z.infer<typeof pointsSchema>;
 

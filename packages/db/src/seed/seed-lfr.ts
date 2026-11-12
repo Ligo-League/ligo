@@ -12,7 +12,10 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   slug: 'lfr',
   participantMode: 'team',
   rulesetJson: { result_validation: 'staff' },
-  pointsJson: { outcomes: { win: 1, loss: 0 }, forfeit: { winner: 1, loser: 0 } },
+  pointsJson: {
+    outcomes: { win: 1, loss: 0 },
+    forfeit: { winner: 1, loser: 0, counts_as_played: true },
+  },
   tiebreakJson: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
   schedulingJson: { rounds_per_week: 1 },
   statSchemaVersion: 1,

@@ -14,7 +14,10 @@ import {
 
 // LFR Season 3, from design doc section 5 ("Points and standings") and section 16 ("Settled").
 const LFR_S3 = {
-  points: { outcomes: { win: 1, loss: 0 }, forfeit: { winner: 1, loser: 0 } },
+  points: {
+    outcomes: { win: 3, loss: 0 },
+    forfeit: { winner: 3, loser: 0, counts_as_played: true },
+  },
   tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
   ruleset: { result_validation: 'staff' },
   scheduling: { rounds_per_week: 1 },
@@ -45,6 +48,11 @@ describe('unknown keys are refused, so a typo cannot silently change a rule', ()
   it.each([
     ['points', pointsSchema, { ...LFR_S3.points, draw: 1 }],
     ['points.outcomes', pointsSchema, { ...LFR_S3.points, outcomes: { win: 1, loss: 0, draw: 0 } }],
+    [
+      'points.forfeit',
+      pointsSchema,
+      { ...LFR_S3.points, forfeit: { winner: 3, loser: 0, counts_as_playd: false } },
+    ],
     ['tiebreak', tiebreakSchema, { ...LFR_S3.tiebreak, unresolved: 'shared' }],
     ['ruleset', rulesetSchema, { ...LFR_S3.ruleset, validation: 'staff' }],
     ['scheduling', schedulingSchema, { ...LFR_S3.scheduling, rounds_per_weak: 2 }],
@@ -61,6 +69,10 @@ describe('pointsSchema', () => {
     ['fractional points', { outcomes: { win: 0.5, loss: 0 }, forfeit: { winner: 1, loser: 0 } }],
     ['points as text', { outcomes: { win: '1', loss: 0 }, forfeit: { winner: 1, loser: 0 } }],
     ['a missing forfeit block', { outcomes: { win: 1, loss: 0 } }],
+    [
+      'counts_as_played as text',
+      { outcomes: { win: 1, loss: 0 }, forfeit: { winner: 1, loser: 0, counts_as_played: 'no' } },
+    ],
   ])('refuses %s', (_label, value) => {
     expect(accepts(pointsSchema, value)).toBe(false);
   });
@@ -68,6 +80,14 @@ describe('pointsSchema', () => {
   it('accepts a negative forfeit penalty, which some leagues use', () => {
     const value = { outcomes: { win: 3, loss: 0 }, forfeit: { winner: 3, loser: -1 } };
     expect(accepts(pointsSchema, value)).toBe(true);
+  });
+
+  it('counts a forfeit as a played match unless the league says otherwise', () => {
+    // Settings stored before this key existed must keep reading.
+    const stored = { outcomes: { win: 1, loss: 0 }, forfeit: { winner: 1, loser: 0 } };
+    expect(pointsSchema.parse(stored).forfeit.counts_as_played).toBe(true);
+    const off = { ...stored, forfeit: { ...stored.forfeit, counts_as_played: false } };
+    expect(pointsSchema.parse(off).forfeit.counts_as_played).toBe(false);
   });
 });
 
@@ -163,7 +183,7 @@ describe('JSON round trip', () => {
       pointsSchema,
       fc.record({
         outcomes: fc.record({ win: int, loss: int }),
-        forfeit: fc.record({ winner: int, loser: int }),
+        forfeit: fc.record({ winner: int, loser: int, counts_as_played: fc.boolean() }),
       }),
     ],
     [
