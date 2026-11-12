@@ -7,3 +7,10 @@ export function openTestDatabase(): Db {
   applyMigrations(db);
   return db;
 }
+
+// The seed functions build realistic data for the tests of packages that depend on this one.
+export { linkGuild } from './seed/link-guild.ts';
+export type { MatchRow } from './seed/matches-csv.ts';
+export type { TeamRow } from './seed/parse-teams-csv.ts';
+export { seedLfr } from './seed/seed-lfr.ts';
+export { seedMatches } from './seed/seed-matches.ts';
