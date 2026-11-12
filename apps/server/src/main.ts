@@ -1,6 +1,7 @@
 import { loadConfig } from './config.ts';
 import { createDiscordClient } from './discord/client.ts';
 import { commands } from './discord/commands/index.ts';
+import { loginHint } from './discord/login-hint.ts';
 import { createLogger } from './logger.ts';
 
 // Server entry point (`pnpm dev`). Phase 0: the Discord bot only.
@@ -21,16 +22,9 @@ const shutdown = (signal: string) => {
 process.once('SIGINT', shutdown);
 process.once('SIGTERM', shutdown);
 
-const LOGIN_HINTS: Record<string, string> = {
-  DisallowedIntents:
-    'Discord refused the Guild Members intent. Enable "Server Members Intent" for the bot in the Developer Portal (docs/setup.md).',
-  TokenInvalid: 'Discord refused DISCORD_TOKEN. Copy a fresh bot token into .env (docs/setup.md).',
-};
-
 try {
   await client.login(config.discordToken);
 } catch (error) {
-  const code = error instanceof Error && 'code' in error ? String(error.code) : '';
-  logger.fatal({ err: error }, LOGIN_HINTS[code] ?? 'Could not connect to Discord');
+  logger.fatal({ err: error }, loginHint(error) ?? 'Could not connect to Discord');
   process.exit(1);
 }
