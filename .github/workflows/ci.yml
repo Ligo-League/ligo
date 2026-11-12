@@ -27,3 +27,6 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
+      # Fails when the Drizzle schema changed without a new migration being committed.
+      - name: Migrations match the schema
+        run: pnpm db:generate && test -z "$(git status --porcelain packages/db/migrations)"
