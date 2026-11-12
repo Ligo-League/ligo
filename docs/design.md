@@ -8,7 +8,7 @@ The platform runs LFR's competitions end to end: schedule, Discord match channel
 
 **In scope, in priority order**
 
-1. LFR (R6) results and standings: Ligue 1 and Ligue 2 (10 teams each, round robin, BO1), the regional National leagues (BO3), promotion, relegation and barrages, and the Coupe de France knockout cup.
+1. LFR (R6) results and standings: Ligue 1 and Ligue 2 (10 and 12 teams in Season 3, round robin, BO1), the regional National leagues (BO3), promotion, relegation and barrages, and the Coupe de France knockout cup.
 2. A Discord bot in each league's own server: slash commands, match channels, reminders, standings and stat images.
 3. Website: public standings, fixtures, brackets and stats; Discord login; team registration with rules acceptance; mercato; replay, MOSS and screenshot uploads; manual stat entry; staff validation and sanctions.
 4. R6 replays parsed in the player's browser (WebAssembly), producing per-round stats, with the same parser on the server for verification.
@@ -244,7 +244,7 @@ image_cache    key PK, object_key, created_at
 | Part             | Teams                 | Format                                                                                                      | Match format                                                                                          | Moves at season end                                                                                                          |
 | ---------------- | --------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Ligue 1          | 10                    | Round robin, 1 match per week over 9 weeks                                                                  | BO1, one map after bans                                                                               | 1st: Ligue 1 star. 8th: barrage against L2 3rd (format to confirm). 9th–10th: down to L2                                     |
-| Ligue 2          | 10                    | Same as Ligue 1                                                                                             | BO1                                                                                                   | 1st–2nd: up to L1. 3rd: barrage against L1 8th. 8th: barrage against the National play-in winner. 9th–10th: down to National |
+| Ligue 2          | 12 in Season 3        | Same as Ligue 1                                                                                             | BO1                                                                                                   | 1st–2nd: up to L1. 3rd: barrage against L1 8th. 8th: barrage against the National play-in winner. 9th–10th: down to National |
 | National (later) | Per region            | Regional round robin, 1 match per week; small regions can be merged. Not needed until the owner launches it | BO3                                                                                                   | Region winners go to playoffs (single elimination, BO5); semi-final winners up to L2                                         |
 | Coupe de France  | Every registered team | Single elimination, starting 1 week after the leagues end; replaces L1/L2 playoffs                          | BO1 before the round of 16; BO3 for the round of 16 and quarter-finals; BO5 for semi-finals and final | Winner: Champion de France                                                                                                   |
 
@@ -988,6 +988,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. The
 | Topic                 | Decision                                                                                                                             | Source        |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
 | Season length         | 9 weeks, 1 match per team per week; the rulebook's "4 weeks × 2" is a Season 2 leftover                                              | You           |
+| Division size         | Not fixed. A division has as many teams as it has slots (10 in Ligue 1, 12 in Ligue 2 in Season 3); any limit is a setting           | You           |
 | Points                | 1 point per win; F rounds won, C rounds lost, D = F − C; no draws                                                                    | Rulebook, you |
 | Tie-break             | D; then a setting: shared rank (default), a BO1 tie-break match, or staff decision                                                   | Rulebook, you |
 | Forfeit score         | Season setting: 0–0 (Season 3) or 7–0 (Season 2)                                                                                     | You           |
@@ -1012,6 +1013,8 @@ Most configuration is now settled by the Season 3 rulebook and your answers. The
 
 **Still open**
 
+- [ ] Ligue 2 has 12 teams in Season 3, which needs 11 rounds for a full round robin: how many weeks does it play, and which places go up, to barrage and down?
+- [ ] Division limits and promotion or relegation places as settings (a maximum size, places counted from the top and the bottom) instead of fixed ranks such as "9th–10th".
 - [ ] Barrages: best-of and timing (you are asking the owner).
 - [ ] Cup: the formal rule for which team picks the starting side, expected for Season 4.
 - [ ] Cup seeding: random draw, or by league and final rank?

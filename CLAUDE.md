@@ -2,7 +2,8 @@
 
 Ligo is a league platform for esports competitions: a Discord bot, a website, a league engine
 (schedules, standings, brackets) and replay-based stats. First user: LFR (French Rainbow Six Siege
-league, Ligue 1 and Ligue 2, 10 teams each). Later: other leagues (Benelux R6, LFV Valorant,
+league, Ligue 1 and Ligue 2; 10 and 12 teams in Season 3, and a division's size is data, never a
+constant). Later: other leagues (Benelux R6, LFV Valorant,
 LFRL Rocket League, FRFL FACEIT mixed R6) on the same instance.
 
 The full specification is `docs/design.md` (the design document). **Read the relevant section
