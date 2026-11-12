@@ -1,2 +1,2 @@
 // Drizzle schema, migrations and query helpers.
-export {};
+export * from './json.ts';

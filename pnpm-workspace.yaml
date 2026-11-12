@@ -1,3 +1,9 @@
 packages:
   - packages/*
   - apps/*
+
+# Dependency install scripts are blocked unless listed here.
+# esbuild (pulled in by drizzle-kit) ships its binary as an optional dependency and runs fine
+# without its postinstall script.
+allowBuilds:
+  esbuild: false

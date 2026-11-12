@@ -11,5 +11,16 @@
     "generate": "node -e \"console.error('not implemented yet (phase 0, step 3)'); process.exit(1)\"",
     "migrate": "node -e \"console.error('not implemented yet (phase 0, step 3)'); process.exit(1)\"",
     "seed": "node -e \"console.error('not implemented yet (phase 0, step 5)'); process.exit(1)\""
+  },
+  "dependencies": {
+    "@ligo/core": "workspace:*",
+    "@ligo/titles": "workspace:*",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-orm": "^0.45.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "drizzle-kit": "^0.31.11"
   }
 }
