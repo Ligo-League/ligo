@@ -2,25 +2,41 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { openDatabase } from '../client.ts';
 import { applyMigrations } from '../migrate.ts';
+import { parseMatchesCsv } from '../seed/matches-csv.ts';
 import { parseTeamsCsv } from '../seed/parse-teams-csv.ts';
 import { hasChanges, LFR_DIVISION_NAMES, seedLfr } from '../seed/seed-lfr.ts';
+import { matchSeedHasChanges, seedMatches } from '../seed/seed-matches.ts';
 
-// `pnpm seed`: loads LFR, Season 3, its two divisions and the teams of the CSV below.
+// `pnpm seed`: loads LFR, Season 3, its two divisions, the teams and the fixtures and results of
+// the CSV files below. `pnpm fixtures:score7` refreshes the matches file from score7.
 const TEAMS_FILE = 'fixtures/lfr-s3-teams.csv';
+const MATCHES_FILE = 'fixtures/lfr-s3-matches.csv';
 
-const parsed = parseTeamsCsv(readFileSync(resolve(TEAMS_FILE), 'utf8'), LFR_DIVISION_NAMES);
-if (!parsed.ok) {
-  console.error(`${TEAMS_FILE} has problems; nothing was changed:`);
-  for (const error of parsed.errors) console.error(`  ${error}`);
-  process.exit(1);
+const teams = parseTeamsCsv(readFileSync(resolve(TEAMS_FILE), 'utf8'), LFR_DIVISION_NAMES);
+const matches = teams.ok
+  ? parseMatchesCsv(readFileSync(resolve(MATCHES_FILE), 'utf8'), teams.teams)
+  : undefined;
+for (const [file, parsed] of [
+  [TEAMS_FILE, teams],
+  [MATCHES_FILE, matches],
+] as const) {
+  if (parsed && !parsed.ok) {
+    console.error(`${file} has problems; nothing was changed:`);
+    for (const error of parsed.errors) console.error(`  ${error}`);
+    process.exit(1);
+  }
 }
+// Both files were checked just above; this only narrows the types.
+if (!teams.ok || !matches?.ok) process.exit(1);
 
 const path = resolve(process.env.DATABASE_PATH ?? './data/ligo.db');
 mkdirSync(dirname(path), { recursive: true });
 const db = openDatabase(path);
 try {
   applyMigrations(db);
-  const summary = seedLfr(db, parsed.teams, Date.now());
+  const now = Date.now();
+
+  const summary = seedLfr(db, teams.teams, now);
   if (hasChanges(summary)) {
     const { created, updated } = summary;
     console.log(
@@ -31,6 +47,25 @@ try {
     );
   } else {
     console.log(`No changes: ${path} already matches ${TEAMS_FILE}.`);
+  }
+
+  const matchSummary = seedMatches(db, matches.matches, now);
+  if (matchSeedHasChanges(matchSummary)) {
+    const { created, results } = matchSummary;
+    console.log(
+      `Created ${created.stages} stages, ${created.entries} entries, ${created.matches} matches; ` +
+        `recorded ${results.played} played results and ${results.forfeits} forfeits.`,
+    );
+  } else {
+    console.log(`No changes: ${path} already matches ${MATCHES_FILE}.`);
+  }
+  for (const draw of matchSummary.draws) {
+    console.log(`Left without result (a draw in the file; the league has no draws): ${draw}`);
+  }
+  if (matchSummary.conflicts.length > 0) {
+    console.error('Stored results that differ from the file were left as stored:');
+    for (const conflict of matchSummary.conflicts) console.error(`  ${conflict}`);
+    process.exitCode = 1;
   }
 } finally {
   db.$client.close();
