@@ -3,5 +3,6 @@ export * from './client.ts';
 export * from './json.ts';
 export * from './migrate.ts';
 export * from './queries/league.ts';
+export * from './queries/matches.ts';
 export * from './queries/standings.ts';
 export * as schema from './schema/index.ts';
