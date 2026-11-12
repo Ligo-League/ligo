@@ -6,7 +6,7 @@ import { openTestDatabase } from '../testing.ts';
 import { parseTeamsCsv, type TeamRow } from './parse-teams-csv.ts';
 import { LFR_DIVISION_NAMES, seedLfr } from './seed-lfr.ts';
 
-const HEADER = 'division,name,tag,city,color_1,color_2';
+const HEADER = 'division,name,tag,city,color_1,color_2,color_3';
 const parse = (...lines: string[]) =>
   parseTeamsCsv([HEADER, ...lines].join('\n'), LFR_DIVISION_NAMES);
 
@@ -63,8 +63,46 @@ describe('parseTeamsCsv', () => {
         'line 3: unknown division "Ligue 3" (expected Ligue 1 or Ligue 2)',
         'line 4: name is missing',
         'line 5: tag "alp" is already used on line 2',
-        'line 6: colours must look like #1D4ED8',
+        'line 6: colour "red" must be a code like #1D4ED8 or one of: noir, blanc, gris, rouge, orange, jaune, vert, bleu, violet, rose',
         'line 7: name "alpha!" gives the same URL as the team on line 2',
+      ],
+    });
+  });
+
+  it('accepts up to three colours, as codes or French colour names in any case', () => {
+    expect(
+      parse('Ligue 1,RCK Esport,RCK,,Rouge,bleu,noir', 'Ligue 2,RPV Esport,RPV,Lyon,#F7BE50,NOIR,'),
+    ).toEqual({
+      ok: true,
+      teams: [
+        {
+          division: 'Ligue 1',
+          name: 'RCK Esport',
+          tag: 'RCK',
+          slug: 'rck-esport',
+          city: null,
+          colors: ['#FF0000', '#0000FF', '#000000'],
+        },
+        {
+          division: 'Ligue 2',
+          name: 'RPV Esport',
+          tag: 'RPV',
+          slug: 'rpv-esport',
+          city: 'Lyon',
+          colors: ['#F7BE50', '#000000'],
+        },
+      ],
+    });
+  });
+
+  it('notices colours typed one column too early, in the city column', () => {
+    expect(
+      parse('Ligue 1,Civitas Esport,CIVITAS,bleu,blanc,,', 'Ligue 1,RPV Esport,RPV,#F7BE50,noir,,'),
+    ).toEqual({
+      ok: false,
+      errors: [
+        'line 2: city "bleu" is a colour: check that no column was skipped before the colours',
+        'line 3: city "#F7BE50" is a colour: check that no column was skipped before the colours',
       ],
     });
   });

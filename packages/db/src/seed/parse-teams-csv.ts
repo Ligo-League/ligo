@@ -2,7 +2,35 @@ import { slugify } from '@ligo/core';
 import { parse } from 'csv-parse/sync';
 import { teamColorsSchema } from '../json.ts';
 
-export const TEAM_CSV_COLUMNS = ['division', 'name', 'tag', 'city', 'color_1', 'color_2'] as const;
+export const TEAM_CSV_COLUMNS = [
+  'division',
+  'name',
+  'tag',
+  'city',
+  'color_1',
+  'color_2',
+  'color_3',
+] as const;
+const COLOR_COLUMNS = ['color_1', 'color_2', 'color_3'] as const;
+
+/**
+ * French colour names accepted in place of a hex code. Each one is the CSS colour of the same
+ * name (violet is CSS "purple"), so they are approximations until a team gives its exact colours.
+ */
+export const COLOR_NAMES: Record<string, string> = {
+  noir: '#000000',
+  blanc: '#FFFFFF',
+  gris: '#808080',
+  rouge: '#FF0000',
+  orange: '#FFA500',
+  jaune: '#FFFF00',
+  vert: '#008000',
+  bleu: '#0000FF',
+  violet: '#800080',
+  rose: '#FFC0CB',
+};
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const toHex = (cell: string) => COLOR_NAMES[cell.toLowerCase()] ?? cell;
 const REQUIRED = ['division', 'name', 'tag'] as const;
 
 export interface TeamRow {
@@ -32,6 +60,8 @@ export function parseTeamsCsv(text: string, divisionNames: readonly string[]): T
       bom: true,
       columns: true,
       info: true,
+      // A row may stop after its last filled column; a row with too many columns is an error.
+      relax_column_count_less: true,
       skip_empty_lines: true,
       trim: true,
     });
@@ -86,8 +116,17 @@ export function parseTeamsCsv(text: string, divisionNames: readonly string[]): T
       seenSlugs.set(slug.slug, firstSlugLine ?? line);
     }
 
-    const colors = teamColorsSchema.safeParse([value('color_1'), value('color_2')].filter(Boolean));
-    if (!colors.success) fail('colours must look like #1D4ED8');
+    const city = value('city');
+    if (HEX_COLOR.test(toHex(city))) {
+      fail(`city "${city}" is a colour: check that no column was skipped before the colours`);
+    }
+
+    const cells = COLOR_COLUMNS.map(value).filter((cell) => cell !== '');
+    for (const cell of cells.filter((cell) => !HEX_COLOR.test(toHex(cell)))) {
+      const names = Object.keys(COLOR_NAMES).join(', ');
+      fail(`colour "${cell}" must be a code like #1D4ED8 or one of: ${names}`);
+    }
+    const colors = teamColorsSchema.safeParse(cells.map(toHex));
 
     if (errors.length === before && slug.ok && colors.success) {
       teams.push({
@@ -95,7 +134,7 @@ export function parseTeamsCsv(text: string, divisionNames: readonly string[]): T
         name,
         tag,
         slug: slug.slug,
-        city: value('city') || null,
+        city: city || null,
         colors: colors.data,
       });
     }

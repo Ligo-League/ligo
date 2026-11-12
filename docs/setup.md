@@ -128,13 +128,13 @@ and goes offline when you stop it with Ctrl+C. That is expected until the bot is
 
 `fixtures/lfr-s3-teams.csv` contains two example rows. Replace them with the 20 Season 3 teams:
 
-| Column               | Required | Content                                                   |
-| -------------------- | -------- | --------------------------------------------------------- |
-| `division`           | yes      | Exactly `Ligue 1` or `Ligue 2`                            |
-| `name`               | yes      | Team name; put it in double quotes if it contains a comma |
-| `tag`                | yes      | Short tag, unique per team, e.g. `RCK`                    |
-| `city`               | no       | Leave empty if unknown                                    |
-| `color_1`, `color_2` | no       | Colours such as `#1D4ED8`; leave empty if unknown         |
+| Column                          | Required | Content                                                                                                                                           |
+| ------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `division`                      | yes      | Exactly `Ligue 1` or `Ligue 2`                                                                                                                    |
+| `name`                          | yes      | Team name; put it in double quotes if it contains a comma                                                                                         |
+| `tag`                           | yes      | Short tag, unique per team, e.g. `RCK`                                                                                                            |
+| `city`                          | no       | Leave empty if unknown                                                                                                                            |
+| `color_1`, `color_2`, `color_3` | no       | A code such as `#1D4ED8`, or one of `noir`, `blanc`, `gris`, `rouge`, `orange`, `jaune`, `vert`, `bleu`, `violet`, `rose`; leave empty if unknown |
 
 Then start again from a clean database, so the example teams disappear:
 
@@ -143,6 +143,10 @@ rm -rf data
 pnpm db:migrate
 pnpm seed
 ```
+
+A colour name is stored as the standard web colour of that name (`violet` becomes `#800080`), so it
+is an approximation until the team gives its exact code. Keep the commas of empty columns: a team
+with no city still needs `,,` between its tag and its first colour.
 
 `pnpm seed` never deletes anything. Running it again after an edit updates teams (matched by their
 tag) and moves them between divisions; a mistake in the file is reported with its line number and
