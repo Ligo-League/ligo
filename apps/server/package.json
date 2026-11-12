@@ -10,5 +10,9 @@
     "typecheck": "tsc --noEmit",
     "dev": "node -e \"console.error('not implemented yet (phase 0, step 4)'); process.exit(1)\"",
     "register": "node -e \"console.error('not implemented yet (phase 0, step 4)'); process.exit(1)\""
+  },
+  "dependencies": {
+    "pino": "^10.4.0",
+    "zod": "^4.6.7"
   }
 }
