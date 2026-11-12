@@ -94,7 +94,7 @@ Keep this list in sync with `package.json` when scripts change.
 These are summaries; the design doc (sections 4, 5, 8, 9) has the details.
 
 - **Standings are computed, never stored or hand-edited.** From matches with status `validated` or
-  `forfeit`, plus `sanction` point deltas. LFR: 1 point per win, no draws, F = rounds won,
+  `forfeit`, plus `sanction` point deltas. LFR: points per win are a setting (3 in Season 3), no draws, F = rounds won,
   C = rounds lost, D = F − C, ranking by points then D, then the `unresolved_tie` setting.
 - **Results count only after staff validation** in LFR (`result_validation: 'staff'`). A result
   needs a screenshot `evidence` row.

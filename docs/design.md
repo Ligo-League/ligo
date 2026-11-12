@@ -261,7 +261,10 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 `competition.points_json`:
 
 ```json
-{ "outcomes": { "win": 1, "loss": 0 }, "forfeit": { "winner": 1, "loser": 0 } }
+{
+    "outcomes": { "win": 3, "loss": 0 },
+    "forfeit": { "winner": 3, "loser": 0, "counts_as_played": true }
+}
 ```
 
 `competition.tiebreak_json`:
@@ -276,7 +279,9 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 { "forfeit_score": [0, 0], "map_pool": [] }
 ```
 
-- Each win is worth 1 point. There are no draws in R6 competitive settings; score7's N column is an artifact and is not shown.
+- Each win is worth 3 points in Season 3, as score7 is set (Season 2 gave 1). There are no draws in R6 competitive settings, so score7's N column is not shown.
+- **A forfeit in the table** follows `forfeit.counts_as_played` (default true): a match played for both teams, a win for the opponent and a loss for the team that forfeited. score7 shows its walkovers (W.O.) this way, and they are imported as forfeits.
+- score7 records one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). Ligo has no draw: the match stays without result until the league rules on it (section 16).
 - F counts rounds won, C rounds lost, and D = F − C. Columns: J, V, D, F, C, D, PTS.
 - Ranking: points, then D. Season 2 shows it: Vaevictis and Origin's Esport both have 8 points; D 23 beats D 21.
 - **Forfeit score** is a season setting, `forfeit_score`: `[0, 0]` (Season 3) or `[7, 0]` (Season 2). It feeds F and C, so it changes D.
@@ -929,7 +934,7 @@ Pure league logic gets exhaustive unit and property tests. Replay handling gets 
 | ---------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Round robin            | fast-check properties over 2–20 entries and random seeds                  | Every pair meets exactly once; one match per entry per round; same seed gives the same schedule; `rounds_per_week` grouping                                                     |
 | Scheduling deadlines   | Clock-injected tests                                                      | Extension week granted; Sunday 21:00 auto-scheduling; cup's 7-day rule with no extension                                                                                        |
-| Standings              | Table-driven cases, including Season 2's real table                       | 1 point per win, F/C/D, ties broken by D, `sanction` point deltas, forfeit score setting (0–0 or 7–0), shared ranks and tie-break matches                                       |
+| Standings              | Table-driven cases, including Season 2's real table                       | Points per win from the settings, F/C/D, ties broken by D, `sanction` point deltas, forfeit score setting (0–0 or 7–0), shared ranks and tie-break matches                      |
 | Tie-breakers           | Hand-built tables                                                         | D tie-break; generic criteria: 3-way cycle, partial split with restart, `staff_decision`                                                                                        |
 | Forfeits and exclusion | Scenario tests                                                            | Warning at 2 forfeits, exclusion at 3, the 50% rule both ways with retroactive forfeits                                                                                         |
 | Promotion and barrages | `closeSeason()` on fixture standings                                      | L1 9th–10th down, L2 1st–2nd up, both barrage pairings, National promotions                                                                                                     |
@@ -956,7 +961,7 @@ Pure league logic gets exhaustive unit and property tests. Replay handling gets 
 The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 runs 9 weeks from 19 October, so weeks 5–9 (16 November to 20 December) and the Coupe de France are available for a shadow run against score7. Season 4 starts late December or early January at the earliest, which leaves about 6–7 weeks; the Season 4 cut below says what must be ready by then.
 
 0. **Foundation.** Monorepo, tooling, schema v1, Discord application, staging server, seed data. Done when `pnpm test` passes in CI, migrations create an empty database, and the bot comes online in the staging server.
-1. **Results and standings.** Staff result entry, standings (1 point per win, F/C/D, D tie-break, forfeit score setting, shared ranks), `/standings` as text, then as an image. Done when Season 3's results reproduce score7's tables every week from week 5.
+1. **Results and standings.** Staff result entry, standings (points per win, F/C/D, D tie-break, forfeit score setting, shared ranks), `/standings` as text, then as an image. Done when Season 3's results reproduce score7's tables every week from week 5.
 2. **Match workflow.**
     - `/match propose-time`, the map veto, `/match report` with screenshot, opponent confirmation, the staff validation queue;
     - deadlines with extension and Sunday 21:00 auto-scheduling, side, overtime side and host;
@@ -994,7 +999,7 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
 - [ ] Create a staging Discord server mirroring LFR's roles and channels, and invite the bot with the permissions from section 6
 - [ ] Write the Drizzle schema for org, league_guild, player, game_account, team, team_staff, competition, season, division, slot, roster_entry, stage, stage_entry, match, match_slot, lineup, lineup_member, game, evidence, sanction and audit_log; generate the first migration
 - [ ] Implement the round-robin generator in `packages/core` with its property tests
-- [ ] Implement standings: 1 point per win, F/C/D, D tie-break, sanction deltas; test against Season 2's table
+- [ ] Implement standings: points per win, F/C/D, D tie-break, sanction deltas; test against Season 2's table
 - [ ] Write a seed script loading LFR's Season 3 teams, fixtures and results from a CSV typed from score7
 - [ ] Add `/standings` returning a monospace text table for each division
 - [ ] Compare with score7 and fix every difference before moving to phase 2
@@ -1009,7 +1014,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. The
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
 | Season length         | 9 weeks, 1 match per team per week; the rulebook's "4 weeks × 2" is a Season 2 leftover                                                   | You           |
 | Division size         | Not fixed. A division has as many teams as it has slots (10 in Ligue 1, 12 in Ligue 2 in Season 3); any limit is a setting                | You           |
-| Points                | 1 point per win; F rounds won, C rounds lost, D = F − C; no draws                                                                         | Rulebook, you |
+| Points                | 3 points per win in Season 3, as score7 is set (1 in Season 2); F rounds won, C rounds lost, D = F − C; no draws                          | score7, you   |
 | Tie-break             | D; then a setting: shared rank (default), a BO1 tie-break match, or staff decision                                                        | Rulebook, you |
 | Forfeit score         | Season setting: 0–0 (Season 3) or 7–0 (Season 2)                                                                                          | You           |
 | L1/L2 matches         | BO1, one map after bans; teams pick date and time                                                                                         | Rulebook, you |
@@ -1037,7 +1042,8 @@ Most configuration is now settled by the Season 3 rulebook and your answers. The
 
 **Still open**
 
-- [ ] Ligue 2 has 12 teams in Season 3, which needs 11 rounds for a full round robin: how many weeks does it play, and which places go up, to barrage and down?
+- [ ] Ligue 2 has 12 teams in Season 3 and score7 schedules its 11 rounds, two more than the season's 9 weeks: confirm its calendar, and which places go up, to barrage and down.
+- [ ] A match neither team plays: score7 shows Nightwolves against Outsouki (week 5) as a 0–0 draw with a point each. What does Ligo record?
 - [ ] Division limits and promotion or relegation places as settings (a maximum size, places counted from the top and the bottom) instead of fixed ranks such as "9th–10th".
 - [ ] Barrages: best-of and timing (you are asking the owner).
 - [ ] Cup: the formal rule for which team picks the starting side, expected for Season 4.
