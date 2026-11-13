@@ -1,7 +1,8 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client.ts';
 import {
   division,
+  evidence,
   game,
   match,
   matchSlot,
@@ -15,6 +16,12 @@ import {
 type MatchRow = typeof match.$inferSelect;
 type GameRow = typeof game.$inferSelect;
 
+export interface MatchTeam {
+  teamId: number;
+  name: string;
+  tag: string;
+}
+
 export interface LeagueMatch {
   id: number;
   competitionId: number;
@@ -25,8 +32,11 @@ export interface LeagueMatch {
   week: number | null;
   bestOf: number;
   status: MatchRow['status'];
-  a: { name: string; tag: string };
-  b: { name: string; tag: string };
+  a: MatchTeam;
+  b: MatchTeam;
+  /** The players who reported and confirmed the result, when a team did. */
+  reportedBy: number | null;
+  confirmedBy: number | null;
   /** The first game, which is the whole match in a best of 1. */
   game: Pick<GameRow, 'id' | 'scoreA' | 'scoreB' | 'forfeitSide' | 'status'> | null;
 }
@@ -52,7 +62,13 @@ export function listLeagueMatches(
   const matchIds = rows.map((row) => row.match.id);
 
   const sides = db
-    .select({ matchId: matchSlot.matchId, side: matchSlot.side, name: team.name, tag: team.tag })
+    .select({
+      matchId: matchSlot.matchId,
+      side: matchSlot.side,
+      teamId: team.id,
+      name: team.name,
+      tag: team.tag,
+    })
     .from(matchSlot)
     .innerJoin(stageEntry, eq(matchSlot.sourceRef, stageEntry.id))
     .innerJoin(slot, eq(stageEntry.slotId, slot.id))
@@ -85,8 +101,10 @@ export function listLeagueMatches(
       week: row.match.week,
       bestOf: row.match.bestOf,
       status: row.match.status,
-      a: { name: a.name, tag: a.tag },
-      b: { name: b.name, tag: b.tag },
+      a: { teamId: a.teamId, name: a.name, tag: a.tag },
+      b: { teamId: b.teamId, name: b.name, tag: b.tag },
+      reportedBy: row.match.reportedBy,
+      confirmedBy: row.match.confirmedBy,
       game: first
         ? {
             id: first.id,
@@ -99,4 +117,17 @@ export function listLeagueMatches(
     });
   }
   return matches;
+}
+
+/**
+ * The latest score screenshot of a match: the one the current report rests on. Its ID also
+ * marks which report a button belongs to.
+ */
+export function latestScoreEvidence(db: Pick<Db, 'select'>, matchId: number) {
+  return db
+    .select()
+    .from(evidence)
+    .where(and(eq(evidence.matchId, matchId), eq(evidence.kind, 'score_screenshot')))
+    .orderBy(desc(evidence.id))
+    .get();
 }

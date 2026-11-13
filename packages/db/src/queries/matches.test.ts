@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { matchSlot } from '../schema/index.ts';
+import { evidence, matchSlot, player } from '../schema/index.ts';
 import type { MatchRow } from '../seed/matches-csv.ts';
 import type { TeamRow } from '../seed/parse-teams-csv.ts';
 import { seedLfr } from '../seed/seed-lfr.ts';
 import { seedMatches } from '../seed/seed-matches.ts';
 import { openTestDatabase } from '../testing.ts';
-import { listLeagueMatches } from './matches.ts';
+import { latestScoreEvidence, listLeagueMatches } from './matches.ts';
 
 const teamRow = (division: string, tag: string, name: string): TeamRow => ({
   division,
@@ -56,8 +56,10 @@ describe('listLeagueMatches', () => {
         week: 1,
         bestOf: 1,
         status: 'validated',
-        a: { name: 'Alpha', tag: 'ALP' },
-        b: { name: 'Bravo', tag: 'BRV' },
+        a: { teamId: 3, name: 'Alpha', tag: 'ALP' },
+        b: { teamId: 4, name: 'Bravo', tag: 'BRV' },
+        reportedBy: null,
+        confirmedBy: null,
         game: { id: 2, scoreA: 7, scoreB: 4, forfeitSide: null, status: 'final' },
       },
       {
@@ -69,8 +71,10 @@ describe('listLeagueMatches', () => {
         week: 2,
         bestOf: 1,
         status: 'scheduled',
-        a: { name: 'Bravo', tag: 'BRV' },
-        b: { name: 'Alpha', tag: 'ALP' },
+        a: { teamId: 4, name: 'Bravo', tag: 'BRV' },
+        b: { teamId: 3, name: 'Alpha', tag: 'ALP' },
+        reportedBy: null,
+        confirmedBy: null,
         game: null,
       },
       {
@@ -82,8 +86,10 @@ describe('listLeagueMatches', () => {
         week: 1,
         bestOf: 1,
         status: 'forfeit',
-        a: { name: 'Xray', tag: 'XRA' },
-        b: { name: 'Yankee', tag: 'YAN' },
+        a: { teamId: 1, name: 'Xray', tag: 'XRA' },
+        b: { teamId: 2, name: 'Yankee', tag: 'YAN' },
+        reportedBy: null,
+        confirmedBy: null,
         game: { id: 1, scoreA: 0, scoreB: 0, forfeitSide: 'b', status: 'final' },
       },
     ]);
@@ -100,5 +106,30 @@ describe('listLeagueMatches', () => {
     const db = seeded();
     db.update(matchSlot).set({ sourceKind: 'winner_of' }).run();
     expect(listLeagueMatches(db, { seasonId: 1 })).toEqual([]);
+  });
+});
+
+describe('latestScoreEvidence', () => {
+  it('returns the newest score screenshot of the match, ignoring other evidence', () => {
+    const db = seeded();
+    const uploader = db
+      .insert(player)
+      .values({ orgId: 1, slug: 'uploader', displayName: 'Uploader', createdAt: 1 })
+      .returning()
+      .get();
+    const base = { matchId: 2, uploadedBy: uploader.id, at: 1 };
+    db.insert(evidence)
+      .values([
+        { ...base, kind: 'score_screenshot', url: 'https://example.invalid/first' },
+        { ...base, kind: 'score_screenshot', url: 'https://example.invalid/second' },
+        { ...base, kind: 'moss', url: 'https://example.invalid/moss' },
+        { ...base, matchId: 3, kind: 'score_screenshot', url: 'https://example.invalid/other' },
+      ])
+      .run();
+    expect(latestScoreEvidence(db, 2)).toMatchObject({
+      id: 2,
+      url: 'https://example.invalid/second',
+    });
+    expect(latestScoreEvidence(db, 1)).toBeUndefined();
   });
 });
