@@ -1,23 +1,10 @@
 import { describeGameScores, type GameScoreSettings } from '@ligo/core';
 import type { LeagueMatch } from '@ligo/db';
-import { ApplicationCommandOptionType, InteractionContextType } from 'discord.js';
-import { catalogs, t, type Locale, type MessageKey } from '../../i18n/index.ts';
+import { ApplicationCommandOptionType } from 'discord.js';
+import { t, type Locale } from '../../i18n/index.ts';
 import { recordResult, searchMatches } from '../../services/results.ts';
+import { described, MAX_CHOICE_LENGTH, MAX_CHOICES, STAFF_ONLY } from './describe.ts';
 import type { Command } from './types.ts';
-
-// Discord shows at most 25 suggestions, each at most 100 characters long.
-const MAX_CHOICES = 25;
-const MAX_CHOICE_LENGTH = 100;
-
-const french = (key: MessageKey) => catalogs.fr[key];
-const english = (key: MessageKey) => ({
-  'en-US': catalogs.en[key],
-  'en-GB': catalogs.en[key],
-});
-const described = (key: MessageKey) => ({
-  description: french(key),
-  description_localizations: english(key),
-});
 
 /** "L1 · S3 · BRV – CHA", or with the stored score when the match already has a result. */
 function matchLabel(locale: Locale, found: LeagueMatch): string {
@@ -53,10 +40,7 @@ export const matchCommand: Command = {
   data: {
     name: 'match',
     ...described('command.match.description'),
-    // Hidden from everyone but administrators until a server admin opens it to the staff role
-    // (Server Settings > Integrations). This is only tidiness: the service checks the role.
-    default_member_permissions: '0',
-    contexts: [InteractionContextType.Guild],
+    ...STAFF_ONLY,
     options: [
       {
         type: ApplicationCommandOptionType.Subcommand,

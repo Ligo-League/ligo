@@ -8,16 +8,12 @@ import {
   type StandingsTable,
 } from '../../services/standings.ts';
 import { formatStandingsTable } from '../standings-table.ts';
+import { described, english } from './describe.ts';
 import type { Command, CommandFile } from './types.ts';
 
 // Discord refuses a message longer than this.
 const MESSAGE_LIMIT = 2000;
 
-const english = (key: MessageKey) => ({ 'en-US': catalogs.en[key], 'en-GB': catalogs.en[key] });
-const described = (key: MessageKey) => ({
-  description: catalogs.fr[key],
-  description_localizations: english(key),
-});
 const choice = (value: string, key: MessageKey) => ({
   name: catalogs.fr[key],
   name_localizations: english(key),

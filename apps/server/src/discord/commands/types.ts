@@ -48,6 +48,8 @@ export interface CommandInteraction extends InteractionBase {
   options: {
     /** The subcommand used, or null for a command that has none. */
     getSubcommand(): string | null;
+    /** The group of that subcommand, as `staff` in `/team staff add`, or null. */
+    getSubcommandGroup(): string | null;
     /** The value given for an option, or null when it was left out. */
     getString(name: string): string | null;
     getInteger(name: string): number | null;

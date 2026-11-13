@@ -129,6 +129,7 @@ export function createDiscordClient(deps: {
       commandName: interaction.commandName,
       options: {
         getSubcommand: () => interaction.options.getSubcommand(false),
+        getSubcommandGroup: () => interaction.options.getSubcommandGroup(false),
         getString: (name) => interaction.options.getString(name),
         getInteger: (name) => interaction.options.getInteger(name),
         getAttachment: (name) => {

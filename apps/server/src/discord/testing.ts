@@ -23,6 +23,7 @@ export interface FakeInput {
   user?: { id: string; displayName: string };
   memberRoleIds?: readonly string[];
   subcommand?: string;
+  subcommandGroup?: string;
   options?: Record<string, OptionValue>;
 }
 
@@ -47,6 +48,7 @@ export function fakeInteraction(commandName: string, input: FakeInput = {}): Fak
     commandName,
     options: {
       getSubcommand: () => input.subcommand ?? null,
+      getSubcommandGroup: () => input.subcommandGroup ?? null,
       getString: (name) => {
         const value = option(name);
         return typeof value === 'string' ? value : null;
