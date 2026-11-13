@@ -27,6 +27,18 @@ describe('/ping', () => {
   });
 });
 
+// Every description Discord shows: the command's own, its subcommands' and their options'.
+interface Described {
+  name: string;
+  description: string;
+  description_localizations?: Partial<Record<string, string | null>> | null;
+  options?: readonly unknown[];
+}
+function everyDescription(node: Described): Described[] {
+  const children = (node.options ?? []) as Described[];
+  return [node, ...children.flatMap(everyDescription)];
+}
+
 describe('command list', () => {
   it('has unique names that Discord accepts', () => {
     const names = commands.map((command) => command.data.name);
@@ -34,13 +46,16 @@ describe('command list', () => {
     for (const name of names) expect(name).toMatch(/^[a-z0-9_-]{1,32}$/);
   });
 
-  it('gives every command a French description with an English translation, within 100 characters', () => {
-    for (const { data } of commands) {
-      const english = data.description_localizations?.['en-US'];
-      expect(data.description.length).toBeGreaterThan(0);
-      expect(data.description.length).toBeLessThanOrEqual(100);
-      expect(english?.length).toBeGreaterThan(0);
-      expect(english?.length).toBeLessThanOrEqual(100);
+  it('gives every command, subcommand and option a French description with an English translation, within 100 characters', () => {
+    const described = commands.flatMap(({ data }) => everyDescription(data as Described));
+    expect(described.length).toBeGreaterThan(commands.length);
+    for (const node of described) {
+      const english = node.description_localizations?.['en-US'];
+      expect(node.name).toMatch(/^[a-z0-9_-]{1,32}$/);
+      expect(node.description.length, node.name).toBeGreaterThan(0);
+      expect(node.description.length, node.name).toBeLessThanOrEqual(100);
+      expect(english?.length, node.name).toBeGreaterThan(0);
+      expect(english?.length, node.name).toBeLessThanOrEqual(100);
     }
   });
 });

@@ -22,6 +22,32 @@ export const fr = {
   'standings.unknownDivision': 'Division inconnue. Divisions : {divisions}.',
   'standings.tooLong':
     'Le classement est trop long pour un seul message. Précise une division : {divisions}.',
+  'command.match.description': 'Gestion des matchs, réservée au staff.',
+  'command.match.result.description': "Enregistre ou corrige le résultat d'un match.",
+  'command.match.result.option.match':
+    'Le match : tape une équipe, une division ou une semaine (s3), puis choisis dans la liste.',
+  'command.match.result.option.scoreA': 'Manches gagnées par la première équipe citée.',
+  'command.match.result.option.scoreB': 'Manches gagnées par la seconde équipe citée.',
+  'command.match.result.option.screenshot':
+    "Capture d'écran du tableau des scores (facultative pour le staff).",
+  'match.label': '{division} · S{week} · {teamA} – {teamB}',
+  'match.labelWithResult': '{division} · S{week} · {teamA} {scoreA}–{scoreB} {teamB}',
+  'match.result.recorded':
+    'Résultat enregistré : {division}, semaine {week}, {teamA} {scoreA}–{scoreB} {teamB}.',
+  'match.result.corrected':
+    'Résultat corrigé : {division}, semaine {week}, {teamA} {scoreA}–{scoreB} {teamB} (avant : {previousA}–{previousB}).',
+  'match.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
+  'match.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
+  'match.error.match_not_found':
+    'Match introuvable dans cette ligue. Choisis-le dans la liste proposée.',
+  'match.error.match_closed':
+    'Ce match est un forfait ou a été annulé : son résultat ne se modifie pas ici.',
+  'match.error.unsupported_series':
+    'Ce match se joue en plusieurs cartes ; la saisie carte par carte arrive plus tard.',
+  'match.error.invalid_score':
+    "Score invalide : deux nombres entiers différents, il n'y a pas de match nul.",
+  'match.error.invalid_screenshot':
+    'La capture doit être une image PNG, JPEG ou WebP de moins de 20 Mo, jointe à la commande.',
   'error.unknownCommand': 'Commande inconnue.',
   'error.unexpected': 'Une erreur est survenue. Réessaie dans un instant.',
 } as const;

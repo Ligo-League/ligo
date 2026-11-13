@@ -21,6 +21,29 @@ export const en: Record<MessageKey, string> = {
   'standings.no_standings': 'The standings are not available yet.',
   'standings.unknownDivision': 'Unknown division. Divisions: {divisions}.',
   'standings.tooLong': 'The standings are too long for one message. Name a division: {divisions}.',
+  'command.match.description': 'Match management, for staff only.',
+  'command.match.result.description': 'Record or correct the result of a match.',
+  'command.match.result.option.match':
+    'The match: type a team, a division or a week (s3), then pick from the list.',
+  'command.match.result.option.scoreA': 'Rounds won by the first team named.',
+  'command.match.result.option.scoreB': 'Rounds won by the second team named.',
+  'command.match.result.option.screenshot': 'Screenshot of the scoreboard (optional for staff).',
+  'match.label': '{division} · W{week} · {teamA} – {teamB}',
+  'match.labelWithResult': '{division} · W{week} · {teamA} {scoreA}–{scoreB} {teamB}',
+  'match.result.recorded':
+    'Result recorded: {division}, week {week}, {teamA} {scoreA}–{scoreB} {teamB}.',
+  'match.result.corrected':
+    'Result corrected: {division}, week {week}, {teamA} {scoreA}–{scoreB} {teamB} (was {previousA}–{previousB}).',
+  'match.error.not_linked': 'This server is not linked to a league.',
+  'match.error.not_staff': 'This command is for league staff only.',
+  'match.error.match_not_found': 'No such match in this league. Pick it from the suggested list.',
+  'match.error.match_closed':
+    'This match is a forfeit or was annulled: its result cannot be changed here.',
+  'match.error.unsupported_series':
+    'This match is played over several maps; entering them one by one comes later.',
+  'match.error.invalid_score': 'Invalid score: two different whole numbers, there are no draws.',
+  'match.error.invalid_screenshot':
+    'The screenshot must be a PNG, JPEG or WebP image under 20 MB, attached to the command.',
   'error.unknownCommand': 'Unknown command.',
   'error.unexpected': 'Something went wrong. Please try again in a moment.',
 };
