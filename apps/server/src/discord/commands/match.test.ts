@@ -1,173 +1,291 @@
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
+import { setTeamManager } from '../../services/team-staff.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../../testing.ts';
-import { fakeAutocomplete, fakeContext, fakeInteraction, type FakeInput } from '../testing.ts';
+import { buttons } from '../buttons/index.ts';
+import { routeButton } from '../router.ts';
+import {
+  fakeAutocomplete,
+  fakeButton,
+  fakeContext,
+  fakeGateway,
+  fakeInteraction,
+  type FakeInput,
+} from '../testing.ts';
 import { matchCommand } from './match.ts';
 
-const STAFF: FakeInput = {
+const QUEUE = '800000000000000001';
+const RESULTS = '800000000000000002';
+const STAFF = {
   guildId: TEST_GUILD,
   user: { id: '222222222222222222', displayName: 'Léa Staff' },
   memberRoleIds: [TEST_STAFF_ROLE],
 };
-// In leagueDatabase(): match 3 is Bravo v Charlie (Ligue 1, week 3), still to play.
-const result = (options: FakeInput['options'], who: FakeInput = STAFF): FakeInput => ({
-  ...who,
-  subcommand: 'result',
-  options,
+const member = (n: number) => ({
+  guildId: TEST_GUILD,
+  user: { id: `70000000000000000${n}`, displayName: `Member ${n}` },
+  memberRoleIds: [],
 });
+// Match 3 of leagueDatabase() is Bravo (side A, managed by member 1) v Charlie (member 2).
+const BRAVO = member(1);
+const CHARLIE = member(2);
+const OUTSIDER = member(4);
+const SCREENSHOT = {
+  url: 'https://cdn.discordapp.com/attachments/1/2/score.png?ex=1&is=2&hm=3',
+  contentType: 'image/png',
+  size: 1000,
+};
+const report = (who: FakeInput, options: FakeInput['options'] = {}): FakeInput => ({
+  ...who,
+  subcommand: 'report',
+  options: { match: 3, score_a: 7, score_b: 5, screenshot: SCREENSHOT, ...options },
+});
+const logger = { error: () => undefined };
 
-async function run(input: FakeInput, context = fakeContext({ db: leagueDatabase() })) {
-  const interaction = fakeInteraction('match', input);
-  await matchCommand.execute(interaction, context);
-  return { replies: interaction.replies, db: context.db };
+function session() {
+  const db = leagueDatabase();
+  setTeamManager(db, STAFF, { teamId: 2, member: BRAVO.user }, 100);
+  setTeamManager(db, STAFF, { teamId: 3, member: CHARLIE.user }, 100);
+  db.update(schema.leagueGuild).set({ alertsChannelId: QUEUE, resultsChannelId: RESULTS }).run();
+  const gateway = fakeGateway();
+  const context = fakeContext({ db, gateway });
+  const run = async (input: FakeInput) => {
+    const interaction = fakeInteraction('match', input);
+    await matchCommand.execute(interaction, context);
+    return interaction;
+  };
+  const click = async (customId: string, who: FakeInput) => {
+    const interaction = fakeButton(customId, who);
+    await routeButton(buttons, interaction, context, logger);
+    return interaction;
+  };
+  const status = () => db.select().from(schema.match).all()[2]?.status;
+  return { db, gateway, context, run, click, status };
 }
 
-describe('/match result', () => {
-  it('records the result and confirms it privately, naming both teams', async () => {
-    const { replies, db } = await run(result({ match: 3, score_a: 7, score_b: 5 }));
-    expect(replies).toEqual([
+describe('/match report', () => {
+  it('posts the report in public with the screenshot and the buttons for the other team', async () => {
+    const { run, status } = session();
+    const interaction = await run(report(BRAVO));
+
+    expect(interaction.deferred).toBe(true);
+    expect(interaction.replies).toMatchObject([
       {
-        content: 'Résultat enregistré : Ligue 1, semaine 3, Bravo 7–5 Charlie.',
-        ephemeral: true,
+        ephemeral: false,
+        content:
+          '<@700000000000000001> signale pour Bravo : **Ligue 1, semaine 3 : Bravo 7–5 Charlie**. <@700000000000000002>, confirmez ou contestez ce résultat.',
+        files: [{ name: 'score-3.png' }],
+        buttons: [
+          { customId: 'report-confirm:3:1', label: 'Confirmer', style: 'success' },
+          { customId: 'report-dispute:3:1', label: 'Contester', style: 'danger' },
+        ],
+        // Only the opponent's manager is notified.
+        mentionUserIds: ['700000000000000002'],
       },
     ]);
-    expect(db.select().from(schema.match).all()[2]).toMatchObject({
-      status: 'validated',
-      validatedAt: 1_800_000_000_000,
+    expect(status()).toBe('reported');
+  });
+
+  it('posts it in the staff queue with the buttons for staff', async () => {
+    const { run, gateway } = session();
+    await run(report(BRAVO));
+    expect(gateway.posted).toMatchObject([
+      {
+        channelId: QUEUE,
+        message: {
+          content:
+            'Résultat à valider — **Ligue 1, semaine 3 : Bravo 7–5 Charlie**. Signalé par <@700000000000000001> pour Bravo.',
+          files: [{ name: 'score-3.png' }],
+          buttons: [
+            { customId: 'report-validate:3:1', label: 'Valider', style: 'success' },
+            { customId: 'report-reject:3:1', label: 'Refuser', style: 'danger' },
+          ],
+        },
+      },
+    ]);
+  });
+
+  it('says so when the other team has nobody to confirm, or staff could not be notified', async () => {
+    const first = session();
+    first.db.update(schema.teamStaff).set({ until: 200 }).run();
+    setTeamManager(first.db, STAFF, { teamId: 2, member: BRAVO.user }, 300);
+    expect((await first.run(report(BRAVO))).replies[0]).toMatchObject({
+      content:
+        "<@700000000000000001> signale pour Bravo : **Ligue 1, semaine 3 : Bravo 7–5 Charlie**. L'équipe adverse n'a pas encore de manager enregistré : le staff validera.",
+      mentionUserIds: [],
+    });
+
+    const second = session();
+    const original = second.gateway.postMessage.bind(second.gateway);
+    second.gateway.postMessage = () => Promise.reject(new Error('missing access'));
+    const content = (await second.run(report(BRAVO))).replies[0]?.content;
+    second.gateway.postMessage = original;
+    expect(content).toContain("Le staff n'a pas pu être prévenu automatiquement");
+  });
+
+  it.each([
+    [report(OUTSIDER), "Tu n'es ni manager ni staff d'une des deux équipes de ce match."],
+    [report(STAFF), "Tu n'es ni manager ni staff d'une des deux équipes de ce match."],
+    [
+      report(BRAVO, { match: 4 }),
+      "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
+    ],
+    [report(BRAVO, { match: 1 }), 'Ce match a déjà un résultat signalé ou validé.'],
+    [
+      report(BRAVO, { match: 99 }),
+      'Match introuvable dans cette ligue. Choisis-le dans la liste proposée.',
+    ],
+    [
+      report(BRAVO, { score_a: 7, score_b: 6 }),
+      'Score impossible avec le règlement de la ligue : une carte se termine entre 7–0 et 7–5, ou en prolongation (8–6, 8–7).',
+    ],
+    [
+      report(BRAVO, { screenshot: { ...SCREENSHOT, contentType: 'application/pdf' } }),
+      'La capture doit être une image PNG, JPEG ou WebP de moins de 20 Mo, jointe à la commande.',
+    ],
+    [{ ...BRAVO, subcommand: 'delete' }, 'Commande inconnue.'],
+  ])('refuses privately, before announcing anything in public: %j', async (input, content) => {
+    const { run, gateway, status } = session();
+    const interaction = await run(input);
+    expect(interaction.replies).toEqual([{ content, ephemeral: true }]);
+    expect(interaction.deferred).toBe(false);
+    expect(gateway.posted).toEqual([]);
+    expect(status()).toBe('scheduled');
+  });
+
+  it('is visible to everyone, in servers only', () => {
+    expect(matchCommand.data.default_member_permissions).toBeUndefined();
+    expect(matchCommand.data.contexts).toEqual([0]);
+  });
+
+  it("suggests only the member's own matches still to play", async () => {
+    const { context } = session();
+    const suggest = async (who: FakeInput, name = 'match') => {
+      const interaction = fakeAutocomplete('match', { name, value: '' }, who);
+      await matchCommand.autocomplete?.(interaction, context);
+      return interaction.responses[0];
+    };
+    expect(await suggest(BRAVO)).toEqual([{ name: 'L1 · S3 · BRV – CHA', value: 3 }]);
+    expect(await suggest(OUTSIDER)).toEqual([]);
+    expect(await suggest(BRAVO, 'score_a')).toEqual([]);
+  });
+});
+
+describe('report buttons', () => {
+  it('lets the other team confirm: the buttons go and staff are told', async () => {
+    const { run, click, gateway, status } = session();
+    await run(report(BRAVO));
+    const interaction = await click('report-confirm:3:1', CHARLIE);
+
+    expect(interaction.updates).toEqual([
+      {
+        content:
+          '**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — confirmé par <@700000000000000002>. En attente de validation par le staff.',
+      },
+    ]);
+    expect(status()).toBe('confirmed');
+    expect(gateway.posted.at(-1)).toMatchObject({
+      channelId: QUEUE,
+      message: {
+        content:
+          "Ligue 1, semaine 3 : Bravo 7–5 Charlie — confirmé par l'équipe adverse (<@700000000000000002>).",
+      },
     });
   });
 
-  it('says what it replaced when correcting a result', async () => {
-    const context = fakeContext({ db: leagueDatabase(), locale: 'en' });
-    await run(result({ match: 3, score_a: 7, score_b: 5 }), context);
-    const { replies } = await run(result({ match: 3, score_a: 5, score_b: 7 }), context);
-    expect(replies[0]?.content).toBe(
-      'Result corrected: Ligue 1, week 3, Bravo 5–7 Charlie (was 7–5).',
+  it('lets the other team dispute', async () => {
+    const { run, click, gateway, status } = session();
+    await run(report(BRAVO));
+    const interaction = await click('report-dispute:3:1', CHARLIE);
+    expect(interaction.updates[0]?.content).toBe(
+      '**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — contesté par <@700000000000000002>. Le staff va trancher.',
     );
+    expect(status()).toBe('disputed');
+    expect(gateway.posted.at(-1)?.message.content).toContain('contesté par');
   });
 
-  it('passes the attached screenshot on as evidence', async () => {
-    const screenshot = {
-      url: 'https://cdn.discordapp.com/attachments/1/2/score.png',
-      contentType: 'image/png',
-      size: 1000,
-    };
-    const { db } = await run(result({ match: 3, score_a: 7, score_b: 5, screenshot }));
-    expect(db.select().from(schema.evidence).all()).toMatchObject([
-      { matchId: 3, kind: 'score_screenshot', url: screenshot.url },
+  it('lets staff validate from the queue: the result is announced', async () => {
+    const { run, click, gateway, status } = session();
+    await run(report(BRAVO));
+    const interaction = await click('report-validate:3:1', STAFF);
+
+    expect(interaction.updates).toEqual([
+      {
+        content: '**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — validé par <@222222222222222222>.',
+      },
     ]);
+    expect(status()).toBe('validated');
+    expect(gateway.posted.at(-1)).toMatchObject({
+      channelId: RESULTS,
+      message: { content: 'Résultat validé — Ligue 1, semaine 3 : Bravo 7–5 Charlie.' },
+    });
+  });
+
+  it('lets staff reject from the queue: nothing is announced', async () => {
+    const { run, click, gateway, status } = session();
+    await run(report(BRAVO));
+    const posts = gateway.posted.length;
+    const interaction = await click('report-reject:3:1', STAFF);
+    expect(interaction.updates[0]?.content).toBe(
+      '**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — refusé par <@222222222222222222>. Le match est à signaler de nouveau.',
+    );
+    expect(status()).toBe('scheduled');
+    expect(gateway.posted).toHaveLength(posts);
   });
 
   it.each([
     [
-      'a member without the staff role',
-      result({ match: 3, score_a: 7, score_b: 5 }, { ...STAFF, memberRoleIds: [] }),
-      'Cette commande est réservée au staff de la ligue.',
+      'report-confirm:3:1',
+      BRAVO,
+      "Seule l'équipe adverse peut confirmer ou contester ce résultat.",
     ],
     [
-      'a draw',
-      result({ match: 3, score_a: 6, score_b: 6 }),
-      "Score invalide : deux nombres entiers différents, il n'y a pas de match nul.",
+      'report-dispute:3:1',
+      BRAVO,
+      "Seule l'équipe adverse peut confirmer ou contester ce résultat.",
     ],
     [
-      'a score a map cannot end on',
-      result({ match: 3, score_a: 6, score_b: 7 }),
-      'Score impossible avec le règlement de la ligue : une carte se termine entre 7–0 et 7–5, ou en prolongation (8–6, 8–7).',
+      'report-confirm:3:1',
+      OUTSIDER,
+      "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
     ],
     [
-      'a forfeit',
-      result({ match: 2, score_a: 7, score_b: 5 }),
-      'Ce match est un forfait ou a été annulé : son résultat ne se modifie pas ici.',
+      'report-confirm:3:1',
+      STAFF,
+      "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
     ],
+    ['report-validate:3:1', CHARLIE, 'Cette commande est réservée au staff de la ligue.'],
+    ['report-reject:3:1', BRAVO, 'Cette commande est réservée au staff de la ligue.'],
+    ['report-validate:3:1', OUTSIDER, 'Cette commande est réservée au staff de la ligue.'],
+    ['report-confirm:3:2', CHARLIE, 'Ce bouton correspond à un ancien signalement.'],
+    ['report-validate:3:9', STAFF, 'Ce bouton correspond à un ancien signalement.'],
     [
-      'an unknown match',
-      result({ match: 99, score_a: 7, score_b: 5 }),
+      'report-confirm:99:1',
+      CHARLIE,
       'Match introuvable dans cette ligue. Choisis-le dans la liste proposée.',
     ],
-    [
-      'a match typed as text instead of picked',
-      result({ match: 'bravo', score_a: 7, score_b: 5 }),
-      'Match introuvable dans cette ligue. Choisis-le dans la liste proposée.',
-    ],
-    [
-      'a file that is not an image',
-      result({
-        match: 3,
-        score_a: 7,
-        score_b: 5,
-        screenshot: {
-          url: 'https://cdn.discordapp.com/a.pdf',
-          contentType: 'application/pdf',
-          size: 9,
-        },
-      }),
-      'La capture doit être une image PNG, JPEG ou WebP de moins de 20 Mo, jointe à la commande.',
-    ],
-    ['an unknown subcommand', { ...STAFF, subcommand: 'delete' }, 'Commande inconnue.'],
-  ])('refuses %s privately and stores nothing', async (_name, input, content) => {
-    const { replies, db } = await run(input);
-    expect(replies).toEqual([{ content, ephemeral: true }]);
-    expect(db.select().from(schema.match).all()[2]?.status).toBe('scheduled');
-    expect(
-      db
-        .select()
-        .from(schema.auditLog)
-        .all()
-        .filter((row) => row.actorKind === 'user'),
-    ).toEqual([]);
+  ])('refuses %s privately and leaves the message alone', async (customId, who, content) => {
+    const { run, click, gateway, status } = session();
+    await run(report(BRAVO));
+    const posts = gateway.posted.length;
+    const interaction = await click(customId, who);
+    expect(interaction.replies).toEqual([{ content, ephemeral: true }]);
+    expect(interaction.updates).toEqual([]);
+    expect(status()).toBe('reported');
+    expect(gateway.posted).toHaveLength(posts);
   });
 
-  it('shows how overtime continues when the rule lets it repeat', async () => {
-    const db = leagueDatabase();
-    db.update(schema.competition)
-      .set({
-        rulesetJson: {
-          result_validation: 'staff',
-          game_score: { win_at: 13, overtime_rounds: 2 },
-          team_staff_max: 3,
-        },
-      })
-      .run();
-    const context = fakeContext({ db, locale: 'en' });
-    const { replies } = await run(result({ match: 3, score_a: 7, score_b: 5 }), context);
-    expect(replies[0]?.content).toBe(
-      'That score cannot happen under the league rules: a map ends between 13–0 and 13–11, or in overtime (14–12, 15–13…).',
-    );
-  });
-
-  it('is hidden from members by default and cannot be used in direct messages', () => {
-    expect(matchCommand.data.default_member_permissions).toBe('0');
-    expect(matchCommand.data.contexts).toEqual([0]);
-  });
-});
-
-describe('/match result suggestions', () => {
-  const suggest = async (value: string, who: FakeInput = STAFF, name = 'match') => {
-    const interaction = fakeAutocomplete(
-      'match',
-      { name, value },
-      { ...who, subcommand: 'result' },
-    );
-    await matchCommand.autocomplete?.(interaction, fakeContext({ db: leagueDatabase() }));
-    return interaction.responses;
-  };
-
-  it('offers the matches still to play first, then those with a result', async () => {
-    expect(await suggest('')).toEqual([
-      [
-        { name: 'L1 · S3 · BRV – CHA', value: 3 },
-        { name: 'L1 · S1 · ALP 7–4 BRV', value: 1 },
-        { name: 'L2 · S1 · XRA 8–6 YAN', value: 4 },
-      ],
+  it('answers a second click on a used button privately', async () => {
+    const { run, click } = session();
+    await run(report(BRAVO));
+    await click('report-validate:3:1', STAFF);
+    const again = await click('report-validate:3:1', STAFF);
+    expect(again.replies).toEqual([
+      { content: "Ce match n'attend pas cette action : il a déjà été traité.", ephemeral: true },
     ]);
-  });
-
-  it('narrows as the member types', async () => {
-    expect(await suggest('cha')).toEqual([[{ name: 'L1 · S3 · BRV – CHA', value: 3 }]]);
-  });
-
-  it('offers nothing to a member who is not staff, or for another option', async () => {
-    expect(await suggest('', { ...STAFF, memberRoleIds: [] })).toEqual([[]]);
-    expect(await suggest('', STAFF, 'score_a')).toEqual([[]]);
+    const late = await click('report-confirm:3:1', CHARLIE);
+    expect(late.replies[0]?.content).toBe(
+      "Ce match n'attend pas cette action : il a déjà été traité.",
+    );
   });
 });

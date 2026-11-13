@@ -27,13 +27,22 @@ export const fr = {
   'standings.unknownDivision': 'Division inconnue. Divisions : {divisions}.',
   'standings.tooLong':
     'Le classement est trop long pour un seul message. Précise une division : {divisions}.',
-  'command.match.description': 'Gestion des matchs, réservée au staff.',
-  'command.match.result.description': "Enregistre ou corrige le résultat d'un match.",
-  'command.match.result.option.match':
+  'command.match.description': 'Les matchs de ton équipe.',
+  'command.match.report.description':
+    "Signale le résultat d'un match de ton équipe, avec la capture d'écran.",
+  'command.match.report.option.match': 'Le match : choisis-le dans la liste.',
+  'command.match.report.option.screenshot': "Capture d'écran du tableau des scores.",
+  'command.staff.description': 'Actions réservées au staff de la ligue.',
+  'command.staff.match.description': 'Résultats et matchs.',
+  'command.staff.match.validate.description': 'Valide un résultat signalé par une équipe.',
+  'command.staff.match.void.description': 'Annule un match, avec un motif.',
+  'command.staff.match.void.option.reason': 'Le motif, conservé dans le journal.',
+  'command.staff.match.result.description': "Enregistre ou corrige le résultat d'un match.",
+  'command.staff.match.option.match':
     'Le match : tape une équipe, une division ou une semaine (s3), puis choisis dans la liste.',
-  'command.match.result.option.scoreA': 'Manches gagnées par la première équipe citée.',
-  'command.match.result.option.scoreB': 'Manches gagnées par la seconde équipe citée.',
-  'command.match.result.option.screenshot':
+  'command.match.option.scoreA': 'Manches gagnées par la première équipe citée.',
+  'command.match.option.scoreB': 'Manches gagnées par la seconde équipe citée.',
+  'command.staff.match.result.option.screenshot':
     "Capture d'écran du tableau des scores (facultative pour le staff).",
   'match.label': '{division} · S{week} · {teamA} – {teamB}',
   'match.labelWithResult': '{division} · S{week} · {teamA} {scoreA}–{scoreB} {teamB}',
@@ -41,7 +50,39 @@ export const fr = {
     'Résultat enregistré : {division}, semaine {week}, {teamA} {scoreA}–{scoreB} {teamB}.',
   'match.result.corrected':
     'Résultat corrigé : {division}, semaine {week}, {teamA} {scoreA}–{scoreB} {teamB} (avant : {previousA}–{previousB}).',
+  'match.line': '{division}, semaine {week} : {teamA} {scoreA}–{scoreB} {teamB}',
+  'match.fixture': '{division}, semaine {week} : {teamA} – {teamB}',
+  'report.posted':
+    '{reporter} signale pour {team} : **{line}**. {opponents}, confirmez ou contestez ce résultat.',
+  'report.postedNoOpponent':
+    "{reporter} signale pour {team} : **{line}**. L'équipe adverse n'a pas encore de manager enregistré : le staff validera.",
+  'report.notQueued': "Le staff n'a pas pu être prévenu automatiquement : merci de le prévenir.",
+  'report.button.confirm': 'Confirmer',
+  'report.button.dispute': 'Contester',
+  'report.button.validate': 'Valider',
+  'report.button.reject': 'Refuser',
+  'report.confirmed': '**{line}** — confirmé par {member}. En attente de validation par le staff.',
+  'report.validated': '**{line}** — confirmé par {member}. Résultat validé.',
+  'report.disputed': '**{line}** — contesté par {member}. Le staff va trancher.',
+  'queue.report': 'Résultat à valider — **{line}**. Signalé par {reporter} pour {team}.',
+  'queue.confirmed': "{line} — confirmé par l'équipe adverse ({member}).",
+  'queue.disputed': '{line} — contesté par {member}. Une décision du staff est attendue.',
+  'queue.validated': '**{line}** — validé par {member}.',
+  'queue.rejected': '**{line}** — refusé par {member}. Le match est à signaler de nouveau.',
+  'result.announce': 'Résultat validé — {line}.',
+  'staff.match.validated': 'Résultat validé : {line}.',
+  'staff.match.voided': 'Match annulé : {fixture}.',
   'match.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
+  'match.error.not_your_match': "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
+  'match.error.not_reportable': 'Ce match a déjà un résultat signalé ou validé.',
+  'match.error.screenshot_required': "La capture d'écran du tableau des scores est obligatoire.",
+  'match.error.screenshot_unreadable': "Je n'ai pas pu récupérer la capture. Réessaie.",
+  'match.error.queue_not_set':
+    "La ligue n'a pas encore choisi son salon de validation. Préviens le staff.",
+  'match.error.stale': 'Ce bouton correspond à un ancien signalement.',
+  'match.error.not_opponent': "Seule l'équipe adverse peut confirmer ou contester ce résultat.",
+  'match.error.wrong_status': "Ce match n'attend pas cette action : il a déjà été traité.",
+  'match.error.reason_required': 'Un motif est nécessaire.',
   'match.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
   'match.error.match_not_found':
     'Match introuvable dans cette ligue. Choisis-le dans la liste proposée.',
