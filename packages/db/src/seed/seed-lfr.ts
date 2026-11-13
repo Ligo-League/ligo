@@ -36,11 +36,21 @@ const SEASON: Omit<typeof season.$inferInsert, 'competitionId'> = {
   startsOn: '2026-10-19',
   endsOn: '2026-12-20',
   status: 'active',
-  // The map pool is left empty until the maintainer supplies the current nine maps.
-  // Rulebook: a warning at the 2nd forfeit, exclusion at the 3rd.
+  // The official competitive pool of the current Ubisoft season, from the maintainer
+  // (13 November 2026). Rulebook: a warning at the 2nd forfeit, exclusion at the 3rd.
   settingsJson: {
     forfeit_score: [0, 0],
-    map_pool: [],
+    map_pool: [
+      'Bank',
+      'Chalet',
+      'Clubhouse',
+      'Nighthaven Labs',
+      'Lair',
+      'Villa',
+      'Kafe Dostoyevsky',
+      'Border',
+      'Fortress',
+    ],
     forfeits: { warning_at: 2, exclusion_at: 3 },
   },
 };
@@ -80,19 +90,20 @@ export interface SeedSummary {
     teams: number;
     slots: number;
   };
-  updated: { competitions: number; teams: number; slots: number };
+  updated: { competitions: number; seasons: number; teams: number; slots: number };
 }
 
 /**
  * Loads the LFR skeleton and the given teams. Running it again changes nothing; editing the CSV
- * and running it again updates teams (matched by tag) and moves their slot. A competition whose
- * rule settings differ from the ones above is brought back to them. It never deletes.
+ * and running it again updates teams (matched by tag) and moves their slot. A competition's rule
+ * settings and the season's settings that differ from the ones above are brought back to them.
+ * It never deletes.
  */
 export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSummary {
   return db.transaction((tx) => {
     const summary: SeedSummary = {
       created: { orgs: 0, competitions: 0, seasons: 0, divisions: 0, teams: 0, slots: 0 },
-      updated: { competitions: 0, teams: 0, slots: 0 },
+      updated: { competitions: 0, seasons: 0, teams: 0, slots: 0 },
     };
 
     let orgRow = tx.select().from(org).where(eq(org.slug, ORG.slug)).get();
@@ -130,6 +141,12 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
         .returning()
         .get();
       summary.created.seasons += 1;
+    } else if (!sameJson(seasonRow.settingsJson, SEASON.settingsJson)) {
+      tx.update(season)
+        .set({ settingsJson: SEASON.settingsJson })
+        .where(eq(season.id, seasonRow.id))
+        .run();
+      summary.updated.seasons += 1;
     }
     const seasonId = seasonRow.id;
 

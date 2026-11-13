@@ -137,13 +137,6 @@ section 16.
 
 ### Scheduling, sides and the map veto
 
-#### O-10 · Current map pool
-
-- **Question:** which nine maps are in the pool this season?
-- **Why it matters:** the map veto cannot run without it (phase 2b).
-- **Until answered:** the pool is empty and there is no veto.
-- **Answer:**
-
 #### O-11 · Ban order
 
 - **Question:** BLAST changed its map-ban process for 2026. Does LFR follow the new BLAST order,
@@ -378,6 +371,12 @@ section 16.
 - **Answer:**
 
 ## Answered
+
+#### O-10 · Current map pool
+
+- **Answer (maintainer, 13 November 2026):** the official competitive pool of the current Ubisoft
+  season: Bank, Chalet, Clubhouse, Nighthaven Labs, Lair, Villa, Kafe Dostoyevsky, Border,
+  Fortress. Stored in the season settings by `pnpm seed`.
 
 #### M-15 · Announcing results entered by staff
 

@@ -52,7 +52,8 @@ try {
     console.log(
       `Created ${created.orgs} org, ${created.competitions} competition, ${created.seasons} season, ` +
         `${created.divisions} divisions, ${created.teams} teams, ${created.slots} slots; ` +
-        `updated ${updated.competitions} competition settings, ${updated.teams} teams, ` +
+        `updated ${updated.competitions} competition settings, ${updated.seasons} season settings, ` +
+        `${updated.teams} teams, ` +
         `${updated.slots} slots.`,
     );
   } else {

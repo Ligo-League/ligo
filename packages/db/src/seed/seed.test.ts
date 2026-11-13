@@ -140,7 +140,7 @@ describe('seedLfr', () => {
 
     expect(summary).toEqual({
       created: { orgs: 1, competitions: 1, seasons: 1, divisions: 2, teams: 2, slots: 2 },
-      updated: { competitions: 0, teams: 0, slots: 0 },
+      updated: { competitions: 0, seasons: 0, teams: 0, slots: 0 },
     });
     expect(db.select().from(org).all()).toMatchObject([{ name: 'LFR', slug: 'lfr', locale: 'fr' }]);
     expect(db.select().from(competition).all()).toMatchObject([
@@ -165,9 +165,11 @@ describe('seedLfr', () => {
         startsOn: '2026-10-19',
         endsOn: '2026-12-20',
         status: 'active',
-        settingsJson: { forfeit_score: [0, 0], map_pool: [] },
+        settingsJson: { forfeit_score: [0, 0] },
       },
     ]);
+    // The pool itself is checked in its own test below.
+    expect(db.select().from(season).get()?.settingsJson.map_pool).toHaveLength(9);
     expect(db.select().from(division).all()).toMatchObject([
       { name: 'Ligue 1', kind: 'league', level: 1 },
       { name: 'Ligue 2', kind: 'league', level: 2 },
@@ -214,7 +216,7 @@ describe('seedLfr', () => {
 
     expect(summary).toEqual({
       created: { orgs: 0, competitions: 0, seasons: 0, divisions: 0, teams: 0, slots: 0 },
-      updated: { competitions: 0, teams: 0, slots: 0 },
+      updated: { competitions: 0, seasons: 0, teams: 0, slots: 0 },
     });
     expect(dump()).toBe(before);
   });
@@ -236,7 +238,7 @@ describe('seedLfr', () => {
     const summary = seedLfr(db, edited, 2000);
 
     expect(summary.created.teams).toBe(0);
-    expect(summary.updated).toEqual({ competitions: 0, teams: 1, slots: 1 });
+    expect(summary.updated).toEqual({ competitions: 0, seasons: 0, teams: 1, slots: 1 });
     expect(db.select().from(team).all()).toMatchObject([
       { tag: 'ALP', name: 'Alpha Esport', slug: 'alpha-esport', colorsJson: [] },
       { tag: 'BRV', name: 'Bravo' },
@@ -256,9 +258,37 @@ describe('seedLfr', () => {
 
     const summary = seedLfr(db, TEAMS, 2000);
 
-    expect(summary.updated).toEqual({ competitions: 1, teams: 0, slots: 0 });
+    expect(summary.updated).toEqual({ competitions: 1, seasons: 0, teams: 0, slots: 0 });
     expect(db.select().from(competition).get()?.pointsJson.outcomes.win).toBe(3);
     expect(seedLfr(db, TEAMS, 3000).updated.competitions).toBe(0);
+  });
+
+  it("holds the season's map pool, and brings an earlier season's settings up to date", () => {
+    const db = openTestDatabase();
+    seedLfr(db, TEAMS, 1000);
+    const pool = [
+      'Bank',
+      'Chalet',
+      'Clubhouse',
+      'Nighthaven Labs',
+      'Lair',
+      'Villa',
+      'Kafe Dostoyevsky',
+      'Border',
+      'Fortress',
+    ];
+    expect(db.select().from(season).get()?.settingsJson.map_pool).toEqual(pool);
+
+    const old = { forfeit_score: [0, 0], map_pool: [] };
+    db.$client.prepare('UPDATE season SET settings_json = ?').run(JSON.stringify(old));
+    expect(seedLfr(db, TEAMS, 2000).updated).toEqual({
+      competitions: 0,
+      seasons: 1,
+      teams: 0,
+      slots: 0,
+    });
+    expect(db.select().from(season).get()?.settingsJson.map_pool).toEqual(pool);
+    expect(seedLfr(db, TEAMS, 3000).updated.seasons).toBe(0);
   });
 
   it('rolls everything back when a team cannot be stored', () => {
