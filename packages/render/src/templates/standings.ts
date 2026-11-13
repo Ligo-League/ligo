@@ -1,12 +1,14 @@
 import { box, picture, text, type EmbeddedImage, type ImageNode, type Style } from '../node.ts';
-import { resolveTheme, type ThemeOverrides } from '../theme.ts';
+import { resolveTheme, type ImageTheme, type ThemeOverrides } from '../theme.ts';
 
 export const STANDINGS_IMAGE_WIDTH = 1200;
 /** Part of the cache key: raise it whenever the picture changes for the same input. */
-export const STANDINGS_TEMPLATE_VERSION = 2;
+export const STANDINGS_TEMPLATE_VERSION = 3;
 
 export interface StandingsImageRow {
   rank: number;
+  /** Places gained since the previous week (negative: lost); null or absent shows nothing. */
+  change?: number | null;
   name: string;
   /** The team's colours as #RRGGBB; the first two are shown when it has no logo. */
   colors: readonly string[];
@@ -51,6 +53,14 @@ const FORM_SLOTS = 5;
 const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
 const right: Style = { justifyContent: 'flex-end' };
 
+/** A rise in green, a fall in red, no move as a dash; nothing before there is a previous week. */
+function rankChange(change: number | null, theme: ImageTheme): ImageNode {
+  if (change === null) return box({});
+  if (change === 0) return text({ fontSize: 20, color: theme.muted }, '–');
+  const [arrow, color] = change > 0 ? ['▲', theme.win] : ['▼', theme.loss];
+  return text({ fontSize: 18, fontWeight: 700, color }, `${arrow} ${Math.abs(change)}`);
+}
+
 export function standingsImage(input: StandingsImageInput): ImageNode {
   const theme = resolveTheme(input.theme);
   const { headers } = input;
@@ -59,6 +69,7 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
     style: Style,
     values: {
       rank: string | number;
+      change: ImageNode;
       team: ImageNode;
       numbers: (string | number)[];
       diff: string;
@@ -70,6 +81,7 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
     box(
       { alignItems: 'center', padding: '0 20px', ...style },
       text({ width: 52, fontWeight: 700 }, values.rank),
+      box({ width: 64, alignItems: 'center' }, values.change),
       box({ flexGrow: 1, flexShrink: 1, alignItems: 'center', overflow: 'hidden' }, values.team),
       ...values.numbers.map((value) => text({ width: NUMBER_WIDTH, ...right }, value)),
       text({ width: 88, ...right }, values.diff),
@@ -81,6 +93,7 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
     { height: 44, fontSize: 18, color: theme.muted, letterSpacing: 1 },
     {
       rank: headers.rank,
+      change: box({}),
       team: text({}, headers.team.toUpperCase()),
       numbers: [headers.played, headers.wins, headers.losses, headers.for, headers.against],
       diff: headers.diff.toUpperCase(),
@@ -140,6 +153,7 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
       },
       {
         rank: row.rank,
+        change: rankChange(row.change ?? null, theme),
         team,
         numbers: [row.played, row.wins, row.losses, row.scoreFor, row.scoreAgainst],
         diff: signed(row.diff),

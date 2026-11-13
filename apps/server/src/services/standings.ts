@@ -1,10 +1,18 @@
-import { computeStandings, recentForm, type FormResult, type StandingsRow } from '@ligo/core';
+import {
+  computeStandings,
+  rankChanges,
+  recentForm,
+  type FormResult,
+  type StandingsRow,
+} from '@ligo/core';
 import { findGuildLeague, loadStandingsInput, type Db, type Theme } from '@ligo/db';
 
 export interface StandingsTableRow extends Omit<StandingsRow, 'entry'> {
   team: { name: string; tag: string; colors: string[]; logoKey: string | null };
   /** The team's latest results, oldest first, at most `FORM_LENGTH`. */
   form: FormResult[];
+  /** Places gained since the previous week (negative: lost); null before there is one. */
+  change: number | null;
 }
 
 const FORM_LENGTH = 5;
@@ -61,6 +69,7 @@ export function getStandings(
       // staff must see in the logs, not a table computed by other rules.
       throw new Error(`Standings of ${division.name} failed: ${JSON.stringify(standings.error)}`);
     }
+    const changes = rankChanges(data.input);
     tables.push({
       division: division.name,
       rows: standings.rows.map(({ entry, ...row }) => {
@@ -71,6 +80,7 @@ export function getStandings(
           ...row,
           team: { name: team.name, tag: team.tag, colors: team.colors, logoKey: team.logoKey },
           form: recentForm(data.input.matches, entry, FORM_LENGTH),
+          change: changes?.get(entry) ?? null,
         };
       }),
     });

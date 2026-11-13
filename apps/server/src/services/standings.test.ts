@@ -28,6 +28,7 @@ describe('getStandings', () => {
         diff: 3,
         points: 6,
         form: ['W', 'W'],
+        change: 0,
       },
       {
         rank: 2,
@@ -41,6 +42,7 @@ describe('getStandings', () => {
         diff: 0,
         points: 0,
         form: ['L'],
+        change: 0,
       },
       {
         rank: 3,
@@ -54,6 +56,7 @@ describe('getStandings', () => {
         diff: -3,
         points: 0,
         form: ['L'],
+        change: 0,
       },
     ]);
   });

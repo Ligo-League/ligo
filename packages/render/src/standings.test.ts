@@ -115,6 +115,23 @@ describe('standingsImage', () => {
     expect(texts(tree)).toContain('Civitas');
   });
 
+  it("shows each team's rise or fall since the previous week, and nothing before one", () => {
+    const moves = {
+      ...INPUT,
+      rows: [
+        { ...row(1, 'Alpha', 3, []), change: 2 },
+        { ...row(2, 'Bravo', 1, []), change: -1 },
+        { ...row(3, 'Charlie', 0, []), change: 0 },
+        { ...row(4, 'Delta', -4, []), change: null },
+      ],
+    };
+    const all = texts(standingsImage(moves));
+    expect(all).toContain('▲ 2');
+    expect(all).toContain('▼ 1');
+    expect(all).toContain('–');
+    expect(all.slice(all.indexOf('4'), all.indexOf('Delta') + 1)).toEqual(['4', 'Delta']);
+  });
+
   it('keeps only the five latest results', () => {
     const long = { ...INPUT, rows: [row(1, 'Alpha', 1, ['L', 'L', 'W', 'W', 'W', 'W', 'W'])] };
     const colours = backgrounds(standingsImage(long));

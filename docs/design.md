@@ -872,7 +872,7 @@ Images are rendered on the server with Satori (layout to SVG) and resvg (SVG to 
 - Templates are JSX components in `packages/render`; the website reuses them for link-preview images.
 - Snapshot tests render each template with fixture data, and a reviewer compares the PNGs when a template changes.
 
-**Rank change.** The standings show each team's move since the previous week, so readers see trends: an arrow up or down with the number of places, or a dash. The previous table counts the same results except those of the latest week that has a counted result; sanctions count in both tables. `/standings` as text shows the same column.
+**Rank change.** The standings show each team's move since the previous week, so readers see trends: an arrow up or down with the number of places, or a dash. The previous table counts the same results except those of the latest week that has a counted result; sanctions count in both tables. `/standings` as text leaves it out: that table is already as wide as a phone screen allows.
 
 **Social images**
 

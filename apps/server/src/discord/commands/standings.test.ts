@@ -134,6 +134,7 @@ describe('formatStandingsTable', () => {
     diff,
     points,
     form: [],
+    change: null,
   });
 
   it('aligns numbers to the right and widens columns to their longest value', () => {
