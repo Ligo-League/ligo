@@ -85,7 +85,12 @@ export function helpPage(locale: Locale, topic: HelpTopic, facts: HelpFacts): st
   }
   if (topic === 'team') {
     const page = t(locale, PAGES.team);
-    return rules ? `${page}\n${t(locale, 'help.team.max', { max: rules.teamStaffMax })}` : page;
+    return rules
+      ? `${page}\n${t(locale, 'help.team.max', {
+          managers: rules.teamRoles.managers_max,
+          coaches: rules.teamRoles.coaches_max,
+        })}`
+      : page;
   }
   return t(locale, PAGES[topic]);
 }

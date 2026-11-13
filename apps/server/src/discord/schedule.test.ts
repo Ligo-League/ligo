@@ -1,7 +1,7 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
-import { setTeamManager } from '../services/team-staff.ts';
+import { setTeamOwner } from '../services/team-staff.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { buttons } from './buttons/index.ts';
 import { tick } from './clock.ts';
@@ -43,13 +43,8 @@ const at = (ms: number) => `<t:${String(ms / 1000)}:F>`;
 function session(now = NOW) {
   const db = leagueDatabase();
   const staff = { guildId: TEST_GUILD, user: STAFF_USER, memberRoleIds: [TEST_STAFF_ROLE] };
-  setTeamManager(db, staff, { teamId: 2, member: { id: BRAVO_ID, displayName: 'Member 1' } }, 100);
-  setTeamManager(
-    db,
-    staff,
-    { teamId: 3, member: { id: CHARLIE_ID, displayName: 'Member 2' } },
-    100,
-  );
+  setTeamOwner(db, staff, { teamId: 2, member: { id: BRAVO_ID, displayName: 'Member 1' } }, 100);
+  setTeamOwner(db, staff, { teamId: 3, member: { id: CHARLIE_ID, displayName: 'Member 2' } }, 100);
   db.update(schema.leagueGuild).set({ scheduleChannelId: SCHEDULE }).run();
   const gateway = fakeGateway();
   const context = fakeContext({ db, gateway, now: () => now });

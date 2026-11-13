@@ -3,7 +3,8 @@
 
 export const LOCALES = ['fr', 'en'] as const;
 export const LEGAL_STATUSES = ['association', 'association_1901', 'company', 'amateur'] as const;
-export const TEAM_STAFF_ROLES = ['manager', 'staff'] as const;
+// The owner, managers and coaches who act for a team (maintainer, 13 November 2026).
+export const TEAM_STAFF_ROLES = ['owner', 'manager', 'coach'] as const;
 
 export const PARTICIPANT_MODES = ['team', 'mixed'] as const;
 export const SEASON_STATUSES = ['registration', 'active', 'cup', 'closed'] as const;

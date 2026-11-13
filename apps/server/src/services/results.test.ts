@@ -200,7 +200,7 @@ describe('recordResult', () => {
           rulesetJson: {
             result_validation: 'staff',
             game_score,
-            team_staff_max: 3,
+            team_roles: { managers_max: 3, coaches_max: 1 },
             dispute_reasons: [],
             veto: vetoSchema.parse({}),
             promotion: promotionSchema.parse({}),

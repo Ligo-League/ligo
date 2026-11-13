@@ -8,6 +8,7 @@ export * from './settings.ts';
 export * from './sides.ts';
 export * from './slug.ts';
 export * from './standings.ts';
+export * from './team-roles.ts';
 export * from './time.ts';
 export * from './veto.ts';
 export * from './zones.ts';

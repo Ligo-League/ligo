@@ -175,13 +175,23 @@ export const promotionSchema = z
   });
 export type PromotionSettings = z.infer<typeof promotionSchema>;
 
+/**
+ * How many people a team may have in each role besides its one owner (maintainer,
+ * 13 November 2026): 3 managers, as the rulebook's 3 staff, and 1 coach, as R6 lobbies have one
+ * coach slot per team.
+ */
+export const teamRolesSchema = z.strictObject({
+  managers_max: z.int().min(0).default(3),
+  coaches_max: z.int().min(0).default(1),
+});
+export type TeamRolesSettings = z.infer<typeof teamRolesSchema>;
+
 /** `competition.ruleset_json`. */
 export const rulesetSchema = z.strictObject({
   result_validation: z.enum(RESULT_VALIDATION_MODES),
   /** Null when any score with a winner is acceptable, as with Rocket League goals. */
   game_score: gameScoreSchema.nullable().default(null),
-  /** How many staff members a team may have besides its one manager. */
-  team_staff_max: z.int().min(0).default(3),
+  team_roles: teamRolesSchema.default(() => teamRolesSchema.parse({})),
   /** Offered when a team disputes a result, before "other"; Discord lists 25 entries at most. */
   dispute_reasons: z
     .array(disputeReasonSchema)

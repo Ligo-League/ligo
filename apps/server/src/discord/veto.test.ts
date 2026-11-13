@@ -1,7 +1,7 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
-import { setTeamManager } from '../services/team-staff.ts';
+import { setTeamOwner } from '../services/team-staff.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { buttons } from './buttons/index.ts';
 import { tick } from './clock.ts';
@@ -38,8 +38,8 @@ const logger = { error: vi.fn() };
 function session() {
   const db = leagueDatabase();
   const staff = { guildId: TEST_GUILD, user: STAFF_USER, memberRoleIds: [TEST_STAFF_ROLE] };
-  setTeamManager(db, staff, { teamId: 2, member: BRAVO.user ?? STAFF_USER }, 100);
-  setTeamManager(db, staff, { teamId: 3, member: CHARLIE.user ?? STAFF_USER }, 100);
+  setTeamOwner(db, staff, { teamId: 2, member: BRAVO.user ?? STAFF_USER }, 100);
+  setTeamOwner(db, staff, { teamId: 3, member: CHARLIE.user ?? STAFF_USER }, 100);
   const gateway = fakeGateway();
   let now = NOW;
   const context = fakeContext({ db, gateway, now: () => now });
@@ -107,7 +107,7 @@ describe('/match veto', () => {
     const { start, context } = session();
     const outsider = await start(member(5));
     expect(outsider.replies[0]).toMatchObject({ ephemeral: true });
-    expect(outsider.replies[0]?.content).toContain("Tu n'es ni manager ni staff");
+    expect(outsider.replies[0]?.content).toContain("Tu n'es responsable d'aucune équipe");
 
     const suggest = fakeAutocomplete(
       'match',

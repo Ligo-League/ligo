@@ -1,3 +1,4 @@
+import type { TeamRole } from '@ligo/core';
 import { findGuildLeague, schema, type Db, type GuildLeague } from '@ligo/db';
 import { and, eq, isNull } from 'drizzle-orm';
 
@@ -30,10 +31,10 @@ export function requireStaff(
 
 export interface TeamRoleHeld {
   teamId: number;
-  role: 'manager' | 'staff';
+  role: TeamRole;
 }
 
-/** The teams a player currently manages or staffs. */
+/** The teams a player currently acts for, as owner, manager or coach. */
 export function teamsOfPlayer(db: Pick<Db, 'select'>, playerId: number): TeamRoleHeld[] {
   const { teamStaff } = schema;
   return db
@@ -44,7 +45,7 @@ export function teamsOfPlayer(db: Pick<Db, 'select'>, playerId: number): TeamRol
 }
 
 /**
- * The teams a Discord user may act for, as their manager or staff, read from the database on
+ * The teams a Discord user may act for, as owner, manager or coach, read from the database on
  * every call. A user the platform has never seen acts for none.
  */
 export function teamsActedFor(

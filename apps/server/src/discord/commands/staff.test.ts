@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { setAutoExclusion } from '../../services/exclusions.ts';
 import type { Actor } from '../../services/permissions.ts';
-import { setTeamManager } from '../../services/team-staff.ts';
+import { setTeamOwner } from '../../services/team-staff.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../../testing.ts';
 import {
   fakeAutocomplete,
@@ -218,7 +218,7 @@ describe('/staff match result', () => {
         rulesetJson: {
           result_validation: 'staff',
           game_score: { win_at: 13, overtime_rounds: 2 },
-          team_staff_max: 3,
+          team_roles: { managers_max: 3, coaches_max: 1 },
           dispute_reasons: [],
           veto: vetoSchema.parse({}),
           promotion: promotionSchema.parse({}),
@@ -411,7 +411,7 @@ describe('/staff match forfeit', () => {
     const { context, db, gateway } = league();
     exclusionAtTwo(db);
     db.update(schema.leagueGuild).set({ resultsChannelId: RESULTS }).run();
-    setTeamManager(db, STAFF_ACTOR, { teamId: 3, member: CHARLIE_MANAGER }, 100);
+    setTeamOwner(db, STAFF_ACTOR, { teamId: 3, member: CHARLIE_MANAGER }, 100);
     const { replies } = await run(staffMatch('forfeit', { match: 3, team: 'b' }), context);
     expect(replies[0]?.content).toContain('Charlie est exclue automatiquement avec 2 forfaits.');
     const rule =
@@ -440,7 +440,7 @@ describe('/staff match forfeit', () => {
   it('tells staff when a direct message could not be delivered', async () => {
     const { context, db, gateway } = league();
     exclusionAtTwo(db);
-    setTeamManager(db, STAFF_ACTOR, { teamId: 3, member: CHARLIE_MANAGER }, 100);
+    setTeamOwner(db, STAFF_ACTOR, { teamId: 3, member: CHARLIE_MANAGER }, 100);
     const failing = {
       ...gateway,
       sendDirectMessage: () => Promise.reject(new Error('Direct messages are closed')),
@@ -584,7 +584,7 @@ describe('/staff exclusion', () => {
   it('excludes a team: private answer, direct message, public announcement without the reason', async () => {
     const db = leagueDatabase();
     db.update(schema.leagueGuild).set({ resultsChannelId: RESULTS }).run();
-    setTeamManager(db, STAFF_ACTOR, { teamId: 2, member: MANAGER }, 100);
+    setTeamOwner(db, STAFF_ACTOR, { teamId: 2, member: MANAGER }, 100);
     const gateway = fakeGateway();
     const context = fakeContext({ db, gateway });
     const { replies } = await run(
@@ -605,7 +605,7 @@ describe('/staff exclusion', () => {
 
   it('reinstates a team on appeal, and tells it', async () => {
     const db = leagueDatabase();
-    setTeamManager(db, STAFF_ACTOR, { teamId: 2, member: MANAGER }, 100);
+    setTeamOwner(db, STAFF_ACTOR, { teamId: 2, member: MANAGER }, 100);
     const gateway = fakeGateway();
     const context = fakeContext({ db, gateway });
     await run(exclusion('exclude', { team: 2, reason: 'x' }), context);

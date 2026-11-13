@@ -31,60 +31,69 @@ function session() {
 }
 
 describe('/team', () => {
-  it('sets the manager, adds staff, and shows the team each time, privately', async () => {
+  it('sets the owner, adds managers and a coach, and shows the team each time, privately', async () => {
     const run = session();
-    expect(await run('manager', { team: 1, member: user(1) })).toEqual([
+    expect(await run('owner', { team: 1, member: user(1) })).toEqual([
       {
-        content: 'Alpha Esport (ALP) : manager <@700000000000000001> ; staff aucun.',
+        content:
+          'Alpha Esport (ALP) : propriétaire <@700000000000000001> ; managers aucun ; coach aucun.',
         ephemeral: true,
       },
     ]);
-    await run('staff add', { team: 1, member: user(2) });
-    expect((await run('staff add', { team: 1, member: user(3) }))[0]?.content).toBe(
-      'Alpha Esport (ALP) : manager <@700000000000000001> ; staff <@700000000000000002>, <@700000000000000003>.',
+    await run('member add', { team: 1, member: user(2), role: 'manager' });
+    expect((await run('member add', { team: 1, member: user(3), role: 'coach' }))[0]?.content).toBe(
+      'Alpha Esport (ALP) : propriétaire <@700000000000000001> ; managers <@700000000000000002> ; coach <@700000000000000003>.',
     );
-    expect((await run('staff remove', { team: 1, member: user(1) }))[0]?.content).toBe(
-      'Alpha Esport (ALP) : manager aucun ; staff <@700000000000000002>, <@700000000000000003>.',
+    expect((await run('member remove', { team: 1, member: user(1) }))[0]?.content).toBe(
+      'Alpha Esport (ALP) : propriétaire aucun ; managers <@700000000000000002> ; coach <@700000000000000003>.',
     );
-    expect((await run('staff list', { team: 1 }))[0]?.content).toBe(
-      'Alpha Esport (ALP) : manager aucun ; staff <@700000000000000002>, <@700000000000000003>.',
+    expect((await run('list', { team: 1 }))[0]?.content).toBe(
+      'Alpha Esport (ALP) : propriétaire aucun ; managers <@700000000000000002> ; coach <@700000000000000003>.',
     );
   });
 
   it('explains each refusal privately', async () => {
     const run = session();
     const reply = async (...args: Parameters<typeof input>) => (await run(...args))[0];
-    await run('manager', { team: 1, member: user(1) });
-    for (const n of [2, 3, 4]) await run('staff add', { team: 1, member: user(n) });
+    await run('owner', { team: 1, member: user(1) });
+    for (const n of [2, 3, 4])
+      await run('member add', { team: 1, member: user(n), role: 'manager' });
 
-    expect(await reply('staff add', { team: 1, member: user(5) })).toEqual({
-      content: 'Cette équipe a déjà 3 membres de staff, le maximum prévu par la ligue.',
+    expect(await reply('member add', { team: 1, member: user(5), role: 'manager' })).toEqual({
+      content: 'Cette équipe a déjà 3 personnes dans ce rôle, le maximum prévu par la ligue.',
       ephemeral: true,
     });
-    expect((await reply('staff add', { team: 1, member: user(2) }))?.content).toBe(
+    expect((await reply('member add', { team: 1, member: user(2), role: 'coach' }))?.content).toBe(
       'Ce membre a déjà ce rôle dans cette équipe.',
     );
-    expect((await reply('staff remove', { team: 1, member: user(9) }))?.content).toBe(
-      "Ce membre n'est ni manager ni staff de cette équipe.",
+    expect((await reply('member remove', { team: 1, member: user(9) }))?.content).toBe(
+      "Ce membre n'est pas responsable de cette équipe.",
     );
-    expect((await reply('manager', { team: 99, member: user(1) }))?.content).toBe(
+    expect((await reply('owner', { team: 99, member: user(1) }))?.content).toBe(
       'Équipe introuvable dans la saison en cours. Choisis-la dans la liste proposée.',
     );
-    expect((await reply('manager', { team: 'alpha', member: user(1) }))?.content).toBe(
+    expect((await reply('owner', { team: 'alpha', member: user(1) }))?.content).toBe(
       'Équipe introuvable dans la saison en cours. Choisis-la dans la liste proposée.',
     );
-    expect((await reply('manager', { team: 1 }))?.content).toBe('Commande inconnue.');
+    expect((await reply('owner', { team: 1 }))?.content).toBe('Commande inconnue.');
+    expect((await reply('member add', { team: 1, member: user(6) }))?.content).toBe(
+      'Commande inconnue.',
+    );
     expect((await reply('rename', { team: 1, member: user(1) }))?.content).toBe(
       'Commande inconnue.',
     );
   });
 
-  it.each(['manager', 'staff add', 'staff remove', 'staff list'])(
+  it.each(['owner', 'member add', 'member remove', 'list'])(
     'refuses "%s" to a member who is not league staff',
     async (action) => {
       const run = session();
       expect(
-        await run(action, { team: 1, member: user(1) }, { ...STAFF, memberRoleIds: [] }),
+        await run(
+          action,
+          { team: 1, member: user(1), role: 'manager' },
+          { ...STAFF, memberRoleIds: [] },
+        ),
       ).toEqual([
         { content: 'Cette commande est réservée au staff de la ligue.', ephemeral: true },
       ]);

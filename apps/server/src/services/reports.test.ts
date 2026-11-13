@@ -19,7 +19,7 @@ import {
 import { recordForfeit } from './forfeits.ts';
 import { recordResult } from './results.ts';
 import { getStandings } from './standings.ts';
-import { addTeamStaff, setTeamManager } from './team-staff.ts';
+import { addTeamMember, setTeamOwner } from './team-staff.ts';
 
 const { auditLog, competition, dispute, evidence, game, leagueGuild, match } = schema;
 
@@ -55,10 +55,10 @@ const queueMessage = (report: ReportDetails) => ({
 
 function league() {
   const db = leagueDatabase();
-  setTeamManager(db, STAFF, { teamId: 2, member: BRAVO_MANAGER.user }, 100);
-  setTeamManager(db, STAFF, { teamId: 3, member: CHARLIE_MANAGER.user }, 100);
-  addTeamStaff(db, STAFF, { teamId: 3, member: CHARLIE_STAFF.user }, 100);
-  setTeamManager(db, STAFF, { teamId: 4, member: XRAY_MANAGER.user }, 100);
+  setTeamOwner(db, STAFF, { teamId: 2, member: BRAVO_MANAGER.user }, 100);
+  setTeamOwner(db, STAFF, { teamId: 3, member: CHARLIE_MANAGER.user }, 100);
+  addTeamMember(db, STAFF, { teamId: 3, member: CHARLIE_STAFF.user, role: 'manager' }, 100);
+  setTeamOwner(db, STAFF, { teamId: 4, member: XRAY_MANAGER.user }, 100);
   db.update(leagueGuild).set({ alertsChannelId: QUEUE, resultsChannelId: RESULTS }).run();
   const gateway = fakeGateway();
   const report = (actor: Actor = BRAVO_MANAGER, request: ReportRequest = REQUEST, now = 9000) =>
@@ -107,8 +107,8 @@ describe('reportResult', () => {
   it('names the other team as the ones who may confirm', async () => {
     const reply = await league().report();
     expect(reply.ok && reply.opponents.map((entry) => [entry.displayName, entry.role])).toEqual([
-      ['Member 2', 'manager'],
-      ['Member 3', 'staff'],
+      ['Member 2', 'owner'],
+      ['Member 3', 'manager'],
     ]);
     const fromB = await league().report(CHARLIE_STAFF);
     expect(fromB).toMatchObject({ ok: true, side: 'b', opponents: [{ displayName: 'Member 1' }] });
@@ -411,7 +411,7 @@ describe('answerReport', () => {
 
   it('lets someone who manages both teams confirm their own report', async () => {
     const { db, report } = league();
-    setTeamManager(db, STAFF, { teamId: 3, member: BRAVO_MANAGER.user }, 200);
+    setTeamOwner(db, STAFF, { teamId: 3, member: BRAVO_MANAGER.user }, 200);
     const evidenceId = await evidenceIdOf(report);
     expect(
       answerReport(db, BRAVO_MANAGER, { matchId: 3, evidenceId, action: 'confirm' }, 9500).ok,

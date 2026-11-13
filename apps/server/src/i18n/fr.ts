@@ -67,7 +67,7 @@ export const fr = {
   'report.posted':
     '{reporter} signale pour {team} : **{line}**. {opponents}, confirmez ou contestez ce résultat.',
   'report.postedNoOpponent':
-    "{reporter} signale pour {team} : **{line}**. L'équipe adverse n'a pas encore de manager enregistré : le staff validera.",
+    "{reporter} signale pour {team} : **{line}**. L'équipe adverse n'a pas encore de responsable enregistré : le staff validera.",
   'report.notQueued': "Le staff n'a pas pu être prévenu automatiquement : merci de le prévenir.",
   'report.button.confirm': 'Confirmer',
   'report.button.dispute': 'Contester',
@@ -108,7 +108,7 @@ export const fr = {
   'sanction.error.points_required':
     'Indique un nombre de points non nul, entre -100 et 100 (négatif pour en retirer).',
   'sanction.error.points_not_allowed': 'Un avertissement ne porte pas de points.',
-  'match.error.no_team': 'Tu ne gères aucune équipe. Le staff peut te nommer avec /team manager.',
+  'match.error.no_team': "Tu n'es responsable d'aucune équipe. Le staff peut te nommer avec /team.",
   'match.error.no_season': "Cette ligue n'a pas de saison en cours.",
   'report.hint.nothingLeft': 'Aucun match à signaler : ceux de tes équipes ont déjà un résultat.',
   'report.hint.noMatch': 'Aucun de tes matchs à signaler ne correspond à « {query} ».',
@@ -127,7 +127,7 @@ export const fr = {
   'match.error.details_too_long':
     'Les détails dépassent {max} caractères. Clique de nouveau sur Contester.',
   'match.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
-  'match.error.not_your_match': "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
+  'match.error.not_your_match': "Tu n'es responsable d'aucune des deux équipes de ce match.",
   'match.error.not_reportable': 'Ce match a déjà un résultat signalé ou validé.',
   'match.error.screenshot_required': "La capture d'écran du tableau des scores est obligatoire.",
   'match.error.screenshot_unreadable': "Je n'ai pas pu récupérer la capture. Réessaie.",
@@ -150,15 +150,20 @@ export const fr = {
     'Score impossible avec le règlement de la ligue : une carte se termine entre {widest} et {closest}, ou en prolongation ({overtime}).',
   'match.error.invalid_screenshot':
     'La capture doit être une image PNG, JPEG ou WebP de moins de 20 Mo, jointe à la commande.',
-  'command.team.description': 'Managers et staff des équipes, réservé au staff de la ligue.',
-  'command.team.manager.description': "Désigne le manager d'une équipe.",
-  'command.team.staff.description': "Staff d'une équipe.",
-  'command.team.staff.add.description': "Ajoute un membre au staff d'une équipe.",
-  'command.team.staff.remove.description': "Retire un membre (staff ou manager) d'une équipe.",
-  'command.team.staff.list.description': "Affiche le manager et le staff d'une équipe.",
+  'command.team.description': 'Les responsables des équipes, réservé au staff de la ligue.',
+  'command.team.owner.description': "Désigne le propriétaire d'une équipe.",
+  'command.team.member.description': "Managers et coach d'une équipe.",
+  'command.team.member.add.description': 'Ajoute un manager ou un coach à une équipe.',
+  'command.team.member.remove.description':
+    "Retire un responsable d'une équipe, propriétaire compris.",
+  'command.team.list.description': "Affiche les responsables d'une équipe.",
+  'command.team.option.role': 'Le rôle dans l’équipe.',
+  'team.role.owner': 'Propriétaire',
+  'team.role.manager': 'Manager',
+  'team.role.coach': 'Coach',
   'command.team.option.team': "L'équipe : tape son nom ou son tag, puis choisis dans la liste.",
   'command.team.option.member': 'Le membre Discord concerné.',
-  'team.summary': '{team} ({tag}) : manager {manager} ; staff {staff}.',
+  'team.summary': '{team} ({tag}) : propriétaire {owner} ; managers {managers} ; coach {coach}.',
   'team.none': 'aucun',
   'team.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'team.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
@@ -166,9 +171,11 @@ export const fr = {
   'team.error.team_not_found':
     'Équipe introuvable dans la saison en cours. Choisis-la dans la liste proposée.',
   'team.error.already_on_team': 'Ce membre a déjà ce rôle dans cette équipe.',
-  'team.error.not_on_team': "Ce membre n'est ni manager ni staff de cette équipe.",
-  'team.error.staff_full':
-    'Cette équipe a déjà {max} membres de staff, le maximum prévu par la ligue.',
+  'team.error.not_on_team': "Ce membre n'est pas responsable de cette équipe.",
+  'team.error.owner_cannot_leave':
+    "Le propriétaire ne peut pas quitter l'équipe : il la confie d'abord à quelqu'un d'autre.",
+  'team.error.role_full':
+    'Cette équipe a déjà {max} personnes dans ce rôle, le maximum prévu par la ligue.',
   'command.league.description': 'Réglages de la ligue sur ce serveur, réservés au staff.',
   'command.league.channel.description': 'Choisit le salon que le bot utilise pour un usage.',
   'command.league.channel.option.kind': 'À quoi sert le salon.',
@@ -203,7 +210,7 @@ export const fr = {
   'schedule.proposed':
     '{proposer} propose pour {team} : **{fixture}** le {when}. {opponents}, acceptez ou refusez.',
   'schedule.proposedNoOpponent':
-    "{proposer} propose pour {team} : **{fixture}** le {when}. L'équipe adverse n'a ni manager ni staff : le staff de la ligue peut fixer l'horaire.",
+    "{proposer} propose pour {team} : **{fixture}** le {when}. L'équipe adverse n'a aucun responsable : le staff de la ligue peut fixer l'horaire.",
   'schedule.button.accept': 'Accepter',
   'schedule.button.decline': 'Refuser',
   'schedule.accepted': '**{fixture}** — le {when}, accepté par {member}.',
@@ -219,11 +226,10 @@ export const fr = {
   'schedule.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'schedule.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
   'schedule.error.no_team':
-    'Tu ne gères aucune équipe. Le staff peut te nommer avec /team manager.',
+    "Tu n'es responsable d'aucune équipe. Le staff peut te nommer avec /team.",
   'schedule.error.match_not_found':
     'Match introuvable dans cette ligue. Choisis-le dans la liste proposée.',
-  'schedule.error.not_your_match':
-    "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
+  'schedule.error.not_your_match': "Tu n'es responsable d'aucune des deux équipes de ce match.",
   'schedule.error.not_schedulable':
     "Ce match a déjà un résultat : il n'y a plus d'horaire à fixer.",
   'schedule.error.in_past': 'Cet horaire est déjà passé.',
@@ -258,18 +264,18 @@ export const fr = {
   'help.overview':
     "**Les commandes de Ligo**\n• `/standings` — le classement de la saison, en image ou en texte.\n• `/match propose-time` — proposer un horaire de match à l'équipe adverse.\n• `/match veto` — le veto des cartes, avant le match.\n• `/match report` — signaler le résultat d'un match de ton équipe, avec la capture d'écran du tableau des scores.\n• `/help` — cette aide. `/help command:` explique une commande en détail.",
   'help.overview.staff':
-    '**Staff de la ligue**\n• `/staff match` — valider, saisir, corriger ou annuler un résultat ; enregistrer un forfait.\n• `/staff sanction` — un avertissement ou des points pour une équipe, et la liste de ses sanctions.\n• `/staff exclusion` — exclure une équipe, la réintégrer après un appel, régler son exclusion automatique.\n• `/team` — le manager et le staff de chaque équipe.\n• `/league channel` — les salons du bot : file de validation et résultats.\n\n**Mise en place**\n1. `/league channel` deux fois : la file de validation du staff, puis le salon des résultats.\n2. `/team manager` pour chaque équipe.\nLes équipes peuvent alors signaler leurs résultats avec `/match report`.',
+    '**Staff de la ligue**\n• `/staff match` — valider, saisir, corriger ou annuler un résultat ; enregistrer un forfait.\n• `/staff sanction` — un avertissement ou des points pour une équipe, et la liste de ses sanctions.\n• `/staff exclusion` — exclure une équipe, la réintégrer après un appel, régler son exclusion automatique.\n• `/team` — les responsables de chaque équipe : propriétaire, managers, coach.\n• `/league channel` — les salons du bot : file de validation et résultats.\n\n**Mise en place**\n1. `/league channel` deux fois : la file de validation du staff, puis le salon des résultats.\n2. `/team owner` pour chaque équipe.\nLes équipes peuvent alors signaler leurs résultats avec `/match report`.',
   'help.page.standings':
     "**`/standings`** — le classement de la saison en cours\nOuvert à tous.\n\n• `division` (facultatif) : « Ligue 1 » ou « L1 », par exemple. Sans elle, toutes les divisions.\n• `format` (facultatif) : Image (par défaut) ou Texte.\n\nSeuls comptent les résultats validés et les forfaits, avec les points des sanctions. Un résultat signalé mais pas encore validé n'apparaît pas.\nColonnes : MJ matchs joués, W victoires, L défaites, RW manches gagnées, RL manches perdues, Diff (RW − RL), PTS points. Les égalités sont départagées selon le règlement de la ligue.",
   'help.page.match':
-    "**`/match report`** — signaler le résultat d'un match\nPour le manager et le staff des deux équipes. Le staff de la ligue les désigne avec `/team manager`.\n\n• `match` : choisis-le dans la liste. Elle ne montre que les matchs de tes équipes encore à jouer ; tape un nom, un tag ou « s3 » (semaine 3) pour la filtrer.\n• `score_a` et `score_b` : les manches gagnées par la première et la seconde équipe citées, dans l'ordre du match, pas forcément la tienne d'abord.\n• `screenshot` : la capture du tableau des scores, obligatoire. PNG, JPEG ou WebP, {maxMb} Mo au plus.\n\nUn score impossible selon le règlement (7–6, par exemple) est refusé. Un forfait ne se signale pas : préviens le staff de la ligue.",
+    "**`/match report`** — signaler le résultat d'un match\nPour les responsables des deux équipes (propriétaire, managers, coach). Le staff de la ligue les désigne avec `/team`.\n\n• `match` : choisis-le dans la liste. Elle ne montre que les matchs de tes équipes encore à jouer ; tape un nom, un tag ou « s3 » (semaine 3) pour la filtrer.\n• `score_a` et `score_b` : les manches gagnées par la première et la seconde équipe citées, dans l'ordre du match, pas forcément la tienne d'abord.\n• `screenshot` : la capture du tableau des scores, obligatoire. PNG, JPEG ou WebP, {maxMb} Mo au plus.\n\nUn score impossible selon le règlement (7–6, par exemple) est refusé. Un forfait ne se signale pas : préviens le staff de la ligue.",
   'help.match.steps.staff':
     "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** ou **Contester**. Pour contester, elle choisit un motif et peut ajouter des détails, lus par le staff seulement.\n3. Le staff clique **Valider** ou **Refuser**. Refusé, le match peut être signalé de nouveau.\n4. Validé, le résultat est annoncé dans le salon des résultats et compte au classement.",
   'help.match.steps.opponent':
     "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** : le résultat est validé, annoncé dans le salon des résultats et compte au classement. **Contester** demande un motif et des détails, lus par le staff de la ligue, qui tranche.",
   'help.choice.match-time': '/match propose-time',
   'help.page.matchTime':
-    "**`/match propose-time`** — proposer un horaire\nPour le manager et le staff des deux équipes.\n\n• `match` : choisis-le dans la liste, parmi les matchs de tes équipes encore à jouer.\n• `date` : le jour, choisi dans la liste (les jours restants de la semaine du match et de sa prolongation) ou tapé comme AAAA-MM-JJ.\n• `time` : l'heure, comme 21:00, à l'heure de la ligue. Le message l'affiche ensuite à l'heure de chacun.\n\nL'équipe adverse clique **Accepter** ou **Refuser**. Une nouvelle proposition de ton équipe remplace la précédente. Un horaire hors de la semaine et de sa prolongation se demande au staff de la ligue.\n\n**Sans accord**",
+    "**`/match propose-time`** — proposer un horaire\nPour les responsables des deux équipes (propriétaire, managers, coach).\n\n• `match` : choisis-le dans la liste, parmi les matchs de tes équipes encore à jouer.\n• `date` : le jour, choisi dans la liste (les jours restants de la semaine du match et de sa prolongation) ou tapé comme AAAA-MM-JJ.\n• `time` : l'heure, comme 21:00, à l'heure de la ligue. Le message l'affiche ensuite à l'heure de chacun.\n\nL'équipe adverse clique **Accepter** ou **Refuser**. Une nouvelle proposition de ton équipe remplace la précédente. Un horaire hors de la semaine et de sa prolongation se demande au staff de la ligue.\n\n**Sans accord**",
   'help.matchTime.autoSlot':
     'Sans horaire convenu à la fin de la semaine, le bot accorde {weeks} semaine(s) de prolongation et fixe aussitôt le match au dernier {day} de la prolongation, à {time}. Un horaire convenu ensuite le remplace.',
   'help.matchTime.noAutoSlot':
@@ -285,8 +291,8 @@ export const fr = {
   'help.page.staffSanction':
     "**`/staff sanction`** — les sanctions d'équipe, réservé au staff de la ligue\n• `add` — `team`, `kind`, `reason`, et `points` pour une sanction en points.\n  – Avertissement : gardé dans la liste, sans effet sur le classement.\n  – Points au classement : `points:-1` retire un point, `points:2` en ajoute deux. Le classement suit aussitôt.\n• `list` — les sanctions d'une équipe cette saison, avec date et motif. Les avertissements automatiques des forfaits y figurent.\n\nUne sanction ne se supprime pas : pour en annuler une, ajoute la sanction inverse (`points:1` après `points:-1`) avec son motif.",
   'help.page.team':
-    "**`/team`** — qui agit pour chaque équipe, réservé au staff de la ligue\nLe manager et le staff d'une équipe peuvent signaler et confirmer ses résultats. En attendant les inscriptions sur le site, c'est ici qu'on les désigne.\n\n• `/team manager` — désigne le manager d'une équipe (`team`, `member`). L'ancien manager perd ce rôle.\n• `/team staff add` — ajoute un membre au staff d'une équipe.\n• `/team staff remove` — retire un membre de l'équipe, manager compris.\n• `/team staff list` — le manager et le staff d'une équipe.\n\nUne même personne peut gérer plusieurs équipes.",
-  'help.team.max': 'Une équipe a un manager et {max} membres de staff au plus.',
+    "**`/team`** — qui agit pour chaque équipe, réservé au staff de la ligue\nLes responsables d'une équipe (son propriétaire, ses managers et son coach) signalent ses résultats, proposent ses horaires et font son veto. En attendant les inscriptions sur le site, c'est ici qu'on les désigne.\n\n• `/team owner` — désigne le propriétaire d'une équipe (`team`, `member`). L'ancien propriétaire quitte l'équipe.\n• `/team member add` — ajoute un manager ou un coach (`role`).\n• `/team member remove` — retire un responsable de l'équipe, propriétaire compris.\n• `/team list` — les responsables d'une équipe.\n\nUne même personne peut être responsable de plusieurs équipes.",
+  'help.team.max': 'Une équipe a un propriétaire, {managers} managers et {coaches} coach au plus.',
   'help.page.league':
     "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
   'command.match.veto.description': "Lance le veto des cartes d'un match de ton équipe.",
@@ -317,7 +323,7 @@ export const fr = {
   'veto.started': 'Veto lancé : le message est juste en dessous.',
   'veto.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'veto.error.no_team':
-    "Tu n'es ni manager ni staff d'une équipe de cette ligue. Demande au staff de la ligue de t'ajouter avec /team.",
+    "Tu n'es responsable d'aucune équipe de cette ligue. Demande au staff de la ligue de t'ajouter avec /team.",
   'veto.error.match_not_found': "Ce match n'existe pas dans cette ligue. Choisis-le dans la liste.",
   'veto.error.not_your_match': "Ce match n'est pas celui de ton équipe.",
   'veto.error.not_schedulable':
@@ -339,7 +345,7 @@ export const fr = {
   'veto.hint.noMatch': 'Aucun de tes matchs à jouer ne correspond à « {query} ».',
   'help.choice.match-veto': '/match veto',
   'help.page.matchVeto':
-    "**`/match veto`** — le veto des cartes\nPour le manager et le staff des deux équipes ; le staff de la ligue peut aussi le lancer.\n\n• `match` : choisis-le dans la liste.\n\nAu lancement, le bot fige qui choisit quoi d'après le classement du moment : l'équipe la moins bien classée choisit le côté de départ et commence le veto, l'autre choisit le côté en prolongation, la mieux classée héberge. À égalité de classement, le bot tire au sort.\n\nLe bot poste un message avec un bouton par carte : chaque équipe clique à son tour pour bannir ou choisir, puis Attaque ou Défense. Le message se met à jour à chaque choix. Chaque tour a un temps limité ; sans choix à temps, le bot choisit au hasard et le note.\nÀ la fin, la carte est enregistrée avec le match : `/match report` la reprend.",
+    "**`/match veto`** — le veto des cartes\nPour les responsables des deux équipes ; le staff de la ligue peut aussi le lancer.\n\n• `match` : choisis-le dans la liste.\n\nAu lancement, le bot fige qui choisit quoi d'après le classement du moment : l'équipe la moins bien classée choisit le côté de départ et commence le veto, l'autre choisit le côté en prolongation, la mieux classée héberge. À égalité de classement, le bot tire au sort.\n\nLe bot poste un message avec un bouton par carte : chaque équipe clique à son tour pour bannir ou choisir, puis Attaque ou Défense. Le message se met à jour à chaque choix. Chaque tour a un temps limité ; sans choix à temps, le bot choisit au hasard et le note.\nÀ la fin, la carte est enregistrée avec le match : `/match report` la reprend.",
   'card.eyebrow': '{competition} · {season}',
   'card.title': '{division} · Semaine {week}',
   'card.label.time': 'Match programmé',
@@ -409,7 +415,7 @@ export const fr = {
   'standings.excluded': 'Exclue',
   'help.choice.staff-exclusion': '/staff exclusion',
   'help.page.staffExclusion':
-    "**`/staff exclusion`** — l'exclusion d'une équipe, réservé au staff de la ligue\n• `exclude` — `team`, `reason` : exclut une équipe de la saison, pour ses forfaits ou toute autre raison du règlement.\n• `reinstate` — `team`, `reason` : annule une exclusion, par exemple après un appel. Ses matchs comptent de nouveau tels qu'ils sont.\n• `auto` — `team`, `enabled`, `reason` : désactive (ou réactive) l'exclusion automatique pour une équipe. La raison est obligatoire.\n\n**Exclusion automatique** : quand le staff enregistre le forfait qui atteint le seuil de la saison, l'équipe est exclue aussitôt. Son manager et son staff reçoivent un message privé, le salon des résultats l'annonce, et la file de validation est prévenue.\n\n**Règle des 50 %** : seuls les matchs vraiment joués comptent (pas les forfaits), sur tous les matchs de l'équipe dans la saison.\n• Au moins la moitié jouée : ses résultats validés restent ; ses autres matchs deviennent des victoires par forfait pour ses adversaires.\n• Moins de la moitié : tous ses matchs deviennent des victoires par forfait pour ses adversaires, sauf ceux où l'adversaire avait lui-même déclaré forfait.\nL'équipe exclue apparaît en dernier au classement, marquée « Exclue ». Ses matchs restants ne se jouent plus.",
+    "**`/staff exclusion`** — l'exclusion d'une équipe, réservé au staff de la ligue\n• `exclude` — `team`, `reason` : exclut une équipe de la saison, pour ses forfaits ou toute autre raison du règlement.\n• `reinstate` — `team`, `reason` : annule une exclusion, par exemple après un appel. Ses matchs comptent de nouveau tels qu'ils sont.\n• `auto` — `team`, `enabled`, `reason` : désactive (ou réactive) l'exclusion automatique pour une équipe. La raison est obligatoire.\n\n**Exclusion automatique** : quand le staff enregistre le forfait qui atteint le seuil de la saison, l'équipe est exclue aussitôt. Ses responsables reçoivent un message privé, le salon des résultats l'annonce, et la file de validation est prévenue.\n\n**Règle des 50 %** : seuls les matchs vraiment joués comptent (pas les forfaits), sur tous les matchs de l'équipe dans la saison.\n• Au moins la moitié jouée : ses résultats validés restent ; ses autres matchs deviennent des victoires par forfait pour ses adversaires.\n• Moins de la moitié : tous ses matchs deviennent des victoires par forfait pour ses adversaires, sauf ceux où l'adversaire avait lui-même déclaré forfait.\nL'équipe exclue apparaît en dernier au classement, marquée « Exclue ». Ses matchs restants ne se jouent plus.",
 } as const;
 
 export type MessageKey = keyof typeof fr;

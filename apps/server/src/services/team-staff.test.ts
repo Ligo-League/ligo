@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { teamsActedFor, type Actor } from './permissions.ts';
 import {
-  addTeamStaff,
+  addTeamMember,
   listTeamStaff,
-  removeTeamStaff,
+  removeTeamMember,
   searchTeams,
-  setTeamManager,
+  setTeamOwner,
   showTeamStaff,
 } from './team-staff.ts';
 
@@ -26,128 +26,146 @@ const BRAVO = 2;
 const roles = (db: ReturnType<typeof leagueDatabase>, teamId: number) =>
   listTeamStaff(db, teamId).map((entry) => [entry.displayName, entry.role]);
 
-describe('setTeamManager', () => {
-  it('makes the member manager and creates their player row', () => {
+describe('setTeamOwner', () => {
+  it('makes the member owner and creates their player row', () => {
     const db = leagueDatabase();
-    const reply = setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
+    const reply = setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
     expect(reply).toMatchObject({
       ok: true,
       team: { teamId: ALPHA, tag: 'ALP', name: 'Alpha Esport' },
-      members: [{ displayName: 'Member 1', role: 'manager', discordUserId: member(1).id }],
+      members: [{ displayName: 'Member 1', role: 'owner', discordUserId: member(1).id }],
     });
-    expect(teamsActedFor(db, asUser(1)).teams).toEqual([{ teamId: ALPHA, role: 'manager' }]);
+    expect(teamsActedFor(db, asUser(1)).teams).toEqual([{ teamId: ALPHA, role: 'owner' }]);
   });
 
-  it('replaces the previous manager, whose row keeps its end date', () => {
+  it('replaces the previous owner, whose row keeps its end date', () => {
     const db = leagueDatabase();
-    setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
-    setTeamManager(db, STAFF, { teamId: ALPHA, member: member(2) }, 6000);
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(2) }, 6000);
 
-    expect(roles(db, ALPHA)).toEqual([['Member 2', 'manager']]);
+    expect(roles(db, ALPHA)).toEqual([['Member 2', 'owner']]);
     expect(teamsActedFor(db, asUser(1)).teams).toEqual([]);
     expect(db.select().from(schema.teamStaff).all()).toMatchObject([
-      { role: 'manager', since: 5000, until: 6000 },
-      { role: 'manager', since: 6000, until: null },
+      { role: 'owner', since: 5000, until: 6000 },
+      { role: 'owner', since: 6000, until: null },
     ]);
   });
 
-  it('promotes a staff member, who then leaves the staff list', () => {
+  it('promotes a manager, who then leaves the managers', () => {
     const db = leagueDatabase();
-    addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
-    setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 6000);
-    expect(roles(db, ALPHA)).toEqual([['Member 1', 'manager']]);
+    addTeamMember(db, STAFF, { teamId: ALPHA, member: member(1), role: 'manager' }, 5000);
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 6000);
+    expect(roles(db, ALPHA)).toEqual([['Member 1', 'owner']]);
   });
 
-  it('lets one person manage two teams', () => {
+  it('lets one person own two teams', () => {
     const db = leagueDatabase();
-    setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
-    setTeamManager(db, STAFF, { teamId: BRAVO, member: member(1) }, 5000);
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
+    setTeamOwner(db, STAFF, { teamId: BRAVO, member: member(1) }, 5000);
     expect(teamsActedFor(db, asUser(1)).teams).toEqual([
-      { teamId: ALPHA, role: 'manager' },
-      { teamId: BRAVO, role: 'manager' },
+      { teamId: ALPHA, role: 'owner' },
+      { teamId: BRAVO, role: 'owner' },
     ]);
   });
 
-  it('refuses to set the current manager again', () => {
+  it('refuses to set the current owner again', () => {
     const db = leagueDatabase();
-    setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
-    expect(setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 6000)).toEqual({
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
+    expect(setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 6000)).toEqual({
       ok: false,
       error: 'already_on_team',
     });
   });
 });
 
-describe('addTeamStaff and removeTeamStaff', () => {
-  it('adds staff after the manager, oldest first', () => {
+describe('addTeamMember and removeTeamMember', () => {
+  it('lists the owner, then managers, then the coach, oldest first', () => {
     const db = leagueDatabase();
-    addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(2) }, 5000);
-    setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 6000);
-    addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(3) }, 7000);
+    addTeamMember(db, STAFF, { teamId: ALPHA, member: member(4), role: 'coach' }, 4000);
+    addTeamMember(db, STAFF, { teamId: ALPHA, member: member(2), role: 'manager' }, 5000);
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 6000);
+    addTeamMember(db, STAFF, { teamId: ALPHA, member: member(3), role: 'manager' }, 7000);
     expect(roles(db, ALPHA)).toEqual([
-      ['Member 1', 'manager'],
-      ['Member 2', 'staff'],
-      ['Member 3', 'staff'],
+      ['Member 1', 'owner'],
+      ['Member 2', 'manager'],
+      ['Member 3', 'manager'],
+      ['Member 4', 'coach'],
     ]);
   });
 
   it("stops at the league's limit, which is a setting", () => {
     const db = leagueDatabase();
-    for (const n of [1, 2, 3]) addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(n) }, n);
-    expect(addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(4) }, 9)).toEqual({
+    for (const n of [1, 2, 3])
+      addTeamMember(db, STAFF, { teamId: ALPHA, member: member(n), role: 'manager' }, n);
+    expect(
+      addTeamMember(db, STAFF, { teamId: ALPHA, member: member(4), role: 'manager' }, 9),
+    ).toEqual({
       ok: false,
-      error: 'staff_full',
+      error: 'role_full',
       max: 3,
     });
-    // The manager does not count towards the staff limit.
-    expect(setTeamManager(db, STAFF, { teamId: ALPHA, member: member(4) }, 9).ok).toBe(true);
+    // The owner and the coach have their own places.
+    expect(setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(4) }, 9).ok).toBe(true);
+    const coach = { teamId: ALPHA, role: 'coach' } as const;
+    expect(addTeamMember(db, STAFF, { ...coach, member: member(6) }, 9).ok).toBe(true);
+    expect(addTeamMember(db, STAFF, { ...coach, member: member(7) }, 9)).toEqual({
+      ok: false,
+      error: 'role_full',
+      max: 1,
+    });
 
     db.update(schema.competition)
       .set({
         rulesetJson: {
           result_validation: 'staff',
           game_score: null,
-          team_staff_max: 4,
+          team_roles: { managers_max: 4, coaches_max: 1 },
           dispute_reasons: [],
           veto: vetoSchema.parse({}),
           promotion: promotionSchema.parse({}),
         },
       })
       .run();
-    expect(addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(5) }, 10).ok).toBe(true);
+    expect(
+      addTeamMember(db, STAFF, { teamId: ALPHA, member: member(5), role: 'manager' }, 10).ok,
+    ).toBe(true);
   });
 
-  it('refuses someone already on the team, as staff or as manager', () => {
+  it('refuses someone already on the team, as owner or as manager', () => {
     const db = leagueDatabase();
-    setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
-    addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(2) }, 5000);
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
+    addTeamMember(db, STAFF, { teamId: ALPHA, member: member(2), role: 'manager' }, 5000);
     for (const n of [1, 2]) {
-      expect(addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(n) }, 6000)).toEqual({
+      expect(
+        addTeamMember(db, STAFF, { teamId: ALPHA, member: member(n), role: 'manager' }, 6000),
+      ).toEqual({
         ok: false,
         error: 'already_on_team',
       });
     }
   });
 
-  it('removes a staff member or the manager, and they can come back later', () => {
+  it('removes a manager or even the owner, and they can come back later', () => {
     const db = leagueDatabase();
-    setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
-    addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(2) }, 5000);
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
+    addTeamMember(db, STAFF, { teamId: ALPHA, member: member(2), role: 'manager' }, 5000);
 
-    expect(removeTeamStaff(db, STAFF, { teamId: ALPHA, member: member(2) }, 6000)).toMatchObject({
+    expect(removeTeamMember(db, STAFF, { teamId: ALPHA, member: member(2) }, 6000)).toMatchObject({
       ok: true,
       members: [{ displayName: 'Member 1' }],
     });
-    removeTeamStaff(db, STAFF, { teamId: ALPHA, member: member(1) }, 6000);
+    removeTeamMember(db, STAFF, { teamId: ALPHA, member: member(1) }, 6000);
     expect(roles(db, ALPHA)).toEqual([]);
     expect(teamsActedFor(db, asUser(1)).teams).toEqual([]);
 
-    expect(addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(2) }, 7000).ok).toBe(true);
+    expect(
+      addTeamMember(db, STAFF, { teamId: ALPHA, member: member(2), role: 'manager' }, 7000).ok,
+    ).toBe(true);
   });
 
   it('refuses to remove someone who is not on the team', () => {
     const db = leagueDatabase();
-    expect(removeTeamStaff(db, STAFF, { teamId: ALPHA, member: member(9) }, 6000)).toEqual({
+    expect(removeTeamMember(db, STAFF, { teamId: ALPHA, member: member(9) }, 6000)).toEqual({
       ok: false,
       error: 'not_on_team',
     });
@@ -156,15 +174,15 @@ describe('addTeamStaff and removeTeamStaff', () => {
 
 describe('every change to team staff', () => {
   const change = [
-    ['setTeamManager', setTeamManager],
-    ['addTeamStaff', addTeamStaff],
-    ['removeTeamStaff', removeTeamStaff],
+    ['setTeamOwner', setTeamOwner],
+    ['addTeamMember', addTeamMember],
+    ['removeTeamMember', removeTeamMember],
   ] as const;
 
   it.each(change)('%s is refused for non-staff, unlinked servers and unknown teams', (_n, run) => {
     const db = leagueDatabase();
     const before = db.$client.serialize().toString('base64');
-    const request = { teamId: ALPHA, member: member(1) };
+    const request = { teamId: ALPHA, member: member(1), role: 'manager' as const };
     expect(run(db, { ...STAFF, memberRoleIds: [] }, request, 1)).toEqual({
       ok: false,
       error: 'not_staff',
@@ -182,9 +200,9 @@ describe('every change to team staff', () => {
 
   it('writes an audit entry naming the staff member, with the staff before and after', () => {
     const db = leagueDatabase();
-    setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
-    addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(2) }, 6000);
-    removeTeamStaff(db, STAFF, { teamId: ALPHA, member: member(1) }, 7000);
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
+    addTeamMember(db, STAFF, { teamId: ALPHA, member: member(2), role: 'manager' }, 6000);
+    removeTeamMember(db, STAFF, { teamId: ALPHA, member: member(1) }, 7000);
 
     const staffPlayer = db
       .select()
@@ -197,14 +215,14 @@ describe('every change to team staff', () => {
       .all()
       .filter((row) => row.entity === 'team');
     expect(entries).toMatchObject([
-      { action: 'team.manager.set', entityId: '1', at: 5000, beforeJson: { staff: [] } },
-      { action: 'team.staff.add', at: 6000 },
+      { action: 'team.owner.set', entityId: '1', at: 5000, beforeJson: { staff: [] } },
+      { action: 'team.member.add', at: 6000 },
       {
-        action: 'team.staff.remove',
+        action: 'team.member.remove',
         at: 7000,
         actorKind: 'user',
         actorPlayerId: staffPlayer?.id,
-        afterJson: { staff: [{ role: 'staff' }] },
+        afterJson: { staff: [{ role: 'manager' }] },
       },
     ]);
   });
@@ -214,7 +232,7 @@ describe('every change to team staff', () => {
     db.$client.exec(
       "CREATE TRIGGER audit_fails BEFORE INSERT ON audit_log BEGIN SELECT RAISE(ABORT, 'audit down'); END",
     );
-    expect(() => setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 1)).toThrow(
+    expect(() => setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 1)).toThrow(
       /audit down/,
     );
     expect(db.select().from(schema.teamStaff).all()).toEqual([]);
@@ -224,10 +242,10 @@ describe('every change to team staff', () => {
 describe('showTeamStaff and searchTeams', () => {
   it('shows a team to league staff only', () => {
     const db = leagueDatabase();
-    setTeamManager(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
     expect(showTeamStaff(db, STAFF, ALPHA)).toMatchObject({
       ok: true,
-      members: [{ displayName: 'Member 1', role: 'manager' }],
+      members: [{ displayName: 'Member 1', role: 'owner' }],
     });
     expect(showTeamStaff(db, { ...STAFF, memberRoleIds: [] }, ALPHA)).toEqual({
       ok: false,

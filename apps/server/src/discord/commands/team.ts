@@ -1,16 +1,17 @@
+import { ADDABLE_TEAM_ROLES, type AddableTeamRole } from '@ligo/core';
 import type { SeasonTeam } from '@ligo/db';
 import { ApplicationCommandOptionType } from 'discord.js';
-import { t, type Locale } from '../../i18n/index.ts';
+import { catalogs, t, type Locale } from '../../i18n/index.ts';
 import {
-  addTeamStaff,
-  removeTeamStaff,
+  addTeamMember,
+  removeTeamMember,
   searchTeams,
-  setTeamManager,
+  setTeamOwner,
   showTeamStaff,
   type TeamMember,
   type TeamStaffReply,
 } from '../../services/team-staff.ts';
-import { described, MAX_CHOICE_LENGTH, MAX_CHOICES, STAFF_ONLY } from './describe.ts';
+import { described, english, MAX_CHOICE_LENGTH, MAX_CHOICES, STAFF_ONLY } from './describe.ts';
 import type { Command } from './types.ts';
 
 const teamOption = {
@@ -26,30 +27,47 @@ const memberOption = {
   ...described('command.team.option.member'),
   required: true,
 };
+const roleOption = {
+  type: ApplicationCommandOptionType.String as const,
+  name: 'role',
+  ...described('command.team.option.role'),
+  required: true,
+  choices: ADDABLE_TEAM_ROLES.map((role) => ({
+    name: catalogs.fr[`team.role.${role}`],
+    name_localizations: english(`team.role.${role}`),
+    value: role,
+  })),
+};
 
 // A mention shows the member's current name; nobody is notified (see `toDiscordMessage`).
 const nameOf = (member: TeamMember) =>
   member.discordUserId ? `<@${member.discordUserId}>` : member.displayName;
 
-/** "Alpha Esport (ALP) : manager X ; staff Y, Z." */
-function summary(locale: Locale, team: SeasonTeam, members: TeamMember[]): string {
+/** "Alpha Esport (ALP) : propriétaire X ; managers Y, Z ; coach W." */
+export function teamSummary(locale: Locale, team: SeasonTeam, members: TeamMember[]): string {
   const none = t(locale, 'team.none');
-  const manager = members.find((member) => member.role === 'manager');
-  const staff = members.filter((member) => member.role === 'staff');
+  const names = (role: TeamMember['role']) => {
+    const holders = members.filter((member) => member.role === role).map(nameOf);
+    return holders.length > 0 ? holders.join(', ') : none;
+  };
   return t(locale, 'team.summary', {
     team: team.name,
     tag: team.tag,
-    manager: manager ? nameOf(manager) : none,
-    staff: staff.length > 0 ? staff.map(nameOf).join(', ') : none,
+    owner: names('owner'),
+    managers: names('manager'),
+    coach: names('coach'),
   });
 }
 
 function answer(locale: Locale, reply: TeamStaffReply): string {
-  if (reply.ok) return summary(locale, reply.team, reply.members);
-  return reply.error === 'staff_full'
-    ? t(locale, 'team.error.staff_full', { max: reply.max })
+  if (reply.ok) return teamSummary(locale, reply.team, reply.members);
+  return reply.error === 'role_full'
+    ? t(locale, 'team.error.role_full', { max: reply.max })
     : t(locale, `team.error.${reply.error}`);
 }
+
+const isAddableRole = (value: string | null): value is AddableTeamRole =>
+  ADDABLE_TEAM_ROLES.some((role) => role === value);
 
 export const teamCommand: Command = {
   data: {
@@ -59,34 +77,34 @@ export const teamCommand: Command = {
     options: [
       {
         type: ApplicationCommandOptionType.Subcommand,
-        name: 'manager',
-        ...described('command.team.manager.description'),
+        name: 'owner',
+        ...described('command.team.owner.description'),
         options: [teamOption, memberOption],
       },
       {
         type: ApplicationCommandOptionType.SubcommandGroup,
-        name: 'staff',
-        ...described('command.team.staff.description'),
+        name: 'member',
+        ...described('command.team.member.description'),
         options: [
           {
             type: ApplicationCommandOptionType.Subcommand,
             name: 'add',
-            ...described('command.team.staff.add.description'),
-            options: [teamOption, memberOption],
+            ...described('command.team.member.add.description'),
+            options: [teamOption, memberOption, roleOption],
           },
           {
             type: ApplicationCommandOptionType.Subcommand,
             name: 'remove',
-            ...described('command.team.staff.remove.description'),
+            ...described('command.team.member.remove.description'),
             options: [teamOption, memberOption],
           },
-          {
-            type: ApplicationCommandOptionType.Subcommand,
-            name: 'list',
-            ...described('command.team.staff.list.description'),
-            options: [teamOption],
-          },
         ],
+      },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: 'list',
+        ...described('command.team.list.description'),
+        options: [teamOption],
       },
     ],
   },
@@ -104,22 +122,23 @@ export const teamCommand: Command = {
       await privately(t(locale, 'team.error.team_not_found'));
       return;
     }
-    if (action === 'staff list') {
+    if (action === 'list') {
       await privately(answer(locale, showTeamStaff(db, interaction, teamId)));
       return;
     }
 
-    const change = {
-      manager: setTeamManager,
-      'staff add': addTeamStaff,
-      'staff remove': removeTeamStaff,
-    }[action];
     const member = interaction.options.getUser('member');
-    if (!change || !member) {
-      await privately(t(locale, 'error.unknownCommand'));
-      return;
+    const role = interaction.options.getString('role');
+    const now = context.now();
+    let reply: TeamStaffReply | null = null;
+    if (member && action === 'owner') {
+      reply = setTeamOwner(db, interaction, { teamId, member }, now);
+    } else if (member && action === 'member add' && isAddableRole(role)) {
+      reply = addTeamMember(db, interaction, { teamId, member, role }, now);
+    } else if (member && action === 'member remove') {
+      reply = removeTeamMember(db, interaction, { teamId, member }, now);
     }
-    await privately(answer(locale, change(db, interaction, { teamId, member }, context.now())));
+    await privately(reply ? answer(locale, reply) : t(locale, 'error.unknownCommand'));
   },
 
   async autocomplete(interaction, context) {

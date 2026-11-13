@@ -12,7 +12,7 @@ import {
   searchSchedulableMatches,
   setMatchTime,
 } from './scheduling.ts';
-import { addTeamStaff, setTeamManager } from './team-staff.ts';
+import { addTeamMember, setTeamOwner } from './team-staff.ts';
 
 const { auditLog, leagueGuild, match, matchProposal } = schema;
 
@@ -40,9 +40,9 @@ const SCHEDULE = '800000000000000004';
 
 function league() {
   const db = leagueDatabase();
-  setTeamManager(db, STAFF, { teamId: 2, member: BRAVO.user }, 100);
-  setTeamManager(db, STAFF, { teamId: 3, member: CHARLIE.user }, 100);
-  addTeamStaff(db, STAFF, { teamId: 3, member: CHARLIE_STAFF.user }, 100);
+  setTeamOwner(db, STAFF, { teamId: 2, member: BRAVO.user }, 100);
+  setTeamOwner(db, STAFF, { teamId: 3, member: CHARLIE.user }, 100);
+  addTeamMember(db, STAFF, { teamId: 3, member: CHARLIE_STAFF.user, role: 'manager' }, 100);
   db.update(leagueGuild).set({ scheduleChannelId: SCHEDULE }).run();
   const stored = () => db.select().from(match).where(eq(match.id, 3)).get();
   const proposals = () => db.select().from(matchProposal).all();
@@ -110,7 +110,7 @@ describe('proposeTime', () => {
 
   it('refuses a match of another team, and one that already has a result', () => {
     const { db } = league();
-    setTeamManager(db, STAFF, { teamId: 4, member: OUTSIDER.user }, 100);
+    setTeamOwner(db, STAFF, { teamId: 4, member: OUTSIDER.user }, 100);
     expect(proposeTime(db, OUTSIDER, { matchId: 3, at: THURSDAY_21H }, NOW)).toEqual({
       ok: false,
       error: 'not_your_match',

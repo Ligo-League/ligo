@@ -3,7 +3,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import type { Actor } from './permissions.ts';
-import { setTeamManager } from './team-staff.ts';
+import { setTeamOwner } from './team-staff.ts';
 import { chooseVetoStep, readVeto, runVetoTick, startVeto, type VetoView } from './veto.ts';
 import { leagueMatch } from './reports.ts';
 import { findGuildLeague } from '@ligo/db';
@@ -42,8 +42,8 @@ const POOL = [
 
 function league() {
   const db = leagueDatabase();
-  setTeamManager(db, STAFF, { teamId: 2, member: BRAVO.user }, 100);
-  setTeamManager(db, STAFF, { teamId: 3, member: CHARLIE.user }, 100);
+  setTeamOwner(db, STAFF, { teamId: 2, member: BRAVO.user }, 100);
+  setTeamOwner(db, STAFF, { teamId: 3, member: CHARLIE.user }, 100);
   const start = (actor: Actor = BRAVO, coin: 'a' | 'b' = 'b') =>
     startVeto(db, actor, { matchId: 3 }, NOW, () => coin);
   const choose = (actor: Actor, step: number, choice: string, now = NOW) =>
@@ -97,7 +97,7 @@ describe('startVeto', () => {
   it('refuses someone with no team, and a team outside the match', () => {
     const { db, start } = league();
     expect(start(OUTSIDER)).toEqual({ ok: false, error: 'no_team' });
-    setTeamManager(db, STAFF, { teamId: 1, member: OUTSIDER.user }, 100);
+    setTeamOwner(db, STAFF, { teamId: 1, member: OUTSIDER.user }, 100);
     expect(start(OUTSIDER)).toEqual({ ok: false, error: 'not_your_match' });
   });
 

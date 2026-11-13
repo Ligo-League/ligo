@@ -16,7 +16,7 @@ describe('helpFacts', () => {
       staff: false,
       rules: {
         validation: 'staff',
-        teamStaffMax: 3,
+        teamRoles: { managers_max: 3, coaches_max: 1 },
         forfeits: { warning_at: 2, exclusion_at: 3 },
         extensionWeeks: 1,
         autoSlot: { weekday: 7, time: '21:00' },

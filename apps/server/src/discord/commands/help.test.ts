@@ -31,7 +31,7 @@ const FACTS: HelpFacts[] = [
     staff: true,
     rules: {
       validation: 'staff',
-      teamStaffMax: 3,
+      teamRoles: { managers_max: 3, coaches_max: 1 },
       forfeits: { warning_at: 2, exclusion_at: 3 },
       extensionWeeks: 1,
       autoSlot: { weekday: 7, time: '21:00' },
@@ -41,7 +41,7 @@ const FACTS: HelpFacts[] = [
     staff: true,
     rules: {
       validation: 'opponent',
-      teamStaffMax: 10,
+      teamRoles: { managers_max: 10, coaches_max: 1 },
       forfeits: { warning_at: null, exclusion_at: null },
       extensionWeeks: 2,
       autoSlot: null,
@@ -51,7 +51,7 @@ const FACTS: HelpFacts[] = [
     staff: true,
     rules: {
       validation: 'staff',
-      teamStaffMax: 0,
+      teamRoles: { managers_max: 0, coaches_max: 1 },
       forfeits: null,
       extensionWeeks: 1,
       autoSlot: { weekday: 7, time: '21:00' },
@@ -92,7 +92,7 @@ describe('/help', () => {
       staff: false,
       rules: {
         validation,
-        teamStaffMax: 3,
+        teamRoles: { managers_max: 3, coaches_max: 1 },
         forfeits: null,
         extensionWeeks: 1,
         autoSlot: { weekday: 7, time: '21:00' },
@@ -108,7 +108,7 @@ describe('/help', () => {
         staff: false,
         rules: {
           validation: 'staff',
-          teamStaffMax: 3,
+          teamRoles: { managers_max: 3, coaches_max: 1 },
           forfeits: null,
           extensionWeeks: 1,
           autoSlot,
@@ -125,7 +125,7 @@ describe('/help', () => {
       helpPage('fr', 'staff-match', { staff: true, rules });
     const both = page({
       validation: 'staff',
-      teamStaffMax: 3,
+      teamRoles: { managers_max: 3, coaches_max: 1 },
       forfeits: { warning_at: 2, exclusion_at: 3 },
       extensionWeeks: 1,
       autoSlot: null,
@@ -134,7 +134,7 @@ describe('/help', () => {
     expect(both).toContain('À 3 forfaits');
     const none = page({
       validation: 'staff',
-      teamStaffMax: 3,
+      teamRoles: { managers_max: 3, coaches_max: 1 },
       forfeits: { warning_at: null, exclusion_at: null },
       extensionWeeks: 1,
       autoSlot: null,

@@ -9,7 +9,7 @@ export interface HelpFacts {
   /** Null on a server linked to no league: the explanations then name no league rule. */
   rules: {
     validation: RulesetSettings['result_validation'];
-    teamStaffMax: number;
+    teamRoles: RulesetSettings['team_roles'];
     /** Null before a season starts: thresholds are a season setting. */
     forfeits: ForfeitThresholds | null;
     extensionWeeks: number;
@@ -29,7 +29,7 @@ export function helpFacts(
     staff: requireStaff(db, actor).ok,
     rules: {
       validation: rulesetJson.result_validation,
-      teamStaffMax: rulesetJson.team_staff_max,
+      teamRoles: rulesetJson.team_roles,
       forfeits: league.season?.settingsJson.forfeits ?? null,
       extensionWeeks: league.competition.schedulingJson.extension_weeks,
       autoSlot: league.competition.schedulingJson.auto_slot,

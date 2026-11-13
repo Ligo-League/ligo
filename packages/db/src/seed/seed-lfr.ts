@@ -1,4 +1,4 @@
-import { DEFAULT_DISPUTE_REASONS, promotionSchema, vetoSchema } from '@ligo/core';
+import { DEFAULT_DISPUTE_REASONS, promotionSchema, teamRolesSchema, vetoSchema } from '@ligo/core';
 import { R6_GAME_SCORE } from '@ligo/titles';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client.ts';
@@ -14,7 +14,7 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   name: 'LFR',
   slug: 'lfr',
   participantMode: 'team',
-  // One manager and up to three staff per team, from the rulebook's registration form.
+  // One owner, up to three managers (the rulebook form's three staff) and one coach per team.
   // Dispute reasons agreed with the maintainer on 13 November 2026, the platform's defaults.
   // The veto follows the design doc's sequences until the owner answers O-11. Promotion: the
   // maintainer's rule of 13 November 2026, last 2 down and the one above in a barrage against
@@ -22,7 +22,7 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   rulesetJson: {
     result_validation: 'staff',
     game_score: R6_GAME_SCORE,
-    team_staff_max: 3,
+    team_roles: teamRolesSchema.parse({}),
     dispute_reasons: [...DEFAULT_DISPUTE_REASONS],
     veto: vetoSchema.parse({}),
     promotion: promotionSchema.parse({}),

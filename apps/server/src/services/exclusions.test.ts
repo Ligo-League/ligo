@@ -6,7 +6,7 @@ import { excludeTeam, reinstateTeam, setAutoExclusion } from './exclusions.ts';
 import type { Actor } from './permissions.ts';
 import { proposeTime } from './scheduling.ts';
 import { getStandings } from './standings.ts';
-import { setTeamManager } from './team-staff.ts';
+import { setTeamOwner } from './team-staff.ts';
 
 const { auditLog, sanction, slot } = schema;
 
@@ -78,7 +78,7 @@ describe('excludeTeam', () => {
 
   it('stops the excluded team’s matches: no time can be proposed', () => {
     const db = leagueDatabase();
-    setTeamManager(db, STAFF, { teamId: BRAVO, member: MEMBER.user }, 100);
+    setTeamOwner(db, STAFF, { teamId: BRAVO, member: MEMBER.user }, 100);
     excludeTeam(db, STAFF, { teamId: BRAVO, reason: 'x' }, 1);
     expect(
       proposeTime(

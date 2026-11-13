@@ -24,7 +24,7 @@ const LFR_S3 = {
   ruleset: {
     result_validation: 'staff',
     game_score: { win_at: 7, overtime_rounds: 3 },
-    team_staff_max: 3,
+    team_roles: { managers_max: 3, coaches_max: 1 },
     dispute_reasons: DEFAULT_DISPUTE_REASONS,
     veto: DEFAULT_VETO,
     promotion: { relegated: 2, relegation_barrage: 1, barrage_opponent_place: 3 },
@@ -153,10 +153,12 @@ describe('rulesetSchema', () => {
     expect(accepts(rulesetSchema, value)).toBe(false);
   });
 
-  it('allows three team staff unless the league says otherwise', () => {
-    expect(rulesetSchema.parse({ result_validation: 'staff' }).team_staff_max).toBe(3);
-    expect(accepts(rulesetSchema, { result_validation: 'staff', team_staff_max: 0 })).toBe(true);
-    expect(accepts(rulesetSchema, { result_validation: 'staff', team_staff_max: -1 })).toBe(false);
+  it('allows 3 managers and 1 coach unless the league says otherwise', () => {
+    const parsed = rulesetSchema.parse({ result_validation: 'staff' });
+    expect(parsed.team_roles).toEqual({ managers_max: 3, coaches_max: 1 });
+    const custom = { result_validation: 'staff', team_roles: { managers_max: 0 } };
+    expect(accepts(rulesetSchema, custom)).toBe(true);
+    expect(accepts(rulesetSchema, { result_validation: 'staff', team_staff_max: 3 })).toBe(false);
   });
 
   it('offers the standard dispute reasons unless the league sets its own', () => {
@@ -304,7 +306,10 @@ describe('JSON round trip', () => {
         game_score: fc.option(
           fc.record({ win_at: fc.integer({ min: 2, max: 50 }), overtime_rounds: positive }),
         ),
-        team_staff_max: fc.integer({ min: 0, max: 20 }),
+        team_roles: fc.record({
+          managers_max: fc.integer({ min: 0, max: 20 }),
+          coaches_max: fc.integer({ min: 0, max: 20 }),
+        }),
         dispute_reasons: fc.uniqueArray(
           fc.record({
             key: fc.stringMatching(/^[a-z][a-z0-9_]{0,31}$/).filter((key) => key !== 'other'),

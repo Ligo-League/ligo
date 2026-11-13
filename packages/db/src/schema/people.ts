@@ -83,7 +83,8 @@ export const team = sqliteTable(
   ],
 );
 
-// "1 manager, max 3 staff" is checked by the service that edits team staff, not here.
+// "1 owner", and the managers and coaches the league allows, are checked by the service that
+// edits team staff, not here.
 export const teamStaff = sqliteTable(
   'team_staff',
   {
