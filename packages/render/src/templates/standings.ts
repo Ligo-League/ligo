@@ -3,7 +3,7 @@ import { resolveTheme, type ImageTheme, type ThemeOverrides } from '../theme.ts'
 
 export const STANDINGS_IMAGE_WIDTH = 1200;
 /** Part of the cache key: raise it whenever the picture changes for the same input. */
-export const STANDINGS_TEMPLATE_VERSION = 5;
+export const STANDINGS_TEMPLATE_VERSION = 6;
 
 export interface StandingsImageRow {
   rank: number;
@@ -25,6 +25,8 @@ export interface StandingsImageRow {
   form: readonly ('W' | 'L')[];
   /** The colour of the zone the row falls in (title, promotion, barrage…); null for none. */
   zoneColor?: string | null;
+  /** A word after the name, such as "Exclue"; the row is then dimmed. */
+  note?: string | null;
 }
 
 /** One entry of the legend under the table: a zone's colour and what it means. */
@@ -160,6 +162,20 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
       // A fixed slot, so names line up whether a team has a logo or not.
       box({ width: LOGO_SIZE, justifyContent: 'center', flexShrink: 0 }, badge),
       text({ marginLeft: 14, fontSize: 26, fontWeight: 700 }, row.name),
+      ...(row.note
+        ? [
+            text(
+              {
+                marginLeft: 12,
+                fontSize: 16,
+                fontWeight: 700,
+                color: theme.loss,
+                letterSpacing: 1,
+              },
+              row.note.toUpperCase(),
+            ),
+          ]
+        : []),
     );
     const form = box(
       { alignItems: 'center' },
@@ -186,6 +202,7 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
         backgroundColor: index % 2 === 0 ? theme.surface : theme.background,
         // The zone's colour on the row's edge; a transparent edge keeps the columns aligned.
         borderLeft: `6px solid ${row.zoneColor ?? 'transparent'}`,
+        opacity: row.note ? 0.6 : 1,
       },
       {
         rank: row.rank,

@@ -147,6 +147,16 @@ describe('standingsImage', () => {
     expect(texts(standingsImage(INPUT))).not.toContain('Champion');
   });
 
+  it('writes a note after the name and dims the row, as for an excluded team', () => {
+    const noted = {
+      ...INPUT,
+      rows: [row(1, 'Alpha', 3, []), { ...row(2, 'Bravo', -3, []), note: 'Exclue' }],
+    };
+    const tree = standingsImage(noted);
+    expect(texts(tree)).toContain('EXCLUE');
+    expect(boxes(tree).map((node) => node.props.style.opacity)).toContain(0.6);
+  });
+
   it('keeps only the five latest results', () => {
     const long = { ...INPUT, rows: [row(1, 'Alpha', 1, ['L', 'L', 'W', 'W', 'W', 'W', 'W'])] };
     const colours = backgrounds(standingsImage(long));
