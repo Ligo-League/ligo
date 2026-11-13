@@ -136,6 +136,7 @@ describe('formatStandingsTable', () => {
     form: [],
     change: null,
     zone: null,
+    excluded: false,
   });
 
   it('aligns numbers to the right and widens columns to their longest value', () => {

@@ -1,3 +1,4 @@
+import { applyExclusions, type PendingMatch } from './exclusion.ts';
 import type { PointsSettings, TiebreakCriterion, TiebreakSettings } from './settings.ts';
 
 // Standings are computed from results and settings every time; they are never stored or edited
@@ -27,6 +28,10 @@ export interface StandingsInput {
   forfeitScore: readonly [number, number];
   /** Sanction point deltas; several per entry add up. */
   pointDeltas: readonly { entry: number; delta: number }[];
+  /** The stage's matches that do not count yet, void ones aside; the 50% rule needs them. */
+  pending?: readonly PendingMatch[];
+  /** Excluded entries: the 50% rule applies to their matches, and they are ranked last. */
+  excluded?: readonly number[];
 }
 
 export interface StandingsRow {
@@ -41,6 +46,8 @@ export interface StandingsRow {
   scoreAgainst: number;
   diff: number;
   points: number;
+  /** True for an excluded team, ranked after every other one. */
+  excluded: boolean;
 }
 
 export type StandingsError =
@@ -60,7 +67,7 @@ export type StandingsResult =
     }
   | { ok: false; error: StandingsError };
 
-type Tally = Omit<StandingsRow, 'rank' | 'shared'>;
+type Tally = Omit<StandingsRow, 'rank' | 'shared' | 'excluded'>;
 
 // Head-to-head criteria and staff decisions are not computed yet: asking for one is an error,
 // because skipping it would rank teams by a rule the league did not choose.
@@ -96,7 +103,9 @@ export function computeStandings(input: StandingsInput): StandingsResult {
     });
   }
 
-  for (const match of input.matches) {
+  const excluded = input.excluded ?? [];
+  const { matches } = applyExclusions(input.matches, input.pending ?? [], excluded);
+  for (const match of matches) {
     const a = tallies.get(match.a);
     if (!a) return fail({ kind: 'unknown_entry', entry: match.a });
     const b = tallies.get(match.b);
@@ -137,8 +146,13 @@ export function computeStandings(input: StandingsInput): StandingsResult {
     }
     return 0;
   };
-  // Array.prototype.sort is stable, so tied entries keep the order of `input.entries`.
-  const ordered = [...tallies.values()].sort(compare);
+  // Array.prototype.sort is stable, so tied entries keep the order of `input.entries`. Excluded
+  // entries come after all others, ranked among themselves.
+  const isExcluded = (tally: Tally) => excluded.includes(tally.entry);
+  const ordered = [
+    ...[...tallies.values()].filter((tally) => !isExcluded(tally)).sort(compare),
+    ...[...tallies.values()].filter(isExcluded).sort(compare),
+  ];
 
   const rows: StandingsRow[] = [];
   const unresolvedTies: number[][] = [];
@@ -151,11 +165,16 @@ export function computeStandings(input: StandingsInput): StandingsResult {
     }
   };
   for (const [index, tally] of ordered.entries()) {
-    if (!previous || compare(previous, tally) !== 0) {
+    if (!previous || compare(previous, tally) !== 0 || isExcluded(previous) !== isExcluded(tally)) {
       closeGroup();
       group = [];
     }
-    const row: StandingsRow = { ...tally, rank: group[0]?.rank ?? index + 1, shared: false };
+    const row: StandingsRow = {
+      ...tally,
+      rank: group[0]?.rank ?? index + 1,
+      shared: false,
+      excluded: isExcluded(tally),
+    };
     group.push(row);
     rows.push(row);
     previous = tally;
