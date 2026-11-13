@@ -19,7 +19,7 @@ const LFR_S3 = {
     forfeit: { winner: 3, loser: 0, counts_as_played: true },
   },
   tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
-  ruleset: { result_validation: 'staff' },
+  ruleset: { result_validation: 'staff', game_score: { win_at: 7, overtime_rounds: 3 } },
   scheduling: { rounds_per_week: 1 },
   season: { forfeit_score: [0, 0], map_pool: [] },
   stage: { seed: 20261019 },
@@ -55,6 +55,11 @@ describe('unknown keys are refused, so a typo cannot silently change a rule', ()
     ],
     ['tiebreak', tiebreakSchema, { ...LFR_S3.tiebreak, unresolved: 'shared' }],
     ['ruleset', rulesetSchema, { ...LFR_S3.ruleset, validation: 'staff' }],
+    [
+      'ruleset.game_score',
+      rulesetSchema,
+      { ...LFR_S3.ruleset, game_score: { win_at: 7, overtime_rounds: 3, overtime: 'bo3' } },
+    ],
     ['scheduling', schedulingSchema, { ...LFR_S3.scheduling, rounds_per_weak: 2 }],
     ['season', seasonSettingsSchema, { ...LFR_S3.season, forfeit: [7, 0] }],
     ['stage', stageConfigSchema, { seed: 1, sed: 2 }],
@@ -133,6 +138,21 @@ describe('rulesetSchema', () => {
   ])('refuses %s', (_label, value) => {
     expect(accepts(rulesetSchema, value)).toBe(false);
   });
+
+  it('checks no score unless the league sets a rule', () => {
+    // Settings stored before this key existed must keep reading.
+    expect(rulesetSchema.parse({ result_validation: 'staff' }).game_score).toBeNull();
+    expect(accepts(rulesetSchema, { result_validation: 'staff', game_score: null })).toBe(true);
+  });
+
+  it.each([
+    ['a game won at one round', { win_at: 1, overtime_rounds: 3 }],
+    ['an overtime of no round', { win_at: 7, overtime_rounds: 0 }],
+    ['a fractional target', { win_at: 6.5, overtime_rounds: 3 }],
+    ['a missing overtime', { win_at: 7 }],
+  ])('refuses %s', (_label, game_score) => {
+    expect(accepts(rulesetSchema, { result_validation: 'staff', game_score })).toBe(false);
+  });
 });
 
 describe('schedulingSchema', () => {
@@ -192,6 +212,16 @@ describe('JSON round trip', () => {
       fc.record({
         criteria: fc.uniqueArray(fc.constantFrom(...TIEBREAK_CRITERIA), { minLength: 1 }),
         unresolved_tie: fc.constantFrom(...UNRESOLVED_TIE_MODES),
+      }),
+    ],
+    [
+      'ruleset',
+      rulesetSchema,
+      fc.record({
+        result_validation: fc.constantFrom('staff' as const, 'opponent' as const),
+        game_score: fc.option(
+          fc.record({ win_at: fc.integer({ min: 2, max: 50 }), overtime_rounds: positive }),
+        ),
       }),
     ],
     ['scheduling', schedulingSchema, fc.record({ rounds_per_week: positive })],

@@ -45,9 +45,23 @@ export type TiebreakSettings = z.infer<typeof tiebreakSchema>;
 export const RESULT_VALIDATION_MODES = ['staff', 'opponent'] as const;
 export type ResultValidationMode = (typeof RESULT_VALIDATION_MODES)[number];
 
+/**
+ * How one game (a map) is won, in rounds. Overtime starts when both teams are one round short of
+ * `win_at`; see `isPossibleGameScore` for the scores this allows.
+ */
+export const gameScoreSchema = z.strictObject({
+  /** Rounds that win the game in regulation: 7 in R6, 13 in Valorant and CS2. */
+  win_at: z.int().min(2),
+  /** Rounds in one overtime period: 3 in R6, 2 in Valorant (win by two), 6 in CS2. */
+  overtime_rounds: z.int().min(1),
+});
+export type GameScoreSettings = z.infer<typeof gameScoreSchema>;
+
 /** `competition.ruleset_json`. */
 export const rulesetSchema = z.strictObject({
   result_validation: z.enum(RESULT_VALIDATION_MODES),
+  /** Null when any score with a winner is acceptable, as with Rocket League goals. */
+  game_score: gameScoreSchema.nullable().default(null),
 });
 export type RulesetSettings = z.infer<typeof rulesetSchema>;
 

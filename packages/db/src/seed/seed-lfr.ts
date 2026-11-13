@@ -11,7 +11,7 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   name: 'LFR',
   slug: 'lfr',
   participantMode: 'team',
-  rulesetJson: { result_validation: 'staff' },
+  rulesetJson: { result_validation: 'staff', game_score: null },
   // 3 points per win in Season 3, as the league's score7 tables are configured.
   pointsJson: {
     outcomes: { win: 3, loss: 0 },
