@@ -281,7 +281,7 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 
 - Each win is worth 3 points in Season 3, as score7 is set (Season 2 gave 1). There are no draws in R6 competitive settings, so score7's N column is not shown.
 - **A forfeit in the table** follows `forfeit.counts_as_played` (default true): a match played for both teams, a win for the opponent and a loss for the team that forfeited. score7 shows its walkovers (W.O.) this way, and they are imported as forfeits.
-- score7 records one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). Ligo has no draw: the match stays without result until the league rules on it (section 16).
+- score7 shows one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). It is an entry error: a draw never happens. Ligo leaves the match without result until it is corrected on score7, and the next export brings the correction in (section 16).
 - F counts rounds won, C rounds lost, and D = F − C. Columns: J, V, D, F, C, D, PTS.
 - Ranking: points, then D. Season 2 shows it: Vaevictis and Origin's Esport both have 8 points; D 23 beats D 21.
 - **Forfeit score** is a season setting, `forfeit_score`: `[0, 0]` (Season 3) or `[7, 0]` (Season 2). It feeds F and C, so it changes D.
@@ -1072,7 +1072,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. The
 **Still open**
 
 - [ ] Ligue 2 has 12 teams in Season 3 and score7 schedules its 11 rounds, two more than the season's 9 weeks: confirm its calendar, and which places go up, to barrage and down.
-- [ ] A match neither team plays: score7 shows Nightwolves against Outsouki (week 5) as a 0–0 draw with a point each. What does Ligo record?
+- [ ] Nightwolves against Outsouki (week 5): score7's draw is an entry error, to be corrected there as a forfeit. Both teams have forfeited every other fixture they had left, so the owner must say which one forfeits this match, or what is recorded when neither team plays.
 - [ ] Division limits and promotion or relegation places as settings (a maximum size, places counted from the top and the bottom) instead of fixed ranks such as "9th–10th".
 - [ ] Barrages: best-of and timing (you are asking the owner).
 - [ ] Cup: the formal rule for which team picks the starting side, expected for Season 4.
