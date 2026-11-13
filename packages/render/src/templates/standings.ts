@@ -3,7 +3,7 @@ import { resolveTheme, type ImageTheme, type ThemeOverrides } from '../theme.ts'
 
 export const STANDINGS_IMAGE_WIDTH = 1200;
 /** Part of the cache key: raise it whenever the picture changes for the same input. */
-export const STANDINGS_TEMPLATE_VERSION = 3;
+export const STANDINGS_TEMPLATE_VERSION = 4;
 
 export interface StandingsImageRow {
   rank: number;
@@ -47,7 +47,8 @@ export interface StandingsImageInput {
   theme?: ThemeOverrides;
 }
 
-const NUMBER_WIDTH = 68;
+const NUMBER_WIDTH = 64;
+const PLAYED_WIDTH = 96;
 const LOGO_SIZE = 40;
 const FORM_SLOTS = 5;
 const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
@@ -83,7 +84,10 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
       text({ width: 52, fontWeight: 700 }, values.rank),
       box({ width: 64, alignItems: 'center' }, values.change),
       box({ flexGrow: 1, flexShrink: 1, alignItems: 'center', overflow: 'hidden' }, values.team),
-      ...values.numbers.map((value) => text({ width: NUMBER_WIDTH, ...right }, value)),
+      // The first number is "played", whose header is a whole word.
+      ...values.numbers.map((value, index) =>
+        text({ width: index === 0 ? PLAYED_WIDTH : NUMBER_WIDTH, ...right }, value),
+      ),
       text({ width: 88, ...right }, values.diff),
       text({ width: 88, ...right, fontWeight: 700, ...pointsStyle }, values.points),
       box({ width: 150, ...right }, values.form),

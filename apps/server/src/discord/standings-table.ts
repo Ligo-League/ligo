@@ -10,7 +10,7 @@ const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
 const COLUMNS: Column[] = [
   { header: 'standings.column.rank', align: 'right', cell: (row) => String(row.rank) },
   { header: 'standings.column.team', align: 'left', cell: (row) => row.team.tag },
-  { header: 'standings.column.played', align: 'right', cell: (row) => String(row.played) },
+  { header: 'standings.column.playedShort', align: 'right', cell: (row) => String(row.played) },
   { header: 'standings.column.wins', align: 'right', cell: (row) => String(row.wins) },
   { header: 'standings.column.losses', align: 'right', cell: (row) => String(row.losses) },
   { header: 'standings.column.for', align: 'right', cell: (row) => String(row.scoreFor) },

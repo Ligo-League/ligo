@@ -14,11 +14,12 @@ export const en: Record<MessageKey, string> = {
   'standings.column.form': 'Form',
   'standings.column.rank': '#',
   'standings.column.team': 'Team',
-  'standings.column.played': 'P',
+  'standings.column.played': 'Played',
+  'standings.column.playedShort': 'MP',
   'standings.column.wins': 'W',
   'standings.column.losses': 'L',
-  'standings.column.for': 'F',
-  'standings.column.against': 'A',
+  'standings.column.for': 'RW',
+  'standings.column.against': 'RL',
   'standings.column.diff': 'Diff',
   'standings.column.points': 'PTS',
   'standings.not_linked': 'This server is not linked to a league.',
@@ -248,7 +249,7 @@ export const en: Record<MessageKey, string> = {
   'help.overview.staff':
     "**League staff**\n• `/staff match` — validate, enter, correct or annul a result; record a forfeit.\n• `/staff sanction` — a warning or points for a team, and the list of its sanctions.\n• `/team` — each team's manager and staff.\n• `/league channel` — the bot's channels: validation queue and results.\n\n**Setting up**\n1. `/league channel` twice: the staff validation queue, then the results channel.\n2. `/team manager` for each team.\nTeams can then report their results with `/match report`.",
   'help.page.standings':
-    '**`/standings`** — the current season\'s standings\nOpen to everyone.\n\n• `division` (optional): "Ligue 1" or "L1", for example. Without it, every division.\n• `format` (optional): Image (the default) or Text.\n\nOnly validated results and forfeits count, with sanction points. A result reported but not yet validated does not appear.\nColumns: J played, V wins, D losses, F rounds won, C rounds lost, Diff (F − C), PTS points. Ties are broken as the league\'s rulebook says.',
+    '**`/standings`** — the current season\'s standings\nOpen to everyone.\n\n• `division` (optional): "Ligue 1" or "L1", for example. Without it, every division.\n• `format` (optional): Image (the default) or Text.\n\nOnly validated results and forfeits count, with sanction points. A result reported but not yet validated does not appear.\nColumns: MP matches played, W wins, L losses, RW rounds won, RL rounds lost, Diff (RW − RL), PTS points. Ties are broken as the league\'s rulebook says.',
   'help.page.match':
     '**`/match report`** — report the result of a match\nFor the manager and staff of both teams. League staff name them with `/team manager`.\n\n• `match`: pick it from the list. It shows only your teams\' matches still to play; type a name, a tag or "s3" (week 3) to narrow it.\n• `score_a` and `score_b`: rounds won by the first and the second team named, in the match\'s order, not necessarily yours first.\n• `screenshot`: the scoreboard screenshot, required. PNG, JPEG or WebP, {maxMb} MB at most.\n\nA score the rulebook makes impossible (7–6, for example) is refused. A forfeit is not reported here: tell the league staff.',
   'help.match.steps.staff':

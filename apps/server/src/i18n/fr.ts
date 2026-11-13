@@ -14,11 +14,12 @@ export const fr = {
   'standings.column.form': 'Forme',
   'standings.column.rank': '#',
   'standings.column.team': 'Équipe',
-  'standings.column.played': 'J',
-  'standings.column.wins': 'V',
-  'standings.column.losses': 'D',
-  'standings.column.for': 'F',
-  'standings.column.against': 'C',
+  'standings.column.played': 'Joués',
+  'standings.column.playedShort': 'MJ',
+  'standings.column.wins': 'W',
+  'standings.column.losses': 'L',
+  'standings.column.for': 'RW',
+  'standings.column.against': 'RL',
   'standings.column.diff': 'Diff',
   'standings.column.points': 'PTS',
   'standings.not_linked': "Ce serveur n'est relié à aucune ligue.",
@@ -261,7 +262,7 @@ export const fr = {
   'help.overview.staff':
     '**Staff de la ligue**\n• `/staff match` — valider, saisir, corriger ou annuler un résultat ; enregistrer un forfait.\n• `/staff sanction` — un avertissement ou des points pour une équipe, et la liste de ses sanctions.\n• `/team` — le manager et le staff de chaque équipe.\n• `/league channel` — les salons du bot : file de validation et résultats.\n\n**Mise en place**\n1. `/league channel` deux fois : la file de validation du staff, puis le salon des résultats.\n2. `/team manager` pour chaque équipe.\nLes équipes peuvent alors signaler leurs résultats avec `/match report`.',
   'help.page.standings':
-    "**`/standings`** — le classement de la saison en cours\nOuvert à tous.\n\n• `division` (facultatif) : « Ligue 1 » ou « L1 », par exemple. Sans elle, toutes les divisions.\n• `format` (facultatif) : Image (par défaut) ou Texte.\n\nSeuls comptent les résultats validés et les forfaits, avec les points des sanctions. Un résultat signalé mais pas encore validé n'apparaît pas.\nColonnes : J joués, V victoires, D défaites, F manches gagnées, C manches perdues, Diff (F − C), PTS points. Les égalités sont départagées selon le règlement de la ligue.",
+    "**`/standings`** — le classement de la saison en cours\nOuvert à tous.\n\n• `division` (facultatif) : « Ligue 1 » ou « L1 », par exemple. Sans elle, toutes les divisions.\n• `format` (facultatif) : Image (par défaut) ou Texte.\n\nSeuls comptent les résultats validés et les forfaits, avec les points des sanctions. Un résultat signalé mais pas encore validé n'apparaît pas.\nColonnes : MJ matchs joués, W victoires, L défaites, RW manches gagnées, RL manches perdues, Diff (RW − RL), PTS points. Les égalités sont départagées selon le règlement de la ligue.",
   'help.page.match':
     "**`/match report`** — signaler le résultat d'un match\nPour le manager et le staff des deux équipes. Le staff de la ligue les désigne avec `/team manager`.\n\n• `match` : choisis-le dans la liste. Elle ne montre que les matchs de tes équipes encore à jouer ; tape un nom, un tag ou « s3 » (semaine 3) pour la filtrer.\n• `score_a` et `score_b` : les manches gagnées par la première et la seconde équipe citées, dans l'ordre du match, pas forcément la tienne d'abord.\n• `screenshot` : la capture du tableau des scores, obligatoire. PNG, JPEG ou WebP, {maxMb} Mo au plus.\n\nUn score impossible selon le règlement (7–6, par exemple) est refusé. Un forfait ne se signale pas : préviens le staff de la ligue.",
   'help.match.steps.staff':

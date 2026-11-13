@@ -72,16 +72,16 @@ describe('/standings', () => {
         content: [
           '**LFR · Saison 3 · Ligue 1**',
           '```',
-          '#  Équipe  J  V  D  F  C  Diff  PTS',
-          '1  ALP     2  2  0  7  4    +3    6',
-          '2  CHA     1  0  1  0  0     0    0',
-          '3  BRV     1  0  1  4  7    -3    0',
+          '#  Équipe  MJ  W  L  RW  RL  Diff  PTS',
+          '1  ALP      2  2  0   7   4    +3    6',
+          '2  CHA      1  0  1   0   0     0    0',
+          '3  BRV      1  0  1   4   7    -3    0',
           '```',
           '**LFR · Saison 3 · Ligue 2**',
           '```',
-          '#  Équipe  J  V  D  F  C  Diff  PTS',
-          '1  XRA     1  1  0  8  6    +2    3',
-          '2  YAN     1  0  1  6  8    -2    0',
+          '#  Équipe  MJ  W  L  RW  RL  Diff  PTS',
+          '1  XRA      1  1  0   8   6    +2    3',
+          '2  YAN      1  0  1   6   8    -2    0',
           '```',
         ].join('\n'),
       },
@@ -98,9 +98,9 @@ describe('/standings', () => {
       [
         '**LFR · Saison 3 · Ligue 2**',
         '```',
-        '#  Team  P  W  L  F  A  Diff  PTS',
-        '1  XRA   1  1  0  8  6    +2    3',
-        '2  YAN   1  0  1  6  8    -2    0',
+        '#  Team  MP  W  L  RW  RL  Diff  PTS',
+        '1  XRA    1  1  0   8   6    +2    3',
+        '2  YAN    1  0  1   6   8    -2    0',
         '```',
       ].join('\n'),
     );
@@ -143,7 +143,7 @@ describe('formatStandingsTable', () => {
       rows: [row(1, 'NIGHTWOLVES', 27, 27), row(10, 'RCK', -11, 3)],
     };
     expect(formatStandingsTable('fr', table).split('\n')).toEqual([
-      ' #  Équipe        J  V  D   F   C  Diff  PTS',
+      ' #  Équipe       MJ  W  L  RW  RL  Diff  PTS',
       ' 1  NIGHTWOLVES  10  9  1  68  41   +27   27',
       '10  RCK          10  9  1  68  79   -11    3',
     ]);
