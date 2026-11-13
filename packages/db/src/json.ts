@@ -1,4 +1,4 @@
-import { vetoFormatSchema } from '@ligo/core';
+import { ADDABLE_TEAM_ROLES, vetoFormatSchema } from '@ligo/core';
 import { z } from 'zod';
 import { SIDES } from './schema/enums.ts';
 
@@ -57,3 +57,13 @@ export type MatchVeto = z.infer<typeof matchVetoSchema>;
 /** `audit_log.before_json` / `after_json`: a snapshot of the changed entity. */
 export const auditSnapshotSchema = z.record(z.string(), z.unknown());
 export type AuditSnapshot = z.infer<typeof auditSnapshotSchema>;
+
+/**
+ * `request.payload_json`: what a team asks for, about one player (design doc section 5, "Team
+ * requests"). The request's `kind` says which shape it has; the server checks the pair.
+ */
+export const requestPayloadSchema = z.union([
+  z.strictObject({ playerId: z.int().positive(), role: z.enum(ADDABLE_TEAM_ROLES) }),
+  z.strictObject({ playerId: z.int().positive() }),
+]);
+export type RequestPayload = z.infer<typeof requestPayloadSchema>;

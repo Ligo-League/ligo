@@ -176,6 +176,38 @@ describe('database constraints', () => {
     });
   });
 
+  describe('request', () => {
+    // Only the CHECK constraints are under test: parents are left out on purpose.
+    function insert(columns: string, values: string) {
+      const { db } = seededDatabase();
+      db.$client.pragma('foreign_keys = OFF');
+      return () =>
+        db.$client
+          .prepare(
+            `insert into request (competition_id, kind, payload_json, approval, requested_by,
+               requested_at${columns})
+             values (1, 'team_member_add', '{"playerId":2,"role":"coach"}', 'staff', 1, 10${values})`,
+          )
+          .run();
+    }
+
+    it('accepts a pending request, an approved one and a refused one with its reason', () => {
+      expect(insert('', '')).not.toThrow();
+      expect(insert(', status, decided_by, decided_at', ", 'approved', 1, 20")).not.toThrow();
+      expect(
+        insert(', status, decided_by, decided_at, reason', ", 'rejected', 1, 20, 'Hors mercato'"),
+      ).not.toThrow();
+    });
+
+    it.each([
+      ['a refusal without a reason', ', status, decided_by, decided_at', ", 'rejected', 1, 20"],
+      ['a decision without its time', ', status, decided_by', ", 'approved', 1"],
+      ['a pending request with a decision time', ', decided_at', ', 20'],
+    ])('refuses %s', (_label, columns, values) => {
+      expect(insert(columns, values)).toThrow(/CHECK/);
+    });
+  });
+
   it('refuse a row pointing at a missing parent', () => {
     const { db } = seededDatabase();
     const orphan = { orgId: 999, slug: 'bob', displayName: 'Bob', createdAt: 1 };

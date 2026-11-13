@@ -70,3 +70,7 @@ export const SANCTION_KINDS = [
 ] as const;
 
 export const AUDIT_ACTOR_KINDS = ['user', 'bot', 'system'] as const;
+/** A team's request (design doc section 5): its kind, who answers it, and where it stands. */
+export { APPROVAL_MODES, REQUEST_KINDS, REQUEST_STATUSES } from '@ligo/core';
+/** What a post in the staff queue is about, so it can be updated once handled. */
+export const QUEUE_POST_ENTITIES = ['request', 'match', 'dispute'] as const;
