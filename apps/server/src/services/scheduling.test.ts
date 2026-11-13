@@ -7,7 +7,9 @@ import {
   answerProposal,
   proposeTime,
   proposalDays,
+  readMatchTime,
   runSchedulingTick,
+  searchSchedulableMatches,
   setMatchTime,
 } from './scheduling.ts';
 import { addTeamStaff, setTeamManager } from './team-staff.ts';
@@ -277,5 +279,38 @@ describe('proposalDays', () => {
     const { db } = league();
     expect(proposalDays(db, BRAVO, null, NOW)).toHaveLength(14);
     expect(proposalDays(db, OUTSIDER, 3, NOW)).toHaveLength(14);
+  });
+});
+
+describe('readMatchTime and searchSchedulableMatches', () => {
+  it("reads a typed date and time in the league's time zone", () => {
+    const { db } = league();
+    expect(readMatchTime(db, BRAVO, ' 2026-11-05 ', '21:00')).toEqual({
+      ok: true,
+      at: THURSDAY_21H,
+    });
+    expect(readMatchTime(db, BRAVO, '05/11', '21:00')).toEqual({
+      ok: false,
+      error: 'invalid_date',
+    });
+  });
+
+  it('offers staff the matches still to play, and nobody else anything', () => {
+    const { db } = league();
+    expect(searchSchedulableMatches(db, STAFF, '', 25).map((found) => found.id)).toEqual([3]);
+    expect(searchSchedulableMatches(db, BRAVO, '', 25)).toEqual([]);
+  });
+
+  it('names the schedule channel where an agreed or staff-set time is announced', () => {
+    const { db, propose } = league();
+    const id = idOf(propose());
+    expect(
+      answerProposal(db, CHARLIE, { matchId: 3, proposalId: id, action: 'accept' }, NOW),
+    ).toMatchObject({ scheduleChannelId: SCHEDULE });
+    // An agreed time can still be changed by staff: the match is still to play.
+    expect(setMatchTime(db, STAFF, { matchId: 3, at: THURSDAY_21H }, NOW)).toMatchObject({
+      ok: true,
+      scheduleChannelId: SCHEDULE,
+    });
   });
 });

@@ -18,6 +18,8 @@ describe('helpFacts', () => {
         validation: 'staff',
         teamStaffMax: 3,
         forfeits: { warning_at: 2, exclusion_at: 3 },
+        extensionWeeks: 1,
+        autoSlot: { weekday: 7, time: '21:00' },
       },
     });
   });

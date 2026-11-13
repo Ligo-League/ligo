@@ -28,6 +28,8 @@ async function listChannels(
   const lines = [
     t(locale, 'league.channels.title'),
     `${t(locale, 'league.channel.kind.staff_queue')} : ${channelText(locale, reply.queueChannelId)}`,
+    `${t(locale, 'league.channel.kind.schedule')} : ${channelText(locale, reply.scheduleChannelId)}`,
+    // The divisions' own results channels follow the league's, which they fall back to.
     `${t(locale, 'league.channel.kind.results')} : ${channelText(locale, reply.resultsChannelId)}`,
     ...reply.divisions.map((row) =>
       t(locale, 'league.channels.division', {

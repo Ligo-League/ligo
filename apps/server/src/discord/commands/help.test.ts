@@ -29,7 +29,13 @@ const FACTS: HelpFacts[] = [
   { staff: false, rules: null },
   {
     staff: true,
-    rules: { validation: 'staff', teamStaffMax: 3, forfeits: { warning_at: 2, exclusion_at: 3 } },
+    rules: {
+      validation: 'staff',
+      teamStaffMax: 3,
+      forfeits: { warning_at: 2, exclusion_at: 3 },
+      extensionWeeks: 1,
+      autoSlot: { weekday: 7, time: '21:00' },
+    },
   },
   {
     staff: true,
@@ -37,9 +43,20 @@ const FACTS: HelpFacts[] = [
       validation: 'opponent',
       teamStaffMax: 10,
       forfeits: { warning_at: null, exclusion_at: null },
+      extensionWeeks: 2,
+      autoSlot: null,
     },
   },
-  { staff: true, rules: { validation: 'staff', teamStaffMax: 0, forfeits: null } },
+  {
+    staff: true,
+    rules: {
+      validation: 'staff',
+      teamStaffMax: 0,
+      forfeits: null,
+      extensionWeeks: 1,
+      autoSlot: { weekday: 7, time: '21:00' },
+    },
+  },
 ];
 const LOCALES: Locale[] = ['fr', 'en'];
 
@@ -73,10 +90,34 @@ describe('/help', () => {
   it('follows how the league validates results', () => {
     const facts = (validation: 'staff' | 'opponent'): HelpFacts => ({
       staff: false,
-      rules: { validation, teamStaffMax: 3, forfeits: null },
+      rules: {
+        validation,
+        teamStaffMax: 3,
+        forfeits: null,
+        extensionWeeks: 1,
+        autoSlot: { weekday: 7, time: '21:00' },
+      },
     });
     expect(helpPage('fr', 'match', facts('staff'))).toContain('Valider');
     expect(helpPage('fr', 'match', facts('opponent'))).not.toContain('Valider');
+  });
+
+  it("states the league's deadline rule on the time page", () => {
+    const page = (autoSlot: { weekday: number; time: string } | null) =>
+      helpPage('fr', 'match-time', {
+        staff: false,
+        rules: {
+          validation: 'staff',
+          teamStaffMax: 3,
+          forfeits: null,
+          extensionWeeks: 1,
+          autoSlot,
+        },
+      });
+    expect(page({ weekday: 7, time: '21:00' })).toContain(
+      'fixe aussitôt le match au dernier dimanche de la prolongation, à 21:00',
+    );
+    expect(page(null)).toContain("le staff de la ligue fixe l'horaire");
   });
 
   it('names the forfeit thresholds of the season, and leaves out those that are not set', () => {
@@ -86,6 +127,8 @@ describe('/help', () => {
       validation: 'staff',
       teamStaffMax: 3,
       forfeits: { warning_at: 2, exclusion_at: 3 },
+      extensionWeeks: 1,
+      autoSlot: null,
     });
     expect(both).toContain('À 2 forfaits');
     expect(both).toContain('À 3 forfaits');
@@ -93,6 +136,8 @@ describe('/help', () => {
       validation: 'staff',
       teamStaffMax: 3,
       forfeits: { warning_at: null, exclusion_at: null },
+      extensionWeeks: 1,
+      autoSlot: null,
     });
     expect(none).not.toMatch(/À \d+ forfaits/);
   });
@@ -119,7 +164,7 @@ describe('/help', () => {
       (node.options ?? []).flatMap((child) => [child.name, ...names(child)]);
     const pages: Record<string, HelpTopic[]> = {
       standings: ['standings'],
-      match: ['match'],
+      match: ['match', 'match-time'],
       staff: ['staff-match', 'staff-sanction'],
       team: ['team'],
       league: ['league'],

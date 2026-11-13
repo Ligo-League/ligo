@@ -187,7 +187,46 @@ export const en: Record<MessageKey, string> = {
   'league.error.channel_required': 'Pick the channel to use.',
   'league.error.division_not_found': 'Unknown division. Pick it from the suggested list.',
   'league.error.queue_per_division':
-    'The validation queue is shared by the whole league: set it without a division.',
+    'Only the results channel can belong to one division: set this one without a division.',
+  'command.match.proposeTime.description': 'Proposes a match time to the other team.',
+  'command.match.option.date': 'The day: pick it from the list or type YYYY-MM-DD.',
+  'command.match.option.time': "The time, for example 21:00, in the league's time zone.",
+  'command.staff.match.schedule.description': 'Sets a match time, whatever the week.',
+  'schedule.proposed':
+    '{proposer} proposes for {team}: **{fixture}** on {when}. {opponents}, accept or decline.',
+  'schedule.proposedNoOpponent':
+    '{proposer} proposes for {team}: **{fixture}** on {when}. The other team has no manager or staff: league staff can set the time.',
+  'schedule.button.accept': 'Accept',
+  'schedule.button.decline': 'Decline',
+  'schedule.accepted': '**{fixture}** — on {when}, accepted by {member}.',
+  'schedule.declined':
+    '**{fixture}** — on {when}, declined by {member}. Propose another time with /match propose-time.',
+  'schedule.announce': 'Time set — {fixture}: {when}.',
+  'schedule.autoSlot':
+    'Extension — **{fixture}**: no time was agreed during the week. The match is set to {when}. You can still agree another time until {deadline} with /match propose-time. {mentions}',
+  'staff.match.scheduled': 'Time set: {fixture}, {when}.',
+  'schedule.hint.nothingLeft': "No match to schedule: your teams' matches all have a result.",
+  'schedule.hint.noMatch': 'None of your matches to schedule matches "{query}".',
+  'schedule.error.not_linked': 'This server is not linked to a league.',
+  'schedule.error.not_staff': 'This command is for league staff only.',
+  'schedule.error.no_team': 'You manage no team. Staff can name you with /team manager.',
+  'schedule.error.match_not_found':
+    'Match not found in this league. Pick it from the suggested list.',
+  'schedule.error.not_your_match':
+    'You are neither manager nor staff of either team in this match.',
+  'schedule.error.not_schedulable':
+    'This match already has a result: there is no time left to set.',
+  'schedule.error.in_past': 'That time has already passed.',
+  'schedule.error.outside_period':
+    "That time falls outside the match's week and its extension. League staff can set another time.",
+  'schedule.error.stale': 'This proposal was already answered or replaced.',
+  'schedule.error.not_opponent': 'Only the other team can accept or decline this proposal.',
+  'schedule.error.invalid_date': 'Unreadable date: pick a day from the list or type YYYY-MM-DD.',
+  'schedule.error.invalid_time': 'Unreadable time: type it like 21:00.',
+  'schedule.error.nonexistent_time':
+    'That time does not exist that day because of the clock change. Pick another one.',
+  'league.channel.kind.schedule': 'Match schedule',
+  'league.channel.notice.schedule': 'Extensions and agreed match times will be announced here.',
   'league.error.not_linked': 'This server is not linked to a league.',
   'league.error.not_staff': 'This command is for league staff only.',
   'league.error.cannot_post':
@@ -205,7 +244,7 @@ export const en: Record<MessageKey, string> = {
   'help.choice.team': '/team',
   'help.choice.league': '/league channel',
   'help.overview':
-    "**Ligo's commands**\n• `/standings` — the season's standings, as an image or as text.\n• `/match report` — report the result of your team's match, with a screenshot of the scoreboard.\n• `/help` — this help. `/help command:` explains one command in detail.",
+    "**Ligo's commands**\n• `/standings` — the season's standings, as an image or as text.\n• `/match propose-time` — propose a match time to the other team.\n• `/match report` — report the result of your team's match, with a screenshot of the scoreboard.\n• `/help` — this help. `/help command:` explains one command in detail.",
   'help.overview.staff':
     "**League staff**\n• `/staff match` — validate, enter, correct or annul a result; record a forfeit.\n• `/staff sanction` — a warning or points for a team, and the list of its sanctions.\n• `/team` — each team's manager and staff.\n• `/league channel` — the bot's channels: validation queue and results.\n\n**Setting up**\n1. `/league channel` twice: the staff validation queue, then the results channel.\n2. `/team manager` for each team.\nTeams can then report their results with `/match report`.",
   'help.page.standings':
@@ -216,8 +255,15 @@ export const en: Record<MessageKey, string> = {
     '**Then**\n1. The bot posts the result with the screenshot and mentions the other team.\n2. The other team clicks **Confirmer** (confirm) or **Contester** (dispute). To dispute, it picks a reason and can add details, read by staff only.\n3. Staff click **Valider** (validate) or **Refuser** (reject). Once rejected, the match can be reported again.\n4. Once validated, the result is announced in the results channel and counts in the standings.',
   'help.match.steps.opponent':
     '**Then**\n1. The bot posts the result with the screenshot and mentions the other team.\n2. The other team clicks **Confirmer** (confirm): the result is validated, announced in the results channel and counts in the standings. **Contester** (dispute) asks for a reason and details, read by the league staff, who decide.',
+  'help.choice.match-time': '/match propose-time',
+  'help.page.matchTime':
+    "**`/match propose-time`** — propose a time\nFor the manager and staff of both teams.\n\n• `match`: pick it from the list, among your teams' matches still to play.\n• `date`: the day, picked from the list (the days left in the match's week and its extension) or typed as YYYY-MM-DD.\n• `time`: the time, like 21:00, in the league's time zone. The message then shows it in each reader's own time.\n\nThe other team clicks **Accepter** (accept) or **Refuser** (decline). A new proposal from your team replaces the previous one. A time outside the week and its extension is asked of league staff.\n\n**Without an agreement**",
+  'help.matchTime.autoSlot':
+    "With no time agreed by the end of the week, the bot grants {weeks} week(s) of extension and at once sets the match to the extension's last {day}, at {time}. A time agreed afterwards replaces it.",
+  'help.matchTime.noAutoSlot':
+    'With no time agreed by the end of the week, the bot grants {weeks} week(s) of extension; after that, league staff set the time.',
   'help.page.staffMatch':
-    '**`/staff match`** — results, for league staff only\n`match`: type a team, a division (L1) or a week (s3), then pick from the list.\n\n• `result` — enters or corrects a score (`score_a`, `score_b`, optional `screenshot`). It counts at once, without validation, and is announced in the results channel, a correction too.\n• `validate` — validates a result reported by a team, like the **Valider** button. The list offers only matches waiting for staff.\n• `void` — annuls a match, with a reason (`reason`) kept in the log. Nothing is deleted; the match stops counting.\n• `forfeit` — records a forfeit by the first or the second team named (`team`). It is announced in the results channel.',
+    '**`/staff match`** — results, for league staff only\n`match`: type a team, a division (L1) or a week (s3), then pick from the list.\n\n• `result` — enters or corrects a score (`score_a`, `score_b`, optional `screenshot`). It counts at once, without validation, and is announced in the results channel, a correction too.\n• `schedule` — sets a match time (`date`, `time`), even outside its week. Announced in the schedule channel.\n• `validate` — validates a result reported by a team, like the **Valider** button. The list offers only matches waiting for staff.\n• `void` — annuls a match, with a reason (`reason`) kept in the log. Nothing is deleted; the match stops counting.\n• `forfeit` — records a forfeit by the first or the second team named (`team`). It is announced in the results channel.',
   'help.staffMatch.footer':
     'A forfeit or an annulled match is not corrected with `result`. Every action is logged with its author.',
   'help.forfeit.warning': 'At {count} forfeits, a warning is added to the team automatically.',
@@ -229,5 +275,5 @@ export const en: Record<MessageKey, string> = {
     "**`/team`** — who acts for each team, for league staff only\nA team's manager and staff can report and confirm its results. Until registration moves to the website, this is where they are named.\n\n• `/team manager` — names a team's manager (`team`, `member`). The previous manager loses that role.\n• `/team staff add` — adds a member to a team's staff.\n• `/team staff remove` — removes a member from the team, the manager included.\n• `/team staff list` — a team's manager and staff.\n\nThe same person can manage several teams.",
   'help.team.max': 'A team has one manager and at most {max} staff members.',
   'help.page.league':
-    "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
+    "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Match schedule: extensions and agreed times, until each match has its own channel.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
 };

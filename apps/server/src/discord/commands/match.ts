@@ -1,15 +1,24 @@
 import { ApplicationCommandOptionType, InteractionContextType } from 'discord.js';
-import { t } from '../../i18n/index.ts';
+import { t, type Locale } from '../../i18n/index.ts';
 import {
   checkReport,
   reportResult,
   searchReportableMatches,
   type ReportDetails,
 } from '../../services/reports.ts';
+import { proposeTime, readMatchTime } from '../../services/scheduling.ts';
+import { suggestDays } from '../day-suggestions.ts';
 import { buttonId } from '../button-id.ts';
-import { impossibleScore, matchLabel, matchLine, mention } from '../match-text.ts';
+import {
+  discordTime,
+  impossibleScore,
+  matchFixture,
+  matchLabel,
+  matchLine,
+  mention,
+} from '../match-text.ts';
 import { described, MAX_CHOICE_LENGTH, MAX_CHOICES } from './describe.ts';
-import type { Command, MessageButton } from './types.ts';
+import type { Command, CommandContext, CommandInteraction, MessageButton } from './types.ts';
 
 /** The buttons under a report: the other team's, then the staff's in the queue. */
 export function reportButtons(
@@ -28,6 +37,66 @@ export function reportButtons(
   return audience === 'opponent'
     ? [button('confirm', 'success'), button('dispute', 'danger')]
     : [button('validate', 'success'), button('reject', 'danger')];
+}
+
+/** Accept and Decline, under a proposed time: for the other team. */
+export function proposalButtons(locale: Locale, matchId: number, proposalId: number) {
+  return [
+    {
+      customId: buttonId('time-accept', matchId, proposalId),
+      label: t(locale, 'schedule.button.accept'),
+      style: 'success' as const,
+    },
+    {
+      customId: buttonId('time-decline', matchId, proposalId),
+      label: t(locale, 'schedule.button.decline'),
+      style: 'danger' as const,
+    },
+  ];
+}
+
+async function proposeTimeCommand(
+  interaction: CommandInteraction,
+  context: CommandContext,
+): Promise<void> {
+  const { locale, db } = context;
+  const privately = (content: string) => interaction.reply({ content, ephemeral: true });
+  const matchId = interaction.options.getInteger('match');
+  if (matchId === null) {
+    await privately(t(locale, 'schedule.error.match_not_found'));
+    return;
+  }
+  const time = readMatchTime(
+    db,
+    interaction,
+    interaction.options.getString('date') ?? '',
+    interaction.options.getString('time') ?? '',
+  );
+  if (!time.ok) {
+    await privately(t(locale, `schedule.error.${time.error}`));
+    return;
+  }
+  const reply = proposeTime(db, interaction, { matchId, at: time.at }, context.now());
+  if (!reply.ok) {
+    await privately(t(locale, `schedule.error.${reply.error}`));
+    return;
+  }
+  const opponentIds = reply.opponents.flatMap((member) => member.discordUserId ?? []);
+  const text = {
+    proposer: mention(interaction.user.id),
+    team: reply.match[reply.side].name,
+    fixture: matchFixture(locale, reply.match),
+    when: discordTime(reply.at),
+  };
+  await interaction.reply({
+    content:
+      opponentIds.length > 0
+        ? t(locale, 'schedule.proposed', { ...text, opponents: opponentIds.map(mention).join(' ') })
+        : t(locale, 'schedule.proposedNoOpponent', text),
+    ephemeral: false,
+    buttons: proposalButtons(locale, reply.match.id, reply.proposalId),
+    mentionUserIds: opponentIds,
+  });
 }
 
 // The team commands, visible to everyone: the service decides who may use them on which match.
@@ -71,12 +140,45 @@ export const matchCommand: Command = {
           },
         ],
       },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: 'propose-time',
+        ...described('command.match.proposeTime.description'),
+        options: [
+          {
+            type: ApplicationCommandOptionType.Integer,
+            name: 'match',
+            ...described('command.match.report.option.match'),
+            required: true,
+            autocomplete: true,
+          },
+          {
+            type: ApplicationCommandOptionType.String,
+            name: 'date',
+            ...described('command.match.option.date'),
+            required: true,
+            autocomplete: true,
+            max_length: 10,
+          },
+          {
+            type: ApplicationCommandOptionType.String,
+            name: 'time',
+            ...described('command.match.option.time'),
+            required: true,
+            max_length: 5,
+          },
+        ],
+      },
     ],
   },
 
   async execute(interaction, context) {
     const { locale } = context;
     const privately = (content: string) => interaction.reply({ content, ephemeral: true });
+    if (interaction.options.getSubcommand() === 'propose-time') {
+      await proposeTimeCommand(interaction, context);
+      return;
+    }
     if (interaction.options.getSubcommand() !== 'report') {
       await privately(t(locale, 'error.unknownCommand'));
       return;
@@ -158,6 +260,10 @@ export const matchCommand: Command = {
   },
 
   async autocomplete(interaction, context) {
+    if (interaction.focused.name === 'date') {
+      await suggestDays(interaction, context);
+      return;
+    }
     if (interaction.focused.name !== 'match') {
       await interaction.respond([]);
       return;
@@ -176,11 +282,16 @@ export const matchCommand: Command = {
     }
     // Discord shows no message in a list of suggestions: one entry says why it is empty. Its
     // value names no match, so picking it ends in the same explanation from the command.
+    // Both subcommands list the same matches, those still to play; only the wording differs.
+    const hints =
+      interaction.options.getSubcommand() === 'propose-time'
+        ? ({ nothingLeft: 'schedule.hint.nothingLeft', noMatch: 'schedule.hint.noMatch' } as const)
+        : ({ nothingLeft: 'report.hint.nothingLeft', noMatch: 'report.hint.noMatch' } as const);
     const reason = !found.ok
       ? t(locale, `match.error.${found.error}`)
       : query === ''
-        ? t(locale, 'report.hint.nothingLeft')
-        : t(locale, 'report.hint.noMatch', { query });
+        ? t(locale, hints.nothingLeft)
+        : t(locale, hints.noMatch, { query });
     await interaction.respond([{ name: reason.slice(0, MAX_CHOICE_LENGTH), value: 0 }]);
   },
 };

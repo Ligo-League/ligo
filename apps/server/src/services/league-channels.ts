@@ -7,7 +7,7 @@ import { ensurePlayer } from './players.ts';
 const { auditLog, division, leagueGuild } = schema;
 
 /** The channels the bot posts in by itself, each stored by ID. */
-export const LEAGUE_CHANNEL_KINDS = ['staff_queue', 'results'] as const;
+export const LEAGUE_CHANNEL_KINDS = ['staff_queue', 'results', 'schedule'] as const;
 export type LeagueChannelKind = (typeof LEAGUE_CHANNEL_KINDS)[number];
 
 const COLUMN = {
@@ -15,6 +15,8 @@ const COLUMN = {
   staff_queue: 'alertsChannelId',
   // Validated results, visible to everyone.
   results: 'resultsChannelId',
+  // Extensions and agreed match times, until each match has its own channel (phase 4).
+  schedule: 'scheduleChannelId',
 } as const satisfies Record<LeagueChannelKind, keyof typeof leagueGuild.$inferSelect>;
 
 /**
@@ -141,6 +143,7 @@ export type LeagueChannelsReply =
       ok: true;
       queueChannelId: string | null;
       resultsChannelId: string | null;
+      scheduleChannelId: string | null;
       /** The current season's divisions, top level first; null means the league's channel. */
       divisions: { name: string; resultsChannelId: string | null }[];
     }
@@ -158,6 +161,7 @@ export function listLeagueChannels(
     ok: true,
     queueChannelId: guild.alertsChannelId,
     resultsChannelId: guild.resultsChannelId,
+    scheduleChannelId: guild.scheduleChannelId,
     divisions: divisions.map(({ division: row }) => ({
       name: row.name,
       resultsChannelId: row.resultsChannelId,

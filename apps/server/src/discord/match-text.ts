@@ -62,6 +62,24 @@ export function impossibleScore(locale: Locale, rule: GameScoreSettings): string
   });
 }
 
+/**
+ * A time as Discord shows it: in each reader's own time zone and language. `F` is the full date
+ * and time, `D` the date alone.
+ */
+export const discordTime = (at: number, style: 'F' | 'D' = 'F') =>
+  `<t:${String(Math.floor(at / 1000))}:${style}>`;
+
+/** A calendar day (`YYYY-MM-DD`) as a short label: "jeu. 5 nov.". */
+export function dayLabel(locale: Locale, date: string): string {
+  const [year = 0, month = 1, day = 1] = date.split('-').map(Number);
+  return new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  }).format(Date.UTC(year, month - 1, day));
+}
+
 /** A mention of a Discord user. It pings only when the message names them in `mentionUserIds`. */
 export const mention = (discordUserId: string) => `<@${discordUserId}>`;
 

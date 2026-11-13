@@ -99,7 +99,10 @@ export function createDiscordClient(deps: {
       const adapter: AutocompleteInteraction = {
         ...actorOf(interaction),
         commandName: interaction.commandName,
-        options: { getSubcommand: () => interaction.options.getSubcommand(false) },
+        options: {
+          getSubcommand: () => interaction.options.getSubcommand(false),
+          getInteger: (name) => interaction.options.getInteger(name),
+        },
         focused: { name: focused.name, value: focused.value },
         async respond(choices) {
           await interaction.respond(choices.slice(0, MAX_CHOICES));

@@ -195,7 +195,51 @@ export const fr = {
   'league.error.channel_required': 'Choisis le salon à utiliser.',
   'league.error.division_not_found': 'Division inconnue. Choisis-la dans la liste proposée.',
   'league.error.queue_per_division':
-    'La file de validation est commune à toute la ligue : choisis-la sans division.',
+    'Seul le salon des résultats peut être propre à une division : choisis celui-ci sans division.',
+  'command.match.proposeTime.description': "Propose un horaire de match à l'équipe adverse.",
+  'command.match.option.date': 'Le jour : choisis-le dans la liste ou tape AAAA-MM-JJ.',
+  'command.match.option.time': "L'heure, par exemple 21:00, à l'heure de la ligue.",
+  'command.staff.match.schedule.description':
+    "Fixe l'horaire d'un match, sans contrainte de semaine.",
+  'schedule.proposed':
+    '{proposer} propose pour {team} : **{fixture}** le {when}. {opponents}, acceptez ou refusez.',
+  'schedule.proposedNoOpponent':
+    "{proposer} propose pour {team} : **{fixture}** le {when}. L'équipe adverse n'a ni manager ni staff : le staff de la ligue peut fixer l'horaire.",
+  'schedule.button.accept': 'Accepter',
+  'schedule.button.decline': 'Refuser',
+  'schedule.accepted': '**{fixture}** — le {when}, accepté par {member}.',
+  'schedule.declined':
+    '**{fixture}** — le {when}, refusé par {member}. Proposez un autre horaire avec /match propose-time.',
+  'schedule.announce': 'Horaire fixé — {fixture} : {when}.',
+  'schedule.autoSlot':
+    "Prolongation — **{fixture}** : aucun horaire convenu pendant la semaine. Le match est fixé au {when}. Vous pouvez encore convenir d'un autre horaire jusqu'au {deadline} avec /match propose-time. {mentions}",
+  'staff.match.scheduled': 'Horaire fixé : {fixture}, {when}.',
+  'schedule.hint.nothingLeft':
+    'Aucun match à planifier : ceux de tes équipes ont déjà un résultat.',
+  'schedule.hint.noMatch': 'Aucun de tes matchs à planifier ne correspond à « {query} ».',
+  'schedule.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
+  'schedule.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
+  'schedule.error.no_team':
+    'Tu ne gères aucune équipe. Le staff peut te nommer avec /team manager.',
+  'schedule.error.match_not_found':
+    'Match introuvable dans cette ligue. Choisis-le dans la liste proposée.',
+  'schedule.error.not_your_match':
+    "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
+  'schedule.error.not_schedulable':
+    "Ce match a déjà un résultat : il n'y a plus d'horaire à fixer.",
+  'schedule.error.in_past': 'Cet horaire est déjà passé.',
+  'schedule.error.outside_period':
+    'Cet horaire tombe hors de la semaine du match et de sa prolongation. Le staff de la ligue peut fixer un autre horaire.',
+  'schedule.error.stale': 'Cette proposition a déjà reçu une réponse ou a été remplacée.',
+  'schedule.error.not_opponent':
+    "Seule l'équipe adverse peut accepter ou refuser cette proposition.",
+  'schedule.error.invalid_date':
+    'Date illisible : choisis un jour dans la liste ou tape AAAA-MM-JJ.',
+  'schedule.error.invalid_time': 'Heure illisible : tape-la comme 21:00.',
+  'schedule.error.nonexistent_time':
+    "Cette heure n'existe pas ce jour-là, à cause du changement d'heure. Choisis-en une autre.",
+  'league.channel.kind.schedule': 'Planning des matchs',
+  'league.channel.notice.schedule': 'Les prolongations et les horaires fixés seront annoncés ici.',
   'league.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'league.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
   'league.error.cannot_post':
@@ -213,7 +257,7 @@ export const fr = {
   'help.choice.team': '/team',
   'help.choice.league': '/league channel',
   'help.overview':
-    "**Les commandes de Ligo**\n• `/standings` — le classement de la saison, en image ou en texte.\n• `/match report` — signaler le résultat d'un match de ton équipe, avec la capture d'écran du tableau des scores.\n• `/help` — cette aide. `/help command:` explique une commande en détail.",
+    "**Les commandes de Ligo**\n• `/standings` — le classement de la saison, en image ou en texte.\n• `/match propose-time` — proposer un horaire de match à l'équipe adverse.\n• `/match report` — signaler le résultat d'un match de ton équipe, avec la capture d'écran du tableau des scores.\n• `/help` — cette aide. `/help command:` explique une commande en détail.",
   'help.overview.staff':
     '**Staff de la ligue**\n• `/staff match` — valider, saisir, corriger ou annuler un résultat ; enregistrer un forfait.\n• `/staff sanction` — un avertissement ou des points pour une équipe, et la liste de ses sanctions.\n• `/team` — le manager et le staff de chaque équipe.\n• `/league channel` — les salons du bot : file de validation et résultats.\n\n**Mise en place**\n1. `/league channel` deux fois : la file de validation du staff, puis le salon des résultats.\n2. `/team manager` pour chaque équipe.\nLes équipes peuvent alors signaler leurs résultats avec `/match report`.',
   'help.page.standings':
@@ -224,8 +268,15 @@ export const fr = {
     "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** ou **Contester**. Pour contester, elle choisit un motif et peut ajouter des détails, lus par le staff seulement.\n3. Le staff clique **Valider** ou **Refuser**. Refusé, le match peut être signalé de nouveau.\n4. Validé, le résultat est annoncé dans le salon des résultats et compte au classement.",
   'help.match.steps.opponent':
     "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** : le résultat est validé, annoncé dans le salon des résultats et compte au classement. **Contester** demande un motif et des détails, lus par le staff de la ligue, qui tranche.",
+  'help.choice.match-time': '/match propose-time',
+  'help.page.matchTime':
+    "**`/match propose-time`** — proposer un horaire\nPour le manager et le staff des deux équipes.\n\n• `match` : choisis-le dans la liste, parmi les matchs de tes équipes encore à jouer.\n• `date` : le jour, choisi dans la liste (les jours restants de la semaine du match et de sa prolongation) ou tapé comme AAAA-MM-JJ.\n• `time` : l'heure, comme 21:00, à l'heure de la ligue. Le message l'affiche ensuite à l'heure de chacun.\n\nL'équipe adverse clique **Accepter** ou **Refuser**. Une nouvelle proposition de ton équipe remplace la précédente. Un horaire hors de la semaine et de sa prolongation se demande au staff de la ligue.\n\n**Sans accord**",
+  'help.matchTime.autoSlot':
+    'Sans horaire convenu à la fin de la semaine, le bot accorde {weeks} semaine(s) de prolongation et fixe aussitôt le match au dernier {day} de la prolongation, à {time}. Un horaire convenu ensuite le remplace.',
+  'help.matchTime.noAutoSlot':
+    "Sans horaire convenu à la fin de la semaine, le bot accorde {weeks} semaine(s) de prolongation ; ensuite, le staff de la ligue fixe l'horaire.",
   'help.page.staffMatch':
-    "**`/staff match`** — les résultats, réservé au staff de la ligue\n`match` : tape une équipe, une division (L1) ou une semaine (s3), puis choisis dans la liste.\n\n• `result` — saisit ou corrige un score (`score_a`, `score_b`, `screenshot` facultatif). Il compte aussitôt, sans validation, et il est annoncé dans le salon des résultats, une correction aussi.\n• `validate` — valide un résultat signalé par une équipe, comme le bouton **Valider**. La liste ne propose que les matchs en attente.\n• `void` — annule un match, avec un motif (`reason`) gardé dans le journal. Rien n'est supprimé ; le match ne compte plus.\n• `forfeit` — enregistre le forfait de la première ou de la seconde équipe citée (`team`). Il est annoncé dans le salon des résultats.",
+    "**`/staff match`** — les résultats, réservé au staff de la ligue\n`match` : tape une équipe, une division (L1) ou une semaine (s3), puis choisis dans la liste.\n\n• `result` — saisit ou corrige un score (`score_a`, `score_b`, `screenshot` facultatif). Il compte aussitôt, sans validation, et il est annoncé dans le salon des résultats, une correction aussi.\n• `schedule` — fixe l'horaire d'un match (`date`, `time`), même hors de sa semaine. Annoncé dans le salon du planning.\n• `validate` — valide un résultat signalé par une équipe, comme le bouton **Valider**. La liste ne propose que les matchs en attente.\n• `void` — annule un match, avec un motif (`reason`) gardé dans le journal. Rien n'est supprimé ; le match ne compte plus.\n• `forfeit` — enregistre le forfait de la première ou de la seconde équipe citée (`team`). Il est annoncé dans le salon des résultats.",
   'help.staffMatch.footer':
     'Un forfait ou un match annulé ne se corrige pas avec `result`. Chaque action est inscrite au journal avec son auteur.',
   'help.forfeit.warning':
@@ -238,7 +289,7 @@ export const fr = {
     "**`/team`** — qui agit pour chaque équipe, réservé au staff de la ligue\nLe manager et le staff d'une équipe peuvent signaler et confirmer ses résultats. En attendant les inscriptions sur le site, c'est ici qu'on les désigne.\n\n• `/team manager` — désigne le manager d'une équipe (`team`, `member`). L'ancien manager perd ce rôle.\n• `/team staff add` — ajoute un membre au staff d'une équipe.\n• `/team staff remove` — retire un membre de l'équipe, manager compris.\n• `/team staff list` — le manager et le staff d'une équipe.\n\nUne même personne peut gérer plusieurs équipes.",
   'help.team.max': 'Une équipe a un manager et {max} membres de staff au plus.',
   'help.page.league':
-    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
+    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
 } as const;
 
 export type MessageKey = keyof typeof fr;

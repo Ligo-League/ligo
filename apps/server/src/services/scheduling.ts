@@ -3,8 +3,10 @@ import {
   dueSchedulingAction,
   playPeriod,
   zonedDate,
+  zonedDateTime,
   zonedMidnight,
   type PlayPeriod,
+  type ZonedDateTimeResult,
   type ProposeRefusal,
 } from '@ligo/core';
 import {
@@ -17,6 +19,7 @@ import {
   type LeagueMatch,
 } from '@ligo/db';
 import { and, eq, isNotNull } from 'drizzle-orm';
+import { matchQuery } from './match-search.ts';
 import { requireStaff, teamsActedFor, type Actor, type TeamRoleHeld } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { leagueMatch } from './reports.ts';
@@ -150,6 +153,8 @@ export type AnswerProposalReply =
       at: number;
       /** The side that proposed. */
       side: Side;
+      /** Where an agreed time is announced, when the league has set it. */
+      scheduleChannelId: string | null;
     }
   | { ok: false; error: AnswerProposalError };
 
@@ -218,7 +223,14 @@ export function answerProposal(
         at: now,
       })
       .run();
-    return { ok: true, match: found, status, at: proposal.at, side: proposal.side };
+    return {
+      ok: true,
+      match: found,
+      status,
+      at: proposal.at,
+      side: proposal.side,
+      scheduleChannelId: league.guild.scheduleChannelId,
+    };
   });
 }
 
@@ -226,7 +238,7 @@ export function answerProposal(
 // Staff set a time
 
 export type SetTimeReply =
-  | { ok: true; match: LeagueMatch; at: number }
+  | { ok: true; match: LeagueMatch; at: number; scheduleChannelId: string | null }
   | { ok: false; error: 'not_linked' | 'not_staff' | 'match_not_found' | 'not_schedulable' };
 
 /** Staff set a match's time, any time: the deadlines are theirs to bend. Pending proposals end. */
@@ -269,7 +281,12 @@ export function setMatchTime(
         at: now,
       })
       .run();
-    return { ok: true, match: found, at: request.at };
+    return {
+      ok: true,
+      match: found,
+      at: request.at,
+      scheduleChannelId: league.guild.scheduleChannelId,
+    };
   });
 }
 
@@ -372,4 +389,31 @@ export function proposalDays(
     days.push({ date: local.date, weekday: local.weekday });
   }
   return days;
+}
+
+/** A date and a time as typed, read in the league's time zone. */
+export function readMatchTime(
+  db: Pick<Db, 'select'>,
+  actor: Pick<Actor, 'guildId'>,
+  date: string,
+  time: string,
+): ZonedDateTimeResult {
+  const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
+  const zone = league?.competition.schedulingJson.time_zone ?? 'Europe/Paris';
+  return zonedDateTime(date.trim(), time.trim(), zone);
+}
+
+/** The matches still to play that staff can set a time for, narrowed by `query`. */
+export function searchSchedulableMatches(
+  db: Pick<Db, 'select'>,
+  actor: Pick<Actor, 'guildId' | 'memberRoleIds'>,
+  query: string,
+  limit: number,
+): LeagueMatch[] {
+  const staff = requireStaff(db, actor);
+  if (!staff.ok || !staff.league.season) return [];
+  return listLeagueMatches(db, { seasonId: staff.league.season.id })
+    .filter((found) => found.status === 'scheduled')
+    .filter(matchQuery(query))
+    .slice(0, limit);
 }

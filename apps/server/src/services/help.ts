@@ -1,4 +1,4 @@
-import type { ForfeitThresholds, RulesetSettings } from '@ligo/core';
+import type { ForfeitThresholds, RulesetSettings, SchedulingSettings } from '@ligo/core';
 import { findGuildLeague, type Db } from '@ligo/db';
 import { requireStaff, type Actor } from './permissions.ts';
 
@@ -12,6 +12,8 @@ export interface HelpFacts {
     teamStaffMax: number;
     /** Null before a season starts: thresholds are a season setting. */
     forfeits: ForfeitThresholds | null;
+    extensionWeeks: number;
+    autoSlot: SchedulingSettings['auto_slot'];
   } | null;
 }
 
@@ -29,6 +31,8 @@ export function helpFacts(
       validation: rulesetJson.result_validation,
       teamStaffMax: rulesetJson.team_staff_max,
       forfeits: league.season?.settingsJson.forfeits ?? null,
+      extensionWeeks: league.competition.schedulingJson.extension_weeks,
+      autoSlot: league.competition.schedulingJson.auto_slot,
     },
   };
 }

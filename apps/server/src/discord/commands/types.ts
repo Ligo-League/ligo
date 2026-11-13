@@ -79,7 +79,8 @@ export interface AutocompleteChoice {
 
 /** A member is typing an option that offers suggestions. */
 export interface AutocompleteInteraction extends InteractionBase {
-  options: Pick<CommandInteraction['options'], 'getSubcommand'>;
+  /** Options already filled in, such as the match chosen before the day is typed. */
+  options: Pick<CommandInteraction['options'], 'getSubcommand' | 'getInteger'>;
   /** The option being typed and its text so far. */
   focused: { name: string; value: string };
   respond(choices: readonly AutocompleteChoice[]): Promise<void>;

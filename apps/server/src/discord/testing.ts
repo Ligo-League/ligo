@@ -211,7 +211,13 @@ export function fakeAutocomplete(
   return {
     ...actorOf(input),
     commandName,
-    options: { getSubcommand: () => input.subcommand ?? null },
+    options: {
+      getSubcommand: () => input.subcommand ?? null,
+      getInteger: (name) => {
+        const value = input.options?.[name];
+        return typeof value === 'number' ? value : null;
+      },
+    },
     focused,
     responses,
     respond(choices) {

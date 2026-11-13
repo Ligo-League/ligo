@@ -185,7 +185,7 @@ describe('/league channel for one division', () => {
         ...divisionChannel(1, QUEUE),
         options: { kind: 'staff_queue', division: 1, channel: { channel: { id: QUEUE } } },
       },
-      'La file de validation est commune à toute la ligue : choisis-la sans division.',
+      'Seul le salon des résultats peut être propre à une division : choisis celui-ci sans division.',
     ],
     [divisionChannel(99, L1_RESULTS), 'Division inconnue. Choisis-la dans la liste proposée.'],
   ])('refuses privately and stores nothing: %#', async (input, content) => {
@@ -223,6 +223,7 @@ describe('/league channels', () => {
     expect(await list()).toEqual([
       '**Salons du bot**',
       'File de validation du staff : non choisi',
+      'Planning des matchs : non choisi',
       'Résultats validés : non choisi',
       '• Ligue 1 : celui de la ligue',
       '• Ligue 2 : celui de la ligue',
@@ -233,6 +234,7 @@ describe('/league channels', () => {
     expect(await list()).toEqual([
       '**Salons du bot**',
       `File de validation du staff : <#${QUEUE}>`,
+      'Planning des matchs : non choisi',
       `Résultats validés : <#${RESULTS}>`,
       '• Ligue 1 : celui de la ligue',
       `• Ligue 2 : <#${L1_RESULTS}>`,

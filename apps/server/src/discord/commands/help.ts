@@ -11,6 +11,7 @@ import type { Command } from './types.ts';
 export const HELP_TOPICS = [
   'standings',
   'match',
+  'match-time',
   'staff-match',
   'staff-sanction',
   'team',
@@ -21,11 +22,19 @@ export type HelpTopic = (typeof HELP_TOPICS)[number];
 const PAGES: Record<HelpTopic, MessageKey> = {
   standings: 'help.page.standings',
   match: 'help.page.match',
+  'match-time': 'help.page.matchTime',
   'staff-match': 'help.page.staffMatch',
   'staff-sanction': 'help.page.staffSanction',
   team: 'help.page.team',
   league: 'help.page.league',
 };
+
+/** A weekday from 1 (Monday) to 7 (Sunday), by name. 1 January 2024 was a Monday. */
+const weekdayName = (locale: Locale, weekday: number) =>
+  new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {
+    weekday: 'long',
+    timeZone: 'UTC',
+  }).format(Date.UTC(2024, 0, weekday));
 
 /** The list of commands: staff commands only for staff, who also get the order of setup. */
 export function helpOverview(locale: Locale, facts: HelpFacts): string {
@@ -56,6 +65,19 @@ export function helpPage(locale: Locale, topic: HelpTopic, facts: HelpFacts): st
     // The thresholds hang under the `forfeit` line they belong to.
     const page = [t(locale, PAGES['staff-match']), ...thresholds.map((line) => `  – ${line}`)];
     return [page.join('\n'), t(locale, 'help.staffMatch.footer')].join('\n\n');
+  }
+  if (topic === 'match-time') {
+    const rule = !rules
+      ? null
+      : rules.autoSlot
+        ? t(locale, 'help.matchTime.autoSlot', {
+            weeks: rules.extensionWeeks,
+            day: weekdayName(locale, rules.autoSlot.weekday),
+            time: rules.autoSlot.time,
+          })
+        : t(locale, 'help.matchTime.noAutoSlot', { weeks: rules.extensionWeeks });
+    const page = t(locale, PAGES['match-time']);
+    return rule ? `${page}\n${rule}` : page;
   }
   if (topic === 'team') {
     const page = t(locale, PAGES.team);

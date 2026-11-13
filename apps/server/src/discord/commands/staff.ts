@@ -4,13 +4,20 @@ import { recordForfeit, searchForfeitableMatches } from '../../services/forfeits
 import { searchMatchesForStaff, validateResult, voidMatch } from '../../services/reports.ts';
 import { recordResult, searchMatches } from '../../services/results.ts';
 import {
+  readMatchTime,
+  searchSchedulableMatches,
+  setMatchTime,
+} from '../../services/scheduling.ts';
+import {
   addSanction,
   listSanctions,
   TEAM_SANCTION_KINDS,
   type SanctionEntry,
 } from '../../services/sanctions.ts';
 import { searchTeams } from '../../services/team-staff.ts';
+import { suggestDays } from '../day-suggestions.ts';
 import {
+  discordTime,
   impossibleScore,
   matchFixture,
   matchLabel,
@@ -160,6 +167,29 @@ export const staffCommand: Command = {
           },
           {
             type: ApplicationCommandOptionType.Subcommand,
+            name: 'schedule',
+            ...described('command.staff.match.schedule.description'),
+            options: [
+              matchOption,
+              {
+                type: ApplicationCommandOptionType.String,
+                name: 'date',
+                ...described('command.match.option.date'),
+                required: true,
+                autocomplete: true,
+                max_length: 10,
+              },
+              {
+                type: ApplicationCommandOptionType.String,
+                name: 'time',
+                ...described('command.match.option.time'),
+                required: true,
+                max_length: 5,
+              },
+            ],
+          },
+          {
+            type: ApplicationCommandOptionType.Subcommand,
             name: 'validate',
             ...described('command.staff.match.validate.description'),
             options: [matchOption],
@@ -252,6 +282,30 @@ export const staffCommand: Command = {
     if (matchId === null) {
       // Free text typed instead of a suggestion never arrives as a number.
       await privately(t(locale, 'match.error.match_not_found'));
+      return;
+    }
+
+    if (action === 'schedule') {
+      const time = readMatchTime(
+        db,
+        interaction,
+        interaction.options.getString('date') ?? '',
+        interaction.options.getString('time') ?? '',
+      );
+      if (!time.ok) {
+        await privately(t(locale, `schedule.error.${time.error}`));
+        return;
+      }
+      const reply = setMatchTime(db, interaction, { matchId, at: time.at }, context.now());
+      if (!reply.ok) {
+        await privately(t(locale, `schedule.error.${reply.error}`));
+        return;
+      }
+      const text = { fixture: matchFixture(locale, reply.match), when: discordTime(reply.at) };
+      await notify(context, reply.scheduleChannelId, {
+        content: t(locale, 'schedule.announce', text),
+      });
+      await privately(t(locale, 'staff.match.scheduled', text));
       return;
     }
 
@@ -386,16 +440,22 @@ export const staffCommand: Command = {
       );
       return;
     }
+    if (interaction.focused.name === 'date') {
+      await suggestDays(interaction, context);
+      return;
+    }
     if (interaction.focused.name !== 'match') {
       await interaction.respond([]);
       return;
     }
     const found =
-      action === 'validate' || action === 'void'
-        ? searchMatchesForStaff(context.db, interaction, action, query, MAX_CHOICES)
-        : action === 'forfeit'
-          ? searchForfeitableMatches(context.db, interaction, query, MAX_CHOICES)
-          : searchMatches(context.db, interaction, query, MAX_CHOICES);
+      action === 'schedule'
+        ? searchSchedulableMatches(context.db, interaction, query, MAX_CHOICES)
+        : action === 'validate' || action === 'void'
+          ? searchMatchesForStaff(context.db, interaction, action, query, MAX_CHOICES)
+          : action === 'forfeit'
+            ? searchForfeitableMatches(context.db, interaction, query, MAX_CHOICES)
+            : searchMatches(context.db, interaction, query, MAX_CHOICES);
     await interaction.respond(
       found.map((candidate) => ({
         name: matchLabel(context.locale, candidate),
