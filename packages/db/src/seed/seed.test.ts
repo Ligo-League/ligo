@@ -30,6 +30,7 @@ describe('parseTeamsCsv', () => {
           slug: 'rck-esport',
           city: 'Paris',
           colors: ['#112233', '#FFFFFF'],
+          logo: null,
         },
         {
           division: 'Ligue 2',
@@ -38,9 +39,29 @@ describe('parseTeamsCsv', () => {
           slug: 'dupont-durand-co',
           city: null,
           colors: [],
+          logo: null,
         },
       ],
     });
+  });
+
+  it('reads the logo file name, without its extension, from the optional logo column', () => {
+    const csv = (logo: string) =>
+      parseTeamsCsv(
+        [`${HEADER},logo`, `Ligue 1,RCK Esport,RCK,,,,,${logo}`].join('\n'),
+        LFR_DIVISION_NAMES,
+      );
+    expect(csv('rck')).toMatchObject({ ok: true, teams: [{ tag: 'RCK', logo: 'rck' }] });
+    expect(csv('')).toMatchObject({ ok: true, teams: [{ tag: 'RCK', logo: null }] });
+    expect(parse('Ligue 1,RCK Esport,RCK,,,')).toMatchObject({ teams: [{ logo: null }] });
+    for (const bad of ['rck.png', '../rck', 'RCK', 'r ck']) {
+      expect(csv(bad)).toEqual({
+        ok: false,
+        errors: [
+          `line 2: logo "${bad}" must be a file name without extension: lowercase letters, digits, _ or -`,
+        ],
+      });
+    }
   });
 
   it('accepts a file with only the header', () => {
@@ -82,6 +103,7 @@ describe('parseTeamsCsv', () => {
           slug: 'rck-esport',
           city: null,
           colors: ['#FF0000', '#0000FF', '#000000'],
+          logo: null,
         },
         {
           division: 'Ligue 2',
@@ -90,6 +112,7 @@ describe('parseTeamsCsv', () => {
           slug: 'rpv-esport',
           city: 'Lyon',
           colors: ['#F7BE50', '#000000'],
+          logo: null,
         },
       ],
     });
@@ -122,6 +145,7 @@ const ALPHA: TeamRow = {
   slug: 'alpha',
   city: 'Lyon',
   colors: ['#112233'],
+  logo: 'alpha',
 };
 const BRAVO: TeamRow = {
   division: 'Ligue 2',
@@ -261,6 +285,18 @@ describe('seedLfr', () => {
     expect(summary.updated).toEqual({ competitions: 1, seasons: 0, teams: 0, slots: 0 });
     expect(db.select().from(competition).get()?.pointsJson.outcomes.win).toBe(3);
     expect(seedLfr(db, TEAMS, 3000).updated.competitions).toBe(0);
+  });
+
+  it('points each team at its logo in the asset store, or at none', () => {
+    const db = openTestDatabase();
+    seedLfr(db, TEAMS, 1000);
+    const logos = () => db.select({ tag: team.tag, logoKey: team.logoKey }).from(team).all();
+    expect(logos()).toEqual([
+      { tag: 'ALP', logoKey: 'logos/alpha.png' },
+      { tag: 'BRV', logoKey: null },
+    ]);
+    expect(seedLfr(db, [ALPHA, { ...BRAVO, logo: 'bravo' }], 2000).updated.teams).toBe(1);
+    expect(logos()[1]).toEqual({ tag: 'BRV', logoKey: 'logos/bravo.png' });
   });
 
   it("holds the season's map pool, and brings an earlier season's settings up to date", () => {

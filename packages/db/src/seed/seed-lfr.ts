@@ -175,6 +175,8 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
         slug: entry.slug,
         city: entry.city,
         colorsJson: entry.colors,
+        // The same key will name the logo in R2 (design doc section 13, `logos/`).
+        logoKey: entry.logo ? `logos/${entry.logo}.png` : null,
       };
       const teamWhere = and(eq(team.orgId, orgId), eq(team.title, 'r6'), eq(team.tag, entry.tag));
       let teamRow = tx.select().from(team).where(teamWhere).get();
@@ -189,6 +191,7 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
         teamRow.name !== wanted.name ||
         teamRow.slug !== wanted.slug ||
         teamRow.city !== wanted.city ||
+        teamRow.logoKey !== wanted.logoKey ||
         JSON.stringify(teamRow.colorsJson) !== JSON.stringify(wanted.colorsJson)
       ) {
         tx.update(team).set(wanted).where(eq(team.id, teamRow.id)).run();

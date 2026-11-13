@@ -1,23 +1,23 @@
-division,name,tag,city,color_1,color_2,color_3
-Ligue 1,Civitas Esport,CIVITAS,,bleu,blanc,
-Ligue 1,Devil Black Esport,DEVIL,,rouge,noir,
-Ligue 1,GREED Academy,GREED2,,violet,noir,
-Ligue 1,Greed Esport,GREED1,,violet,noir,
-Ligue 1,Nightwolves Esport,NIGHTWOLVES,,noir,blanc,
-Ligue 1,NTS kastuki,NTS,,rose,rouge,
-Ligue 1,Outsouki,OUTSOUKI,,rouge,blanc,
-Ligue 1,RCK Esport,RCK,,rouge,bleu,noir
-Ligue 1,RPV Esport,RPV,,#F7BE50,noir,
-Ligue 1,W Mates,WMATES,,violet,noir,
-Ligue 2,Askium Esport,ASKIUM,,violet,noir,
-Ligue 2,Click Gaming,CLICK,,noir,blanc,
-Ligue 2,IGURU ESPORT,IGURU,,violet,blanc,
-Ligue 2,Lunaria Esport,LUNARIA,,noir,rouge,
-Ligue 2,Mixt N' chill,MIXNCHILL,,rouge,blanc,
-Ligue 2,Nova 1 Esport,NOVA1,,violet,noir,
-Ligue 2,Nova 2 Esport,NOVA2,,blanc,violet,
-Ligue 2,ORIGINS LEGION,ORIGINS,,violet,noir,
-Ligue 2,Panaria Lair,PANARIA,,rouge,vert,noir
-Ligue 2,Shade,SHADE,,orange,blanc,
-Ligue 2,Starly Esport Club,STARLY,,orange,noir,
-Ligue 2,Wmates Spectrum,SPECTRUM,,violet,noir,
+division,name,tag,city,color_1,color_2,color_3,logo
+Ligue 1,Civitas Esport,CIVITAS,,bleu,blanc,,civitas
+Ligue 1,Devil Black Esport,DEVIL,,rouge,noir,,devil
+Ligue 1,GREED Academy,GREED2,,violet,noir,,greed
+Ligue 1,Greed Esport,GREED1,,violet,noir,,greed
+Ligue 1,Nightwolves Esport,NIGHTWOLVES,,noir,blanc,,nightwolves
+Ligue 1,NTS kastuki,NTS,,rose,rouge,,not_scam_katsuki
+Ligue 1,Outsouki,OUTSOUKI,,rouge,blanc,,outsouki
+Ligue 1,RCK Esport,RCK,,rouge,bleu,noir,rck
+Ligue 1,RPV Esport,RPV,,#F7BE50,noir,,rpv
+Ligue 1,W Mates,WMATES,,violet,noir,,wmates
+Ligue 2,Askium Esport,ASKIUM,,violet,noir,,askium
+Ligue 2,Click Gaming,CLICK,,noir,blanc,,click_gaming
+Ligue 2,IGURU ESPORT,IGURU,,violet,blanc,,iguru
+Ligue 2,Lunaria Esport,LUNARIA,,noir,rouge,,lunaria
+Ligue 2,Mixt N' chill,MIXNCHILL,,rouge,blanc,,mix_n_chill
+Ligue 2,Nova 1 Esport,NOVA1,,violet,noir,,nova
+Ligue 2,Nova 2 Esport,NOVA2,,blanc,violet,,nova
+Ligue 2,ORIGINS LEGION,ORIGINS,,violet,noir,,origins_legion
+Ligue 2,Panaria Lair,PANARIA,,rouge,vert,noir,panaria_lair
+Ligue 2,Shade,SHADE,,orange,blanc,,shade
+Ligue 2,Starly Esport Club,STARLY,,orange,noir,,starly
+Ligue 2,Wmates Spectrum,SPECTRUM,,violet,noir,,wmates

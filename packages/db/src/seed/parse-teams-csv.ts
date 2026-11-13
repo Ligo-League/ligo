@@ -10,6 +10,7 @@ export const TEAM_CSV_COLUMNS = [
   'color_1',
   'color_2',
   'color_3',
+  'logo',
 ] as const;
 const COLOR_COLUMNS = ['color_1', 'color_2', 'color_3'] as const;
 
@@ -32,6 +33,8 @@ export const COLOR_NAMES: Record<string, string> = {
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const toHex = (cell: string) => COLOR_NAMES[cell.toLowerCase()] ?? cell;
 const REQUIRED = ['division', 'name', 'tag'] as const;
+// A file name in the logo folder, without its extension: it becomes part of a storage key.
+const LOGO_NAME = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 export interface TeamRow {
   division: string;
@@ -40,6 +43,8 @@ export interface TeamRow {
   slug: string;
   city: string | null;
   colors: string[];
+  /** The logo's file name without extension, as in `data/assets/logos/`; null when none. */
+  logo?: string | null;
 }
 
 export type TeamsCsvResult = { ok: true; teams: TeamRow[] } | { ok: false; errors: string[] };
@@ -128,6 +133,13 @@ export function parseTeamsCsv(text: string, divisionNames: readonly string[]): T
     }
     const colors = teamColorsSchema.safeParse(cells.map(toHex));
 
+    const logo = value('logo');
+    if (logo !== '' && !LOGO_NAME.test(logo)) {
+      fail(
+        `logo "${logo}" must be a file name without extension: lowercase letters, digits, _ or -`,
+      );
+    }
+
     if (errors.length === before && slug.ok && colors.success) {
       teams.push({
         division,
@@ -136,6 +148,7 @@ export function parseTeamsCsv(text: string, divisionNames: readonly string[]): T
         slug: slug.slug,
         city: city || null,
         colors: colors.data,
+        logo: logo || null,
       });
     }
   }
