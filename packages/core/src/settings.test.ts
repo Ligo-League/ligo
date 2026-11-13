@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
 import {
   DEFAULT_DISPUTE_REASONS,
+  DEFAULT_VETO,
   pointsSchema,
   rulesetSchema,
   schedulingSchema,
@@ -25,6 +26,7 @@ const LFR_S3 = {
     game_score: { win_at: 7, overtime_rounds: 3 },
     team_staff_max: 3,
     dispute_reasons: DEFAULT_DISPUTE_REASONS,
+    veto: DEFAULT_VETO,
   },
   scheduling: {
     rounds_per_week: 1,
@@ -315,6 +317,10 @@ describe('JSON round trip', () => {
           }),
           { maxLength: 24, selector: (reason) => reason.key },
         ),
+        veto: fc.record({
+          formats: fc.constant(DEFAULT_VETO.formats),
+          step_seconds: fc.integer({ min: 30, max: 3600 }),
+        }),
       }),
     ],
     [

@@ -1,4 +1,4 @@
-import { DEFAULT_DISPUTE_REASONS } from '@ligo/core';
+import { DEFAULT_DISPUTE_REASONS, vetoSchema } from '@ligo/core';
 import { R6_GAME_SCORE } from '@ligo/titles';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client.ts';
@@ -16,11 +16,13 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   participantMode: 'team',
   // One manager and up to three staff per team, from the rulebook's registration form.
   // Dispute reasons agreed with the maintainer on 13 November 2026, the platform's defaults.
+  // The veto follows the design doc's sequences until the owner answers O-11.
   rulesetJson: {
     result_validation: 'staff',
     game_score: R6_GAME_SCORE,
     team_staff_max: 3,
     dispute_reasons: [...DEFAULT_DISPUTE_REASONS],
+    veto: vetoSchema.parse({}),
   },
   // 3 points per win in Season 3, as the league's score7 tables are configured.
   pointsJson: {

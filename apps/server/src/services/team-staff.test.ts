@@ -1,3 +1,4 @@
+import { vetoSchema } from '@ligo/core';
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
@@ -108,6 +109,7 @@ describe('addTeamStaff and removeTeamStaff', () => {
           game_score: null,
           team_staff_max: 4,
           dispute_reasons: [],
+          veto: vetoSchema.parse({}),
         },
       })
       .run();

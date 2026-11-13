@@ -93,6 +93,71 @@ export const DEFAULT_DISPUTE_REASONS: readonly DisputeReason[] = [
   },
 ];
 
+/** One step of a veto sequence: which team (A starts, section 5) bans or picks a map. */
+export const VETO_SEQUENCE_STEPS = ['A_ban', 'B_ban', 'A_pick', 'B_pick'] as const;
+export type VetoSequenceStep = (typeof VETO_SEQUENCE_STEPS)[number];
+
+/**
+ * Who picks the decider's sides: team A, as in a BO1, or the team with the better round
+ * difference on the earlier maps, decided after they are played (BO3, BO5).
+ */
+export const DECIDER_SIDE_RULES = ['team_a', 'round_difference'] as const;
+
+export const vetoFormatSchema = z.strictObject({
+  /** Bans and picks in order; the map left after the last one is the decider. */
+  sequence: z.array(z.enum(VETO_SEQUENCE_STEPS)),
+  decider_side: z.enum(DECIDER_SIDE_RULES),
+});
+export type VetoFormat = z.infer<typeof vetoFormatSchema>;
+
+const alternateBans = (count: number): VetoSequenceStep[] =>
+  Array.from({ length: count }, (_step, index) => (index % 2 === 0 ? 'A_ban' : 'B_ban'));
+
+/**
+ * The sequences of design doc section 5 for a 9-map pool (O-11 asks whether LFR follows BLAST's
+ * 2026 order instead), and the Six Invitational's 4 minutes per step.
+ */
+export const DEFAULT_VETO = {
+  formats: {
+    bo1: { sequence: alternateBans(8), decider_side: 'team_a' },
+    bo3: {
+      sequence: [...alternateBans(4), 'A_pick', 'B_pick', ...alternateBans(2)],
+      decider_side: 'round_difference',
+    },
+    bo5: {
+      sequence: [...alternateBans(2), 'A_pick', 'B_pick', ...alternateBans(2), 'A_pick', 'B_pick'],
+      decider_side: 'round_difference',
+    },
+  } as Record<string, VetoFormat>,
+  step_seconds: 240,
+};
+
+export const vetoSchema = z.strictObject({
+  /** By format, `bo1` to `bo9`. A best-of-N sequence picks N − 1 maps; the decider is the last. */
+  formats: z
+    .record(z.string().regex(/^bo[1-9]$/), vetoFormatSchema)
+    .refine(
+      (formats) =>
+        Object.entries(formats).every(
+          ([key, format]) =>
+            format.sequence.filter((step) => step.endsWith('_pick')).length ===
+            Number(key.slice(2)) - 1,
+        ),
+      { error: 'A best-of-N sequence picks N − 1 maps.' },
+    )
+    .default(() =>
+      Object.fromEntries(
+        Object.entries(DEFAULT_VETO.formats).map(([key, format]) => [
+          key,
+          { ...format, sequence: [...format.sequence] },
+        ]),
+      ),
+    ),
+  /** Time for each step; a step not taken in time is chosen at random. */
+  step_seconds: z.int().min(30).max(3600).default(DEFAULT_VETO.step_seconds),
+});
+export type VetoSettings = z.infer<typeof vetoSchema>;
+
 /** `competition.ruleset_json`. */
 export const rulesetSchema = z.strictObject({
   result_validation: z.enum(RESULT_VALIDATION_MODES),
@@ -108,6 +173,7 @@ export const rulesetSchema = z.strictObject({
       error: 'A dispute reason key can appear only once.',
     })
     .default(() => DEFAULT_DISPUTE_REASONS.map((reason) => ({ ...reason }))),
+  veto: vetoSchema.default(() => vetoSchema.parse({})),
 });
 export type RulesetSettings = z.infer<typeof rulesetSchema>;
 
