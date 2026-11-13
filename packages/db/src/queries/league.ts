@@ -1,6 +1,15 @@
 import { and, asc, desc, eq, ne } from 'drizzle-orm';
 import type { Db } from '../client.ts';
-import { competition, division, leagueGuild, org, season, stage } from '../schema/index.ts';
+import {
+  competition,
+  division,
+  leagueGuild,
+  org,
+  season,
+  slot,
+  stage,
+  team,
+} from '../schema/index.ts';
 
 export interface GuildLeague {
   guild: typeof leagueGuild.$inferSelect;
@@ -55,4 +64,30 @@ export function findGuildLeague(db: Pick<Db, 'select'>, guildId: string): GuildL
       stageId: stages.find((candidate) => candidate.divisionId === row.id)?.id,
     })),
   };
+}
+
+export interface SeasonTeam {
+  teamId: number;
+  slotId: number;
+  name: string;
+  tag: string;
+  division: string;
+}
+
+/** The teams holding a slot in a season, by division level then name. */
+export function listSeasonTeams(db: Pick<Db, 'select'>, seasonId: number): SeasonTeam[] {
+  return db
+    .select({
+      teamId: team.id,
+      slotId: slot.id,
+      name: team.name,
+      tag: team.tag,
+      division: division.name,
+    })
+    .from(slot)
+    .innerJoin(division, eq(slot.divisionId, division.id))
+    .innerJoin(team, eq(slot.teamId, team.id))
+    .where(eq(division.seasonId, seasonId))
+    .orderBy(asc(division.level), asc(team.name))
+    .all();
 }

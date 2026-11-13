@@ -121,7 +121,11 @@ describe('/match result', () => {
     const db = leagueDatabase();
     db.update(schema.competition)
       .set({
-        rulesetJson: { result_validation: 'staff', game_score: { win_at: 13, overtime_rounds: 2 } },
+        rulesetJson: {
+          result_validation: 'staff',
+          game_score: { win_at: 13, overtime_rounds: 2 },
+          team_staff_max: 3,
+        },
       })
       .run();
     const context = fakeContext({ db, locale: 'en' });

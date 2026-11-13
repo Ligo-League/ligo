@@ -195,7 +195,7 @@ describe('recordResult', () => {
     const setRule = (game_score: { win_at: number; overtime_rounds: number } | null) =>
       db
         .update(competition)
-        .set({ rulesetJson: { result_validation: 'staff', game_score } })
+        .set({ rulesetJson: { result_validation: 'staff', game_score, team_staff_max: 3 } })
         .run();
     const record = (scoreA: number, scoreB: number) =>
       recordResult(db, STAFF, { ...request, scoreA, scoreB }, 9000);

@@ -19,7 +19,11 @@ const LFR_S3 = {
     forfeit: { winner: 3, loser: 0, counts_as_played: true },
   },
   tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
-  ruleset: { result_validation: 'staff', game_score: { win_at: 7, overtime_rounds: 3 } },
+  ruleset: {
+    result_validation: 'staff',
+    game_score: { win_at: 7, overtime_rounds: 3 },
+    team_staff_max: 3,
+  },
   scheduling: { rounds_per_week: 1 },
   season: { forfeit_score: [0, 0], map_pool: [] },
   stage: { seed: 20261019 },
@@ -139,6 +143,12 @@ describe('rulesetSchema', () => {
     expect(accepts(rulesetSchema, value)).toBe(false);
   });
 
+  it('allows three team staff unless the league says otherwise', () => {
+    expect(rulesetSchema.parse({ result_validation: 'staff' }).team_staff_max).toBe(3);
+    expect(accepts(rulesetSchema, { result_validation: 'staff', team_staff_max: 0 })).toBe(true);
+    expect(accepts(rulesetSchema, { result_validation: 'staff', team_staff_max: -1 })).toBe(false);
+  });
+
   it('checks no score unless the league sets a rule', () => {
     // Settings stored before this key existed must keep reading.
     expect(rulesetSchema.parse({ result_validation: 'staff' }).game_score).toBeNull();
@@ -222,6 +232,7 @@ describe('JSON round trip', () => {
         game_score: fc.option(
           fc.record({ win_at: fc.integer({ min: 2, max: 50 }), overtime_rounds: positive }),
         ),
+        team_staff_max: fc.integer({ min: 0, max: 20 }),
       }),
     ],
     ['scheduling', schedulingSchema, fc.record({ rounds_per_week: positive })],

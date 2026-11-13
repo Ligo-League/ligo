@@ -6,7 +6,7 @@ import type { TeamRow } from '../seed/parse-teams-csv.ts';
 import { seedLfr } from '../seed/seed-lfr.ts';
 import { seedMatches } from '../seed/seed-matches.ts';
 import { openTestDatabase } from '../testing.ts';
-import { findGuildLeague } from './league.ts';
+import { findGuildLeague, listSeasonTeams } from './league.ts';
 
 const GUILD = '876543210987654321';
 const STAFF_ROLE = '111111111111111111';
@@ -110,5 +110,15 @@ describe('findGuildLeague', () => {
     linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE }, 2000);
     db.update(season).set({ status: 'registration' }).run();
     expect(findGuildLeague(db, GUILD)).toMatchObject({ season: undefined, divisions: [] });
+  });
+});
+
+describe('listSeasonTeams', () => {
+  it('lists the teams with a slot in the season, top division first', () => {
+    expect(listSeasonTeams(seeded(), 1)).toEqual([
+      { teamId: 2, slotId: 2, name: 'Alpha', tag: 'ALP', division: 'Ligue 1' },
+      { teamId: 1, slotId: 1, name: 'Bravo', tag: 'BRV', division: 'Ligue 2' },
+    ]);
+    expect(listSeasonTeams(seeded(), 99)).toEqual([]);
   });
 });

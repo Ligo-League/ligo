@@ -62,6 +62,8 @@ export const rulesetSchema = z.strictObject({
   result_validation: z.enum(RESULT_VALIDATION_MODES),
   /** Null when any score with a winner is acceptable, as with Rocket League goals. */
   game_score: gameScoreSchema.nullable().default(null),
+  /** How many staff members a team may have besides its one manager. */
+  team_staff_max: z.int().min(0).default(3),
 });
 export type RulesetSettings = z.infer<typeof rulesetSchema>;
 
