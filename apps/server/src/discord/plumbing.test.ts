@@ -234,6 +234,16 @@ describe('toDiscordMessage', () => {
     ]);
   });
 
+  it('starts a new row every five buttons, as Discord requires', () => {
+    const buttons = Array.from({ length: 9 }, (_button, index) => ({
+      customId: `veto:1:0x${index}`,
+      label: `Map ${index}`,
+      style: 'danger' as const,
+    }));
+    const rows = toDiscordMessage({ content: 'x', buttons }).components;
+    expect(rows.map((row) => row.toJSON().components.length)).toEqual([5, 4]);
+  });
+
   it('attaches files under their name', () => {
     const { files } = toDiscordMessage({
       content: '',

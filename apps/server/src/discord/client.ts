@@ -178,6 +178,7 @@ export function createDiscordClient(deps: {
 
     const adapter: CommandInteraction = {
       ...actorOf(interaction),
+      channelId: interaction.channelId,
       commandName: interaction.commandName,
       options: {
         getSubcommand: () => interaction.options.getSubcommand(false),

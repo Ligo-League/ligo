@@ -244,7 +244,7 @@ export const en: Record<MessageKey, string> = {
   'help.choice.team': '/team',
   'help.choice.league': '/league channel',
   'help.overview':
-    "**Ligo's commands**\n• `/standings` — the season's standings, as an image or as text.\n• `/match propose-time` — propose a match time to the other team.\n• `/match report` — report the result of your team's match, with a screenshot of the scoreboard.\n• `/help` — this help. `/help command:` explains one command in detail.",
+    "**Ligo's commands**\n• `/standings` — the season's standings, as an image or as text.\n• `/match propose-time` — propose a match time to the other team.\n• `/match veto` — the map veto, before the match.\n• `/match report` — report the result of your team's match, with a screenshot of the scoreboard.\n• `/help` — this help. `/help command:` explains one command in detail.",
   'help.overview.staff':
     "**League staff**\n• `/staff match` — validate, enter, correct or annul a result; record a forfeit.\n• `/staff sanction` — a warning or points for a team, and the list of its sanctions.\n• `/team` — each team's manager and staff.\n• `/league channel` — the bot's channels: validation queue and results.\n\n**Setting up**\n1. `/league channel` twice: the staff validation queue, then the results channel.\n2. `/team manager` for each team.\nTeams can then report their results with `/match report`.",
   'help.page.standings':
@@ -276,4 +276,53 @@ export const en: Record<MessageKey, string> = {
   'help.team.max': 'A team has one manager and at most {max} staff members.',
   'help.page.league':
     "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Match schedule: extensions and agreed times, until each match has its own channel.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
+  'command.match.veto.description': "Start the map veto of one of your team's matches.",
+  'veto.title': '**Veto — {fixture}** (BO{bestOf})',
+  'veto.roles':
+    '{chooser} picks the starting side and starts the veto; {other} picks the overtime side. Host: {host}.',
+  'veto.coin': 'Equal rank: the bot drew {chooser} at random.',
+  'veto.bans': 'Banned: {list}',
+  'veto.ban': '{map} ({team})',
+  'veto.ban.timedOut': '{map} ({team}, time ran out)',
+  'veto.game': 'Map {n}: **{map}**',
+  'veto.game.picked': 'Map {n}: **{map}** (picked by {team})',
+  'veto.game.decider': 'Map {n}: **{map}** (decider)',
+  'veto.sides': '{team} starts on {side}; in overtime, {otTeam} takes {otSide}.',
+  'veto.sides.start': '{team} starts on {side}.',
+  'veto.sides.later': 'Sides: to the team with the better round difference on the earlier maps.',
+  'veto.side.attack': 'Attack',
+  'veto.side.defense': 'Defense',
+  'veto.turn.ban': "**{team}**'s turn: ban a map. Time runs out {deadline}.",
+  'veto.turn.pick': "**{team}**'s turn: pick a map. Time runs out {deadline}.",
+  'veto.turn.side': "**{team}**'s turn: pick the starting side on {map}. Time runs out {deadline}.",
+  'veto.turn.ot_side':
+    "**{team}**'s turn: pick the overtime side on {map}. Time runs out {deadline}.",
+  'veto.timeoutRule': 'Without a choice in time, the bot picks at random.',
+  'veto.done': 'Veto over. Have a good match!',
+  'veto.started': 'Veto started: its message is just below.',
+  'veto.error.not_linked': 'This server is not linked to a league.',
+  'veto.error.no_team':
+    "You are neither manager nor staff of a team in this league. Ask the league's staff to add you with /team.",
+  'veto.error.match_not_found': 'This match does not exist in this league. Pick it from the list.',
+  'veto.error.not_your_match': "This match is not your team's.",
+  'veto.error.not_schedulable':
+    'This match is no longer to be played: its result is already reported or settled.',
+  'veto.error.already_started':
+    "This match's veto has already started: its message is in the channel where it was started.",
+  'veto.error.no_format':
+    "The league has no veto for this match format. The league's staff can add one in the settings.",
+  'veto.error.pool_size':
+    "The season's number of maps does not fit the veto sequence. Tell the league's staff.",
+  'veto.error.no_ranks':
+    "This division's standings cannot be found, so nobody knows who picks sides. Tell the league's staff.",
+  'veto.error.not_started': "This match's veto has not started.",
+  'veto.error.stale': 'This choice has already been made: look at the updated message.',
+  'veto.error.finished': "This match's veto is over.",
+  'veto.error.not_your_turn': "It is not your team's turn.",
+  'veto.error.invalid_choice': 'This choice is no longer possible.',
+  'veto.hint.nothingLeft': 'No match left to play for your teams.',
+  'veto.hint.noMatch': 'None of your matches to play matches "{query}".',
+  'help.choice.match-veto': '/match veto',
+  'help.page.matchVeto':
+    '**`/match veto`** — the map veto\nFor the manager and staff of both teams; league staff can start it too.\n\n• `match`: pick it from the list.\n\nWhen it starts, the bot freezes who picks what from the current standings: the lower-ranked team picks the starting side and starts the veto, the other picks the overtime side, the higher-ranked team hosts. On equal rank, the bot draws at random.\n\nThe bot posts a message with one button per map: each team clicks in turn to ban or pick, then Attack or Defense. The message updates after each choice. Each turn has a time limit; without a choice in time, the bot picks at random and says so.\nAt the end, the map is stored with the match: `/match report` uses it.',
 };

@@ -46,6 +46,8 @@ interface InteractionBase extends Actor {
 
 /** The part of a Discord slash-command interaction that command handlers may use. */
 export interface CommandInteraction extends InteractionBase {
+  /** The channel the command was used in; null outside a server channel. */
+  channelId: string | null;
   options: {
     /** The subcommand used, or null for a command that has none. */
     getSubcommand(): string | null;

@@ -28,7 +28,12 @@ export interface FakeInput {
   subcommand?: string;
   subcommandGroup?: string;
   options?: Record<string, OptionValue>;
+  /** Where the command is used; a test channel unless set. */
+  channelId?: string | null;
 }
+
+/** The channel a fake command is used in. */
+export const FAKE_CHANNEL = '800000000000000099';
 
 const actorOf = (input: FakeInput) => ({
   guildId: input.guildId ?? null,
@@ -48,6 +53,7 @@ export function fakeInteraction(commandName: string, input: FakeInput = {}): Fak
   const option = (name: string) => input.options?.[name];
   return {
     ...actorOf(input),
+    channelId: input.channelId === undefined ? FAKE_CHANNEL : input.channelId,
     commandName,
     options: {
       getSubcommand: () => input.subcommand ?? null,

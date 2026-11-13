@@ -164,7 +164,7 @@ describe('/help', () => {
       (node.options ?? []).flatMap((child) => [child.name, ...names(child)]);
     const pages: Record<string, HelpTopic[]> = {
       standings: ['standings'],
-      match: ['match', 'match-time'],
+      match: ['match', 'match-time', 'match-veto'],
       staff: ['staff-match', 'staff-sanction'],
       team: ['team'],
       league: ['league'],

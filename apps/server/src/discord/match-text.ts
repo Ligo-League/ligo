@@ -64,9 +64,9 @@ export function impossibleScore(locale: Locale, rule: GameScoreSettings): string
 
 /**
  * A time as Discord shows it: in each reader's own time zone and language. `F` is the full date
- * and time, `D` the date alone.
+ * and time, `D` the date alone, `R` relative ("in 4 minutes").
  */
-export const discordTime = (at: number, style: 'F' | 'D' = 'F') =>
+export const discordTime = (at: number, style: 'F' | 'D' | 'R' = 'F') =>
   `<t:${String(Math.floor(at / 1000))}:${style}>`;
 
 /** A calendar day (`YYYY-MM-DD`) as a short label: "jeu. 5 nov.". */

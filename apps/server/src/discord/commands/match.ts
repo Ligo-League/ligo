@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import { ApplicationCommandOptionType, InteractionContextType } from 'discord.js';
 import { t, type Locale } from '../../i18n/index.ts';
 import {
@@ -6,7 +7,9 @@ import {
   searchReportableMatches,
   type ReportDetails,
 } from '../../services/reports.ts';
-import { proposeTime, readMatchTime } from '../../services/scheduling.ts';
+import { proposeTime, readMatchTime, searchSchedulableMatches } from '../../services/scheduling.ts';
+import { setVetoMessage, startVeto } from '../../services/veto.ts';
+import { vetoMessage } from '../veto-message.ts';
 import { suggestDays } from '../day-suggestions.ts';
 import { buttonId } from '../button-id.ts';
 import {
@@ -100,6 +103,49 @@ async function proposeTimeCommand(
 }
 
 // The team commands, visible to everyone: the service decides who may use them on which match.
+async function vetoCommand(
+  interaction: CommandInteraction,
+  context: CommandContext,
+): Promise<void> {
+  const { locale, db } = context;
+  const matchId = interaction.options.getInteger('match');
+  const reply =
+    matchId === null
+      ? ({ ok: false, error: 'match_not_found' } as const)
+      : // Equal ranks: a fair coin from the system's random source (O-12).
+        startVeto(db, interaction, { matchId }, context.now(), () =>
+          randomInt(2) === 0 ? 'a' : 'b',
+        );
+  if (!reply.ok) {
+    await interaction.reply({ content: t(locale, `veto.error.${reply.error}`), ephemeral: true });
+    return;
+  }
+  const message = vetoMessage(locale, reply.view);
+  const pinged = {
+    ...message,
+    content: [message.content, reply.mentionUserIds.map(mention).join(' ')]
+      .filter(Boolean)
+      .join('\n'),
+    mentionUserIds: reply.mentionUserIds,
+  };
+  // Posted rather than replied, so that its ID is known and the clock can edit it later.
+  if (interaction.channelId !== null) {
+    try {
+      const posted = await context.gateway.postMessage(interaction.channelId, pinged);
+      setVetoMessage(db, reply.view.match.id, {
+        channelId: interaction.channelId,
+        messageId: posted.messageId,
+      });
+      await interaction.reply({ content: t(locale, 'veto.started'), ephemeral: true });
+      return;
+    } catch {
+      // The bot cannot post here: the reply still carries the buttons; only the clock's edits
+      // of the message are lost.
+    }
+  }
+  await interaction.reply({ ...pinged, ephemeral: false });
+}
+
 export const matchCommand: Command = {
   data: {
     name: 'match',
@@ -169,6 +215,20 @@ export const matchCommand: Command = {
           },
         ],
       },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: 'veto',
+        ...described('command.match.veto.description'),
+        options: [
+          {
+            type: ApplicationCommandOptionType.Integer,
+            name: 'match',
+            ...described('command.match.report.option.match'),
+            required: true,
+            autocomplete: true,
+          },
+        ],
+      },
     ],
   },
 
@@ -177,6 +237,10 @@ export const matchCommand: Command = {
     const privately = (content: string) => interaction.reply({ content, ephemeral: true });
     if (interaction.options.getSubcommand() === 'propose-time') {
       await proposeTimeCommand(interaction, context);
+      return;
+    }
+    if (interaction.options.getSubcommand() === 'veto') {
+      await vetoCommand(interaction, context);
       return;
     }
     if (interaction.options.getSubcommand() !== 'report') {
@@ -270,7 +334,13 @@ export const matchCommand: Command = {
     }
     const { locale } = context;
     const query = interaction.focused.value.trim();
-    const found = searchReportableMatches(context.db, interaction, query, MAX_CHOICES);
+    const subcommand = interaction.options.getSubcommand();
+    let found = searchReportableMatches(context.db, interaction, query, MAX_CHOICES);
+    // League staff may start any veto, so they are offered every match still to play.
+    if (subcommand === 'veto' && !found.ok) {
+      const staffMatches = searchSchedulableMatches(context.db, interaction, query, MAX_CHOICES);
+      if (staffMatches.length > 0) found = { ok: true, matches: staffMatches };
+    }
     if (found.ok && found.matches.length > 0) {
       await interaction.respond(
         found.matches.map((candidate) => ({
@@ -284,9 +354,11 @@ export const matchCommand: Command = {
     // value names no match, so picking it ends in the same explanation from the command.
     // Both subcommands list the same matches, those still to play; only the wording differs.
     const hints =
-      interaction.options.getSubcommand() === 'propose-time'
+      subcommand === 'propose-time'
         ? ({ nothingLeft: 'schedule.hint.nothingLeft', noMatch: 'schedule.hint.noMatch' } as const)
-        : ({ nothingLeft: 'report.hint.nothingLeft', noMatch: 'report.hint.noMatch' } as const);
+        : subcommand === 'veto'
+          ? ({ nothingLeft: 'veto.hint.nothingLeft', noMatch: 'veto.hint.noMatch' } as const)
+          : ({ nothingLeft: 'report.hint.nothingLeft', noMatch: 'report.hint.noMatch' } as const);
     const reason = !found.ok
       ? t(locale, `match.error.${found.error}`)
       : query === ''

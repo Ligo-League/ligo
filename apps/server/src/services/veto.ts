@@ -352,7 +352,8 @@ export type VetoChoiceReply = { ok: true; view: VetoView } | { ok: false; error:
 export function chooseVetoStep(
   db: Db,
   actor: Actor,
-  request: { matchId: number; step: number; choice: string },
+  /** A choice by name (the website), or by its place among the choices offered (a button). */
+  request: { matchId: number; step: number; choice: string | number },
   now: number,
 ): VetoChoiceReply {
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
@@ -376,9 +377,11 @@ export function chooseVetoStep(
     // Someone acting for both teams (one person testing) plays whichever turn is due.
     if (!actsFor(acting.teams, found, turnSide)) return { ok: false, error: 'not_your_turn' };
 
+    const choice =
+      typeof request.choice === 'number' ? (state.choices[request.choice] ?? '') : request.choice;
     const result = applyVetoStep(stored.veto.format, stored.veto.pool, stored.records, {
       team: state.team,
-      choice: request.choice,
+      choice,
     });
     if (!result.ok) {
       return {

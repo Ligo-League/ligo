@@ -257,7 +257,7 @@ export const fr = {
   'help.choice.team': '/team',
   'help.choice.league': '/league channel',
   'help.overview':
-    "**Les commandes de Ligo**\n• `/standings` — le classement de la saison, en image ou en texte.\n• `/match propose-time` — proposer un horaire de match à l'équipe adverse.\n• `/match report` — signaler le résultat d'un match de ton équipe, avec la capture d'écran du tableau des scores.\n• `/help` — cette aide. `/help command:` explique une commande en détail.",
+    "**Les commandes de Ligo**\n• `/standings` — le classement de la saison, en image ou en texte.\n• `/match propose-time` — proposer un horaire de match à l'équipe adverse.\n• `/match veto` — le veto des cartes, avant le match.\n• `/match report` — signaler le résultat d'un match de ton équipe, avec la capture d'écran du tableau des scores.\n• `/help` — cette aide. `/help command:` explique une commande en détail.",
   'help.overview.staff':
     '**Staff de la ligue**\n• `/staff match` — valider, saisir, corriger ou annuler un résultat ; enregistrer un forfait.\n• `/staff sanction` — un avertissement ou des points pour une équipe, et la liste de ses sanctions.\n• `/team` — le manager et le staff de chaque équipe.\n• `/league channel` — les salons du bot : file de validation et résultats.\n\n**Mise en place**\n1. `/league channel` deux fois : la file de validation du staff, puis le salon des résultats.\n2. `/team manager` pour chaque équipe.\nLes équipes peuvent alors signaler leurs résultats avec `/match report`.',
   'help.page.standings':
@@ -290,6 +290,57 @@ export const fr = {
   'help.team.max': 'Une équipe a un manager et {max} membres de staff au plus.',
   'help.page.league':
     "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
+  'command.match.veto.description': "Lance le veto des cartes d'un match de ton équipe.",
+  'veto.title': '**Veto — {fixture}** (BO{bestOf})',
+  'veto.roles':
+    '{chooser} choisit le côté de départ et commence le veto ; {other} choisit le côté en prolongation. Hôte : {host}.',
+  'veto.coin': 'Égalité au classement : le bot a tiré au sort {chooser}.',
+  'veto.bans': 'Bannies : {list}',
+  'veto.ban': '{map} ({team})',
+  'veto.ban.timedOut': '{map} ({team}, temps écoulé)',
+  'veto.game': 'Carte {n} : **{map}**',
+  'veto.game.picked': 'Carte {n} : **{map}** (choix de {team})',
+  'veto.game.decider': 'Carte {n} : **{map}** (décisive)',
+  'veto.sides': '{team} commence en {side} ; en prolongation, {otTeam} prend {otSide}.',
+  'veto.sides.start': '{team} commence en {side}.',
+  'veto.sides.later':
+    "Côtés : à l'équipe qui a la meilleure différence de manches sur les cartes précédentes.",
+  'veto.side.attack': 'Attaque',
+  'veto.side.defense': 'Défense',
+  'veto.turn.ban': 'Au tour de **{team}** : bannir une carte. Fin du temps {deadline}.',
+  'veto.turn.pick': 'Au tour de **{team}** : choisir une carte. Fin du temps {deadline}.',
+  'veto.turn.side':
+    'Au tour de **{team}** : choisir le côté de départ sur {map}. Fin du temps {deadline}.',
+  'veto.turn.ot_side':
+    'Au tour de **{team}** : choisir le côté en prolongation sur {map}. Fin du temps {deadline}.',
+  'veto.timeoutRule': 'Sans choix à temps, le bot choisit au hasard.',
+  'veto.done': 'Veto terminé. Bon match !',
+  'veto.started': 'Veto lancé : le message est juste en dessous.',
+  'veto.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
+  'veto.error.no_team':
+    "Tu n'es ni manager ni staff d'une équipe de cette ligue. Demande au staff de la ligue de t'ajouter avec /team.",
+  'veto.error.match_not_found': "Ce match n'existe pas dans cette ligue. Choisis-le dans la liste.",
+  'veto.error.not_your_match': "Ce match n'est pas celui de ton équipe.",
+  'veto.error.not_schedulable':
+    "Ce match n'est plus à jouer : son résultat est déjà signalé ou réglé.",
+  'veto.error.already_started':
+    'Le veto de ce match a déjà commencé : son message est dans le salon où il a été lancé.',
+  'veto.error.no_format':
+    "La ligue n'a pas de veto pour ce format de match. Le staff de la ligue peut l'ajouter dans les réglages.",
+  'veto.error.pool_size':
+    'Le nombre de cartes de la saison ne correspond pas à la séquence de veto. Préviens le staff de la ligue.',
+  'veto.error.no_ranks':
+    'Le classement de cette division est introuvable : impossible de savoir qui choisit les côtés. Préviens le staff de la ligue.',
+  'veto.error.not_started': "Le veto de ce match n'a pas commencé.",
+  'veto.error.stale': 'Ce choix a déjà été fait : regarde le message à jour.',
+  'veto.error.finished': 'Le veto de ce match est terminé.',
+  'veto.error.not_your_turn': "Ce n'est pas au tour de ton équipe.",
+  'veto.error.invalid_choice': "Ce choix n'est plus possible.",
+  'veto.hint.nothingLeft': 'Aucun match à jouer pour tes équipes.',
+  'veto.hint.noMatch': 'Aucun de tes matchs à jouer ne correspond à « {query} ».',
+  'help.choice.match-veto': '/match veto',
+  'help.page.matchVeto':
+    "**`/match veto`** — le veto des cartes\nPour le manager et le staff des deux équipes ; le staff de la ligue peut aussi le lancer.\n\n• `match` : choisis-le dans la liste.\n\nAu lancement, le bot fige qui choisit quoi d'après le classement du moment : l'équipe la moins bien classée choisit le côté de départ et commence le veto, l'autre choisit le côté en prolongation, la mieux classée héberge. À égalité de classement, le bot tire au sort.\n\nLe bot poste un message avec un bouton par carte : chaque équipe clique à son tour pour bannir ou choisir, puis Attaque ou Défense. Le message se met à jour à chaque choix. Chaque tour a un temps limité ; sans choix à temps, le bot choisit au hasard et le note.\nÀ la fin, la carte est enregistrée avec le match : `/match report` la reprend.",
 } as const;
 
 export type MessageKey = keyof typeof fr;
