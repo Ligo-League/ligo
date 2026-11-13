@@ -273,7 +273,8 @@ Run `pnpm discord:register` again, then restart `pnpm dev` (it applies the new m
    time such as `21:00`. The message shows the time in your own time zone, with Accepter and
    Refuser for the other team.
 3. As the other team, click **Accepter**: the message says who accepted, and `#planning` gets
-   "Horaire fixé".
+   "Horaire fixé" with a square picture of the match (logos, date, time) to share on social
+   networks. Validated results get their own picture in the results channel.
 4. `/staff match schedule` sets any time for a match, even outside its week.
 
 The clock checks every minute. A match still without a time when its week ends gets its

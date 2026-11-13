@@ -341,6 +341,15 @@ export const fr = {
   'help.choice.match-veto': '/match veto',
   'help.page.matchVeto':
     "**`/match veto`** — le veto des cartes\nPour le manager et le staff des deux équipes ; le staff de la ligue peut aussi le lancer.\n\n• `match` : choisis-le dans la liste.\n\nAu lancement, le bot fige qui choisit quoi d'après le classement du moment : l'équipe la moins bien classée choisit le côté de départ et commence le veto, l'autre choisit le côté en prolongation, la mieux classée héberge. À égalité de classement, le bot tire au sort.\n\nLe bot poste un message avec un bouton par carte : chaque équipe clique à son tour pour bannir ou choisir, puis Attaque ou Défense. Le message se met à jour à chaque choix. Chaque tour a un temps limité ; sans choix à temps, le bot choisit au hasard et le note.\nÀ la fin, la carte est enregistrée avec le match : `/match report` la reprend.",
+  'card.eyebrow': '{competition} · {season}',
+  'card.title': '{division} · Semaine {week}',
+  'card.label.time': 'Match programmé',
+  'card.label.result': 'Résultat',
+  'card.vs': 'VS',
+  'card.forfeit': 'Forfait',
+  'card.when': '{date} · {time} {zone}',
+  'card.winner': 'Victoire de {team}',
+  'card.forfeitBy': 'Forfait de {team}',
 } as const;
 
 export type MessageKey = keyof typeof fr;

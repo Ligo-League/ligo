@@ -1,4 +1,5 @@
 import { ApplicationCommandOptionType } from 'discord.js';
+import { announceWithCard } from '../match-card.ts';
 import { catalogs, t, type Locale } from '../../i18n/index.ts';
 import { recordForfeit, searchForfeitableMatches } from '../../services/forfeits.ts';
 import { searchMatchesForStaff, validateResult, voidMatch } from '../../services/reports.ts';
@@ -302,10 +303,15 @@ export const staffCommand: Command = {
         return;
       }
       const text = { fixture: matchFixture(locale, reply.match), when: discordTime(reply.at) };
-      await notify(context, reply.scheduleChannelId, {
-        content: t(locale, 'schedule.announce', text),
-      });
+      // The private answer first: the picture takes a moment to draw.
       await privately(t(locale, 'staff.match.scheduled', text));
+      await announceWithCard(
+        context,
+        reply.scheduleChannelId,
+        { content: t(locale, 'schedule.announce', text) },
+        reply.match.id,
+        'time',
+      );
       return;
     }
 
@@ -316,10 +322,14 @@ export const staffCommand: Command = {
         return;
       }
       const line = storedLine(locale, reply.match);
-      await notify(context, reply.resultsChannelId, {
-        content: t(locale, 'result.announce', { line }),
-      });
       await privately(t(locale, 'staff.match.validated', { line }));
+      await announceWithCard(
+        context,
+        reply.resultsChannelId,
+        { content: t(locale, 'result.announce', { line }) },
+        reply.match.id,
+        'result',
+      );
       return;
     }
 
@@ -365,9 +375,13 @@ export const staffCommand: Command = {
       if (reply.consequence !== 'none') {
         lines.push(t(locale, `staff.match.forfeit.${reply.consequence}`, details));
       }
-      await notify(context, reply.resultsChannelId, {
-        content: t(locale, 'result.announceForfeit', details),
-      });
+      await announceWithCard(
+        context,
+        reply.resultsChannelId,
+        { content: t(locale, 'result.announceForfeit', details) },
+        reply.match.id,
+        'result',
+      );
       if (reply.consequence === 'exclusion') {
         await notify(context, reply.queueChannelId, {
           content: t(locale, 'queue.exclusion', details),
@@ -399,15 +413,21 @@ export const staffCommand: Command = {
     }
     // A staff entry counts at once, so it is announced like a validated report.
     const line = matchLine(locale, reply.match, reply);
-    await notify(context, reply.resultsChannelId, {
-      content: reply.previous
-        ? t(locale, 'result.announceCorrected', {
-            line,
-            previousA: reply.previous.scoreA,
-            previousB: reply.previous.scoreB,
-          })
-        : t(locale, 'result.announce', { line }),
-    });
+    await announceWithCard(
+      context,
+      reply.resultsChannelId,
+      {
+        content: reply.previous
+          ? t(locale, 'result.announceCorrected', {
+              line,
+              previousA: reply.previous.scoreA,
+              previousB: reply.previous.scoreB,
+            })
+          : t(locale, 'result.announce', { line }),
+      },
+      reply.match.id,
+      'result',
+    );
     const details = {
       division: reply.match.division?.name ?? '—',
       week: reply.match.week ?? '?',

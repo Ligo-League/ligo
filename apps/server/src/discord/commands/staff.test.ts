@@ -91,6 +91,11 @@ describe('/staff match result', () => {
         },
       },
     ]);
+    // Each announcement carries the result picture for social networks.
+    expect(gateway.posted.map((post) => post.message.files?.[0]?.name)).toEqual([
+      'match-3-result.png',
+      'match-3-result.png',
+    ]);
   });
 
   it("announces in the division's own channel when it has one, else in the league's", async () => {

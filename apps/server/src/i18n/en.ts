@@ -325,4 +325,13 @@ export const en: Record<MessageKey, string> = {
   'help.choice.match-veto': '/match veto',
   'help.page.matchVeto':
     '**`/match veto`** — the map veto\nFor the manager and staff of both teams; league staff can start it too.\n\n• `match`: pick it from the list.\n\nWhen it starts, the bot freezes who picks what from the current standings: the lower-ranked team picks the starting side and starts the veto, the other picks the overtime side, the higher-ranked team hosts. On equal rank, the bot draws at random.\n\nThe bot posts a message with one button per map: each team clicks in turn to ban or pick, then Attack or Defense. The message updates after each choice. Each turn has a time limit; without a choice in time, the bot picks at random and says so.\nAt the end, the map is stored with the match: `/match report` uses it.',
+  'card.eyebrow': '{competition} · {season}',
+  'card.title': '{division} · Week {week}',
+  'card.label.time': 'Match scheduled',
+  'card.label.result': 'Result',
+  'card.vs': 'VS',
+  'card.forfeit': 'Forfeit',
+  'card.when': '{date} · {time} {zone}',
+  'card.winner': '{team} wins',
+  'card.forfeitBy': 'Forfeit by {team}',
 };

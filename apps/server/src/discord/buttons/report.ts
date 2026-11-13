@@ -1,4 +1,5 @@
 import { OTHER_DISPUTE_REASON, type DisputeReason } from '@ligo/core';
+import { announceWithCard } from '../match-card.ts';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
 import {
   answerReport,
@@ -60,9 +61,13 @@ async function announceAnswer(
   // The public message names no reason: a reason can accuse a player, and staff decide.
   await interaction.update({ content: t(locale, `report.${reply.status}`, { line, member }) });
   if (reply.status === 'validated') {
-    await notify(context, reply.resultsChannelId, {
-      content: t(locale, 'result.announce', { line }),
-    });
+    await announceWithCard(
+      context,
+      reply.resultsChannelId,
+      { content: t(locale, 'result.announce', { line }) },
+      reply.match.id,
+      'result',
+    );
     return;
   }
   if (reply.dispute) {
@@ -201,9 +206,13 @@ const decide = (action: 'validate' | 'reject'): ButtonHandler => ({
       }),
     });
     if (reply.status === 'validated') {
-      await notify(context, reply.resultsChannelId, {
-        content: t(locale, 'result.announce', { line }),
-      });
+      await announceWithCard(
+        context,
+        reply.resultsChannelId,
+        { content: t(locale, 'result.announce', { line }) },
+        reply.match.id,
+        'result',
+      );
     }
   },
 });

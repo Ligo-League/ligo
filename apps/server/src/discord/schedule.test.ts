@@ -143,6 +143,10 @@ describe('proposal buttons', () => {
         },
       },
     ]);
+    // The picture for social networks rides along with the announcement.
+    expect(gateway.posted[0]?.message.files?.map((file) => file.name)).toEqual([
+      'match-3-time.png',
+    ]);
   });
 
   it('lets the other team decline, and refuses the team that proposed', async () => {
