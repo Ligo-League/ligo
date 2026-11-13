@@ -71,7 +71,8 @@ export function loadStandingsInput(
     .select({ id: match.id, status: match.status })
     .from(match)
     .where(and(eq(match.stageId, stageId), inArray(match.status, ['validated', 'forfeit'])))
-    .orderBy(asc(match.id))
+    // By week, so that a team's latest results can be read off the end of the list.
+    .orderBy(asc(match.week), asc(match.id))
     .all();
   const matchIds = counted.map((row) => row.id);
   const sides = db.select().from(matchSlot).where(inArray(matchSlot.matchId, matchIds)).all();
