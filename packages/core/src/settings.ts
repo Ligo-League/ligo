@@ -73,6 +73,16 @@ export const schedulingSchema = z.strictObject({
 });
 export type SchedulingSettings = z.infer<typeof schedulingSchema>;
 
+/**
+ * The forfeit counts that call for a warning and for exclusion; null switches one off. The
+ * rulebook warns at the 2nd forfeit and excludes at the 3rd.
+ */
+export const forfeitThresholdsSchema = z.strictObject({
+  warning_at: z.int().min(1).nullable(),
+  exclusion_at: z.int().min(1).nullable(),
+});
+export type ForfeitThresholds = z.infer<typeof forfeitThresholdsSchema>;
+
 /** `season.settings_json`. */
 export const seasonSettingsSchema = z.strictObject({
   /** Rounds credited to the winner and to the loser of a forfeit; feeds F, C and D. */
@@ -80,6 +90,7 @@ export const seasonSettingsSchema = z.strictObject({
   map_pool: z
     .array(z.string().min(1))
     .refine(hasNoDuplicates, { error: 'A map can appear only once.' }),
+  forfeits: forfeitThresholdsSchema.default({ warning_at: 2, exclusion_at: 3 }),
 });
 export type SeasonSettings = z.infer<typeof seasonSettingsSchema>;
 

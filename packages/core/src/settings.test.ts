@@ -25,7 +25,7 @@ const LFR_S3 = {
     team_staff_max: 3,
   },
   scheduling: { rounds_per_week: 1 },
-  season: { forfeit_score: [0, 0], map_pool: [] },
+  season: { forfeit_score: [0, 0], map_pool: [], forfeits: { warning_at: 2, exclusion_at: 3 } },
   stage: { seed: 20261019 },
 };
 
@@ -174,7 +174,25 @@ describe('schedulingSchema', () => {
 describe('seasonSettingsSchema', () => {
   it('accepts a map pool of distinct names', () => {
     const value = { forfeit_score: [0, 0], map_pool: ['Map A', 'Map B', 'Map C'] };
-    expect(seasonSettingsSchema.parse(value)).toEqual(value);
+    expect(seasonSettingsSchema.parse(value)).toMatchObject(value);
+  });
+
+  it('warns at the 2nd forfeit and excludes at the 3rd unless the season says otherwise', () => {
+    const stored = { forfeit_score: [0, 0], map_pool: [] };
+    // Settings stored before this key existed must keep reading.
+    expect(seasonSettingsSchema.parse(stored).forfeits).toEqual({ warning_at: 2, exclusion_at: 3 });
+    const custom = { ...stored, forfeits: { warning_at: null, exclusion_at: 5 } };
+    expect(seasonSettingsSchema.parse(custom).forfeits).toEqual(custom.forfeits);
+  });
+
+  it.each([
+    ['a threshold of zero', { warning_at: 0, exclusion_at: 3 }],
+    ['a missing threshold', { warning_at: 2 }],
+    ['an unknown key', { warning_at: 2, exclusion_at: 3, ban_at: 4 }],
+  ])('refuses forfeit thresholds with %s', (_label, forfeits) => {
+    expect(accepts(seasonSettingsSchema, { forfeit_score: [0, 0], map_pool: [], forfeits })).toBe(
+      false,
+    );
   });
 
   it.each([
@@ -242,6 +260,10 @@ describe('JSON round trip', () => {
       fc.record({
         forfeit_score: fc.tuple(score, score),
         map_pool: fc.uniqueArray(fc.string({ minLength: 1 }), { maxLength: 12 }),
+        forfeits: fc.record({
+          warning_at: fc.option(positive, { nil: null }),
+          exclusion_at: fc.option(positive, { nil: null }),
+        }),
       }),
     ],
     ['stage', stageConfigSchema, fc.record({ seed: fc.maxSafeInteger() }, { requiredKeys: [] })],

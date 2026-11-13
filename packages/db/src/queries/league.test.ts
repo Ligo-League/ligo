@@ -89,7 +89,11 @@ describe('findGuildLeague', () => {
   it('prefers the latest season that has left registration', () => {
     const db = seeded();
     linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE }, 2000);
-    const settingsJson = { forfeit_score: [0, 0] as [number, number], map_pool: [] };
+    const settingsJson = {
+      forfeit_score: [0, 0] as [number, number],
+      map_pool: [],
+      forfeits: { warning_at: 2, exclusion_at: 3 },
+    };
     const base = { competitionId: 1, settingsJson, endsOn: '2027-03-01' };
     db.insert(season)
       .values([

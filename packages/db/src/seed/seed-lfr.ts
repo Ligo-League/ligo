@@ -30,7 +30,12 @@ const SEASON: Omit<typeof season.$inferInsert, 'competitionId'> = {
   endsOn: '2026-12-20',
   status: 'active',
   // The map pool is left empty until the maintainer supplies the current nine maps.
-  settingsJson: { forfeit_score: [0, 0], map_pool: [] },
+  // Rulebook: a warning at the 2nd forfeit, exclusion at the 3rd.
+  settingsJson: {
+    forfeit_score: [0, 0],
+    map_pool: [],
+    forfeits: { warning_at: 2, exclusion_at: 3 },
+  },
 };
 const DIVISIONS: Omit<typeof division.$inferInsert, 'seasonId'>[] = [
   { name: 'Ligue 1', kind: 'league', level: 1, categoryPrefix: 'L1' },

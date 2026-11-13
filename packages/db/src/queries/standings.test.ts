@@ -87,7 +87,13 @@ describe('loadStandingsInput', () => {
   it('reads the rule settings of the competition and the season', () => {
     const db = seeded([]);
     db.update(season)
-      .set({ settingsJson: { forfeit_score: [7, 0], map_pool: [] } })
+      .set({
+        settingsJson: {
+          forfeit_score: [7, 0],
+          map_pool: [],
+          forfeits: { warning_at: 2, exclusion_at: 3 },
+        },
+      })
       .run();
     expect(load(db).input).toMatchObject({
       points: { outcomes: { win: 3, loss: 0 }, forfeit: { winner: 3, loser: 0 } },
