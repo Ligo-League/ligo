@@ -51,19 +51,42 @@ M-xx : mainteneur).
 
 ### 2.1 Responsables d'équipe
 
-- Chaque équipe a **un manager** et **au plus 3 membres de staff**. Eux seuls agissent pour
-  l'équipe : proposer un horaire, faire le veto, signaler et confirmer un résultat.
-- Une même personne peut gérer plusieurs équipes.
-- **Statut** : Règlement S3 (formulaire d'inscription).
-- **Appliquée par** : chaque commande vérifie, au moment du clic, que la personne est manager ou
-  staff de l'équipe concernée. Les rôles Discord ne suffisent pas.
+- Chaque équipe a **un propriétaire**, **au plus 3 managers** et **au plus 1 coach** : ce sont ses
+  responsables. Eux seuls agissent pour l'équipe dans ses matchs : proposer un horaire, faire le
+  veto, signaler et confirmer un résultat.
+- Le propriétaire répond de l'équipe devant la ligue. Il ne peut pas la quitter sans l'avoir
+  confiée à quelqu'un d'autre.
+- Une même personne peut être responsable de plusieurs équipes.
+- **Statut** : Décidée (remplace « un manager et 3 membres de staff » du formulaire S3).
+- **Appliquée par** : chaque commande vérifie, au moment du clic, que la personne est responsable
+  de l'équipe concernée. Les rôles Discord ne suffisent pas. Les limites sont des réglages.
 
 ### 2.2 Effectifs
 
-- 5 joueurs et jusqu'à 2 remplaçants. Mercato uniquement pendant les fenêtres annoncées,
-  3 mouvements par équipe, un joueur transféré est bloqué un jour.
-- **Statut** : Règlement S3. Pas encore appliquée par l'outil (inscriptions et mercato sur le
-  site, phase 3).
+- 5 joueurs et jusqu'à 2 remplaçants, dont **un capitaine**, qui est forcément un joueur.
+  Mercato uniquement pendant les fenêtres annoncées, 3 mouvements par équipe, un joueur transféré
+  est bloqué un jour.
+- **Statut** : Règlement S3 ; capitaine décidé. Ce que le capitaine peut faire reste à fixer
+  (M-19). Pas encore appliquée par l'outil (inscriptions et mercato sur le site, phase 3).
+
+### 2.3 Demandes des équipes
+
+- Les équipes gèrent elles-mêmes leurs responsables, par **demande** au staff de la ligue :
+  - le propriétaire et les managers demandent d'**ajouter** un manager ou un coach ;
+  - seul le propriétaire peut **confier l'équipe** à un nouveau propriétaire, qui quitte alors
+    l'équipe ;
+  - seul le propriétaire peut **retirer** un responsable : c'est immédiat, sans validation ;
+  - chacun peut **quitter** l'équipe, immédiatement, sauf le propriétaire.
+- Le staff répond **sous 24 heures** : il approuve, ou refuse en donnant une **raison**, que
+  l'équipe reçoit. Une demande peut être retirée tant qu'elle attend.
+- Le staff peut aussi modifier une équipe directement, sans demande.
+- À partir de la phase 3, l'inscription, les mouvements de mercato et les transferts de place
+  passent aussi par des demandes.
+- **Statut** : Décidée.
+- **Appliquée par** : `/team` dépose la demande et la poste dans la file du staff avec les boutons
+  Approuver et Refuser ; le refus exige une raison. Le bot rappelle la demande au staff 6 heures
+  avant l'échéance. L'équipe reçoit la réponse en message privé. Toutes les demandes sont
+  conservées, quelle que soit leur issue.
 
 ## 3. Programmation des matchs
 
@@ -137,7 +160,7 @@ M-xx : mainteneur).
 
 ### 5.1 Signalement
 
-- Après le match, le manager ou un membre du staff d'une équipe signale le score avec une
+- Après le match, un responsable d'une des deux équipes signale le score avec une
   **capture d'écran du tableau des scores**. Sans capture, pas de signalement.
 - **Statut** : Règlement S3.
 - **Appliquée par** : `/match report` exige la capture et refuse un score impossible.
@@ -207,7 +230,7 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 
 ### 7.2 Exclusion
 
-- L'exclusion est **automatique** au seuil de forfaits. Le manager et le staff de l'équipe
+- L'exclusion est **automatique** au seuil de forfaits. Les responsables de l'équipe
   reçoivent un message privé avec la raison et la manière de faire appel ; le salon des résultats
   l'annonce, sans la raison.
 - **Appel** : le staff peut annuler une exclusion. L'équipe est alors réintégrée et tous ses

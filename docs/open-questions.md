@@ -132,14 +132,6 @@ section 16.
   the opponent confirmed. There is no automatic confirmation.
 - **Answer:**
 
-#### O-07 · Who reports for a team
-
-- **Question:** who may report and confirm results for a team: its manager only, or its staff
-  members too (the rulebook allows one manager and up to three staff)? May players do it?
-- **Why it matters:** the permission check on team commands (phase 2).
-- **Until answered:** the manager and the team's staff can; players cannot.
-- **Answer:**
-
 #### O-08 · Which staff roles decide
 
 - **Question:** the LFR Discord server has several staff roles (STAFF LFR, Helper LFR,
@@ -431,7 +423,26 @@ section 16.
   are wanted; roster moves go to a `#mercato` channel per league without mentions. Still open for
   the owner: other formats, and which images post on their own.
 
+#### M-19 · What the captain may do
+
+- **Question:** from phase 3, each team has one captain, who must be a player. May the captain
+  act for the team in matches (propose a time, run the veto, report and confirm a result) like
+  its officials, or is the captain only a title on the roster?
+- **Why it matters:** the permission check on match commands, and the roster form (phase 3).
+- **Until answered:** rosters are not in Ligo yet; only the owner, managers and coach act.
+- **Answer:**
+
 ## Answered
+
+#### O-07 · Who reports for a team
+
+- **Question:** who may report and confirm results for a team: its manager only, or its staff
+  members too (the rulebook allows one manager and up to three staff)? May players do it?
+- **Why it matters:** the permission check on team commands (phase 2).
+- **Until answered:** the manager and the team's staff can; players cannot.
+- **Answer (maintainer, 13 November 2026):** a team has an owner, managers and a coach (its
+  officials); all of them report, confirm, propose times and run the veto. Players do not; the
+  captain comes with rosters in phase 3 (M-19). Design doc section 5, "Team officials".
 
 #### O-10 · Current map pool
 

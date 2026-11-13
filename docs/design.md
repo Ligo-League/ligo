@@ -159,15 +159,20 @@ game_account   id, player_id, title, external_id, display_name, rank_at_registra
                -- r6: profileID UUID; valorant: Riot ID; rocket_league: platform:id
 team           id, org_id, title, name, tag, slug, city NULL, legal_status NULL, colors_json, logo_key NULL,
                socials_json, discord_url NULL, can_stream, discord_role_id NULL, UNIQUE(org_id, title, tag)
-team_staff     team_id, player_id, role ('manager'|'staff'), since, until NULL   -- 1 manager, max 3 staff
+team_staff     team_id, player_id, role ('owner'|'manager'|'coach'), since, until NULL
+               -- 1 owner; managers and coaches up to ruleset.team_roles (3 and 1)
 org_ban        id, org_id, player_id NULL, external_account NULL, reason, decided_by, at
                -- cheat list shared by every league of the group
 accreditation  id, player_id, kind ('commentator'), granted_by, granted_at, revoked_at NULL
 
--- rules and registration
+-- rules, and what teams ask of the league
 rules_version  id, competition_id, version, markdown, voted_at, effective_from
-registration   id, season_id, team_id, form_json, status ('draft'|'submitted'|'frozen'|'approved'|'rejected'),
-               rules_version_id, accepted_by, accepted_at NULL, reviewed_by NULL
+request        id, competition_id, season_id NULL, team_id NULL, kind, payload_json,
+               approval ('auto'|'staff'), status ('pending'|'approved'|'rejected'|'withdrawn'),
+               note NULL, requested_by, requested_at, decided_by NULL, decided_at NULL,
+               reason NULL, reminded_at NULL
+               -- kinds: team_owner, team_member_add, team_member_remove (phase 2); registration,
+               -- roster_move, slot_transfer, team details (phase 3, replacing their own tables)
 
 -- competition structure
 competition    id, org_id, title, name, slug, participant_mode ('team'|'mixed'),
@@ -177,11 +182,9 @@ division       id, season_id, name, kind ('league'|'regional'), level, region NU
                results_channel_id NULL
 slot           id, division_id, team_id, status ('active'|'frozen'|'withdrawn'|'excluded'),
                forfeits, excluded_at NULL
-slot_transfer  id, slot_id, from_team_id, to_team_id, requested_by, approved_by NULL, at
-roster_entry   id, season_id, team_id, player_id, role ('player'|'sub'|'coach'), valid_from, valid_to NULL
+roster_entry   id, season_id, team_id, player_id, role ('player'|'sub'), captain, valid_from, valid_to NULL
+               -- phase 3: the coach moved to team_staff; one captain, a player
 mercato_window id, season_id, opens_at, closes_at, max_moves_per_team, lock_hours
-roster_move    id, window_id, team_id, player_id, direction ('in'|'out'), form_json,
-               status ('requested'|'approved'|'rejected'), approved_by NULL, effective_at NULL
 stage          id, season_id, division_id NULL, ord,
                kind ('round_robin'|'single_elim'|'double_elim'|'barrage'|'ladder'),
                config_json, status ('draft'|'published'|'closed')
@@ -237,6 +240,8 @@ job            id, kind, payload_json, status ('queued'|'running'|'done'|'failed
                attempts, run_after, locked_until NULL, last_error NULL
 audit_log      id, actor_player_id NULL, actor_kind ('user'|'bot'|'system'), action, entity, entity_id,
                before_json NULL, after_json NULL, at
+queue_post     id, entity ('request'|'match'|'dispute'), entity_id, channel_id, message_id, posted_at
+               -- the bot's posts in the staff queue, to mark them handled from Discord or the website
 image_cache    key PK, object_key, created_at
 ```
 
@@ -433,6 +438,30 @@ The rulebook's list maps to `sanction.kind`: warning, administrative defeat, poi
 - Ratings update after every validated match.
 - Player standings: every member of a winning lineup gets the win points; ties go to win %, then score difference per game, then games played; a minimum games count is required.
 
+**Team officials**
+
+Who acts for a team (maintainer, 13 November 2026), in `team_staff`:
+
+- **Owner:** one, answerable to the league. Hands the team over, removes its officials.
+- **Managers:** up to `ruleset.team_roles.managers_max` (3, the rulebook's three staff).
+- **Coach:** up to `coaches_max` (1, as R6 lobbies have one coach slot per team).
+- **Captain and players** come with rosters in phase 3: one captain, who must be a player.
+
+Owner, managers and coach all act in matches (propose a time, run the veto, report and confirm a result). One person may be an official of several teams.
+
+**Team requests**
+
+Teams run themselves; the league only approves what its rules restrict (maintainer, 13 November 2026). With 20 or more teams, staff no longer make every change by hand: a team files a request, staff accept or refuse it, and everything is kept in `request`.
+
+- **Who asks:** the owner and managers ask to add a manager or a coach; only the owner hands the team over or removes an official; anyone but the owner may leave. The coach asks for nothing.
+- **Who answers**, per kind, in `ruleset.requests.approval`: `staff` (approve, or refuse with a reason the team reads) or `auto` (applied at once and recorded). Defaults: adding someone and handing the team over wait for staff; removing someone applies at once, since what a team does with its own officials is its business. Leaving always applies at once: nobody is kept on a team against their will.
+- **Approval re-checks the team**: a limit reached or a member who left since the request makes it fail, and staff refuse it with that reason. The change itself is the same audited edit as a staff change, with the request's ID.
+- **Deadline:** staff answer within `answer_within_hours` (24) and are reminded `remind_before_hours` (6) before, pinging the staff role. Nothing happens on its own at the deadline: the request shows as late.
+- **Withdrawal:** whoever asked, or the owner, may take back a request still waiting.
+- **Staff act directly** too, with the same commands, when they are already in the discussion or to correct a mistake; this is audited and needs no request.
+- **Phase 3** adds the other kinds: registration, roster moves (players need `/link` for their Ubisoft account), slot transfers and team details; a mercato window's limit counts its approved `roster_move` requests.
+- Every post in the staff queue is kept in `queue_post` (requests, result reports, disputes), so the website's queue page can mark the Discord post as handled when staff decide there.
+
 ## 6. Discord bot
 
 One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Each server maps to one competition through `league_guild`, so commands never ask which league. The bot is the quick-access side of the platform (section 3): commands call the same services as the website, and all channel and role changes go through one reconciler. Discord limits a command's description to one short sentence, so `/help` explains each command in full.
@@ -440,7 +469,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 **Who can do what**
 
 - **Staff:** the staff role configured per server. Staff commands also set `default_member_permissions` so Discord hides them from others. Discord hides a whole command, never one subcommand, so team actions and staff actions are separate commands: `/match` for teams, `/staff` for staff.
-- **Team managers and staff:** from `team_staff` (one manager, up to 3 staff), who act for the team.
+- **Team officials:** from `team_staff`: the owner, managers and coach (section 5, "Team officials"), who act for the team; its owner and managers file its requests.
 - **Players:** any Discord user linked to a `player` row.
 - **Commentators:** players holding a `commentator` accreditation.
 - Every permission is re-checked server-side; Discord's own visibility settings are only cosmetic.
@@ -466,7 +495,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 | `/staff match validate\|result\|forfeit\|void`   | staff                   | Validation and direct changes, audited; `schedule` sets any match time                                  |
 | `/staff sanction add\|list`                      | staff                   | A warning or a change of points for a team; its sanctions this season                                   |
 | `/staff exclusion exclude\|reinstate\|auto`      | staff                   | Exclude a team, reinstate it on appeal, switch its automatic exclusion off or on (with a reason)        |
-| `/team manager`, `/team staff add\|remove\|list` | staff                   | Who acts for each team, until registration fills it in                                                  |
+| `/team owner\|leave\|list\|requests`, `/team member add\|remove` | team officials, staff | Teams file requests (section 5, "Team requests"); staff change a team directly; `requests` lists what waits |
 | `/league channel`, `/league channels`            | staff                   | Staff queue, schedule and results channels, results also per division; the list                         |
 | `/season create\|schedule\|publish\|close`       | staff                   | Season setup; `schedule` previews, `close` runs promotion and relegation                                |
 | `/week publish week:<n>`                         | staff                   | Creates that week's channels now instead of on schedule                                                 |
@@ -518,7 +547,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 **Notifications**
 
 - Reminders in the match channel when no time is agreed by mid-week, and 24 h before the deadline.
-- A staff alerts channel per server receives results waiting for validation, disputes, replay mismatches, stitch reviews, unregistered players in replays and reconciler errors.
+- A staff alerts channel per server receives results waiting for validation, disputes, team requests with Approve and Refuse (and their reminder before the deadline, pinging the staff role), replay mismatches, stitch reviews, unregistered players in replays and reconciler errors.
 
 ## 7. Website
 
@@ -542,13 +571,13 @@ The website is the main tool of the platform (section 3): the public face of eve
 | `/teams/:slug`                 | everyone                | Roster, staff, results, team stats                                                                                             |
 | `/players/:slug`               | everyone                | Season stats, splits by map, side and operator, game log (consenting players only)                                             |
 | `/matches/:id`                 | everyone                | Score per game, scoreboards, round timeline when replays exist                                                                 |
-| `/register`                    | team managers           | Team registration form                                                                                                         |
-| `/teams/:slug/manage`          | team manager            | Team staff, slot transfer request, mercato moves                                                                               |
+| `/register`                    | team owners             | Team registration form, filed as a request                                                                                     |
+| `/teams/:slug/manage`          | team owner and managers | Team officials, the team's requests (officials, slot transfer, mercato moves, team details) and their history                  |
 | `/matches/:id/upload`          | match players and staff | Replay uploader (browser parsing), MOSS and screenshot uploads; the map veto lives next to it at /matches/:id/veto             |
 | `/matches/:id/stats`           | team staff and staff    | Manual stat grid                                                                                                               |
 | `/matches/:id/games/:n/stitch` | team staff and staff    | Re-host review                                                                                                                 |
 | `/me`                          | logged-in player        | Linked accounts, nationality, stats consent                                                                                    |
-| `/staff/*`                     | staff                   | Validation queue, registrations, mercato approvals, sanctions, forfeits, accreditations, unknown players, jobs, rules versions |
+| `/staff/*`                     | staff                   | Validation queue, requests waiting (registrations, mercato, team officials), sanctions, forfeits, accreditations, unknown players, jobs, rules versions |
 
 The team workspace, recruitment and awards pages are listed in section 17.
 
@@ -558,14 +587,14 @@ The team workspace, recruitment and awards pages are listed in section 17.
 - **Players:** 5 players and up to 2 substitutes, each with Ubisoft ID, Discord account (by login or invitation link), competitive rank and nationality.
 - **Rules acceptance:** the manager accepts the current rulebook version ("lu et approuvé"), stored with `rules_version_id` and a timestamp, replacing the signed page.
 - **Stats consent:** each player gives it from their invitation link; it can be made mandatory by competition setting.
-- **Status:** incomplete submissions are `frozen` until fixed, as the rulebook says; staff approve, which creates the team, its slot and roster entries.
+- **Status:** a registration is a `registration` request. Incomplete submissions are frozen until fixed, as the rulebook says; staff approve, which creates the team, its slot and roster entries, or refuse with a reason.
 
 **Mercato**
 
 - Moves can only be requested inside an open `mercato_window`.
 - Each team gets at most 3 moves per window. A player can't be on two rosters in the same competition, and a transferred player is blocked for 1 day.
 - The form carries the rulebook's fields: Ubisoft ID, Discord account, nationality, rank, old team, new team.
-- Staff approve each move. Approval posts it in `#mercato` and updates rosters and Discord roles through the reconciler.
+- Each move is a `roster_move` request that staff approve or refuse with a reason. Approval posts it in `#mercato` and updates rosters and Discord roles through the reconciler.
 
 **Manual stat grid**
 
@@ -1067,8 +1096,9 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
 2. **Match workflow.**
     - `/match propose-time`, the map veto, `/match report` with screenshot, opponent confirmation, the staff validation queue;
     - deadlines with extension and Sunday 21:00 auto-scheduling, side, overtime side and host;
-    - forfeits, sanctions, audit log. Done when a full week of results comes in through teams and is validated by staff with no manual table edits.
-3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; the website side of every bot action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, exclusions, team staff, league channels, match times and the veto). Done when Season 4 registrations are taken on the website, and every bot action of phases 1 and 2 can also be done there.
+    - forfeits, sanctions, audit log;
+    - team requests (2c): teams change their own officials through requests that staff approve or refuse, every staff-queue post recorded. Done when a full week of results comes in through teams and is validated by staff with no manual table edits.
+3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; the website side of every bot action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, exclusions, team officials and their requests, league channels, match times and the veto), with one page of every request waiting that marks the Discord posts as handled. Done when Season 4 registrations are taken on the website, and every bot action of phases 1 and 2 can also be done there.
 4. **Schedule and channels.** Round-robin generation, `/season publish`, weekly channels, MOSS channels, the reconciler across the league servers, team roles. Done when Season 4's weeks are generated, published, run and archived automatically.
 5. **R6 replays.** WebAssembly build of the fork, browser uploader, normaliser, raw upload and server verification, stitching and review, match cards. Done when a re-hosted map uploaded by both teams stitches automatically and verifies, and a tampered JSON is caught.
 6. **Season end and cups.** `closeSeason()` with promotion, relegation and barrages (format pending); Coupe de France bracket with BO1 → BO3 → BO5; tie-break matches. Done when Season 4 closes and the cup runs to a final on the platform.
@@ -1131,7 +1161,8 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Forfeits              | Staff only; warning at the 2nd; automatic exclusion at the 3rd, with appeal and per-team exemption; the 50% rule counts only played matches | Rulebook, you |
 | Promotion             | Last 2 of a division with a lower one go down, the lower's first 2 go up; the one above the relegated plays the lower's 3rd (settings)      | You           |
 | National              | Later; not needed until the owner launches it                                                                                             | You           |
-| Rosters               | 5 players and up to 2 substitutes; one manager and up to 3 team staff                                                                     | Rulebook form |
+| Rosters               | 5 players and up to 2 substitutes, one of them captain; one owner, up to 3 managers and 1 coach (settings)                                | Rulebook, you |
+| Team requests         | Teams change their own officials by request; staff approve additions and handovers within 24 h, with a reason to refuse; removals apply at once | You           |
 | Mercato               | Announced windows only, 3 moves per team, 1-day block for a transferred player                                                            | Rulebook      |
 | MOSS                  | Mandatory for every match                                                                                                                 | Rulebook      |
 | Replays               | Likely mandatory, ideally from Season 4 (late December or early January at the earliest)                                                  | You           |

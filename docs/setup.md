@@ -230,8 +230,9 @@ One-time setup, as staff:
    `/league channel kind:Résultats validés channel:#résultats-l1 division:Ligue 1`). The same
    command without `channel` gives the division back the league's channel. `/league channels`
    shows what is set.
-3. `/team manager team:<a team> member:<a Discord member>` for the two teams of a match that is
-   still to play. To test alone, make yourself manager of both. `/team staff list` shows a team.
+3. `/team owner member:<a Discord member> team:<a team>` for the two teams of a match that is
+   still to play. To test alone, make yourself owner of both. `/team list team:<a team>` shows a
+   team.
 
 Then, a result from report to standings:
 
@@ -296,7 +297,7 @@ Run `pnpm seed` once more: it writes the veto sequences into the league's settin
    then the other team picks the overtime side. The message ends with "Veto terminé".
 4. `/match report` on that match: the game already holds the map and the bans.
 
-To test both teams alone, make yourself manager of both with `/team manager`: you then play
+To test both teams alone, make yourself owner of both with `/team owner`: you then play
 whichever turn is due. To see a timeout, lower `step_seconds` in the league's `ruleset_json`
 (at least 30), start a veto and wait: the clock picks a random map and the message says
 "temps écoulé".
@@ -306,7 +307,7 @@ whichever turn is due. To see a timeout, lower `step_seconds` in the league's `r
 Run `pnpm discord:register` again (it adds `/staff exclusion`), then restart `pnpm dev` (it applies
 migration `0005`).
 
-1. With a test team you manage (`/team manager`), record forfeits against it with
+1. With a test team you own (`/team owner`), record forfeits against it with
    `/staff match forfeit` until it reaches the season's threshold (3 in Season 3; lower it in the
    season's settings to try it faster). At the 2nd, the bot adds a warning; at the 3rd, it
    excludes the team: you get a direct message, the results channel announces it, the staff queue
@@ -318,6 +319,31 @@ migration `0005`).
 
 Existing Season 3 forfeits exclude nobody by themselves: only a new forfeit that reaches the
 threshold does.
+
+## 13. Team requests
+
+Run `pnpm discord:register` again (`/team` changes and is now open to every member), then restart
+`pnpm dev` (it applies migrations `0006` and `0007`). Migration `0006` turns each team's manager
+into its owner and its staff into managers.
+
+You need two Discord accounts: one league staff member, and one team official without the staff
+role (a second account, or a friend in the staging server).
+
+1. As staff: `/team owner member:<the other account> team:<a team>`. The staff queue must be set
+   (`/league channel`, step 10.2).
+2. As that owner: `/team member add member:<anyone> role:Coach note:Test`. You get a private
+   answer with the request's number; the staff queue gets the request with **Approuver** and
+   **Refuser**.
+3. As staff: **Refuser**, type a reason. The post shows the refusal; the owner gets a direct
+   message with the reason. File it again, then **Approuver**: the coach is added, and the owner and
+   the new coach get a direct message.
+4. As the owner: `/team requests` lists what still waits, each with a **Retirer** button.
+5. As the owner: `/team member remove member:<the coach>`. It applies at once, the queue gets a
+   notice and the coach a direct message. `/team leave` as the owner is refused.
+
+To see the reminder sooner, lower `requests.answer_within_hours` in the league's `ruleset_json`
+(for example to 1, with `remind_before_hours` 0): on the next tick after the deadline, the queue
+gets a message pinging the staff role with a link to the request.
 
 ## If something goes wrong
 
@@ -332,6 +358,6 @@ threshold does.
 | `/standings` answers "Ce serveur n'est relié à aucune ligue."                     | The server is not linked. Redo step 9: `DISCORD_STAFF_ROLE_ID` in `.env`, then `pnpm seed`.                 |
 | `/match` answers "Cette commande est réservée au staff de la ligue."              | You do not hold the role whose ID is in `DISCORD_STAFF_ROLE_ID`. Give yourself the `Staff` role (step 9.1). |
 | `/match report` answers "La ligue n'a pas encore choisi son salon de validation." | The staff queue channel is not set. Run `/league channel` (step 10.2).                                      |
-| `/match report` suggests only "Tu ne gères aucune équipe…"                        | You are not manager or staff of any team. Run `/team manager` (step 10.3).                                  |
+| `/match report` suggests only "Tu n'es responsable d'aucune équipe…"              | You are not an official of any team. Run `/team owner` (step 10.3).                                         |
 | `/ping` does not appear when typing `/`                                           | Run `pnpm discord:register` again, then reload Discord (Ctrl+R).                                            |
 | `/ping` appears but answers "The application did not respond"                     | `pnpm dev` is not running, or it stopped with an error. Look at its terminal.                               |
