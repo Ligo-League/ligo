@@ -866,7 +866,7 @@ Images are rendered on the server with Satori (layout to SVG) and resvg (SVG to 
 
 - Width 1200 px, height follows content; PNG output.
 - Fonts are bundled as TTF or OTF files, because Satori does not accept WOFF2.
-- Team logos are fetched once from R2, resized to 128 px and embedded as data URLs.
+- Team logos are fetched once from R2, resized to 128 px and embedded as data URLs. They are stored as PNG: resvg cannot decode WebP. Until R2 (phase 5), the same keys (`logos/<name>.png`) are read from `data/assets/render`, filled by `pnpm assets:logos` from the maintainer's collected files; logos uploaded on the website are converted on upload (phase 3). A team without a logo shows its colours.
 - Colours and logo come from `competition.theme_json`, so every title and league can have its own look.
 - Cache key: SHA-256 of template ID, template version and the input JSON. The PNG is stored in `image_cache` and on disk; a Discord message attaches it as `attachment://<name>.png`.
 - Templates are JSX components in `packages/render`; the website reuses them for link-preview images.

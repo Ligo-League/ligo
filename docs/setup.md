@@ -206,6 +206,16 @@ command > add the `Staff` role. `/match` is the teams' command and is visible to
 detail: options, who may use it, and what happens next. Staff see the staff commands in the list
 and the order of setup.
 
+### Team logos in `/standings`
+
+1. Put the logos in `data/assets/logos/`, any of PNG, JPEG, WebP, GIF or SVG, named in lowercase
+   letters, digits, `_` or `-` (for example `rck.webp`). `data/` is not committed.
+2. `pnpm assets:logos` (needs ImageMagick: `magick -version` should answer). It writes a 128 px
+   square PNG of each to `data/assets/render/logos/` and leaves the originals alone.
+3. In `fixtures/lfr-s3-teams.csv`, the `logo` column names each team's file without its
+   extension. `pnpm seed` stores it on the team.
+4. `/standings` then shows the logos. A team whose logo is missing keeps its two colours.
+
 ## 10. Phase 2a: a result reported by a team
 
 Run `pnpm discord:register` again whenever commands change, then restart `pnpm dev`.
