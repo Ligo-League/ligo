@@ -33,6 +33,16 @@ export interface TeamRoleHeld {
   role: 'manager' | 'staff';
 }
 
+/** The teams a player currently manages or staffs. */
+export function teamsOfPlayer(db: Pick<Db, 'select'>, playerId: number): TeamRoleHeld[] {
+  const { teamStaff } = schema;
+  return db
+    .select({ teamId: teamStaff.teamId, role: teamStaff.role })
+    .from(teamStaff)
+    .where(and(eq(teamStaff.playerId, playerId), isNull(teamStaff.until)))
+    .all();
+}
+
 /**
  * The teams a Discord user may act for, as their manager or staff, read from the database on
  * every call. A user the platform has never seen acts for none.
@@ -41,17 +51,12 @@ export function teamsActedFor(
   db: Pick<Db, 'select'>,
   actor: Pick<Actor, 'user'>,
 ): { playerId: number | null; teams: TeamRoleHeld[] } {
-  const { player, teamStaff } = schema;
+  const { player } = schema;
   const found = db
     .select({ id: player.id })
     .from(player)
     .where(eq(player.discordUserId, actor.user.id))
     .get();
   if (!found) return { playerId: null, teams: [] };
-  const teams = db
-    .select({ teamId: teamStaff.teamId, role: teamStaff.role })
-    .from(teamStaff)
-    .where(and(eq(teamStaff.playerId, found.id), isNull(teamStaff.until)))
-    .all();
-  return { playerId: found.id, teams };
+  return { playerId: found.id, teams: teamsOfPlayer(db, found.id) };
 }

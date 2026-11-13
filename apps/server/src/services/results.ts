@@ -3,6 +3,7 @@ import { listLeagueMatches, schema, type Db, type LeagueMatch } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { isDiscordAttachmentUrl } from './attachments.ts';
 import { requireStaff, type Actor } from './permissions.ts';
+import { matchQuery } from './match-search.ts';
 import { ensurePlayer } from './players.ts';
 
 const { auditLog, evidence, game, match } = schema;
@@ -184,25 +185,7 @@ export function searchMatches(
   const staff = requireStaff(db, actor);
   if (!staff.ok || !staff.league.season) return [];
 
-  // Each typed word must start one of the match's words, so "1" finds Ligue 1 but not week "s1".
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  const searchable = (candidate: LeagueMatch) =>
-    [
-      candidate.division?.name ?? '',
-      candidate.division?.categoryPrefix ?? '',
-      candidate.week === null ? '' : `s${candidate.week}`,
-      candidate.a.name,
-      candidate.a.tag,
-      candidate.b.name,
-      candidate.b.tag,
-    ]
-      .join(' ')
-      .toLowerCase()
-      .split(/\s+/);
-  const matches = (candidate: LeagueMatch) => {
-    const tokens = searchable(candidate);
-    return words.every((word) => tokens.some((token) => token.startsWith(word)));
-  };
+  const matches = matchQuery(query);
   const toPlay = (candidate: LeagueMatch) => (candidate.status === 'validated' ? 1 : 0);
 
   return listLeagueMatches(db, { seasonId: staff.league.season.id })
