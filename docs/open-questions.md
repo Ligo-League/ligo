@@ -366,6 +366,17 @@ section 16.
 - **Until answered:** the column stays, always at 0, and nothing reads it.
 - **Answer:**
 
+#### M-16 · Several competitions in one Discord server
+
+- **Question:** a side competition, such as a monthly cup, may run in the same Discord server as
+  the league and need its own channels. Today a server maps to one competition (`league_guild` is
+  keyed by the server). Should one server be able to hold several competitions, and how does a
+  command then know which one it is about?
+- **Why it matters:** the schema of `league_guild`, and every command that finds the league from
+  the server. Divisions of one competition can already have their own results channels.
+- **Until answered:** one competition per server. Planned with cups, phase 6.
+- **Answer:**
+
 ## Answered
 
 #### M-15 · Announcing results entered by staff

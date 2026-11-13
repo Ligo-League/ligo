@@ -238,6 +238,9 @@ Things worth trying, each of which the bot must refuse in a message only you see
 - **Confirmer** clicked by the team that reported (unless you manage both teams);
 - **Valider** clicked by someone without the `Staff` role;
 - a button under an older report, after staff clicked **Refuser** and the team reported again.
+- **Contester**: the other team picks a reason and may add details; "Autre" without details is
+  refused. The public message only says the result is disputed; the reason and the details
+  appear in `#validation`.
 
 Other staff actions:
 

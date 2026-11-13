@@ -202,6 +202,9 @@ game           id, match_id, n, map NULL, bans_json, score_a, score_b, overtime,
                stats_source ('none'|'manual'|'replay'|'api')
 evidence       id, match_id, game_id NULL, kind ('score_screenshot'|'moss'|'vod_link'|'other'),
                object_key NULL, url NULL, uploaded_by, visibility ('staff'|'teams'|'public'), at
+dispute        id, match_id, evidence_id, reason, details NULL, raised_by, at, resolution NULL
+               ('validated'|'rejected'|'voided'|'result_entered'|'forfeit'), resolved_by NULL,
+               resolved_at NULL
 sanction       id, season_id, target_kind ('slot'|'team'|'player'|'staff'), target_id,
                kind ('warning'|'admin_defeat'|'points'|'forfeit'|'suspension'|'exclusion'|'slot_freeze'
                      |'slot_withdrawal'|'accreditation_removal'|'league_ban'),
@@ -339,7 +342,7 @@ These sequences follow common R6 Circuit-based rulebooks ([example](https://www.
 
 1. `scheduled`: channel created, window and deadline set.
 2. `reported`: the team's manager or one of its staff runs `/match report` with the score and a screenshot of the final scoreboard (required `evidence`). The bot posts the report in public, pings the other team's manager and staff, and posts it in the staff queue channel.
-3. The opponent confirms (`confirmed`) or disputes (`disputed`, staff alerted), with the buttons under the report.
+3. The opponent confirms (`confirmed`) or disputes (`disputed`, staff alerted), with the buttons under the report. Disputing opens a form: a reason from the competition's `dispute_reasons` setting or "other", and details (up to 1,000 characters, required for "other"). The reason and details go to the staff queue only, never to the public message, since a reason can accuse a player. Each dispute is a `dispute` row; the staff action that ends it (validate, reject, void, a direct result or a forfeit) records its resolution in the same transaction.
 4. Staff validate (`validated`) with the button in the queue or `/staff match validate`. Only now does the result count; it is announced in the results channel. Staff can instead reject the report: the match goes back to `scheduled`.
 5. Staff can set any result (`/staff match result`), forfeit or void directly; everything is audited.
 
