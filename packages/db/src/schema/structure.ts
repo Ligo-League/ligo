@@ -98,6 +98,8 @@ export const division = sqliteTable(
     level: integer('level').notNull(),
     region: text('region'),
     categoryPrefix: text('category_prefix').notNull(),
+    // Where this division's results are announced; null falls back to the league's channel.
+    resultsChannelId: text('results_channel_id'),
   },
   (t) => [
     unique('division_season_name_unique').on(t.seasonId, t.name),

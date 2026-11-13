@@ -28,7 +28,13 @@ export interface LeagueMatch {
   seasonId: number;
   stageId: number;
   /** Null for a stage that spans divisions, such as a cup. */
-  division: { name: string; categoryPrefix: string } | null;
+  division: {
+    id: number;
+    name: string;
+    categoryPrefix: string;
+    /** Its own results channel, when it has one. */
+    resultsChannelId: string | null;
+  } | null;
   week: number | null;
   bestOf: number;
   status: MatchRow['status'];
@@ -95,8 +101,10 @@ export function listLeagueMatches(
       seasonId: row.seasonId,
       stageId: row.match.stageId,
       division: row.division && {
+        id: row.division.id,
         name: row.division.name,
         categoryPrefix: row.division.categoryPrefix,
+        resultsChannelId: row.division.resultsChannelId,
       },
       week: row.match.week,
       bestOf: row.match.bestOf,

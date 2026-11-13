@@ -1,0 +1,1 @@
+ALTER TABLE `division` ADD `results_channel_id` text;
