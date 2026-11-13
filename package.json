@@ -18,6 +18,7 @@
     "db:migrate": "node --env-file-if-exists=.env packages/db/src/cli/migrate.ts",
     "seed": "node --env-file-if-exists=.env packages/db/src/cli/seed.ts",
     "fixtures:score7": "node packages/db/src/cli/score7-export.ts",
+    "assets:logos": "node apps/server/src/assets/prepare-logos.ts",
     "discord:register": "node --env-file-if-exists=.env apps/server/src/discord/register.ts"
   },
   "devDependencies": {

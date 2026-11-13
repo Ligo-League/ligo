@@ -11,6 +11,7 @@ import type {
   OutgoingMessage,
   ReplyMessage,
 } from './commands/types.ts';
+import { fakeAssetStore } from '../assets/store.ts';
 import type { DiscordGateway } from './gateway.ts';
 
 type OptionValue =
@@ -273,6 +274,7 @@ export function fakeContext(overrides: Partial<CommandContext> = {}): CommandCon
     gatewayPingMs: 10,
     db: openTestDatabase(),
     gateway: fakeGateway(),
+    assets: fakeAssetStore(),
     now: () => 1_800_000_000_000,
     ...overrides,
   };

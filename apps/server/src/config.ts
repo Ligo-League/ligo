@@ -7,6 +7,7 @@ const envSchema = z.object({
   DISCORD_CLIENT_ID: snowflake,
   DISCORD_GUILD_ID: snowflake,
   DATABASE_PATH: z.string().min(1).default('./data/ligo.db'),
+  ASSETS_DIR: z.string().min(1).default('./data/assets/render'),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
 });
 
@@ -17,6 +18,8 @@ export interface Config {
   discordGuildId: string;
   /** SQLite file, relative to the directory the server is started from. */
   databasePath: string;
+  /** Prepared images such as team logos (`pnpm assets:logos`), until they move to R2. */
+  assetsDir: string;
   logLevel: z.infer<typeof envSchema>['LOG_LEVEL'];
 }
 
@@ -42,6 +45,7 @@ export function loadConfig(env: Record<string, string | undefined>): ConfigResul
       discordClientId: parsed.data.DISCORD_CLIENT_ID,
       discordGuildId: parsed.data.DISCORD_GUILD_ID,
       databasePath: parsed.data.DATABASE_PATH,
+      assetsDir: parsed.data.ASSETS_DIR,
       logLevel: parsed.data.LOG_LEVEL,
     },
   };

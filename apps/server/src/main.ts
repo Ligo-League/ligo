@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { applyMigrations, openDatabase } from '@ligo/db';
+import { createLocalAssetStore } from './assets/store.ts';
 import { loadConfig } from './config.ts';
 import { buttons } from './discord/buttons/index.ts';
 import { createDiscordClient } from './discord/client.ts';
@@ -26,7 +27,8 @@ const db = openDatabase(databasePath);
 applyMigrations(db);
 logger.info({ path: databasePath }, 'Database ready');
 
-const client = createDiscordClient({ commands, buttons, forms, logger, db });
+const assets = createLocalAssetStore(resolve(config.assetsDir));
+const client = createDiscordClient({ commands, buttons, forms, logger, db, assets });
 
 const shutdown = (signal: string) => {
   logger.info({ signal }, 'Shutting down');

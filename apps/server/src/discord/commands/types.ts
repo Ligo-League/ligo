@@ -1,5 +1,6 @@
 import type { Db } from '@ligo/db';
 import type { RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js';
+import type { AssetStore } from '../../assets/store.ts';
 import type { Locale } from '../../i18n/index.ts';
 import type { Actor } from '../../services/permissions.ts';
 import type { ButtonTarget } from '../button-id.ts';
@@ -141,6 +142,8 @@ export interface CommandContext {
   gatewayPingMs: number;
   db: Db;
   gateway: DiscordGateway;
+  /** Images such as team logos. */
+  assets: AssetStore;
   /** The current time in Unix milliseconds; services take it as a parameter. */
   now(): number;
 }

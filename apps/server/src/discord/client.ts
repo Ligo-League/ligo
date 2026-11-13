@@ -11,6 +11,7 @@ import {
   type ModalSubmitInteraction as DiscordModalSubmit,
 } from 'discord.js';
 import type { Logger } from 'pino';
+import type { AssetStore } from '../assets/store.ts';
 import { DEFAULT_LOCALE } from '../i18n/index.ts';
 import type { Actor } from '../services/permissions.ts';
 import type {
@@ -68,8 +69,9 @@ export function createDiscordClient(deps: {
   forms: readonly FormHandler[];
   logger: Logger;
   db: Db;
+  assets: AssetStore;
 }): Client {
-  const { commands, buttons, forms, logger, db } = deps;
+  const { commands, buttons, forms, logger, db, assets } = deps;
   const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   });
@@ -79,6 +81,7 @@ export function createDiscordClient(deps: {
     gatewayPingMs: client.ws.ping,
     db,
     gateway,
+    assets,
     now: () => Date.now(),
   });
 

@@ -23,6 +23,8 @@ export interface StandingsTeam {
   tag: string;
   slug: string;
   colors: string[];
+  /** Where the team's logo is stored, or null when it has none. */
+  logoKey: string | null;
 }
 
 export interface StageStandingsData {
@@ -59,6 +61,7 @@ export function loadStandingsInput(
       tag: team.tag,
       slug: team.slug,
       colors: team.colorsJson,
+      logoKey: team.logoKey,
     })
     .from(stageEntry)
     .innerJoin(slot, eq(stageEntry.slotId, slot.id))

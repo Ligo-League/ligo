@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ImageChild, ImageNode } from './node.ts';
+import type { BoxNode, ImageChild, ImageNode } from './node.ts';
 import { renderStandingsPng } from './standings.ts';
 import {
   standingsImage,
@@ -39,21 +39,38 @@ const INPUT: StandingsImageInput = {
   rows: [row(1, 'Civitas Esport', 11, ['W', 'L', 'W']), row(2, 'Évry Élite', -4, [])],
 };
 
+// A 1 x 1 PNG: enough for resvg to decode.
+const DOT = Uint8Array.from(
+  Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'base64',
+  ),
+);
+const LOGO = { type: 'image/png' as const, data: DOT };
+
 /** Every piece of text in the tree, in reading order. */
 function texts(node: ImageChild): string[] {
   if (typeof node !== 'object') return [String(node)];
+  if (node.type === 'img') return [];
   return node.props.children.flatMap(texts);
 }
 /** Every background colour in the tree, in reading order. */
 function backgrounds(node: ImageChild): string[] {
-  if (typeof node !== 'object') return [];
+  if (typeof node !== 'object' || node.type === 'img') return [];
   const own = node.props.style.backgroundColor;
   return [...(typeof own === 'string' ? [own] : []), ...node.props.children.flatMap(backgrounds)];
 }
-const boxes = (node: ImageNode): ImageNode[] => [
-  node,
-  ...node.props.children.flatMap((child) => (typeof child === 'object' ? boxes(child) : [])),
-];
+const boxes = (node: ImageNode): BoxNode[] =>
+  node.type === 'img'
+    ? []
+    : [
+        node,
+        ...node.props.children.flatMap((child) => (typeof child === 'object' ? boxes(child) : [])),
+      ];
+const images = (node: ImageNode): ImageNode[] =>
+  node.type === 'img'
+    ? [node]
+    : node.props.children.flatMap((child) => (typeof child === 'object' ? images(child) : []));
 
 describe('standingsImage', () => {
   it('shows the title, the translated headers and every row in order', () => {
@@ -74,6 +91,28 @@ describe('standingsImage', () => {
     expect(colours.filter((colour) => colour === win)).toHaveLength(2);
     expect(colours.filter((colour) => colour === loss)).toHaveLength(1);
     expect(colours.join(' ')).toContain([win, loss, win, surface, surface].join(' '));
+  });
+
+  it("draws a team's logo in place of its colours, and keeps the colours of a team without one", () => {
+    const withLogo = {
+      ...INPUT,
+      rows: [{ ...row(1, 'Civitas', 1, []), logo: LOGO }, row(2, 'Évry', 0, [])],
+    };
+    const tree = standingsImage(withLogo);
+    expect(images(tree)).toEqual([
+      {
+        type: 'img',
+        props: {
+          src: `data:image/png;base64,${Buffer.from(DOT).toString('base64')}`,
+          width: 40,
+          height: 40,
+          style: { width: 40, height: 40, objectFit: 'contain' },
+        },
+      },
+    ]);
+    // Only the second row still has its colour chip.
+    expect(backgrounds(tree).filter((colour) => colour === '#112233')).toHaveLength(1);
+    expect(texts(tree)).toContain('Civitas');
   });
 
   it('keeps only the five latest results', () => {
@@ -125,5 +164,17 @@ describe('renderStandingsPng', () => {
     const changed = await renderStandingsPng({ ...INPUT, title: 'Ligue 2' });
     expect(changed).not.toBe(first);
     expect(Buffer.from(changed).equals(Buffer.from(first))).toBe(false);
+  });
+
+  it('draws logos into the PNG, and tells two logos apart in the cache', async () => {
+    const withLogo = (data: Uint8Array): StandingsImageInput => ({
+      ...INPUT,
+      rows: [{ ...row(1, 'Civitas', 1, []), logo: { type: 'image/png', data } }],
+    });
+    const first = await renderStandingsPng(withLogo(DOT));
+    expect(await renderStandingsPng(withLogo(DOT.slice()))).toBe(first);
+    const other = DOT.slice();
+    other[other.length - 1] = 0;
+    expect(await renderStandingsPng(withLogo(other))).not.toBe(first);
   });
 });

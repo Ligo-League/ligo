@@ -61,6 +61,7 @@ describe('loadStandingsInput', () => {
         tag: 'ZED',
         slug: 'alpha',
         colors: ['#112233'],
+        logoKey: null,
       },
       {
         entry: 2,
@@ -70,6 +71,7 @@ describe('loadStandingsInput', () => {
         tag: 'CCC',
         slug: 'bravo',
         colors: ['#112233'],
+        logoKey: null,
       },
       {
         entry: 1,
@@ -79,6 +81,7 @@ describe('loadStandingsInput', () => {
         tag: 'BBB',
         slug: 'charlie',
         colors: ['#112233'],
+        logoKey: null,
       },
     ]);
     expect(input.entries).toEqual([3, 2, 1]);

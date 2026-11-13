@@ -19,7 +19,7 @@ describe('getStandings', () => {
       {
         rank: 1,
         shared: false,
-        team: { name: 'Alpha Esport', tag: 'ALP', colors: ['#112233', '#FFFFFF'] },
+        team: { name: 'Alpha Esport', tag: 'ALP', colors: ['#112233', '#FFFFFF'], logoKey: null },
         played: 2,
         wins: 2,
         losses: 0,
@@ -32,7 +32,7 @@ describe('getStandings', () => {
       {
         rank: 2,
         shared: false,
-        team: { name: 'Charlie', tag: 'CHA', colors: ['#112233', '#FFFFFF'] },
+        team: { name: 'Charlie', tag: 'CHA', colors: ['#112233', '#FFFFFF'], logoKey: null },
         played: 1,
         wins: 0,
         losses: 1,
@@ -45,7 +45,7 @@ describe('getStandings', () => {
       {
         rank: 3,
         shared: false,
-        team: { name: 'Bravo', tag: 'BRV', colors: ['#112233', '#FFFFFF'] },
+        team: { name: 'Bravo', tag: 'BRV', colors: ['#112233', '#FFFFFF'], logoKey: null },
         played: 1,
         wins: 0,
         losses: 1,

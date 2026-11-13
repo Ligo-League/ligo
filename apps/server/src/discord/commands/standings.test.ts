@@ -1,4 +1,7 @@
+import { schema } from '@ligo/db';
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+import { fakeAssetStore } from '../../assets/store.ts';
 import { leagueDatabase, TEST_GUILD } from '../../testing.ts';
 import { formatStandingsTable } from '../standings-table.ts';
 import { fakeContext, fakeInteraction } from '../testing.ts';
@@ -26,6 +29,30 @@ describe('/standings', () => {
       'standings-ligue-2.png',
     ]);
     for (const file of files) expect([...file.data.slice(0, 8)]).toEqual(PNG_SIGNATURE);
+  });
+
+  it("draws a team's logo from the asset store, and its colours when the logo is missing", async () => {
+    // A 1 x 1 PNG: enough for the renderer to decode.
+    const dot = Uint8Array.from(
+      Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+        'base64',
+      ),
+    );
+    const image = async (logos: Record<string, Uint8Array>) => {
+      const db = leagueDatabase();
+      db.update(schema.team)
+        .set({ logoKey: 'logos/alpha.png' })
+        .where(eq(schema.team.tag, 'ALP'))
+        .run();
+      const context = fakeContext({ db, assets: fakeAssetStore(logos) });
+      const [reply] = await run({ guildId: TEST_GUILD, options: { division: 'l1' } }, context);
+      return Buffer.from(reply?.files?.[0]?.data ?? []);
+    };
+    const withLogo = await image({ 'logos/alpha.png': dot });
+    const withoutLogo = await image({});
+    expect(withLogo.length).toBeGreaterThan(0);
+    expect(withLogo.equals(withoutLogo)).toBe(false);
   });
 
   it('posts a single image for one division', async () => {
@@ -98,7 +125,7 @@ describe('formatStandingsTable', () => {
   const row = (rank: number, tag: string, diff: number, points: number) => ({
     rank,
     shared: false,
-    team: { name: tag, tag, colors: [] },
+    team: { name: tag, tag, colors: [], logoKey: null },
     played: 10,
     wins: 9,
     losses: 1,

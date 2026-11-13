@@ -1,12 +1,14 @@
 import { slugify } from '@ligo/core';
 import { renderStandingsPng } from '@ligo/render';
 import { ApplicationCommandOptionType } from 'discord.js';
+import type { AssetStore } from '../../assets/store.ts';
 import { catalogs, t, type Locale, type MessageKey } from '../../i18n/index.ts';
 import {
   getStandings,
   type StandingsReply,
   type StandingsTable,
 } from '../../services/standings.ts';
+import { loadLogos } from '../../services/logos.ts';
 import { formatStandingsTable } from '../standings-table.ts';
 import { described, english } from './describe.ts';
 import type { Command, CommandFile } from './types.ts';
@@ -26,7 +28,12 @@ async function renderTable(
   locale: Locale,
   standings: Standings,
   table: StandingsTable,
+  assets: AssetStore,
 ): Promise<CommandFile> {
+  const logos = await loadLogos(
+    assets,
+    table.rows.map((row) => row.team.logoKey),
+  );
   const data = await renderStandingsPng({
     title: table.division,
     subtitle: t(locale, 'standings.subtitle', {
@@ -45,7 +52,12 @@ async function renderTable(
       points: t(locale, 'standings.column.points'),
       form: t(locale, 'standings.column.form'),
     },
-    rows: table.rows.map((row) => ({ ...row, name: row.team.name, colors: row.team.colors })),
+    rows: table.rows.map((row) => ({
+      ...row,
+      name: row.team.name,
+      colors: row.team.colors,
+      logo: row.team.logoKey === null ? null : (logos.get(row.team.logoKey) ?? null),
+    })),
     theme: standings.theme,
   });
   const slug = slugify(table.division);
@@ -96,7 +108,7 @@ export const standingsCommand: Command = {
       // Rendering can take longer than the 3 seconds Discord waits for a reply.
       await interaction.defer();
       const files = await Promise.all(
-        standings.tables.map((table) => renderTable(locale, standings, table)),
+        standings.tables.map((table) => renderTable(locale, standings, table, context.assets)),
       );
       await interaction.reply({ content: '', ephemeral: false, files });
       return;

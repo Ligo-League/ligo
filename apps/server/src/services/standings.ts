@@ -2,7 +2,7 @@ import { computeStandings, recentForm, type FormResult, type StandingsRow } from
 import { findGuildLeague, loadStandingsInput, type Db, type Theme } from '@ligo/db';
 
 export interface StandingsTableRow extends Omit<StandingsRow, 'entry'> {
-  team: { name: string; tag: string; colors: string[] };
+  team: { name: string; tag: string; colors: string[]; logoKey: string | null };
   /** The team's latest results, oldest first, at most `FORM_LENGTH`. */
   form: FormResult[];
 }
@@ -69,7 +69,7 @@ export function getStandings(
         if (!team) throw new Error(`Standings row for unknown entry ${entry}`);
         return {
           ...row,
-          team: { name: team.name, tag: team.tag, colors: team.colors },
+          team: { name: team.name, tag: team.tag, colors: team.colors, logoKey: team.logoKey },
           form: recentForm(data.input.matches, entry, FORM_LENGTH),
         };
       }),

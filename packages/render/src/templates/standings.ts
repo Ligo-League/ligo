@@ -1,15 +1,17 @@
-import { box, text, type ImageNode, type Style } from '../node.ts';
+import { box, picture, text, type EmbeddedImage, type ImageNode, type Style } from '../node.ts';
 import { resolveTheme, type ThemeOverrides } from '../theme.ts';
 
 export const STANDINGS_IMAGE_WIDTH = 1200;
 /** Part of the cache key: raise it whenever the picture changes for the same input. */
-export const STANDINGS_TEMPLATE_VERSION = 1;
+export const STANDINGS_TEMPLATE_VERSION = 2;
 
 export interface StandingsImageRow {
   rank: number;
   name: string;
-  /** The team's colours as #RRGGBB; the first two are shown. */
+  /** The team's colours as #RRGGBB; the first two are shown when it has no logo. */
   colors: readonly string[];
+  /** The team's logo, square; null or absent shows its colours instead. */
+  logo?: EmbeddedImage | null;
   played: number;
   wins: number;
   losses: number;
@@ -44,6 +46,7 @@ export interface StandingsImageInput {
 }
 
 const NUMBER_WIDTH = 68;
+const LOGO_SIZE = 40;
 const FORM_SLOTS = 5;
 const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
 const right: Style = { justifyContent: 'flex-end' };
@@ -89,23 +92,27 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
 
   const rows = input.rows.map((row, index) => {
     const [first = theme.muted, second = first] = row.colors;
+    // The logo, or the team's two colours for a team without one.
+    const badge = row.logo
+      ? picture(row.logo, LOGO_SIZE)
+      : box(
+          {
+            width: 14,
+            height: 34,
+            borderRadius: 4,
+            overflow: 'hidden',
+            flexDirection: 'column',
+            // A dark team colour would vanish into the dark background without an outline.
+            border: `1px solid ${theme.muted}`,
+          },
+          box({ flexGrow: 1, backgroundColor: first }),
+          box({ flexGrow: 1, backgroundColor: second }),
+        );
     const team = box(
       { alignItems: 'center' },
-      // The team's two colours, until teams have logos.
-      box(
-        {
-          width: 14,
-          height: 34,
-          borderRadius: 4,
-          overflow: 'hidden',
-          flexDirection: 'column',
-          // A dark team colour would vanish into the dark background without an outline.
-          border: `1px solid ${theme.muted}`,
-        },
-        box({ flexGrow: 1, backgroundColor: first }),
-        box({ flexGrow: 1, backgroundColor: second }),
-      ),
-      text({ marginLeft: 16, fontSize: 26, fontWeight: 700 }, row.name),
+      // A fixed slot, so names line up whether a team has a logo or not.
+      box({ width: LOGO_SIZE, justifyContent: 'center', flexShrink: 0 }, badge),
+      text({ marginLeft: 14, fontSize: 26, fontWeight: 700 }, row.name),
     );
     const form = box(
       { alignItems: 'center' },

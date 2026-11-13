@@ -12,11 +12,13 @@ import {
 const CACHE_SIZE = 32;
 const cache = new Map<string, Uint8Array>();
 
+const digest = (data: string | Uint8Array) => createHash('sha256').update(data).digest('hex');
+
 /** The standings table of one division as a PNG, 1200 px wide. */
 export async function renderStandingsPng(input: StandingsImageInput): Promise<Uint8Array> {
-  const key = createHash('sha256')
-    .update(JSON.stringify(['standings', STANDINGS_TEMPLATE_VERSION, input]))
-    .digest('hex');
+  // Logos are hashed on their own: as JSON, their bytes would make a huge key to hash.
+  const rows = input.rows.map((row) => ({ ...row, logo: row.logo && digest(row.logo.data) }));
+  const key = digest(JSON.stringify(['standings', STANDINGS_TEMPLATE_VERSION, { ...input, rows }]));
   const cached = cache.get(key);
   if (cached) return cached;
 

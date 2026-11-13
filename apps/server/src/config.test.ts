@@ -9,7 +9,7 @@ const valid = {
 };
 
 describe('loadConfig', () => {
-  it('reads the Discord settings and defaults the database path and the log level', () => {
+  it('reads the Discord settings and defaults the database path, the assets folder and the log level', () => {
     expect(loadConfig(valid)).toEqual({
       ok: true,
       config: {
@@ -17,6 +17,7 @@ describe('loadConfig', () => {
         discordClientId: '123456789012345678',
         discordGuildId: '876543210987654321',
         databasePath: './data/ligo.db',
+        assetsDir: './data/assets/render',
         logLevel: 'info',
       },
     });
