@@ -187,3 +187,35 @@ function countMatch(winner: Tally, loser: Tally): void {
   loser.played += 1;
   loser.losses += 1;
 }
+
+export type FormResult = 'W' | 'L';
+
+/**
+ * The latest results of one entry, oldest first, from matches given in the order they were
+ * played. A forfeit is a win for the opponent and a loss for the team that forfeited.
+ */
+export function recentForm(
+  matches: readonly StandingsMatch[],
+  entry: number,
+  count: number,
+): FormResult[] {
+  const results: FormResult[] = [];
+  for (const match of matches) {
+    if (match.a !== entry && match.b !== entry) continue;
+    const side: MatchSide = match.a === entry ? 'a' : 'b';
+    if (match.result.kind === 'forfeit') {
+      results.push(match.result.forfeitedBy === side ? 'L' : 'W');
+      continue;
+    }
+    let won = 0;
+    let lost = 0;
+    for (const game of match.result.games) {
+      const [own, other] = side === 'a' ? [game.a, game.b] : [game.b, game.a];
+      if (own > other) won += 1;
+      if (own < other) lost += 1;
+    }
+    // A match nobody won (no game yet, or a tied series) says nothing about form.
+    if (won !== lost) results.push(won > lost ? 'W' : 'L');
+  }
+  return count > 0 ? results.slice(-count) : [];
+}

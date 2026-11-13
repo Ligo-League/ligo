@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { PointsSettings, TiebreakSettings } from './settings.ts';
 import {
   computeStandings,
+  recentForm,
   type StandingsInput,
   type StandingsMatch,
   type StandingsRow,
@@ -412,5 +413,54 @@ describe('computeStandings: properties', () => {
         },
       ),
     );
+  });
+});
+
+describe('recentForm', () => {
+  const season = [
+    played(1, 2, 7, 4),
+    played(3, 1, 7, 5),
+    forfeit(1, 4, 'b'),
+    forfeit(2, 1, 'b'),
+    played(3, 4, 7, 0),
+    played(1, 3, 8, 6),
+  ];
+
+  it('lists the results of an entry, oldest first, counting forfeits', () => {
+    expect(recentForm(season, 1, 5)).toEqual(['W', 'L', 'W', 'L', 'W']);
+    expect(recentForm(season, 4, 5)).toEqual(['L', 'L']);
+  });
+
+  it('keeps only the latest results asked for', () => {
+    expect(recentForm(season, 1, 2)).toEqual(['L', 'W']);
+    expect(recentForm(season, 1, 0)).toEqual([]);
+  });
+
+  it('is empty for an entry that has not played', () => {
+    expect(recentForm(season, 9, 5)).toEqual([]);
+  });
+
+  it('reads a series by games won and skips a match nobody won', () => {
+    const series: StandingsMatch = {
+      id: 70,
+      a: 1,
+      b: 2,
+      result: {
+        kind: 'played',
+        games: [
+          { a: 7, b: 3 },
+          { a: 4, b: 7 },
+          { a: 7, b: 5 },
+        ],
+      },
+    };
+    const unfinished: StandingsMatch = {
+      id: 71,
+      a: 1,
+      b: 2,
+      result: { kind: 'played', games: [] },
+    };
+    expect(recentForm([series, unfinished], 1, 5)).toEqual(['W']);
+    expect(recentForm([series, unfinished], 2, 5)).toEqual(['L']);
   });
 });
