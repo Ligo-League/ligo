@@ -27,6 +27,7 @@ const LFR_S3 = {
     team_staff_max: 3,
     dispute_reasons: DEFAULT_DISPUTE_REASONS,
     veto: DEFAULT_VETO,
+    promotion: { relegated: 2, relegation_barrage: 1, barrage_opponent_place: 3 },
   },
   scheduling: {
     rounds_per_week: 1,
@@ -321,6 +322,13 @@ describe('JSON round trip', () => {
           formats: fc.constant(DEFAULT_VETO.formats),
           step_seconds: fc.integer({ min: 30, max: 3600 }),
         }),
+        promotion: fc
+          .record({ relegated: fc.nat(5), relegation_barrage: fc.nat(5), extra: fc.nat(5) })
+          .map(({ relegated, relegation_barrage, extra }) => ({
+            relegated,
+            relegation_barrage,
+            barrage_opponent_place: relegated + 1 + extra,
+          })),
       }),
     ],
     [

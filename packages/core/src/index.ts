@@ -9,3 +9,4 @@ export * from './slug.ts';
 export * from './standings.ts';
 export * from './time.ts';
 export * from './veto.ts';
+export * from './zones.ts';

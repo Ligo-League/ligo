@@ -158,6 +158,23 @@ export const vetoSchema = z.strictObject({
 });
 export type VetoSettings = z.infer<typeof vetoSchema>;
 
+/**
+ * Moves between divisions at the end of the regular season, the maintainer's rule
+ * (13 November 2026): the last `relegated` teams of a division that has a lower one go down, and
+ * that lower division's first `relegated` go up; the `relegation_barrage` teams just above the
+ * relegated ones play a barrage against the lower division's teams from `barrage_opponent_place`.
+ */
+export const promotionSchema = z
+  .strictObject({
+    relegated: z.int().min(0).default(2),
+    relegation_barrage: z.int().min(0).default(1),
+    barrage_opponent_place: z.int().min(1).default(3),
+  })
+  .refine((rules) => rules.barrage_opponent_place > rules.relegated, {
+    error: 'A barrage opponent comes after the teams that go up.',
+  });
+export type PromotionSettings = z.infer<typeof promotionSchema>;
+
 /** `competition.ruleset_json`. */
 export const rulesetSchema = z.strictObject({
   result_validation: z.enum(RESULT_VALIDATION_MODES),
@@ -174,6 +191,7 @@ export const rulesetSchema = z.strictObject({
     })
     .default(() => DEFAULT_DISPUTE_REASONS.map((reason) => ({ ...reason }))),
   veto: vetoSchema.default(() => vetoSchema.parse({})),
+  promotion: promotionSchema.default(() => promotionSchema.parse({})),
 });
 export type RulesetSettings = z.infer<typeof rulesetSchema>;
 

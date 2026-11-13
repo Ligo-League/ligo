@@ -1,4 +1,4 @@
-import { vetoSchema } from '@ligo/core';
+import { promotionSchema, vetoSchema } from '@ligo/core';
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
@@ -110,6 +110,7 @@ describe('addTeamStaff and removeTeamStaff', () => {
           team_staff_max: 4,
           dispute_reasons: [],
           veto: vetoSchema.parse({}),
+          promotion: promotionSchema.parse({}),
         },
       })
       .run();
