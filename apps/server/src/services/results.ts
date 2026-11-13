@@ -39,6 +39,8 @@ export type RecordResultReply =
       scoreB: number;
       /** The result this one replaced, when the match already had one. */
       previous: { scoreA: number; scoreB: number } | null;
+      /** Where results are announced, when the league has set it. */
+      resultsChannelId: string | null;
     }
   | { ok: false; error: RecordResultError }
   // The rule is returned so that the refusal can say which scores are possible.
@@ -163,7 +165,14 @@ export function recordResult(
       })
       .run();
 
-    return { ok: true, match: found, scoreA, scoreB, previous };
+    return {
+      ok: true,
+      match: found,
+      scoreA,
+      scoreB,
+      previous,
+      resultsChannelId: league.guild.resultsChannelId,
+    };
   });
 }
 

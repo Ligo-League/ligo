@@ -25,6 +25,8 @@ export type ForfeitReply =
       consequence: ForfeitConsequence;
       /** Where staff are alerted when the count reaches the exclusion threshold. */
       queueChannelId: string | null;
+      /** Where results are announced: a forfeit counts in the standings like any result. */
+      resultsChannelId: string | null;
     }
   | { ok: false; error: ForfeitError };
 
@@ -125,6 +127,7 @@ export function recordForfeit(
       count,
       consequence,
       queueChannelId: league.guild.alertsChannelId,
+      resultsChannelId: league.guild.resultsChannelId,
     };
   });
 }

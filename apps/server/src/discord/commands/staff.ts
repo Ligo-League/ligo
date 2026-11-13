@@ -10,7 +10,14 @@ import {
   type SanctionEntry,
 } from '../../services/sanctions.ts';
 import { searchTeams } from '../../services/team-staff.ts';
-import { impossibleScore, matchFixture, matchLabel, notify, storedLine } from '../match-text.ts';
+import {
+  impossibleScore,
+  matchFixture,
+  matchLabel,
+  matchLine,
+  notify,
+  storedLine,
+} from '../match-text.ts';
 import { described, english, MAX_CHOICE_LENGTH, MAX_CHOICES, STAFF_ONLY } from './describe.ts';
 import type { Command, CommandContext, CommandInteraction } from './types.ts';
 
@@ -304,6 +311,9 @@ export const staffCommand: Command = {
       if (reply.consequence !== 'none') {
         lines.push(t(locale, `staff.match.forfeit.${reply.consequence}`, details));
       }
+      await notify(context, reply.resultsChannelId, {
+        content: t(locale, 'result.announceForfeit', details),
+      });
       if (reply.consequence === 'exclusion') {
         await notify(context, reply.queueChannelId, {
           content: t(locale, 'queue.exclusion', details),
@@ -333,6 +343,17 @@ export const staffCommand: Command = {
       );
       return;
     }
+    // A staff entry counts at once, so it is announced like a validated report.
+    const line = matchLine(locale, reply.match, reply);
+    await notify(context, reply.resultsChannelId, {
+      content: reply.previous
+        ? t(locale, 'result.announceCorrected', {
+            line,
+            previousA: reply.previous.scoreA,
+            previousB: reply.previous.scoreB,
+          })
+        : t(locale, 'result.announce', { line }),
+    });
     const details = {
       division: reply.match.division?.name ?? '—',
       week: reply.match.week ?? '?',

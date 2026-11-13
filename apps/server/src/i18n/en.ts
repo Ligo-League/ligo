@@ -80,6 +80,8 @@ export const en: Record<MessageKey, string> = {
   'queue.validated': '**{line}** — validated by {member}.',
   'queue.rejected': '**{line}** — rejected by {member}. The match is to be reported again.',
   'result.announce': 'Result validated — {line}.',
+  'result.announceCorrected': 'Result corrected — {line} (was {previousA}–{previousB}).',
+  'result.announceForfeit': 'Forfeit — {fixture}. {team} forfeits.',
   'staff.match.validated': 'Result validated: {line}.',
   'staff.match.voided': 'Match annulled: {fixture}.',
   'staff.match.forfeit': 'Forfeit recorded: {fixture}. {team} forfeits ({count} this season).',

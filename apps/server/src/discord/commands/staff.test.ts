@@ -71,6 +71,37 @@ describe('/staff match result', () => {
     );
   });
 
+  it('announces the result, then its correction, in the results channel', async () => {
+    const db = leagueDatabase();
+    db.update(schema.leagueGuild).set({ resultsChannelId: '800000000000000002' }).run();
+    const gateway = fakeGateway();
+    const context = fakeContext({ db, gateway });
+    await run(result({ match: 3, score_a: 7, score_b: 5 }), context);
+    await run(result({ match: 3, score_a: 5, score_b: 7 }), context);
+    expect(gateway.posted).toMatchObject([
+      {
+        channelId: '800000000000000002',
+        message: { content: 'Résultat validé — Ligue 1, semaine 3 : Bravo 7–5 Charlie.' },
+      },
+      {
+        channelId: '800000000000000002',
+        message: {
+          content: 'Résultat corrigé — Ligue 1, semaine 3 : Bravo 5–7 Charlie (au lieu de 7–5).',
+        },
+      },
+    ]);
+  });
+
+  it('records the result even when no results channel is set', async () => {
+    const gateway = fakeGateway();
+    const { db } = await run(
+      result({ match: 3, score_a: 7, score_b: 5 }),
+      fakeContext({ db: leagueDatabase(), gateway }),
+    );
+    expect(gateway.posted).toEqual([]);
+    expect(db.select().from(schema.match).all()[2]?.status).toBe('validated');
+  });
+
   it('passes the attached screenshot on as evidence', async () => {
     const screenshot = {
       url: 'https://cdn.discordapp.com/attachments/1/2/score.png',
@@ -295,6 +326,20 @@ describe('/staff match forfeit', () => {
       },
     ]);
     expect(db.select().from(schema.match).all()[2]?.status).toBe('forfeit');
+  });
+
+  it('announces the forfeit in the results channel', async () => {
+    const { context, db, gateway } = league();
+    db.update(schema.leagueGuild).set({ resultsChannelId: '800000000000000002' }).run();
+    await run(staffMatch('forfeit', { match: 3, team: 'b' }), context);
+    expect(gateway.posted).toMatchObject([
+      {
+        channelId: '800000000000000002',
+        message: {
+          content: 'Forfait — Ligue 1, semaine 3 : Bravo – Charlie. Charlie déclare forfait.',
+        },
+      },
+    ]);
   });
 
   it('says when the automatic warning was added, and stores its reason in French', async () => {
