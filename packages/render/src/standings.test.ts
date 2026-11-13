@@ -132,6 +132,21 @@ describe('standingsImage', () => {
     expect(all.slice(all.indexOf('4'), all.indexOf('Delta') + 1)).toEqual(['4', 'Delta']);
   });
 
+  it("colours each row's edge by its zone, and explains the colours under the table", () => {
+    const zoned = {
+      ...INPUT,
+      rows: [{ ...row(1, 'Alpha', 3, []), zoneColor: '#00AA00' }, row(2, 'Bravo', 1, [])],
+      legend: [{ color: '#00AA00', label: 'Champion' }],
+    };
+    const tree = standingsImage(zoned);
+    const edges = boxes(tree).map((node) => node.props.style.borderLeft);
+    expect(edges).toContain('6px solid #00AA00');
+    expect(edges).toContain('6px solid transparent');
+    expect(texts(tree).at(-1)).toBe('Champion');
+    expect(backgrounds(tree)).toContain('#00AA00');
+    expect(texts(standingsImage(INPUT))).not.toContain('Champion');
+  });
+
   it('keeps only the five latest results', () => {
     const long = { ...INPUT, rows: [row(1, 'Alpha', 1, ['L', 'L', 'W', 'W', 'W', 'W', 'W'])] };
     const colours = backgrounds(standingsImage(long));

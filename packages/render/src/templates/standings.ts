@@ -3,7 +3,7 @@ import { resolveTheme, type ImageTheme, type ThemeOverrides } from '../theme.ts'
 
 export const STANDINGS_IMAGE_WIDTH = 1200;
 /** Part of the cache key: raise it whenever the picture changes for the same input. */
-export const STANDINGS_TEMPLATE_VERSION = 4;
+export const STANDINGS_TEMPLATE_VERSION = 5;
 
 export interface StandingsImageRow {
   rank: number;
@@ -23,6 +23,14 @@ export interface StandingsImageRow {
   points: number;
   /** Latest results, oldest first. */
   form: readonly ('W' | 'L')[];
+  /** The colour of the zone the row falls in (title, promotion, barrage…); null for none. */
+  zoneColor?: string | null;
+}
+
+/** One entry of the legend under the table: a zone's colour and what it means. */
+export interface StandingsLegendEntry {
+  color: string;
+  label: string;
 }
 
 export interface StandingsImageInput {
@@ -44,6 +52,8 @@ export interface StandingsImageInput {
     form: string;
   };
   rows: readonly StandingsImageRow[];
+  /** The zones the table shows, in table order; none draws no legend. */
+  legend?: readonly StandingsLegendEntry[];
   theme?: ThemeOverrides;
 }
 
@@ -60,6 +70,19 @@ function rankChange(change: number | null, theme: ImageTheme): ImageNode {
   if (change === 0) return text({ fontSize: 20, color: theme.muted }, '–');
   const [arrow, color] = change > 0 ? ['▲', theme.win] : ['▼', theme.loss];
   return text({ fontSize: 18, fontWeight: 700, color }, `${arrow} ${Math.abs(change)}`);
+}
+
+function legend(entries: readonly StandingsLegendEntry[], theme: ImageTheme): ImageNode {
+  return box(
+    { flexWrap: 'wrap', marginTop: 24, padding: '0 20px', fontSize: 20, color: theme.muted },
+    ...entries.map((entry) =>
+      box(
+        { alignItems: 'center', marginRight: 32, marginTop: 4 },
+        box({ width: 16, height: 16, borderRadius: 4, backgroundColor: entry.color }),
+        text({ marginLeft: 10 }, entry.label),
+      ),
+    ),
+  );
 }
 
 export function standingsImage(input: StandingsImageInput): ImageNode {
@@ -94,7 +117,14 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
     );
 
   const header = cells(
-    { height: 44, fontSize: 18, color: theme.muted, letterSpacing: 1 },
+    {
+      height: 44,
+      fontSize: 18,
+      color: theme.muted,
+      letterSpacing: 1,
+      // As wide as a row's zone edge, so that headers sit over their columns.
+      borderLeft: '6px solid transparent',
+    },
     {
       rank: headers.rank,
       change: box({}),
@@ -154,6 +184,8 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
         fontSize: 24,
         borderRadius: 10,
         backgroundColor: index % 2 === 0 ? theme.surface : theme.background,
+        // The zone's colour on the row's edge; a transparent edge keeps the columns aligned.
+        borderLeft: `6px solid ${row.zoneColor ?? 'transparent'}`,
       },
       {
         rank: row.rank,
@@ -191,6 +223,7 @@ export function standingsImage(input: StandingsImageInput): ImageNode {
       ),
       header,
       ...rows,
+      ...(input.legend && input.legend.length > 0 ? [legend(input.legend, theme)] : []),
     ),
   );
 }

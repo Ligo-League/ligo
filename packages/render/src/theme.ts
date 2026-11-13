@@ -7,6 +7,8 @@ export interface ImageTheme {
   accent: string;
   win: string;
   loss: string;
+  /** Places that play a barrage, between promotion and relegation. */
+  barrage: string;
 }
 
 export const DEFAULT_THEME: ImageTheme = {
@@ -17,6 +19,7 @@ export const DEFAULT_THEME: ImageTheme = {
   accent: '#F7BE50',
   win: '#3FB96B',
   loss: '#E5534B',
+  barrage: '#F2994A',
 };
 
 /** Some colours of a theme; a stored theme lists only the ones a league changed. */
