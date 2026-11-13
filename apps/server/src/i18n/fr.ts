@@ -173,6 +173,41 @@ export const fr = {
   'error.unknownCommand': 'Commande inconnue.',
   'error.unknownButton': "Ce bouton n'est plus utilisable.",
   'error.unexpected': 'Une erreur est survenue. Réessaie dans un instant.',
+  'command.help.description': 'Explique les commandes du bot en détail.',
+  'command.help.option.command': 'La commande à expliquer. Sans elle, la liste des commandes.',
+  'help.choice.standings': '/standings',
+  'help.choice.match': '/match report',
+  'help.choice.staff-match': '/staff match',
+  'help.choice.staff-sanction': '/staff sanction',
+  'help.choice.team': '/team',
+  'help.choice.league': '/league channel',
+  'help.overview':
+    "**Les commandes de Ligo**\n• `/standings` — le classement de la saison, en image ou en texte.\n• `/match report` — signaler le résultat d'un match de ton équipe, avec la capture d'écran du tableau des scores.\n• `/help` — cette aide. `/help command:` explique une commande en détail.",
+  'help.overview.staff':
+    '**Staff de la ligue**\n• `/staff match` — valider, saisir, corriger ou annuler un résultat ; enregistrer un forfait.\n• `/staff sanction` — un avertissement ou des points pour une équipe, et la liste de ses sanctions.\n• `/team` — le manager et le staff de chaque équipe.\n• `/league channel` — les salons du bot : file de validation et résultats.\n\n**Mise en place**\n1. `/league channel` deux fois : la file de validation du staff, puis le salon des résultats.\n2. `/team manager` pour chaque équipe.\nLes équipes peuvent alors signaler leurs résultats avec `/match report`.',
+  'help.page.standings':
+    "**`/standings`** — le classement de la saison en cours\nOuvert à tous.\n\n• `division` (facultatif) : « Ligue 1 » ou « L1 », par exemple. Sans elle, toutes les divisions.\n• `format` (facultatif) : Image (par défaut) ou Texte.\n\nSeuls comptent les résultats validés et les forfaits, avec les points des sanctions. Un résultat signalé mais pas encore validé n'apparaît pas.\nColonnes : J joués, V victoires, D défaites, F manches gagnées, C manches perdues, Diff (F − C), PTS points. Les égalités sont départagées selon le règlement de la ligue.",
+  'help.page.match':
+    "**`/match report`** — signaler le résultat d'un match\nPour le manager et le staff des deux équipes. Le staff de la ligue les désigne avec `/team manager`.\n\n• `match` : choisis-le dans la liste. Elle ne montre que les matchs de tes équipes encore à jouer ; tape un nom, un tag ou « s3 » (semaine 3) pour la filtrer.\n• `score_a` et `score_b` : les manches gagnées par la première et la seconde équipe citées, dans l'ordre du match, pas forcément la tienne d'abord.\n• `screenshot` : la capture du tableau des scores, obligatoire. PNG, JPEG ou WebP, {maxMb} Mo au plus.\n\nUn score impossible selon le règlement (7–6, par exemple) est refusé. Un forfait ne se signale pas : préviens le staff de la ligue.",
+  'help.match.steps.staff':
+    "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** ou **Contester**. Une contestation alerte le staff.\n3. Le staff clique **Valider** ou **Refuser**. Refusé, le match peut être signalé de nouveau.\n4. Validé, le résultat est annoncé dans le salon des résultats et compte au classement.",
+  'help.match.steps.opponent':
+    "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** : le résultat est validé, annoncé dans le salon des résultats et compte au classement. **Contester** alerte le staff de la ligue, qui tranche.",
+  'help.page.staffMatch':
+    "**`/staff match`** — les résultats, réservé au staff de la ligue\n`match` : tape une équipe, une division (L1) ou une semaine (s3), puis choisis dans la liste.\n\n• `result` — saisit ou corrige un score (`score_a`, `score_b`, `screenshot` facultatif). Il compte aussitôt, sans validation, et il est annoncé dans le salon des résultats, une correction aussi.\n• `validate` — valide un résultat signalé par une équipe, comme le bouton **Valider**. La liste ne propose que les matchs en attente.\n• `void` — annule un match, avec un motif (`reason`) gardé dans le journal. Rien n'est supprimé ; le match ne compte plus.\n• `forfeit` — enregistre le forfait de la première ou de la seconde équipe citée (`team`). Il est annoncé dans le salon des résultats.",
+  'help.staffMatch.footer':
+    'Un forfait ou un match annulé ne se corrige pas avec `result`. Chaque action est inscrite au journal avec son auteur.',
+  'help.forfeit.warning':
+    "À {count} forfaits, un avertissement est ajouté automatiquement à l'équipe.",
+  'help.forfeit.exclusion':
+    "À {count} forfaits, le staff est alerté dans la file de validation ; l'exclusion reste sa décision.",
+  'help.page.staffSanction':
+    "**`/staff sanction`** — les sanctions d'équipe, réservé au staff de la ligue\n• `add` — `team`, `kind`, `reason`, et `points` pour une sanction en points.\n  – Avertissement : gardé dans la liste, sans effet sur le classement.\n  – Points au classement : `points:-1` retire un point, `points:2` en ajoute deux. Le classement suit aussitôt.\n• `list` — les sanctions d'une équipe cette saison, avec date et motif. Les avertissements automatiques des forfaits y figurent.\n\nUne sanction ne se supprime pas : pour en annuler une, ajoute la sanction inverse (`points:1` après `points:-1`) avec son motif.",
+  'help.page.team':
+    "**`/team`** — qui agit pour chaque équipe, réservé au staff de la ligue\nLe manager et le staff d'une équipe peuvent signaler et confirmer ses résultats. En attendant les inscriptions sur le site, c'est ici qu'on les désigne.\n\n• `/team manager` — désigne le manager d'une équipe (`team`, `member`). L'ancien manager perd ce rôle.\n• `/team staff add` — ajoute un membre au staff d'une équipe.\n• `/team staff remove` — retire un membre de l'équipe, manager compris.\n• `/team staff list` — le manager et le staff d'une équipe.\n\nUne même personne peut gérer plusieurs équipes.",
+  'help.team.max': 'Une équipe a un manager et {max} membres de staff au plus.',
+  'help.page.league':
+    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Garde-le réservé au staff.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
 } as const;
 
 export type MessageKey = keyof typeof fr;

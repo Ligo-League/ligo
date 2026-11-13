@@ -106,13 +106,13 @@ Leave `DATABASE_PATH` and `LOG_LEVEL` as they are, and leave the commented lines
 
 Run these from the repository folder, in order:
 
-| Command                 | What you should see                                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `pnpm install`          | Ends with `Done`                                                                                             |
-| `pnpm db:migrate`       | `Migrations applied to …/data/ligo.db`                                                                       |
-| `pnpm seed`             | `Created 1 org, 1 competition, 1 season, 2 divisions, 22 teams, 22 slots; …`, then a line for the matches    |
-| `pnpm discord:register` | `Registered 6 command(s) in guild …: /ping, /standings, /match, /staff, /team, /league`, then the invite URL |
-| `pnpm dev`              | A log line containing `"msg":"Discord client ready"`; the command keeps running                              |
+| Command                 | What you should see                                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `pnpm install`          | Ends with `Done`                                                                                                    |
+| `pnpm db:migrate`       | `Migrations applied to …/data/ligo.db`                                                                              |
+| `pnpm seed`             | `Created 1 org, 1 competition, 1 season, 2 divisions, 22 teams, 22 slots; …`, then a line for the matches           |
+| `pnpm discord:register` | `Registered 7 command(s) in guild …: /ping, /standings, /match, /staff, /team, /league, /help`, then the invite URL |
+| `pnpm dev`              | A log line containing `"msg":"Discord client ready"`; the command keeps running                                     |
 
 Then, in any channel of `Ligo Staging`, type `/ping` and press Enter. The bot answers, visible only
 to you:
@@ -175,11 +175,11 @@ The bot now reads the database, and it needs to know which server is LFR's and w
 
 4. Run these, in order:
 
-| Command                 | What you should see                                                                         |
-| ----------------------- | ------------------------------------------------------------------------------------------- |
-| `pnpm seed`             | `Created 2 stages, 22 entries, 111 matches; …` and `Discord server …: link to LFR created.` |
-| `pnpm discord:register` | `Registered 6 command(s) in guild …: /ping, /standings, /match, /staff, /team, /league`     |
-| `pnpm dev`              | `"msg":"Database ready"`, then `"msg":"Discord client ready"`                               |
+| Command                 | What you should see                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm seed`             | `Created 2 stages, 22 entries, 111 matches; …` and `Discord server …: link to LFR created.`    |
+| `pnpm discord:register` | `Registered 7 command(s) in guild …: /ping, /standings, /match, /staff, /team, /league, /help` |
+| `pnpm dev`              | `"msg":"Database ready"`, then `"msg":"Discord client ready"`                                  |
 
 Then type `/standings` in any channel of `Ligo Staging`: after a second the bot posts one image
 per division, visible to everyone. `/standings division:L2` posts one division, and
@@ -201,6 +201,10 @@ same match corrects it; both versions stay in the audit log.
 only tidiness: the bot itself refuses anyone who does not hold the `Staff` role. To show them to
 staff who are not administrators: **Server Settings** > **Integrations** > `Ligo Staging` > the
 command > add the `Staff` role. `/match` is the teams' command and is visible to everyone.
+
+`/help` lists the commands a member can use, and `/help command:<a command>` explains one in
+detail: options, who may use it, and what happens next. Staff see the staff commands in the list
+and the order of setup.
 
 ## 10. Phase 2a: a result reported by a team
 

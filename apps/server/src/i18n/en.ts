@@ -168,4 +168,38 @@ export const en: Record<MessageKey, string> = {
   'error.unknownCommand': 'Unknown command.',
   'error.unknownButton': 'This button can no longer be used.',
   'error.unexpected': 'Something went wrong. Please try again in a moment.',
+  'command.help.description': "Explains the bot's commands in detail.",
+  'command.help.option.command': 'The command to explain. Without it, the list of commands.',
+  'help.choice.standings': '/standings',
+  'help.choice.match': '/match report',
+  'help.choice.staff-match': '/staff match',
+  'help.choice.staff-sanction': '/staff sanction',
+  'help.choice.team': '/team',
+  'help.choice.league': '/league channel',
+  'help.overview':
+    "**Ligo's commands**\n• `/standings` — the season's standings, as an image or as text.\n• `/match report` — report the result of your team's match, with a screenshot of the scoreboard.\n• `/help` — this help. `/help command:` explains one command in detail.",
+  'help.overview.staff':
+    "**League staff**\n• `/staff match` — validate, enter, correct or annul a result; record a forfeit.\n• `/staff sanction` — a warning or points for a team, and the list of its sanctions.\n• `/team` — each team's manager and staff.\n• `/league channel` — the bot's channels: validation queue and results.\n\n**Setting up**\n1. `/league channel` twice: the staff validation queue, then the results channel.\n2. `/team manager` for each team.\nTeams can then report their results with `/match report`.",
+  'help.page.standings':
+    '**`/standings`** — the current season\'s standings\nOpen to everyone.\n\n• `division` (optional): "Ligue 1" or "L1", for example. Without it, every division.\n• `format` (optional): Image (the default) or Text.\n\nOnly validated results and forfeits count, with sanction points. A result reported but not yet validated does not appear.\nColumns: J played, V wins, D losses, F rounds won, C rounds lost, Diff (F − C), PTS points. Ties are broken as the league\'s rulebook says.',
+  'help.page.match':
+    '**`/match report`** — report the result of a match\nFor the manager and staff of both teams. League staff name them with `/team manager`.\n\n• `match`: pick it from the list. It shows only your teams\' matches still to play; type a name, a tag or "s3" (week 3) to narrow it.\n• `score_a` and `score_b`: rounds won by the first and the second team named, in the match\'s order, not necessarily yours first.\n• `screenshot`: the scoreboard screenshot, required. PNG, JPEG or WebP, {maxMb} MB at most.\n\nA score the rulebook makes impossible (7–6, for example) is refused. A forfeit is not reported here: tell the league staff.',
+  'help.match.steps.staff':
+    '**Then**\n1. The bot posts the result with the screenshot and mentions the other team.\n2. The other team clicks **Confirmer** (confirm) or **Contester** (dispute). A dispute alerts staff.\n3. Staff click **Valider** (validate) or **Refuser** (reject). Once rejected, the match can be reported again.\n4. Once validated, the result is announced in the results channel and counts in the standings.',
+  'help.match.steps.opponent':
+    '**Then**\n1. The bot posts the result with the screenshot and mentions the other team.\n2. The other team clicks **Confirmer** (confirm): the result is validated, announced in the results channel and counts in the standings. **Contester** (dispute) alerts the league staff, who decide.',
+  'help.page.staffMatch':
+    '**`/staff match`** — results, for league staff only\n`match`: type a team, a division (L1) or a week (s3), then pick from the list.\n\n• `result` — enters or corrects a score (`score_a`, `score_b`, optional `screenshot`). It counts at once, without validation, and is announced in the results channel, a correction too.\n• `validate` — validates a result reported by a team, like the **Valider** button. The list offers only matches waiting for staff.\n• `void` — annuls a match, with a reason (`reason`) kept in the log. Nothing is deleted; the match stops counting.\n• `forfeit` — records a forfeit by the first or the second team named (`team`). It is announced in the results channel.',
+  'help.staffMatch.footer':
+    'A forfeit or an annulled match is not corrected with `result`. Every action is logged with its author.',
+  'help.forfeit.warning': 'At {count} forfeits, a warning is added to the team automatically.',
+  'help.forfeit.exclusion':
+    'At {count} forfeits, staff are alerted in the validation queue; exclusion remains their decision.',
+  'help.page.staffSanction':
+    "**`/staff sanction`** — team sanctions, for league staff only\n• `add` — `team`, `kind`, `reason`, and `points` for a points sanction.\n  – Warning: kept in the list, no effect on the standings.\n  – Points: `points:-1` takes a point away, `points:2` adds two. The standings follow at once.\n• `list` — a team's sanctions this season, with date and reason. Automatic forfeit warnings appear there too.\n\nA sanction cannot be deleted: to cancel one, add the opposite sanction (`points:1` after `points:-1`) with its reason.",
+  'help.page.team':
+    "**`/team`** — who acts for each team, for league staff only\nA team's manager and staff can report and confirm its results. Until registration moves to the website, this is where they are named.\n\n• `/team manager` — names a team's manager (`team`, `member`). The previous manager loses that role.\n• `/team staff add` — adds a member to a team's staff.\n• `/team staff remove` — removes a member from the team, the manager included.\n• `/team staff list` — a team's manager and staff.\n\nThe same person can manage several teams.",
+  'help.team.max': 'A team has one manager and at most {max} staff members.',
+  'help.page.league':
+    "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. Keep it staff-only.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
 };
