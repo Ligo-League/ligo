@@ -186,12 +186,46 @@ export const teamRolesSchema = z.strictObject({
 });
 export type TeamRolesSettings = z.infer<typeof teamRolesSchema>;
 
+/** What a team can ask of the league (design doc section 5, "Team requests"). */
+export const REQUEST_KINDS = ['team_owner', 'team_member_add', 'team_member_remove'] as const;
+export type RequestKind = (typeof REQUEST_KINDS)[number];
+
+/** `auto`: applied at once and recorded; `staff`: waits for league staff to approve or refuse. */
+export const APPROVAL_MODES = ['auto', 'staff'] as const;
+export type ApprovalMode = (typeof APPROVAL_MODES)[number];
+
+/**
+ * Who answers each kind of request, and how fast. The defaults are the maintainer's
+ * (13 November 2026): staff approve additions and handovers within 24 hours; the owner removes
+ * people without asking, since the league restricts only what its rules restrict.
+ */
+export const requestsSchema = z
+  .strictObject({
+    approval: z
+      .strictObject({
+        team_owner: z.enum(APPROVAL_MODES).default('staff'),
+        team_member_add: z.enum(APPROVAL_MODES).default('staff'),
+        team_member_remove: z.enum(APPROVAL_MODES).default('auto'),
+      })
+      .default({ team_owner: 'staff', team_member_add: 'staff', team_member_remove: 'auto' }),
+    answer_within_hours: z.int().min(1).max(720).default(24),
+    /** Staff are reminded this long before the deadline; null: no reminder. */
+    remind_before_hours: z.int().min(0).nullable().default(6),
+  })
+  .refine(
+    (rules) =>
+      rules.remind_before_hours === null || rules.remind_before_hours < rules.answer_within_hours,
+    { error: 'The reminder comes after the request is filed.' },
+  );
+export type RequestsSettings = z.infer<typeof requestsSchema>;
+
 /** `competition.ruleset_json`. */
 export const rulesetSchema = z.strictObject({
   result_validation: z.enum(RESULT_VALIDATION_MODES),
   /** Null when any score with a winner is acceptable, as with Rocket League goals. */
   game_score: gameScoreSchema.nullable().default(null),
   team_roles: teamRolesSchema.default(() => teamRolesSchema.parse({})),
+  requests: requestsSchema.default(() => requestsSchema.parse({})),
   /** Offered when a team disputes a result, before "other"; Discord lists 25 entries at most. */
   dispute_reasons: z
     .array(disputeReasonSchema)

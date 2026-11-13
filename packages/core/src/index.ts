@@ -3,6 +3,7 @@ export * from './exclusion.ts';
 export * from './forfeits.ts';
 export * from './game-score.ts';
 export * from './match-lifecycle.ts';
+export * from './requests.ts';
 export * from './scheduling.ts';
 export * from './settings.ts';
 export * from './sides.ts';

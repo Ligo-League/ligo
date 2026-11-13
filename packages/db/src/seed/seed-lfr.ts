@@ -1,4 +1,10 @@
-import { DEFAULT_DISPUTE_REASONS, promotionSchema, teamRolesSchema, vetoSchema } from '@ligo/core';
+import {
+  DEFAULT_DISPUTE_REASONS,
+  promotionSchema,
+  requestsSchema,
+  teamRolesSchema,
+  vetoSchema,
+} from '@ligo/core';
 import { R6_GAME_SCORE } from '@ligo/titles';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client.ts';
@@ -23,6 +29,7 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
     result_validation: 'staff',
     game_score: R6_GAME_SCORE,
     team_roles: teamRolesSchema.parse({}),
+    requests: requestsSchema.parse({}),
     dispute_reasons: [...DEFAULT_DISPUTE_REASONS],
     veto: vetoSchema.parse({}),
     promotion: promotionSchema.parse({}),

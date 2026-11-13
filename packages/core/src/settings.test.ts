@@ -25,6 +25,11 @@ const LFR_S3 = {
     result_validation: 'staff',
     game_score: { win_at: 7, overtime_rounds: 3 },
     team_roles: { managers_max: 3, coaches_max: 1 },
+    requests: {
+      approval: { team_owner: 'staff', team_member_add: 'staff', team_member_remove: 'auto' },
+      answer_within_hours: 24,
+      remind_before_hours: 6,
+    },
     dispute_reasons: DEFAULT_DISPUTE_REASONS,
     veto: DEFAULT_VETO,
     promotion: { relegated: 2, relegation_barrage: 1, barrage_opponent_place: 3 },
@@ -153,9 +158,10 @@ describe('rulesetSchema', () => {
     expect(accepts(rulesetSchema, value)).toBe(false);
   });
 
-  it('allows 3 managers and 1 coach unless the league says otherwise', () => {
+  it('allows 3 managers and 1 coach, and staff approval of additions, unless set otherwise', () => {
     const parsed = rulesetSchema.parse({ result_validation: 'staff' });
     expect(parsed.team_roles).toEqual({ managers_max: 3, coaches_max: 1 });
+    expect(parsed.requests.approval.team_member_add).toBe('staff');
     const custom = { result_validation: 'staff', team_roles: { managers_max: 0 } };
     expect(accepts(rulesetSchema, custom)).toBe(true);
     expect(accepts(rulesetSchema, { result_validation: 'staff', team_staff_max: 3 })).toBe(false);
@@ -310,6 +316,21 @@ describe('JSON round trip', () => {
           managers_max: fc.integer({ min: 0, max: 20 }),
           coaches_max: fc.integer({ min: 0, max: 20 }),
         }),
+        requests: fc
+          .record({
+            approval: fc.record({
+              team_owner: fc.constantFrom('auto' as const, 'staff' as const),
+              team_member_add: fc.constantFrom('auto' as const, 'staff' as const),
+              team_member_remove: fc.constantFrom('auto' as const, 'staff' as const),
+            }),
+            answer_within_hours: fc.integer({ min: 1, max: 720 }),
+            remind_before_hours: fc.option(fc.integer({ min: 0, max: 719 })),
+          })
+          .filter(
+            (rules) =>
+              rules.remind_before_hours === null ||
+              rules.remind_before_hours < rules.answer_within_hours,
+          ),
         dispute_reasons: fc.uniqueArray(
           fc.record({
             key: fc.stringMatching(/^[a-z][a-z0-9_]{0,31}$/).filter((key) => key !== 'other'),
