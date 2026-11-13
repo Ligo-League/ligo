@@ -191,11 +191,12 @@ stage_entry    id, stage_id, slot_id NULL, player_id NULL, seed   -- match_slot.
 match          id, stage_id, week NULL, bracket_node NULL, best_of, host_side NULL, side_chooser NULL, ot_side_chooser NULL,
                status ('scheduled'|'reported'|'confirmed'|'disputed'|'validated'|'forfeit'|'void'),
                window_start, window_end, scheduled_at NULL, auto_scheduled, channel_id NULL,
-               reported_by NULL, confirmed_by NULL, validated_by NULL, validated_at NULL
+               reported_by NULL, confirmed_by NULL, validated_by NULL, validated_at NULL,
+               veto_json NULL, veto_started_at NULL, veto_channel_id NULL, veto_message_id NULL
 match_slot     match_id, side ('a'|'b'), source_kind ('entry'|'seed'|'winner_of'|'loser_of'), source_ref
 lineup         id, match_id, side ('a'|'b'), team_id NULL
 lineup_member  lineup_id, player_id, role ('starter'|'sub')
-veto_step      match_id, seq, side ('a'|'b'), action ('ban'|'pick'|'decider'|'side'|'ot_side'),
+veto_step      match_id, seq, side NULL ('a'|'b'; NULL for the decider), action ('ban'|'pick'|'decider'|'side'|'ot_side'),
                map NULL, start_side NULL, game_n NULL, at, by_player_id NULL, timed_out
 game           id, match_id, n, map NULL, bans_json, score_a, score_b, overtime, forfeit_side NULL,
                rehosts_a, rehosts_b, status ('pending'|'final'|'void'),
@@ -315,10 +316,11 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
     - League: the lower-ranked team at match time picks the starting side and starts the veto; the other team picks the overtime side; the higher-ranked team hosts.
     - Cup: staff designate the team that picks the starting side (a formal rule is expected for Season 4); the other team picks the overtime side; the teams agree on the host.
     - The bot freezes `side_chooser`, `ot_side_chooser` and `host_side` when the veto starts.
+    - Equal ranks (week 1, or a shared rank): the bot flips a coin for the side chooser, says so in the veto message and records it in the audit log; the other team hosts (maintainer's choice, 13 November 2026, until the owner answers O-12).
 
 **Map veto**
 
-The veto runs on the website at `/matches/:id/veto`, linked from the match channel's control message. It uses the official competitive map pool and the standard competitive ban sequences.
+The veto runs on the website at `/matches/:id/veto`, linked from the match channel's control message. It uses the official competitive map pool and the standard competitive ban sequences. Until the website exists (phase 3), it runs in Discord: `/match veto` posts a message with one button per remaining map, then Attack and Defense for the side steps, and every step edits that message. The website page will use the same engine.
 
 - **Map pool:** stored per season in `season.settings_json`; staff update it when Ubisoft rotates maps. The current pool has 9 maps.
 - **Team A** is the team that picks the starting side (section above). Team A starts the veto.
@@ -332,10 +334,12 @@ The veto runs on the website at `/matches/:id/veto`, linked from the match chann
 
 These sequences follow common R6 Circuit-based rulebooks ([example](https://www.opleague.pro/styles/media/event/6175/rulebook.pdf)). BLAST adjusted its map-ban process for 2026, so check the BLAST R6 Global Rulebook before Season 4.
 
-- **Engine:** `packages/core/veto.ts` is a state machine: given format, pool and team A, it returns the next step and the valid choices. Each step is stored as a `veto_step` row.
+- **Settings** (`competition.ruleset_json.veto`): `formats`, by best-of (`bo1`, `bo3`, `bo5`), each a `sequence` of `A_ban`, `B_ban`, `A_pick`, `B_pick` and a `decider_side` (`team_a`, or `round_difference` for BO3 and BO5); `step_seconds` (240). The defaults are the table above (O-11).
+- **Engine:** `packages/core/veto.ts` is a state machine: given format, pool and team A, it returns the next step and the valid choices. Each step is stored as a `veto_step` row; the decider is stored too, with no team, since nobody picks it. A side step follows each pick: the picker's opponent picks the starting side, then the picker the overtime side.
+- **Frozen at the start:** the format, the pool and the timer are copied into `match.veto_json`, so a settings change mid-veto cannot break it.
 - **Timer:** 4 minutes per step by default (the Six Invitational's value). A timed-out ban picks a random remaining map and is marked `timed_out`.
 - **Live view:** both teams and staff watch the same page, updated by htmx polling every 2 seconds.
-- **Result:** the bot posts the final maps and sides in the match channel and fills `game.map` and `bans_json`.
+- **Result:** the bot posts the final maps and sides in the match channel and fills `game.map` and `bans_json`; `/match report` then fills that game's score.
 - **Later:** the same state machine can drive Discord select menus in the match channel.
 
 **Result lifecycle (LFR)**
@@ -447,6 +451,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 | `/rules [section]`                               | everyone                | Link to the current rulebook version on the website                                                     |
 | `/link`                                          | players                 | Opens the website to link Ubisoft, Riot or Epic accounts                                                |
 | `/match propose-time match date time`            | team managers and staff | Posts a proposal with Accept and Decline buttons                                                        |
+| `/match veto match`                              | team managers and staff | Starts the map veto: a message with a button per map, edited at each step; staff may start it too      |
 | `/match report match score_a score_b screenshot` | team managers and staff | Reports a BO1 result; the screenshot becomes `evidence`. A modal with a score per map comes with series |
 | `/match rehost`                                  | team managers and staff | Records the team's re-host for the current map                                                          |
 | `/register`, `/mercato`                          | team managers           | Open the website forms (too many fields for a modal)                                                    |

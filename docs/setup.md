@@ -264,7 +264,7 @@ Other staff actions:
 - `/staff sanction add` gives a team a warning or a change of points (`points:-1` takes one
   away), and `/staff sanction list` shows a team's sanctions.
 
-## 11. Phase 2b: agreeing a match time
+## 11. Phase 2b: agreeing a match time, and the map veto
 
 Run `pnpm discord:register` again, then restart `pnpm dev` (it applies the new migrations).
 
@@ -280,6 +280,25 @@ The clock checks every minute. A match still without a time when its week ends g
 extension: the bot sets it to the Sunday 21:00 of the extension week and posts the notice in
 `#planning`, pinging both teams. To see it, pick a match of a week that has just ended and has no
 time. A match whose Sunday slot has already passed is left to staff.
+
+### The map veto
+
+Run `pnpm seed` once more: it writes the veto sequences into the league's settings.
+
+1. As manager of one team, `/match veto` and pick the match. The bot answers privately "Veto
+   lancé" and posts the veto below, pinging both teams. It says who picks the starting side and
+   starts (the lower-ranked team), who picks the overtime side and who hosts. On equal ranks it
+   says it drew at random.
+2. Click a map to ban it, as the team whose turn it is. Clicking out of turn, or on an old button,
+   gets a private refusal. The message updates after each click.
+3. After the last ban, the remaining map is shown; the side chooser clicks Attaque or Défense,
+   then the other team picks the overtime side. The message ends with "Veto terminé".
+4. `/match report` on that match: the game already holds the map and the bans.
+
+To test both teams alone, make yourself manager of both with `/team manager`: you then play
+whichever turn is due. To see a timeout, lower `step_seconds` in the league's `ruleset_json`
+(at least 30), start a veto and wait: the clock picks a random map and the message says
+"temps écoulé".
 
 ## If something goes wrong
 
