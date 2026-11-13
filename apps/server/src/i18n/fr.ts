@@ -51,6 +51,8 @@ export const fr = {
     'Ce match se joue en plusieurs cartes ; la saisie carte par carte arrive plus tard.',
   'match.error.invalid_score':
     "Score invalide : deux nombres entiers différents, il n'y a pas de match nul.",
+  'match.error.impossible_score':
+    'Score impossible avec le règlement de la ligue : une carte se termine entre {widest} et {closest}, ou en prolongation ({overtime}).',
   'match.error.invalid_screenshot':
     'La capture doit être une image PNG, JPEG ou WebP de moins de 20 Mo, jointe à la commande.',
   'error.unknownCommand': 'Commande inconnue.',

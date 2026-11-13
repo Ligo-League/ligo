@@ -179,6 +179,36 @@ describe('recordResult', () => {
     expect(JSON.stringify(audit)).not.toContain('discordapp');
   });
 
+  it.each([
+    [7, 0],
+    [5, 7],
+    [8, 6],
+    [7, 8],
+  ])('accepts every score a map can end on: %i-%i', (scoreA, scoreB) => {
+    expect(recordResult(leagueDatabase(), STAFF, { ...request, scoreA, scoreB }, 9000).ok).toBe(
+      true,
+    );
+  });
+
+  it("follows the league's own rule, and checks nothing when it sets none", () => {
+    const db = leagueDatabase();
+    const setRule = (game_score: { win_at: number; overtime_rounds: number } | null) =>
+      db
+        .update(competition)
+        .set({ rulesetJson: { result_validation: 'staff', game_score } })
+        .run();
+    const record = (scoreA: number, scoreB: number) =>
+      recordResult(db, STAFF, { ...request, scoreA, scoreB }, 9000);
+
+    setRule({ win_at: 13, overtime_rounds: 2 });
+    expect(record(7, 5)).toMatchObject({ ok: false, error: 'impossible_score' });
+    expect(record(15, 13).ok).toBe(true);
+
+    setRule(null);
+    expect(record(7, 6).ok).toBe(true);
+    expect(record(3, 2).ok).toBe(true);
+  });
+
   it('accepts a result without a screenshot: optional for staff', () => {
     const db = leagueDatabase();
     expect(recordResult(db, STAFF, { ...request, screenshot: null }, 9000).ok).toBe(true);
@@ -209,6 +239,23 @@ describe('recordResult', () => {
     untouched('a negative score', STAFF, { ...request, scoreA: -1 }, 'invalid_score');
     untouched('a fractional score', STAFF, { ...request, scoreA: 6.5 }, 'invalid_score');
     untouched('a forfeit', STAFF, { ...request, matchId: 2 }, 'match_closed');
+
+    it.each([
+      [7, 6],
+      [6, 7],
+      [9, 7],
+      [6, 4],
+      [12, 0],
+    ])('a score a map cannot end on: %i-%i', (scoreA, scoreB) => {
+      const db = leagueDatabase();
+      const before = db.$client.serialize().toString('base64');
+      expect(recordResult(db, STAFF, { ...request, scoreA, scoreB }, 9000)).toEqual({
+        ok: false,
+        error: 'impossible_score',
+        rule: { win_at: 7, overtime_rounds: 3 },
+      });
+      expect(db.$client.serialize().toString('base64')).toBe(before);
+    });
     untouched('an annulled match', STAFF, request, 'match_closed', (db) => {
       db.update(match).set({ status: 'void' }).run();
     });

@@ -1,3 +1,4 @@
+import { describeGameScores, type GameScoreSettings } from '@ligo/core';
 import type { LeagueMatch } from '@ligo/db';
 import { ApplicationCommandOptionType, InteractionContextType } from 'discord.js';
 import { catalogs, t, type Locale, type MessageKey } from '../../i18n/index.ts';
@@ -35,6 +36,17 @@ function matchLabel(locale: Locale, found: LeagueMatch): string {
         })
       : t(locale, 'match.label', base);
   return label.slice(0, MAX_CHOICE_LENGTH);
+}
+
+/** Why a score was refused, with the scores the league's rule allows. */
+function impossibleScore(locale: Locale, rule: GameScoreSettings): string {
+  const { regulation, overtime, endless } = describeGameScores(rule);
+  const score = ([winner, loser]: readonly [number, number]) => `${winner}–${loser}`;
+  return t(locale, 'match.error.impossible_score', {
+    widest: score(regulation.from),
+    closest: score(regulation.to),
+    overtime: overtime.map(score).join(', ') + (endless ? '…' : ''),
+  });
 }
 
 export const matchCommand: Command = {
@@ -107,7 +119,11 @@ export const matchCommand: Command = {
       context.now(),
     );
     if (!reply.ok) {
-      await privately(t(locale, `match.error.${reply.error}`));
+      await privately(
+        reply.error === 'impossible_score'
+          ? impossibleScore(locale, reply.rule)
+          : t(locale, `match.error.${reply.error}`),
+      );
       return;
     }
 

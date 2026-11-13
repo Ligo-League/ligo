@@ -1,3 +1,4 @@
+import { isPossibleGameScore, type GameScoreSettings } from '@ligo/core';
 import { listLeagueMatches, schema, type Db, type LeagueMatch } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { requireStaff, type Actor } from './permissions.ts';
@@ -37,7 +38,9 @@ export type RecordResultReply =
       /** The result this one replaced, when the match already had one. */
       previous: { scoreA: number; scoreB: number } | null;
     }
-  | { ok: false; error: RecordResultError };
+  | { ok: false; error: RecordResultError }
+  // The rule is returned so that the refusal can say which scores are possible.
+  | { ok: false; error: 'impossible_score'; rule: GameScoreSettings };
 
 // Statuses a direct staff result may overwrite. A forfeit or an annulled match is changed by its
 // own staff action, with its own consequences (forfeit counters, the 50% rule).
@@ -85,6 +88,11 @@ export function recordResult(
   const { scoreA, scoreB } = request;
   const validScore = [scoreA, scoreB].every((score) => Number.isSafeInteger(score) && score >= 0);
   if (!validScore || scoreA === scoreB) return { ok: false, error: 'invalid_score' };
+  // The league's own rule for how a game is won; without one, any score with a winner passes.
+  const rule = league.competition.rulesetJson.game_score;
+  if (rule && !isPossibleGameScore(rule, scoreA, scoreB)) {
+    return { ok: false, error: 'impossible_score', rule };
+  }
   if (request.screenshot && !isAcceptableScreenshot(request.screenshot)) {
     return { ok: false, error: 'invalid_screenshot' };
   }

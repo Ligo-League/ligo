@@ -70,6 +70,11 @@ describe('/match result', () => {
       "Score invalide : deux nombres entiers différents, il n'y a pas de match nul.",
     ],
     [
+      'a score a map cannot end on',
+      result({ match: 3, score_a: 6, score_b: 7 }),
+      'Score impossible avec le règlement de la ligue : une carte se termine entre 7–0 et 7–5, ou en prolongation (8–6, 8–7).',
+    ],
+    [
       'a forfeit',
       result({ match: 2, score_a: 7, score_b: 5 }),
       'Ce match est un forfait ou a été annulé : son résultat ne se modifie pas ici.',
@@ -110,6 +115,20 @@ describe('/match result', () => {
         .all()
         .filter((row) => row.actorKind === 'user'),
     ).toEqual([]);
+  });
+
+  it('shows how overtime continues when the rule lets it repeat', async () => {
+    const db = leagueDatabase();
+    db.update(schema.competition)
+      .set({
+        rulesetJson: { result_validation: 'staff', game_score: { win_at: 13, overtime_rounds: 2 } },
+      })
+      .run();
+    const context = fakeContext({ db, locale: 'en' });
+    const { replies } = await run(result({ match: 3, score_a: 7, score_b: 5 }), context);
+    expect(replies[0]?.content).toBe(
+      'That score cannot happen under the league rules: a map ends between 13–0 and 13–11, or in overtime (14–12, 15–13…).',
+    );
   });
 
   it('is hidden from members by default and cannot be used in direct messages', () => {

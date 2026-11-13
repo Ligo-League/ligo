@@ -47,6 +47,8 @@ export const en: Record<MessageKey, string> = {
   'match.error.unsupported_series':
     'This match is played over several maps; entering them one by one comes later.',
   'match.error.invalid_score': 'Invalid score: two different whole numbers, there are no draws.',
+  'match.error.impossible_score':
+    'That score cannot happen under the league rules: a map ends between {widest} and {closest}, or in overtime ({overtime}).',
   'match.error.invalid_screenshot':
     'The screenshot must be a PNG, JPEG or WebP image under 20 MB, attached to the command.',
   'error.unknownCommand': 'Unknown command.',
