@@ -192,7 +192,8 @@ stored result differs from score7, `pnpm seed` lists it and changes nothing.
 
 To enter a result yourself, type `/match result`. In the `match` option, type a team, a division
 or a week (`rck`, `l2`, `s5`) and pick the match from the list; then give the rounds won by the
-first and by the second team named. The screenshot is optional for staff. The bot confirms in a
+first and by the second team named. A score a map cannot end on, such as 7–6, is refused with
+the list of possible scores. The screenshot is optional for staff. The bot confirms in a
 message only you see, and `/standings` shows the result at once. Entering a result again on the
 same match corrects it; both versions stay in the audit log.
 

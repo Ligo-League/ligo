@@ -335,6 +335,34 @@ These sequences follow common R6 Circuit-based rulebooks ([example](https://www.
 4. Staff validate (`validated`). Only now does the result count.
 5. Staff can set any result, forfeit or void directly; everything is audited.
 
+**Game score**
+
+Which scores one game (a map) can end on is a competition setting, so an impossible result is refused whatever the title.
+
+`competition.ruleset_json`:
+
+```json
+{
+    "result_validation": "staff",
+    "game_score": { "win_at": 7, "overtime_rounds": 3 }
+}
+```
+
+- `win_at` is the number of rounds that wins the game in regulation.
+- Overtime starts when both teams are one round short of `win_at`. It is played in periods of `overtime_rounds`; a period is won by taking more than half of its rounds, and an even period that ends level is followed by another.
+
+| Title         | `win_at` | `overtime_rounds` | A game ends                                         |
+| ------------- | -------- | ----------------- | --------------------------------------------------- |
+| R6            | 7        | 3                 | 7–0 to 7–5, or 8–6, 8–7                             |
+| Valorant      | 13       | 2                 | 13–0 to 13–11, or 14–12, 15–13 and so on (win by 2) |
+| CS2           | 13       | 6                 | 13–0 to 13–11, or 16–12 to 16–14, 19–15 and so on   |
+| Rocket League | none     | none              | Any score with a winner (`game_score: null`)        |
+
+- A single deciding round at 6–6 is `overtime_rounds: 1`, which allows 7–6.
+- `isPossibleGameScore` in `packages/core` applies the rule. Staff result entry uses it now; team reports, the stat grid and stitching will use the same function.
+- Each title's default lives in `packages/titles` (R6: 7 and 3); a league may set its own.
+- An import from score7 is not refused on this rule: the shadow run has to mirror score7. A test checks that every Season 3 fixture score is possible.
+
 **Re-hosts**
 
 A restart keeps the score from before the crash. Each team may call one re-host per map, recorded with `/match rehost` in `rehosts_a`/`rehosts_b`; staff can order more and decide when teams disagree. Stitching (section 8) rebuilds the round list from the replays.
@@ -840,7 +868,7 @@ Every league gets results, standings, channels and manual stats from the shared 
 - The only parser found is a .NET alpha. Revisit both points each season.
 - The Riot API needs a production key (personal keys get no VALORANT access) and Riot Sign On is production-only ([Riot docs](https://developer.riotgames.com/docs/valorant)). Apply with a tournament use case once the platform is live; Riot's European tournament-organizer policies apply.
 - Manual metrics: `rounds_played`, `kills`, `deaths`, `assists`, `combat_score` (ACS × rounds), `first_kills`, `first_deaths`, `plants`, `defuses`. Derived: ACS, K/D, KPR, first-kill difference.
-- Consistency checks: one side's kills ≈ the other side's deaths (±3), kills ≤ rounds × 5, the score matches the win condition (first to 13, win by 2 in overtime).
+- Consistency checks: one side's kills ≈ the other side's deaths (±3), kills ≤ rounds × 5, the score matches the win condition (first to 13, win by 2 in overtime: `game_score` 13 and 2).
 
 **Rocket League (LFRL)**
 
@@ -1024,6 +1052,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. The
 | Coupe de France       | All teams, single elimination; BO1 before the round of 16, BO3 for the round of 16 and quarter-finals, BO5 for semi-finals and final      | Rulebook, you |
 | Cup sides and host    | Staff designate the starting-side team; the other picks the overtime side; teams agree on the host                                        | You           |
 | Results               | Screenshot proof, both teams check, administration validates                                                                              | Rulebook      |
+| Map score             | A map is won at 7 rounds out of 12; at 6–6 a best-of-3 overtime ends it 8–6 or 8–7. Stored as the `game_score` setting                    | You           |
 | Re-host               | Score kept; one per team, staff may order more                                                                                            | Rulebook, you |
 | Forfeits              | Staff only; warning at the 2nd, exclusion at the 3rd; the 50% rule on exclusion                                                           | Rulebook      |
 | Promotion             | L1 9th–10th down, L2 1st–2nd up; barrages L1 8th vs L2 3rd and L2 8th vs National                                                         | Rulebook, you |
