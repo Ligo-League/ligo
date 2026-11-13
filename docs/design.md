@@ -261,8 +261,8 @@ The team development tools add tables and change three existing ones (practice m
 
 | Part             | Teams                 | Format                                                                                                      | Match format                                                                                          | Moves at season end                                                                                                          |
 | ---------------- | --------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Ligue 1          | 10                    | Round robin, 1 match per week over 9 weeks                                                                  | BO1, one map after bans                                                                               | 1st: Ligue 1 star. 8th: barrage against L2 3rd (format to confirm). 9th–10th: down to L2                                     |
-| Ligue 2          | 12 in Season 3        | Same as Ligue 1                                                                                             | BO1                                                                                                   | 1st–2nd: up to L1. 3rd: barrage against L1 8th. 8th: barrage against the National play-in winner. 9th–10th: down to National |
+| Ligue 1          | 10                    | Round robin, 1 match per week over 9 weeks                                                                  | BO1, one map after bans                                                                               | 1st: Ligue 1 star. Last 2: down to L2. The one above them: barrage against L2 3rd (format to confirm)                       |
+| Ligue 2          | 12 in Season 3        | Same as Ligue 1                                                                                             | BO1                                                                                                   | 1st–2nd: up to L1. 3rd: barrage against L1's barrage team. Nobody goes down while no league exists below                    |
 | National (later) | Per region            | Regional round robin, 1 match per week; small regions can be merged. Not needed until the owner launches it | BO3                                                                                                   | Region winners go to playoffs (single elimination, BO5); semi-final winners up to L2                                         |
 | Coupe de France  | Every registered team | Single elimination, starting 1 week after the leagues end; replaces L1/L2 playoffs                          | BO1 before the round of 16; BO3 for the round of 16 and quarter-finals; BO5 for semi-finals and final | Winner: Champion de France                                                                                                   |
 
@@ -406,11 +406,12 @@ The rulebook's list maps to `sanction.kind`: warning, administrative defeat, poi
 
 **Promotion, relegation and barrages**
 
-`closeSeason()` reads final standings and produces next season's slots:
+`closeSeason()` reads final standings and produces next season's slots. The rule, from the maintainer (13 November 2026), replaces the rulebook's fixed ranks; every number is a setting in `competition.ruleset_json.promotion`:
 
-- L1 9th–10th go down, L2 1st–2nd go up.
-- L2 9th–10th go down to National; National semi-final winners go up.
-- Two barrage stages are created: L1 8th against L2 3rd, and L2 8th against the winner of the National semi-final losers' match. Each barrage winner takes the higher-tier slot.
+- `relegated` (2): the last 2 teams of a division that has a lower division go down at the end of the regular season, and the lower division's first 2 go up. A division with no lower one sends nobody down.
+- `relegation_barrage` (1): the team just above the relegated ones plays a barrage against the lower division's team at `barrage_opponent_place` (3). The winner takes the higher-division place.
+- Places count from each end of the table, so they follow a division's size: with 10 teams in Ligue 1, the 9th and 10th go down and the 8th plays the barrage against Ligue 2's 3rd.
+- Ligue 2 relegates nobody while no division exists below it. If the National leagues start (O-18), their own way up (regional playoffs) needs its own rule.
 
 **Brackets**
 
@@ -479,7 +480,9 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 3. **Control message**, pinned:
     - fixture, play window and deadline;
     - host team and side chooser, from live standings;
+    - what the teams must do, step by step: agree a time, run the veto, report the result;
     - buttons: Propose time, Map veto, Report result, Upload replays and MOSS, Enter stats.
+    - Once match channels exist, `/match propose-time` and `/match veto` work only in the match's own channel, so the two teams negotiate where only they and staff can read, and have a place to discuss the match (maintainer, 13 November 2026). Until then they work in any channel.
 4. **Deadlines.** At the end of the planned week with no agreed time, the bot posts the one-week extension. At the end of the extension it posts the automatic Sunday 21:00 slot.
 5. **Result.** After staff validation, the bot posts the result card in the channel and in the results channel.
 6. **Archive.** A configurable number of days after validation, the team roles lose Send Messages and the channel moves to an archive category.
@@ -488,7 +491,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 **Other managed channels**
 
 - `moss-<tag>`: one private channel per team (team role and staff only), replacing the rulebook's "Moss-\[équipe\]". The bot posts a receipt there when a MOSS file is uploaded on the website.
-- `#mercato`: the bot posts each approved transfer using the rulebook's form fields.
+- `#mercato`: the bot posts each approved transfer using the rulebook's form fields, with its `roster-move` image. One such channel per league; these posts mention nobody, since a mercato can bring many moves.
 - Results channel: every result that counts (validated reports, staff entries and corrections, forfeits). A division can have its own (`division.results_channel_id`), else the league's applies; several divisions may share one. A new season copies each division's channel from the previous season's division of the same level (phase 4).
 - Mixed-team matches (FRFL): each lineup member is allowed individually, and the channel is named `m{n}-{yyyy-mm-dd}`.
 
@@ -879,6 +882,10 @@ Images are rendered on the server with Satori (layout to SVG) and resvg (SVG to 
 
 **Rank change.** The standings show each team's move since the previous week, so readers see trends: an arrow up or down with the number of places, or a dash. The previous table counts the same results except those of the latest week that has a counted result; sanctions count in both tables. `/standings` as text leaves it out: that table is already as wide as a phone screen allows.
 
+**Zones.** Each row's left edge takes the colour of what its place leads to, with a legend under the table, so that teams see whether they are at risk: champion, promotion, promotion barrage, relegation barrage, relegation. The places follow the promotion rule of section 5 and the divisions that exist: the top division's first is champion; a division with one below shows its last places going down and the barrage above them; a division with one above shows its first places going up and its barrage place (`packages/core/zones.ts`). Ligue 2 therefore shows no relegation while no league exists below it.
+
+**Column names.** The standings use the English letters in both languages, as the league's own images do: W, L, RW (rounds won), RL (rounds lost), Diff, PTS; "played" is spelled out on the image ("Joués", "Played") and shortened to MJ or MP in the text table (maintainer, 13 November 2026).
+
 **Social images**
 
 League staff post simple images on social networks without any design tool. Every image below is rendered from the platform's data, in the league's theme (M-17), and posted where staff can save it and share it. The format is a square 1080 × 1080 PNG, which every network accepts (M-18 asks whether a portrait format is wanted too).
@@ -893,13 +900,23 @@ League staff post simple images on social networks without any design tool. Ever
 | `team-move`      | A team joining or leaving the league: logo, name, division                      | When staff add a team to a season or a team withdraws                             | 4     |
 | `champions`      | A competition's winner: logo, name, competition and season, the final's score   | When a stage closes                                                               | 6     |
 | `veto` (proposed) | One match's veto: bans in order, the map played, starting and overtime sides   | When the veto ends                                                                | 4     |
-| `roster-move` (proposed) | A player joining or leaving a team (mercato)                            | When staff approve a roster move                                                  | 4     |
-| `bracket` (proposed) | A cup bracket with the results so far                                       | After each round of the cup                                                       | 6     |
-| `season-end` (proposed) | Promotions, relegations and barrages                                     | When a season closes                                                              | 6     |
+| `roster-move`    | One move: league and division, team, the player's or staff member's name, in or out, the reason when there is one (for example a ban and why) | In the league's `#mercato` channel at each approved move, mentioning nobody | 4     |
+| `roster`         | A team's whole roster: players with role and nationality, coach, team name and motto | When a team announces its roster, on request                                   | 4     |
+| `bracket`        | A cup bracket with the results so far                                           | After each round of the cup                                                       | 6     |
+| `season-end`     | Promotions, relegations and barrages                                            | When a season closes                                                              | 6     |
 
 - The `award-card` of section 17 joins this list once awards exist.
 - On request: staff will get `/staff image` and a page of the website listing each image with a download button (phase 3 for the page). Until then, the bot attaches the image to the announcement it already posts.
 - Each image's cache key includes the logos' hashes, so a new logo gives a new image.
+- A time on an image is in the league's time zone, named by its short standard name (CET, CEST, GMT+1): it reads the same in every language.
+- A ban's reason on a `roster-move` image is the public reason staff write, never staff-only evidence.
+
+**References for the final design** (maintainer, 13 November 2026; the files are kept outside the repository). The current templates are placeholders until the owner settles a design (M-17); these are the starting points:
+
+- *Standings, by Civitas Esport:* a large "CLASSEMENT" title and the season under it; a light table on a dark textured background; one row per team with position, logo, name, MJ, W, L, RW, RL, DIFF (green or red), PTS; a coloured bar on the left of each row for its zone and a legend underneath; sponsor logos at the bottom. Readable on any network; it lacks only the rank change and a promotion zone (it shows Ligue 1).
+- *Match announcement, by LFR (playoffs):* the LFR logo with a French-flag underline, the stage ("16ème de finale") in spaced capitals, both logos large with "VS" between them and each team's name underlined in its colour, a framed box with a calendar icon and the date, a clock icon and the time, and a footer "LFR Rainbow Six Siege, Saison 2026" with a tricolour bar.
+- *Roster announcement, by RCK Esport:* one card per player with name, role (IGL, entry, support, flex) and a flag for nationality, the coach on a wide card, the team logo and motto ("Together for victory"); the cards use the team's colours over a height-map background and official R6 operator art, a cheap way to a clean look.
+- *Team welcome, by the Master Six League:* "WELCOME" in very large letters over an operator, the league logo top left, the year and copyright top right, the team's logo in the middle under the word.
 
 ## 12. The group's other leagues
 
@@ -1015,7 +1032,7 @@ Pure league logic gets exhaustive unit and property tests. Replay handling gets 
 | Standings              | Table-driven cases, including Season 2's real table                       | Points per win from the settings, F/C/D, ties broken by D, `sanction` point deltas, forfeit score setting (0–0 or 7–0), shared ranks and tie-break matches                      |
 | Tie-breakers           | Hand-built tables                                                         | D tie-break; generic criteria: 3-way cycle, partial split with restart, `staff_decision`                                                                                        |
 | Forfeits and exclusion | Scenario tests                                                            | Warning at 2 forfeits, exclusion at 3, the 50% rule both ways with retroactive forfeits                                                                                         |
-| Promotion and barrages | `closeSeason()` on fixture standings                                      | L1 9th–10th down, L2 1st–2nd up, both barrage pairings, National promotions                                                                                                     |
+| Promotion and barrages | `closeSeason()` on fixture standings                                      | Last 2 down only with a lower division, the lower's first 2 up, the barrage pairing, division sizes other than 10, settings other than the defaults                                |
 | Brackets               | Generated brackets for 4–64 seeds                                         | Byes to top seeds, `advance`, BO1 → BO3 → BO5 by round, cup no-show disqualifications                                                                                           |
 | Mercato                | Rule tests                                                                | Window only, 3 moves per team, 1-day block, one roster per competition                                                                                                          |
 | R6 normaliser          | Golden files: real replays checked once against the in-game replay        | Opening kills, trades, KOST, clutches, plant/defuse, non-kill death, disconnect, overtime                                                                                       |
@@ -1105,7 +1122,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Map score             | A map is won at 7 rounds out of 12; at 6–6 a best-of-3 overtime ends it 8–6 or 8–7. Stored as the `game_score` setting                    | You           |
 | Re-host               | Score kept; one per team, staff may order more                                                                                            | Rulebook, you |
 | Forfeits              | Staff only; warning at the 2nd, exclusion at the 3rd; the 50% rule on exclusion                                                           | Rulebook      |
-| Promotion             | L1 9th–10th down, L2 1st–2nd up; barrages L1 8th vs L2 3rd and L2 8th vs National                                                         | Rulebook, you |
+| Promotion             | Last 2 of a division with a lower one go down, the lower's first 2 go up; the one above the relegated plays the lower's 3rd (settings)      | You           |
 | National              | Later; not needed until the owner launches it                                                                                             | You           |
 | Rosters               | 5 players and up to 2 substitutes; one manager and up to 3 team staff                                                                     | Rulebook form |
 | Mercato               | Announced windows only, 3 moves per team, 1-day block for a transferred player                                                            | Rulebook      |

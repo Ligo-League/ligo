@@ -76,6 +76,16 @@ section 16.
   staff can set any time with `/staff match schedule`.
 - **Answer:**
 
+#### O-25 · Who enters the Coupe de France
+
+- **Question:** Civitas Esport's Season 3 standings image marks Ligue 1's 2nd to 7th as
+  "Qualification en coupe de France". The rulebook, as the design doc reads it, says every
+  registered team enters the cup. Which is right, and does Ligue 2 qualify the same way?
+- **Why it matters:** the standings would mark the qualifying places (design doc section 11,
+  "Zones"), and the cup bracket (phase 6) needs its entrants.
+- **Until answered:** every registered team enters; the standings mark no cup places.
+- **Answer:**
+
 ### Forfeits and exclusion
 
 #### O-04 · The 50% rule
@@ -203,7 +213,12 @@ section 16.
   maximum size per division?
 - **Why it matters:** season closing (phase 6); see also O-03.
 - **Until answered:** not built yet.
-- **Answer:**
+- **Answer (maintainer, 13 November 2026, partial):** counts from the bottom, never fixed ranks.
+  The last 2 teams of a division that has a lower division go down at the end of the regular
+  season; the team just above them plays a barrage against the lower division's 3rd, the winner
+  taking the higher place; the lower division's first 2 go up. A division with no lower one sends
+  nobody down: Ligue 2 relegates nobody while there is no league below it. Every number is a
+  setting (`ruleset_json.promotion`). Still open for the owner: a maximum division size.
 
 #### O-17 · Coupe de France: sides and seeding
 
@@ -405,7 +420,9 @@ section 16.
 - **Until answered:** square only. The bot attaches `match-time` and `result` images to the
   announcements it already posts; the others wait for their phase. Proposed extra images (veto,
   roster move, bracket, season end) are listed in section 11 for the owner to choose from.
-- **Answer:**
+- **Answer (maintainer, 13 November 2026, partial):** roster moves, the bracket and the season end
+  are wanted; roster moves go to a `#mercato` channel per league without mentions. Still open for
+  the owner: other formats, and which images post on their own.
 
 ## Answered
 
