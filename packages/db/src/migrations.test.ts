@@ -6,7 +6,7 @@ import * as schema from './schema/index.ts';
 import { openTestDatabase } from './testing.ts';
 
 // Schema v1, the tables phase 0 was allowed to create (design doc section 15, "Start here
-// today"), plus each table a later migration adds: 0002 adds `dispute`.
+// today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`.
 const SCHEMA_TABLES = [
   'audit_log',
   'competition',
@@ -19,6 +19,7 @@ const SCHEMA_TABLES = [
   'lineup',
   'lineup_member',
   'match',
+  'match_proposal',
   'match_slot',
   'org',
   'player',

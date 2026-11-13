@@ -35,6 +35,14 @@ export const GAME_STATUSES = ['pending', 'final', 'void'] as const;
 export const STATS_SOURCES = ['none', 'manual', 'replay', 'api'] as const;
 export const EVIDENCE_KINDS = ['score_screenshot', 'moss', 'vod_link', 'other'] as const;
 export const EVIDENCE_VISIBILITIES = ['staff', 'teams', 'public'] as const;
+/** Where a proposed match time stands; only `pending` can still be answered. */
+export const PROPOSAL_STATUSES = [
+  'pending',
+  'accepted',
+  'declined',
+  'superseded',
+  'withdrawn',
+] as const;
 /** How staff settled a disputed report: the action that took the match out of dispute. */
 export const DISPUTE_RESOLUTIONS = [
   'validated',

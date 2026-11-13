@@ -12,6 +12,7 @@ import { jsonText, oneOf } from '../columns.ts';
 import { gameBansSchema } from '../json.ts';
 import {
   DISPUTE_RESOLUTIONS,
+  PROPOSAL_STATUSES,
   EVIDENCE_KINDS,
   EVIDENCE_VISIBILITIES,
   GAME_STATUSES,
@@ -230,5 +231,32 @@ export const dispute = sqliteTable(
       'dispute_resolved_check',
       sql`(${t.resolution} is null) = (${t.resolvedBy} is null) and (${t.resolution} is null) = (${t.resolvedAt} is null)`,
     ),
+  ],
+);
+
+// A time one team proposes for a match; the other team accepts or declines it.
+export const matchProposal = sqliteTable(
+  'match_proposal',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    matchId: integer('match_id')
+      .notNull()
+      .references(() => match.id),
+    // The side of the match that proposes.
+    side: text('side', { enum: SIDES }).notNull(),
+    proposedBy: integer('proposed_by')
+      .notNull()
+      .references(() => player.id),
+    // The proposed start of the match, Unix ms.
+    at: integer('at').notNull(),
+    createdAt: integer('created_at').notNull(),
+    status: text('status', { enum: PROPOSAL_STATUSES }).notNull().default('pending'),
+    answeredBy: integer('answered_by').references(() => player.id),
+    answeredAt: integer('answered_at'),
+  },
+  (t) => [
+    index('match_proposal_match_idx').on(t.matchId),
+    check('match_proposal_side_check', oneOf(t.side, SIDES)),
+    check('match_proposal_status_check', oneOf(t.status, PROPOSAL_STATUSES)),
   ],
 );

@@ -62,6 +62,8 @@ export const leagueGuild = sqliteTable('league_guild', {
   alertsChannelId: text('alerts_channel_id'),
   resultsChannelId: text('results_channel_id'),
   mercatoChannelId: text('mercato_channel_id'),
+  // Deadline notices, until each match has its own channel (phase 4).
+  scheduleChannelId: text('schedule_channel_id'),
 });
 
 export const season = sqliteTable(

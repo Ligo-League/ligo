@@ -22,6 +22,13 @@
       "when": 1794572189278,
       "tag": "0002_dispute",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794575752808,
+      "tag": "0003_match_proposal",
+      "breakpoints": true
     }
   ]
 }
