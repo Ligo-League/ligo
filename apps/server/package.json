@@ -12,6 +12,7 @@
   "dependencies": {
     "@ligo/core": "workspace:*",
     "@ligo/db": "workspace:*",
+    "@ligo/render": "workspace:*",
     "discord.js": "^14.28.1",
     "drizzle-orm": "^0.45.4",
     "pino": "^10.4.0",

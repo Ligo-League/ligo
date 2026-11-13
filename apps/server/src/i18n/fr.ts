@@ -6,7 +6,12 @@ export const fr = {
   'command.standings.description': 'Affiche le classement de la saison en cours.',
   'command.standings.option.division':
     'Division, par exemple « Ligue 1 » ou « L1 ». Toutes par défaut.',
+  'command.standings.option.format': 'Image (par défaut) ou tableau en texte.',
+  'command.standings.option.format.image': 'Image',
+  'command.standings.option.format.text': 'Texte',
   'standings.title': '{competition} · {season} · {division}',
+  'standings.subtitle': '{competition} · {season}',
+  'standings.column.form': 'Forme',
   'standings.column.rank': '#',
   'standings.column.team': 'Équipe',
   'standings.column.played': 'J',

@@ -7,7 +7,12 @@ import { getStandings } from './standings.ts';
 describe('getStandings', () => {
   it('computes every division of the current season for the server', () => {
     const standings = getStandings(leagueDatabase(), { guildId: TEST_GUILD });
-    expect(standings).toMatchObject({ ok: true, competition: 'LFR', season: 'Saison 3' });
+    expect(standings).toMatchObject({
+      ok: true,
+      competition: 'LFR',
+      season: 'Saison 3',
+      theme: {},
+    });
     if (!standings.ok) return;
     expect(standings.tables.map((table) => table.division)).toEqual(['Ligue 1', 'Ligue 2']);
     expect(standings.tables[0]?.rows).toEqual([
@@ -22,6 +27,7 @@ describe('getStandings', () => {
         scoreAgainst: 4,
         diff: 3,
         points: 6,
+        form: ['W', 'W'],
       },
       {
         rank: 2,
@@ -34,6 +40,7 @@ describe('getStandings', () => {
         scoreAgainst: 0,
         diff: 0,
         points: 0,
+        form: ['L'],
       },
       {
         rank: 3,
@@ -46,6 +53,7 @@ describe('getStandings', () => {
         scoreAgainst: 7,
         diff: -3,
         points: 0,
+        form: ['L'],
       },
     ]);
   });

@@ -1,9 +1,13 @@
-import { computeStandings, type StandingsRow } from '@ligo/core';
-import { findGuildLeague, loadStandingsInput, type Db } from '@ligo/db';
+import { computeStandings, recentForm, type FormResult, type StandingsRow } from '@ligo/core';
+import { findGuildLeague, loadStandingsInput, type Db, type Theme } from '@ligo/db';
 
 export interface StandingsTableRow extends Omit<StandingsRow, 'entry'> {
   team: { name: string; tag: string; colors: string[] };
+  /** The team's latest results, oldest first, at most `FORM_LENGTH`. */
+  form: FormResult[];
 }
+
+const FORM_LENGTH = 5;
 
 export interface StandingsTable {
   division: string;
@@ -11,7 +15,14 @@ export interface StandingsTable {
 }
 
 export type StandingsReply =
-  | { ok: true; competition: string; season: string; tables: StandingsTable[] }
+  | {
+      ok: true;
+      competition: string;
+      season: string;
+      /** The league's image colours, where it set any. */
+      theme: Theme;
+      tables: StandingsTable[];
+    }
   | { ok: false; error: 'not_linked' | 'no_season' | 'no_standings' }
   | { ok: false; error: 'unknown_division'; divisions: string[] };
 
@@ -56,11 +67,21 @@ export function getStandings(
         const team = data.teams.find((candidate) => candidate.entry === entry);
         // computeStandings returns exactly the entries it was given, which come from `teams`.
         if (!team) throw new Error(`Standings row for unknown entry ${entry}`);
-        return { ...row, team: { name: team.name, tag: team.tag, colors: team.colors } };
+        return {
+          ...row,
+          team: { name: team.name, tag: team.tag, colors: team.colors },
+          form: recentForm(data.input.matches, entry, FORM_LENGTH),
+        };
       }),
     });
   }
   if (tables.length === 0) return { ok: false, error: 'no_standings' };
 
-  return { ok: true, competition: league.competition.name, season: league.season.name, tables };
+  return {
+    ok: true,
+    competition: league.competition.name,
+    season: league.season.name,
+    theme: league.competition.themeJson,
+    tables,
+  };
 }

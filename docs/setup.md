@@ -181,8 +181,9 @@ The bot now reads the database, and it needs to know which server is LFR's and w
 | `pnpm discord:register` | `Registered 3 command(s) in guild …: /ping, /standings, /match`                             |
 | `pnpm dev`              | `"msg":"Database ready"`, then `"msg":"Discord client ready"`                               |
 
-Then type `/standings` in any channel of `Ligo Staging`: the bot posts the Ligue 1 and Ligue 2
-tables, visible to everyone. `/standings division:L2` posts one division.
+Then type `/standings` in any channel of `Ligo Staging`: after a second the bot posts one image
+per division, visible to everyone. `/standings division:L2` posts one division, and
+`/standings format:Texte` posts the tables as text.
 
 The matches come from `fixtures/lfr-s3-matches.csv`, a copy of score7 taken with
 `pnpm fixtures:score7`. To follow score7 during the shadow run, run that command and then

@@ -1,30 +1,81 @@
+import { slugify } from '@ligo/core';
+import { renderStandingsPng } from '@ligo/render';
 import { ApplicationCommandOptionType } from 'discord.js';
-import { catalogs, t } from '../../i18n/index.ts';
-import { getStandings } from '../../services/standings.ts';
+import { catalogs, t, type Locale, type MessageKey } from '../../i18n/index.ts';
+import {
+  getStandings,
+  type StandingsReply,
+  type StandingsTable,
+} from '../../services/standings.ts';
 import { formatStandingsTable } from '../standings-table.ts';
-import type { Command } from './types.ts';
+import type { Command, CommandFile } from './types.ts';
 
 // Discord refuses a message longer than this.
 const MESSAGE_LIMIT = 2000;
 
+const english = (key: MessageKey) => ({ 'en-US': catalogs.en[key], 'en-GB': catalogs.en[key] });
+const described = (key: MessageKey) => ({
+  description: catalogs.fr[key],
+  description_localizations: english(key),
+});
+const choice = (value: string, key: MessageKey) => ({
+  name: catalogs.fr[key],
+  name_localizations: english(key),
+  value,
+});
+
+type Standings = Extract<StandingsReply, { ok: true }>;
+
+async function renderTable(
+  locale: Locale,
+  standings: Standings,
+  table: StandingsTable,
+): Promise<CommandFile> {
+  const data = await renderStandingsPng({
+    title: table.division,
+    subtitle: t(locale, 'standings.subtitle', {
+      competition: standings.competition,
+      season: standings.season,
+    }),
+    headers: {
+      rank: t(locale, 'standings.column.rank'),
+      team: t(locale, 'standings.column.team'),
+      played: t(locale, 'standings.column.played'),
+      wins: t(locale, 'standings.column.wins'),
+      losses: t(locale, 'standings.column.losses'),
+      for: t(locale, 'standings.column.for'),
+      against: t(locale, 'standings.column.against'),
+      diff: t(locale, 'standings.column.diff'),
+      points: t(locale, 'standings.column.points'),
+      form: t(locale, 'standings.column.form'),
+    },
+    rows: table.rows.map((row) => ({ ...row, name: row.team.name, colors: row.team.colors })),
+    theme: standings.theme,
+  });
+  const slug = slugify(table.division);
+  return { name: `standings-${slug.ok ? slug.slug : 'division'}.png`, data };
+}
+
 export const standingsCommand: Command = {
   data: {
     name: 'standings',
-    description: catalogs.fr['command.standings.description'],
-    description_localizations: {
-      'en-US': catalogs.en['command.standings.description'],
-      'en-GB': catalogs.en['command.standings.description'],
-    },
+    ...described('command.standings.description'),
     options: [
       {
         type: ApplicationCommandOptionType.String,
         name: 'division',
-        description: catalogs.fr['command.standings.option.division'],
-        description_localizations: {
-          'en-US': catalogs.en['command.standings.option.division'],
-          'en-GB': catalogs.en['command.standings.option.division'],
-        },
+        ...described('command.standings.option.division'),
         required: false,
+      },
+      {
+        type: ApplicationCommandOptionType.String,
+        name: 'format',
+        ...described('command.standings.option.format'),
+        required: false,
+        choices: [
+          choice('image', 'command.standings.option.format.image'),
+          choice('text', 'command.standings.option.format.text'),
+        ],
       },
     ],
   },
@@ -35,12 +86,23 @@ export const standingsCommand: Command = {
       division: interaction.options.getString('division'),
     });
 
+    // Refusals are private, so they are sent before any public deferral.
     if (!standings.ok) {
       const content =
         standings.error === 'unknown_division'
           ? t(locale, 'standings.unknownDivision', { divisions: standings.divisions.join(', ') })
           : t(locale, `standings.${standings.error}`);
       await interaction.reply({ content, ephemeral: true });
+      return;
+    }
+
+    if (interaction.options.getString('format') !== 'text') {
+      // Rendering can take longer than the 3 seconds Discord waits for a reply.
+      await interaction.defer();
+      const files = await Promise.all(
+        standings.tables.map((table) => renderTable(locale, standings, table)),
+      );
+      await interaction.reply({ content: '', ephemeral: false, files });
       return;
     }
 

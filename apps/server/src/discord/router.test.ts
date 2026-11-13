@@ -62,6 +62,25 @@ describe('routeCommand', () => {
   });
 });
 
+describe('routeCommand after a deferral', () => {
+  it('still tells the member when the command fails before its reply', async () => {
+    const logger = { error: vi.fn() };
+    const slow = command('slow', async (interaction) => {
+      await interaction.defer();
+      throw new Error('rendering failed');
+    });
+    const interaction = fakeInteraction('slow');
+
+    await routeCommand([slow], interaction, context, logger);
+
+    expect(interaction.deferred).toBe(true);
+    expect(interaction.replies).toEqual([
+      { content: 'Une erreur est survenue. Réessaie dans un instant.', ephemeral: true },
+    ]);
+    expect(logger.error).toHaveBeenCalledOnce();
+  });
+});
+
 describe('routeAutocomplete', () => {
   const focused = { name: 'match', value: 'rck' };
 

@@ -3,6 +3,12 @@ import type { RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js
 import type { Locale } from '../../i18n/index.ts';
 import type { Actor } from '../../services/permissions.ts';
 
+/** A file the bot attaches to its reply. */
+export interface CommandFile {
+  name: string;
+  data: Uint8Array;
+}
+
 /** A file attached to a command, as Discord describes it. */
 export interface CommandAttachment {
   url: string;
@@ -24,9 +30,18 @@ export interface CommandInteraction extends InteractionBase {
     getInteger(name: string): number | null;
     getAttachment(name: string): CommandAttachment | null;
   };
-  /** True once a reply or a deferral has been sent. */
+  /** True once the reply itself has been sent; a deferral alone does not count. */
   readonly answered: boolean;
-  reply(message: { content: string; ephemeral: boolean }): Promise<void>;
+  /**
+   * Tells Discord the reply is coming, for work that may take more than its 3 seconds, such as
+   * rendering an image. The reply that follows is then visible to everyone.
+   */
+  defer(): Promise<void>;
+  reply(message: {
+    content: string;
+    ephemeral: boolean;
+    files?: readonly CommandFile[];
+  }): Promise<void>;
 }
 
 export interface AutocompleteChoice {

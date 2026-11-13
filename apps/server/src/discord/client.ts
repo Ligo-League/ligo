@@ -1,5 +1,6 @@
 import type { Db } from '@ligo/db';
 import {
+  AttachmentBuilder,
   Client,
   Events,
   GatewayIntentBits,
@@ -101,12 +102,22 @@ export function createDiscordClient(deps: {
         },
       },
       get answered() {
-        return interaction.replied || interaction.deferred;
+        return interaction.replied;
       },
-      async reply({ content, ephemeral }) {
-        await interaction.reply(
-          ephemeral ? { content, flags: MessageFlags.Ephemeral } : { content },
-        );
+      async defer() {
+        await interaction.deferReply();
+      },
+      async reply({ content, ephemeral, files = [] }) {
+        const message = {
+          content,
+          files: files.map(
+            (file) => new AttachmentBuilder(Buffer.from(file.data), { name: file.name }),
+          ),
+        };
+        // A deferred reply was announced as public and can only be completed, not made private.
+        if (interaction.deferred) await interaction.editReply(message);
+        else if (ephemeral) await interaction.reply({ ...message, flags: MessageFlags.Ephemeral });
+        else await interaction.reply(message);
       },
     };
 

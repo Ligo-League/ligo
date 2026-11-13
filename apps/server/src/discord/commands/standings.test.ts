@@ -4,18 +4,42 @@ import { formatStandingsTable } from '../standings-table.ts';
 import { fakeContext, fakeInteraction } from '../testing.ts';
 import { standingsCommand } from './standings.ts';
 
-const run = async (
+const interact = async (
   input: Parameters<typeof fakeInteraction>[1],
   context = fakeContext({ db: leagueDatabase() }),
 ) => {
   const interaction = fakeInteraction('standings', input);
   await standingsCommand.execute(interaction, context);
-  return interaction.replies;
+  return interaction;
 };
+const run = async (...args: Parameters<typeof interact>) => (await interact(...args)).replies;
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 describe('/standings', () => {
-  it('posts every division as a monospace table, visible to everyone', async () => {
-    expect(await run({ guildId: TEST_GUILD })).toEqual([
+  it('posts one image per division by default, after telling Discord it is coming', async () => {
+    const interaction = await interact({ guildId: TEST_GUILD });
+    expect(interaction.deferred).toBe(true);
+    expect(interaction.replies).toMatchObject([{ content: '', ephemeral: false }]);
+    const files = interaction.replies[0]?.files ?? [];
+    expect(files.map((file) => file.name)).toEqual([
+      'standings-ligue-1.png',
+      'standings-ligue-2.png',
+    ]);
+    for (const file of files) expect([...file.data.slice(0, 8)]).toEqual(PNG_SIGNATURE);
+  });
+
+  it('posts a single image for one division', async () => {
+    const [reply] = await run({
+      guildId: TEST_GUILD,
+      options: { division: 'l2', format: 'image' },
+    });
+    expect(reply?.files?.map((file) => file.name)).toEqual(['standings-ligue-2.png']);
+  });
+
+  it('posts every division as a monospace table when asked for text', async () => {
+    const interaction = await interact({ guildId: TEST_GUILD, options: { format: 'text' } });
+    expect(interaction.deferred).toBe(false);
+    expect(interaction.replies).toEqual([
       {
         ephemeral: false,
         content: [
@@ -39,7 +63,10 @@ describe('/standings', () => {
 
   it('posts one division when asked, with English headers in English', async () => {
     const context = fakeContext({ db: leagueDatabase(), locale: 'en' });
-    const [reply] = await run({ guildId: TEST_GUILD, options: { division: 'L2' } }, context);
+    const [reply] = await run(
+      { guildId: TEST_GUILD, options: { division: 'L2', format: 'text' } },
+      context,
+    );
     expect(reply?.content).toBe(
       [
         '**LFR · Saison 3 · Ligue 2**',
@@ -60,7 +87,10 @@ describe('/standings', () => {
       'Division inconnue. Divisions : Ligue 1, Ligue 2.',
     ],
   ])('answers a request it cannot serve privately: %j', async (input, content) => {
-    expect(await run(input)).toEqual([{ content, ephemeral: true }]);
+    const interaction = await interact(input);
+    expect(interaction.replies).toEqual([{ content, ephemeral: true }]);
+    // A deferral is public: a private refusal must be sent without one.
+    expect(interaction.deferred).toBe(false);
   });
 });
 
@@ -76,6 +106,7 @@ describe('formatStandingsTable', () => {
     scoreAgainst: 68 - diff,
     diff,
     points,
+    form: [],
   });
 
   it('aligns numbers to the right and widens columns to their longest value', () => {

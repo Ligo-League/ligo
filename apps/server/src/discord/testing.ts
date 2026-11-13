@@ -4,6 +4,7 @@ import type {
   AutocompleteInteraction,
   CommandAttachment,
   CommandContext,
+  CommandFile,
   CommandInteraction,
 } from './commands/types.ts';
 
@@ -24,7 +25,9 @@ const actorOf = (input: FakeInput) => ({
 });
 
 export interface FakeInteraction extends CommandInteraction {
-  replies: { content: string; ephemeral: boolean }[];
+  replies: { content: string; ephemeral: boolean; files?: readonly CommandFile[] }[];
+  /** True once `defer` has been called. */
+  deferred: boolean;
 }
 
 /** An in-memory stand-in for a Discord slash-command interaction. */
@@ -50,8 +53,17 @@ export function fakeInteraction(commandName: string, input: FakeInput = {}): Fak
       },
     },
     replies,
+    deferred: false,
     get answered() {
       return replies.length > 0;
+    },
+    defer() {
+      // Discord refuses to defer twice, or after a reply.
+      if (this.deferred || replies.length > 0) {
+        return Promise.reject(new Error('Interaction already acknowledged'));
+      }
+      this.deferred = true;
+      return Promise.resolve();
     },
     reply(message) {
       // Discord refuses a second reply to the same interaction.
