@@ -8,12 +8,23 @@ import { SIDES } from './schema/enums.ts';
 export const orgSettingsSchema = z.strictObject({});
 export type OrgSettings = z.infer<typeof orgSettingsSchema>;
 
-/** `competition.theme_json`. Colours and logo arrive with the first image template (phase 1). */
-export const themeSchema = z.strictObject({});
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+
+/**
+ * `competition.theme_json`: the colours of the league's images. Every key is optional; a missing
+ * one takes the renderer's default.
+ */
+export const themeSchema = z.strictObject({
+  background: hexColor.optional(),
+  surface: hexColor.optional(),
+  text: hexColor.optional(),
+  muted: hexColor.optional(),
+  accent: hexColor.optional(),
+});
 export type Theme = z.infer<typeof themeSchema>;
 
 /** `team.colors_json`. "At least 2 colours" is a registration-form rule, not a storage rule. */
-export const teamColorsSchema = z.array(z.string().regex(/^#[0-9a-fA-F]{6}$/));
+export const teamColorsSchema = z.array(hexColor);
 export type TeamColors = z.infer<typeof teamColorsSchema>;
 
 /** `team.socials_json`. Links are rendered on public pages, so only http(s) is accepted. */
