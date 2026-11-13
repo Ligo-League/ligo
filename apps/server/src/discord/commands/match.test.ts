@@ -124,8 +124,8 @@ describe('/match report', () => {
   });
 
   it.each([
-    [report(OUTSIDER), "Tu n'es ni manager ni staff d'une des deux équipes de ce match."],
-    [report(STAFF), "Tu n'es ni manager ni staff d'une des deux équipes de ce match."],
+    [report(OUTSIDER), 'Tu ne gères aucune équipe. Le staff peut te nommer avec /team manager.'],
+    [report(STAFF), 'Tu ne gères aucune équipe. Le staff peut te nommer avec /team manager.'],
     [
       report(BRAVO, { match: 4 }),
       "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
@@ -166,8 +166,39 @@ describe('/match report', () => {
       return interaction.responses[0];
     };
     expect(await suggest(BRAVO)).toEqual([{ name: 'L1 · S3 · BRV – CHA', value: 3 }]);
-    expect(await suggest(OUTSIDER)).toEqual([]);
     expect(await suggest(BRAVO, 'score_a')).toEqual([]);
+  });
+
+  // Discord cannot show a message in a list of suggestions: one entry that cannot be reported
+  // (match 0) says why the list is empty instead.
+  it('explains an empty list with a single entry', async () => {
+    const { context } = session();
+    const suggest = async (who: FakeInput, value = '') => {
+      const interaction = fakeAutocomplete('match', { name: 'match', value }, who);
+      await matchCommand.autocomplete?.(interaction, context);
+      return interaction.responses[0];
+    };
+    expect(await suggest(OUTSIDER)).toEqual([
+      { name: 'Tu ne gères aucune équipe. Le staff peut te nommer avec /team manager.', value: 0 },
+    ]);
+    expect(await suggest(BRAVO, 'xray')).toEqual([
+      { name: 'Aucun de tes matchs à signaler ne correspond à « xray ».', value: 0 },
+    ]);
+    context.db.update(schema.match).set({ status: 'validated' }).run();
+    expect(await suggest(BRAVO)).toEqual([
+      { name: 'Aucun match à signaler : ceux de tes équipes ont déjà un résultat.', value: 0 },
+    ]);
+  });
+
+  it('refuses the explanation entry with the reason, if it is picked', async () => {
+    const { run } = session();
+    const interaction = await run(report(OUTSIDER, { match: 0 }));
+    expect(interaction.replies).toEqual([
+      {
+        content: 'Tu ne gères aucune équipe. Le staff peut te nommer avec /team manager.',
+        ephemeral: true,
+      },
+    ]);
   });
 });
 

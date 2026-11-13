@@ -37,6 +37,8 @@ const BRAVO_MANAGER = member(1);
 const CHARLIE_MANAGER = member(2);
 const CHARLIE_STAFF = member(3);
 const OUTSIDER = member(4);
+// Manages Xray (team 4, Ligue 2), which does not play match 3.
+const XRAY_MANAGER = member(5);
 const SCREENSHOT = {
   url: 'https://cdn.discordapp.com/attachments/1/2/score.png?ex=abc&is=def&hm=123',
   contentType: 'image/png',
@@ -52,6 +54,7 @@ function league() {
   setTeamManager(db, STAFF, { teamId: 2, member: BRAVO_MANAGER.user }, 100);
   setTeamManager(db, STAFF, { teamId: 3, member: CHARLIE_MANAGER.user }, 100);
   addTeamStaff(db, STAFF, { teamId: 3, member: CHARLIE_STAFF.user }, 100);
+  setTeamManager(db, STAFF, { teamId: 4, member: XRAY_MANAGER.user }, 100);
   db.update(leagueGuild).set({ alertsChannelId: QUEUE, resultsChannelId: RESULTS }).run();
   const gateway = fakeGateway();
   const report = (actor: Actor = BRAVO_MANAGER, request: ReportRequest = REQUEST, now = 9000) =>
@@ -164,8 +167,9 @@ describe('reportResult', () => {
 
   describe('refusals change nothing and reach neither Discord nor the queue', () => {
     it.each([
-      ['someone on neither team', OUTSIDER, REQUEST, 'not_your_match'],
-      ['league staff who are on neither team', STAFF, REQUEST, 'not_your_match'],
+      ['someone who manages no team', OUTSIDER, REQUEST, 'no_team'],
+      ['league staff who manage no team', STAFF, REQUEST, 'no_team'],
+      ['the manager of a team not in this match', XRAY_MANAGER, REQUEST, 'not_your_match'],
       ['a server that is not linked', { ...BRAVO_MANAGER, guildId: null }, REQUEST, 'not_linked'],
       ['an unknown match', BRAVO_MANAGER, { ...REQUEST, matchId: 99 }, 'match_not_found'],
       ['a match already validated', BRAVO_MANAGER, { ...REQUEST, matchId: 1 }, 'not_reportable'],
@@ -212,7 +216,7 @@ describe('reportResult', () => {
     const { db, dump } = league();
     const before = dump();
     expect(checkReport(db, BRAVO_MANAGER, REQUEST)).toMatchObject({ ok: true, side: 'a' });
-    expect(checkReport(db, OUTSIDER, REQUEST)).toEqual({ ok: false, error: 'not_your_match' });
+    expect(checkReport(db, OUTSIDER, REQUEST)).toEqual({ ok: false, error: 'no_team' });
     expect(dump()).toBe(before);
   });
 });
@@ -453,15 +457,26 @@ describe('voidMatch', () => {
 describe('match suggestions', () => {
   it("offers a member their own teams' matches still to play", () => {
     const { db } = league();
-    const ids = (actor: Actor, query = '') =>
-      searchReportableMatches(db, actor, query, 25).map((found) => found.id);
+    const ids = (actor: Actor, query = '') => {
+      const found = searchReportableMatches(db, actor, query, 25);
+      return found.ok ? found.matches.map((candidate) => candidate.id) : found.error;
+    };
     expect(ids(BRAVO_MANAGER)).toEqual([3]);
     expect(ids(CHARLIE_STAFF)).toEqual([3]);
     expect(ids(BRAVO_MANAGER, 'cha')).toEqual([3]);
     expect(ids(BRAVO_MANAGER, 'xray')).toEqual([]);
-    expect(ids(OUTSIDER)).toEqual([]);
-    expect(ids(STAFF)).toEqual([]);
-    expect(ids({ ...BRAVO_MANAGER, guildId: null })).toEqual([]);
+    // Xray's only match already has a result: nothing is left to report.
+    expect(ids(XRAY_MANAGER)).toEqual([]);
+  });
+
+  it('says why it offers nothing, so the member is not left with an empty list', () => {
+    const { db } = league();
+    const why = (actor: Actor) => searchReportableMatches(db, actor, '', 25);
+    expect(why(OUTSIDER)).toEqual({ ok: false, error: 'no_team' });
+    expect(why(STAFF)).toEqual({ ok: false, error: 'no_team' });
+    expect(why({ ...BRAVO_MANAGER, guildId: null })).toEqual({ ok: false, error: 'not_linked' });
+    db.update(schema.season).set({ status: 'registration' }).run();
+    expect(why(BRAVO_MANAGER)).toEqual({ ok: false, error: 'no_season' });
   });
 
   it('offers staff the matches waiting for them, and every match that can be annulled', async () => {

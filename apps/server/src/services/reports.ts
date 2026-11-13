@@ -74,6 +74,7 @@ export interface ReportRequest {
 
 export type ReportError =
   | 'not_linked'
+  | 'no_team'
   | 'match_not_found'
   | 'not_your_match'
   | 'not_reportable'
@@ -109,10 +110,13 @@ export function checkReport(
 ): ReportCheck {
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
   if (!league) return { ok: false, error: 'not_linked' };
+  // Checked before the match: someone who manages no team needs to hear that, whatever they picked.
+  const { teams } = teamsActedFor(db, actor);
+  if (teams.length === 0) return { ok: false, error: 'no_team' };
   const found = leagueMatch(db, league, request.matchId);
   if (!found) return { ok: false, error: 'match_not_found' };
 
-  const side = sideOf(teamsActedFor(db, actor).teams, found);
+  const side = sideOf(teams, found);
   if (side === null) return { ok: false, error: 'not_your_match' };
   const { rulesetJson } = league.competition;
   const step = nextMatchStatus({
@@ -267,22 +271,29 @@ export async function reportResult(
   return { ...stored, queued };
 }
 
+export type ReportableSearch =
+  | { ok: true; matches: LeagueMatch[] }
+  /** Why nothing can be offered at all, so the member is told instead of seeing an empty list. */
+  | { ok: false; error: 'not_linked' | 'no_season' | 'no_team' };
+
 /** The matches a member can report: those of their teams still to play, narrowed by `query`. */
 export function searchReportableMatches(
   db: Pick<Db, 'select'>,
   actor: Actor,
   query: string,
   limit: number,
-): LeagueMatch[] {
+): ReportableSearch {
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
-  if (!league?.season) return [];
+  if (!league) return { ok: false, error: 'not_linked' };
+  if (!league.season) return { ok: false, error: 'no_season' };
   const { teams } = teamsActedFor(db, actor);
-  if (teams.length === 0) return [];
-  return listLeagueMatches(db, { seasonId: league.season.id })
+  if (teams.length === 0) return { ok: false, error: 'no_team' };
+  const matches = listLeagueMatches(db, { seasonId: league.season.id })
     .filter((found) => found.status === 'scheduled' && found.bestOf === 1)
     .filter((found) => sideOf(teams, found) !== null)
     .filter(matchQuery(query))
     .slice(0, limit);
+  return { ok: true, matches };
 }
 
 // ---------------------------------------------------------------------------------------------

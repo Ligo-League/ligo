@@ -109,6 +109,10 @@ export const fr = {
   'sanction.error.points_required':
     'Indique un nombre de points non nul, entre -100 et 100 (négatif pour en retirer).',
   'sanction.error.points_not_allowed': 'Un avertissement ne porte pas de points.',
+  'match.error.no_team': 'Tu ne gères aucune équipe. Le staff peut te nommer avec /team manager.',
+  'match.error.no_season': "Cette ligue n'a pas de saison en cours.",
+  'report.hint.nothingLeft': 'Aucun match à signaler : ceux de tes équipes ont déjà un résultat.',
+  'report.hint.noMatch': 'Aucun de tes matchs à signaler ne correspond à « {query} ».',
   'match.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'match.error.not_your_match': "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
   'match.error.not_reportable': 'Ce match a déjà un résultat signalé ou validé.',

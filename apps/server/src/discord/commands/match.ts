@@ -8,7 +8,7 @@ import {
 } from '../../services/reports.ts';
 import { buttonId } from '../button-id.ts';
 import { impossibleScore, matchLabel, matchLine, mention } from '../match-text.ts';
-import { described, MAX_CHOICES } from './describe.ts';
+import { described, MAX_CHOICE_LENGTH, MAX_CHOICES } from './describe.ts';
 import type { Command, MessageButton } from './types.ts';
 
 /** The buttons under a report: the other team's, then the staff's in the queue. */
@@ -162,17 +162,25 @@ export const matchCommand: Command = {
       await interaction.respond([]);
       return;
     }
-    const found = searchReportableMatches(
-      context.db,
-      interaction,
-      interaction.focused.value,
-      MAX_CHOICES,
-    );
-    await interaction.respond(
-      found.map((candidate) => ({
-        name: matchLabel(context.locale, candidate),
-        value: candidate.id,
-      })),
-    );
+    const { locale } = context;
+    const query = interaction.focused.value.trim();
+    const found = searchReportableMatches(context.db, interaction, query, MAX_CHOICES);
+    if (found.ok && found.matches.length > 0) {
+      await interaction.respond(
+        found.matches.map((candidate) => ({
+          name: matchLabel(locale, candidate),
+          value: candidate.id,
+        })),
+      );
+      return;
+    }
+    // Discord shows no message in a list of suggestions: one entry says why it is empty. Its
+    // value names no match, so picking it ends in the same explanation from the command.
+    const reason = !found.ok
+      ? t(locale, `match.error.${found.error}`)
+      : query === ''
+        ? t(locale, 'report.hint.nothingLeft')
+        : t(locale, 'report.hint.noMatch', { query });
+    await interaction.respond([{ name: reason.slice(0, MAX_CHOICE_LENGTH), value: 0 }]);
   },
 };

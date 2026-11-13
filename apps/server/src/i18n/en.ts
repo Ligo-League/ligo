@@ -107,6 +107,10 @@ export const en: Record<MessageKey, string> = {
   'sanction.error.points_required':
     'Give a number of points other than zero, between -100 and 100 (negative to take some away).',
   'sanction.error.points_not_allowed': 'A warning carries no points.',
+  'match.error.no_team': 'You manage no team. Staff can name you with /team manager.',
+  'match.error.no_season': 'This league has no season in progress.',
+  'report.hint.nothingLeft': "No match to report: your teams' matches all have a result.",
+  'report.hint.noMatch': 'None of your matches to report matches "{query}".',
   'match.error.not_linked': 'This server is not linked to a league.',
   'match.error.not_your_match': 'You are neither manager nor staff of either team of this match.',
   'match.error.not_reportable': 'This match already has a reported or validated result.',
