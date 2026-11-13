@@ -8,7 +8,12 @@ const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
 
 // Teams show by tag: a monospace table wider than about 45 characters wraps on phones.
 const COLUMNS: Column[] = [
-  { header: 'standings.column.rank', align: 'right', cell: (row) => String(row.rank) },
+  // An excluded team shows "EX" for its rank: it is last whatever its points.
+  {
+    header: 'standings.column.rank',
+    align: 'right',
+    cell: (row) => (row.excluded ? 'EX' : String(row.rank)),
+  },
   { header: 'standings.column.team', align: 'left', cell: (row) => row.team.tag },
   { header: 'standings.column.playedShort', align: 'right', cell: (row) => String(row.played) },
   { header: 'standings.column.wins', align: 'right', cell: (row) => String(row.wins) },

@@ -114,7 +114,12 @@ describe('listSanctions', () => {
   it("lists a team's sanctions of the season, oldest first, the automatic warning included", () => {
     const db = leagueDatabase();
     // Charlie (team 3) already has one forfeit: this second one adds the automatic warning.
-    recordForfeit(db, STAFF, { matchId: 3, side: 'b', warningReason: () => 'auto' }, 8000);
+    recordForfeit(
+      db,
+      STAFF,
+      { matchId: 3, side: 'b', warningReason: () => 'auto', exclusionReason: () => 'auto' },
+      8000,
+    );
     add(db, { teamId: 3, points: -1, reason: 'Retard' }, STAFF, 9000);
     add(db, { teamId: ALPHA, points: -3, reason: 'Autre équipe' }, STAFF, 9500);
 

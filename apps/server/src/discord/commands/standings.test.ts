@@ -151,6 +151,11 @@ describe('formatStandingsTable', () => {
     ]);
   });
 
+  it('shows an excluded team with EX for its rank', () => {
+    const table = { division: 'Ligue 1', rows: [{ ...row(3, 'BRV', -3, 0), excluded: true }] };
+    expect(formatStandingsTable('fr', table).split('\n')[1]).toMatch(/^EX {2}BRV/);
+  });
+
   it('stays narrow enough for a phone with the longest tags of Season 3', () => {
     const table = { division: 'Ligue 1', rows: [row(10, 'NIGHTWOLVES', -100, 27)] };
     for (const line of formatStandingsTable('fr', table).split('\n')) {

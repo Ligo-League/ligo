@@ -165,7 +165,7 @@ describe('/help', () => {
     const pages: Record<string, HelpTopic[]> = {
       standings: ['standings'],
       match: ['match', 'match-time', 'match-veto'],
-      staff: ['staff-match', 'staff-sanction'],
+      staff: ['staff-match', 'staff-sanction', 'staff-exclusion'],
       team: ['team'],
       league: ['league'],
     };

@@ -2,6 +2,9 @@ import { promotionSchema, vetoSchema } from '@ligo/core';
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+import { setAutoExclusion } from '../../services/exclusions.ts';
+import type { Actor } from '../../services/permissions.ts';
+import { setTeamManager } from '../../services/team-staff.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../../testing.ts';
 import {
   fakeAutocomplete,
@@ -17,6 +20,12 @@ const STAFF: FakeInput = {
   user: { id: '222222222222222222', displayName: 'Léa Staff' },
   memberRoleIds: [TEST_STAFF_ROLE],
 };
+const STAFF_ACTOR: Actor = {
+  guildId: TEST_GUILD,
+  user: { id: '222222222222222222', displayName: 'Léa Staff' },
+  memberRoleIds: [TEST_STAFF_ROLE],
+};
+const RESULTS = '800000000000000002';
 // In leagueDatabase(): match 3 is Bravo v Charlie (Ligue 1, week 3), still to play.
 const staffMatch = (
   subcommand: string,
@@ -385,9 +394,9 @@ describe('/staff match forfeit', () => {
     expect(gateway.posted).toEqual([]);
   });
 
-  it('alerts the staff queue at the exclusion threshold, and excludes nobody', async () => {
-    const { context, db, gateway } = league();
-    db.update(schema.season)
+  const exclusionAtTwo = (db: ReturnType<typeof leagueDatabase>) =>
+    db
+      .update(schema.season)
       .set({
         settingsJson: {
           forfeit_score: [0, 0],
@@ -396,26 +405,62 @@ describe('/staff match forfeit', () => {
         },
       })
       .run();
+  const CHARLIE_MANAGER = { id: '700000000000000002', displayName: 'Manager' };
+
+  it('excludes the team at the threshold, tells it directly, announces it and alerts staff', async () => {
+    const { context, db, gateway } = league();
+    exclusionAtTwo(db);
+    db.update(schema.leagueGuild).set({ resultsChannelId: RESULTS }).run();
+    setTeamManager(db, STAFF_ACTOR, { teamId: 3, member: CHARLIE_MANAGER }, 100);
     const { replies } = await run(staffMatch('forfeit', { match: 3, team: 'b' }), context);
-    expect(replies[0]?.content).toContain(
-      "Charlie atteint le seuil d'exclusion avec 2 forfaits. L'exclusion reste une décision du staff.",
-    );
-    expect(gateway.posted).toMatchObject([
+    expect(replies[0]?.content).toContain('Charlie est exclue automatiquement avec 2 forfaits.');
+    const rule =
+      "Elle a joué 0 de ses 2 matchs, moins de la moitié : tous ses matchs deviennent des victoires par forfait pour ses adversaires, sauf ceux où l'adversaire avait lui-même déclaré forfait.";
+    expect(gateway.direct).toEqual([
       {
-        channelId: QUEUE,
+        userId: CHARLIE_MANAGER.id,
         message: {
-          content:
-            "Charlie atteint le seuil d'exclusion avec 2 forfaits (Ligue 1, semaine 3 : Bravo – Charlie). Une décision du staff est attendue.",
+          content: `Ton équipe Charlie est exclue de la saison Saison 3 (LFR).\nRaison : Exclusion automatique : 2 forfaits.\n${rule}\nTu peux faire appel auprès du staff de la ligue, qui peut annuler l'exclusion.`,
         },
       },
     ]);
-    expect(
-      db
-        .select()
-        .from(schema.slot)
-        .all()
-        .every((row) => row.status === 'active'),
-    ).toBe(true);
+    expect(gateway.posted.map((post) => [post.channelId, post.message.content])).toEqual([
+      [RESULTS, 'Forfait — Ligue 1, semaine 3 : Bravo – Charlie. Charlie déclare forfait.'],
+      [RESULTS, `Charlie est exclue de la saison. ${rule}`],
+      [
+        QUEUE,
+        `Charlie est exclue automatiquement : 2 forfaits (Ligue 1, semaine 3 : Bravo – Charlie). ${rule} Pour l'annuler en appel : \`/staff exclusion reinstate\`.`,
+      ],
+    ]);
+    expect(db.select().from(schema.slot).where(eq(schema.slot.teamId, 3)).get()?.status).toBe(
+      'excluded',
+    );
+  });
+
+  it('tells staff when a direct message could not be delivered', async () => {
+    const { context, db, gateway } = league();
+    exclusionAtTwo(db);
+    setTeamManager(db, STAFF_ACTOR, { teamId: 3, member: CHARLIE_MANAGER }, 100);
+    const failing = {
+      ...gateway,
+      sendDirectMessage: () => Promise.reject(new Error('Direct messages are closed')),
+    };
+    await run(staffMatch('forfeit', { match: 3, team: 'b' }), { ...context, gateway: failing });
+    expect(gateway.posted.at(-1)?.message.content).toContain(
+      'Message privé non remis à 1 membre(s) de Charlie',
+    );
+  });
+
+  it('only alerts staff when automatic exclusion is switched off for the team', async () => {
+    const { context, db, gateway } = league();
+    exclusionAtTwo(db);
+    setAutoExclusion(db, STAFF_ACTOR, { teamId: 3, enabled: false, reason: 'Absence prévue' }, 100);
+    const { replies } = await run(staffMatch('forfeit', { match: 3, team: 'b' }), context);
+    expect(replies[0]?.content).toContain('son exclusion automatique est désactivée');
+    expect(gateway.posted.at(-1)?.message.content).toBe(
+      "Charlie atteint le seuil d'exclusion avec 2 forfaits (Ligue 1, semaine 3 : Bravo – Charlie), mais son exclusion automatique est désactivée : Absence prévue",
+    );
+    expect(gateway.direct).toEqual([]);
   });
 
   it.each([
@@ -520,5 +565,77 @@ describe('/staff sanction', () => {
     );
     await staffCommand.autocomplete?.(interaction, fakeContext({ db: leagueDatabase() }));
     expect(interaction.responses).toEqual([[{ name: 'Bravo (BRV) · Ligue 1', value: 2 }]]);
+  });
+});
+
+describe('/staff exclusion', () => {
+  const exclusion = (
+    subcommand: string,
+    options: FakeInput['options'],
+    who = STAFF,
+  ): FakeInput => ({
+    ...who,
+    subcommandGroup: 'exclusion',
+    subcommand,
+    options,
+  });
+  const MANAGER = { id: '700000000000000001', displayName: 'Manager' };
+
+  it('excludes a team: private answer, direct message, public announcement without the reason', async () => {
+    const db = leagueDatabase();
+    db.update(schema.leagueGuild).set({ resultsChannelId: RESULTS }).run();
+    setTeamManager(db, STAFF_ACTOR, { teamId: 2, member: MANAGER }, 100);
+    const gateway = fakeGateway();
+    const context = fakeContext({ db, gateway });
+    const { replies } = await run(
+      exclusion('exclude', { team: 2, reason: 'Triche avérée' }),
+      context,
+    );
+    expect(replies).toEqual([
+      {
+        content:
+          'Bravo est exclue. Elle a joué 1 de ses 2 matchs, au moins la moitié : ses résultats validés restent, et ses autres matchs deviennent des victoires par forfait pour ses adversaires.',
+        ephemeral: true,
+      },
+    ]);
+    expect(gateway.direct[0]?.message.content).toContain('Raison : Triche avérée');
+    expect(gateway.posted).toHaveLength(1);
+    expect(gateway.posted[0]?.message.content).not.toContain('Triche');
+  });
+
+  it('reinstates a team on appeal, and tells it', async () => {
+    const db = leagueDatabase();
+    setTeamManager(db, STAFF_ACTOR, { teamId: 2, member: MANAGER }, 100);
+    const gateway = fakeGateway();
+    const context = fakeContext({ db, gateway });
+    await run(exclusion('exclude', { team: 2, reason: 'x' }), context);
+    const { replies } = await run(
+      exclusion('reinstate', { team: 2, reason: 'Appel accepté' }),
+      context,
+    );
+    expect(replies[0]?.content).toBe(
+      "Bravo est réintégrée : ses matchs comptent de nouveau tels qu'ils sont.",
+    );
+    expect(gateway.direct.at(-1)?.message.content).toBe(
+      'Ton équipe Bravo est réintégrée dans la saison.\nRaison : Appel accepté',
+    );
+  });
+
+  it('switches automatic exclusion off with a reason, and refuses members', async () => {
+    const db = leagueDatabase();
+    const context = fakeContext({ db });
+    const { replies } = await run(
+      exclusion('auto', { team: 2, enabled: false, reason: 'Absence prévue' }),
+      context,
+    );
+    expect(replies[0]?.content).toBe(
+      'Exclusion automatique désactivée pour Bravo. Raison : Absence prévue',
+    );
+    const member = { ...STAFF, memberRoleIds: [] };
+    const refused = await run(
+      exclusion('auto', { team: 2, enabled: true, reason: 'x' }, member),
+      context,
+    );
+    expect(refused.replies[0]?.content).toBe('Cette commande est réservée au staff de la ligue.');
   });
 });

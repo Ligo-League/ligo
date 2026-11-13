@@ -87,10 +87,8 @@ export const en: Record<MessageKey, string> = {
   'staff.match.voided': 'Match annulled: {fixture}.',
   'staff.match.forfeit': 'Forfeit recorded: {fixture}. {team} forfeits ({count} this season).',
   'staff.match.forfeit.warning': 'A warning was added automatically to {team}.',
-  'staff.match.forfeit.exclusion':
-    '{team} reaches the exclusion threshold with {count} forfeits. Exclusion remains a staff decision.',
-  'queue.exclusion':
-    '{team} reaches the exclusion threshold with {count} forfeits ({fixture}). A staff decision is expected.',
+  'staff.match.forfeit.exclusion': '{team} has {count} forfeits and stays excluded.',
+  'queue.exclusion': '{team} has {count} forfeits ({fixture}) and stays excluded.',
   'sanction.reason.forfeits': 'Automatic warning: {count} forfeits this season.',
   'sanction.kind.warning': 'Warning',
   'sanction.kind.points': 'Standings points',
@@ -247,7 +245,7 @@ export const en: Record<MessageKey, string> = {
   'help.overview':
     "**Ligo's commands**\n• `/standings` — the season's standings, as an image or as text.\n• `/match propose-time` — propose a match time to the other team.\n• `/match veto` — the map veto, before the match.\n• `/match report` — report the result of your team's match, with a screenshot of the scoreboard.\n• `/help` — this help. `/help command:` explains one command in detail.",
   'help.overview.staff':
-    "**League staff**\n• `/staff match` — validate, enter, correct or annul a result; record a forfeit.\n• `/staff sanction` — a warning or points for a team, and the list of its sanctions.\n• `/team` — each team's manager and staff.\n• `/league channel` — the bot's channels: validation queue and results.\n\n**Setting up**\n1. `/league channel` twice: the staff validation queue, then the results channel.\n2. `/team manager` for each team.\nTeams can then report their results with `/match report`.",
+    "**League staff**\n• `/staff match` — validate, enter, correct or annul a result; record a forfeit.\n• `/staff sanction` — a warning or points for a team, and the list of its sanctions.\n• `/staff exclusion` — exclude a team, reinstate it after an appeal, set its automatic exclusion.\n• `/team` — each team's manager and staff.\n• `/league channel` — the bot's channels: validation queue and results.\n\n**Setting up**\n1. `/league channel` twice: the staff validation queue, then the results channel.\n2. `/team manager` for each team.\nTeams can then report their results with `/match report`.",
   'help.page.standings':
     '**`/standings`** — the current season\'s standings\nOpen to everyone.\n\n• `division` (optional): "Ligue 1" or "L1", for example. Without it, every division.\n• `format` (optional): Image (the default) or Text.\n\nOnly validated results and forfeits count, with sanction points. A result reported but not yet validated does not appear.\nColumns: MP matches played, W wins, L losses, RW rounds won, RL rounds lost, Diff (RW − RL), PTS points. Ties are broken as the league\'s rulebook says.',
   'help.page.match':
@@ -269,7 +267,7 @@ export const en: Record<MessageKey, string> = {
     'A forfeit or an annulled match is not corrected with `result`. Every action is logged with its author.',
   'help.forfeit.warning': 'At {count} forfeits, a warning is added to the team automatically.',
   'help.forfeit.exclusion':
-    'At {count} forfeits, staff are alerted in the validation queue; exclusion remains their decision.',
+    'At {count} forfeits, the team is excluded automatically, unless staff switched that off for it (`/help command:/staff exclusion`).',
   'help.page.staffSanction':
     "**`/staff sanction`** — team sanctions, for league staff only\n• `add` — `team`, `kind`, `reason`, and `points` for a points sanction.\n  – Warning: kept in the list, no effect on the standings.\n  – Points: `points:-1` takes a point away, `points:2` adds two. The standings follow at once.\n• `list` — a team's sanctions this season, with date and reason. Automatic forfeit warnings appear there too.\n\nA sanction cannot be deleted: to cancel one, add the opposite sanction (`points:1` after `points:-1`) with its reason.",
   'help.page.team':
@@ -341,4 +339,55 @@ export const en: Record<MessageKey, string> = {
   'standings.zone.qualification': 'Qualification',
   'standings.zone.barrage_relegation': 'Relegation barrage',
   'standings.zone.relegation': 'Relegation',
+  'match.error.team_excluded':
+    'One of the two teams is excluded from the season: this match is no longer played, the 50% rule decides its result.',
+  'schedule.error.team_excluded':
+    'One of the two teams is excluded from the season: this match is no longer played, the 50% rule decides its result.',
+  'veto.error.team_excluded':
+    'One of the two teams is excluded from the season: this match is no longer played, the 50% rule decides its result.',
+  'sanction.reason.exclusion': 'Automatic exclusion: {count} forfeits.',
+  'command.staff.exclusion.description':
+    'Exclude a team, reinstate it, or set its automatic exclusion.',
+  'command.staff.exclusion.exclude.description': 'Excludes a team from the season (50% rule).',
+  'command.staff.exclusion.reinstate.description':
+    "Reverses a team's exclusion, for example after an appeal.",
+  'command.staff.exclusion.auto.description': "Switches a team's automatic exclusion on or off.",
+  'command.staff.exclusion.option.reason': 'The reason: kept in the history and sent to the team.',
+  'command.staff.exclusion.option.enabled': 'Yes: automatic exclusion on. No: off for this team.',
+  'exclusion.rule.stand':
+    'It played {played} of its {total} matches, at least half: its validated results stand, and its other matches become forfeit wins for its opponents.',
+  'exclusion.rule.void':
+    'It played {played} of its {total} matches, less than half: every one of its matches becomes a forfeit win for its opponents, except those the opponent itself forfeited.',
+  'exclusion.announce': '{team} is excluded from the season. {rule}',
+  'exclusion.dm':
+    "Your team {team} is excluded from the season {season} ({competition}).\nReason: {reason}\n{rule}\nYou can appeal to the league's staff, who can reverse the exclusion.",
+  'exclusion.queue.auto':
+    '{team} is excluded automatically: {count} forfeits ({fixture}). {rule} To reverse it on appeal: `/staff exclusion reinstate`.',
+  'exclusion.queue.off':
+    '{team} reaches the exclusion threshold with {count} forfeits ({fixture}), but its automatic exclusion is off: {reason}',
+  'staff.match.forfeit.excluded': '{team} is excluded automatically with {count} forfeits.',
+  'staff.match.forfeit.exclusionOff':
+    '{team} reaches the exclusion threshold with {count} forfeits; its automatic exclusion is off.',
+  'exclusion.excluded': '{team} is excluded. {rule}',
+  'exclusion.dmFailed':
+    'Direct message not delivered to {count} member(s) of {team} (direct messages closed): tell them another way.',
+  'exclusion.reinstated': '{team} is reinstated: its matches count as they are again.',
+  'exclusion.announceReinstated': '{team} is reinstated in the season.',
+  'exclusion.dmReinstated': 'Your team {team} is reinstated in the season.\nReason: {reason}',
+  'exclusion.autoOff': 'Automatic exclusion switched off for {team}. Reason: {reason}',
+  'exclusion.autoOn': 'Automatic exclusion switched back on for {team}.',
+  'exclusion.error.not_linked': 'This server is not linked to a league.',
+  'exclusion.error.not_staff': "This command is for the league's staff.",
+  'exclusion.error.no_season': 'No season is running.',
+  'exclusion.error.team_not_found':
+    'This team is not registered this season. Pick it from the list.',
+  'exclusion.error.reason_required':
+    'Give a reason: it is kept in the history and sent to the team.',
+  'exclusion.error.already_excluded': 'This team is already excluded.',
+  'exclusion.error.not_excluded': 'This team is not excluded.',
+  'exclusion.error.already_set': 'This team already has that setting.',
+  'standings.excluded': 'Excluded',
+  'help.choice.staff-exclusion': '/staff exclusion',
+  'help.page.staffExclusion':
+    '**`/staff exclusion`** — excluding a team, for league staff only\n• `exclude` — `team`, `reason`: excludes a team from the season, for its forfeits or any other reason the rulebook gives.\n• `reinstate` — `team`, `reason`: reverses an exclusion, for example after an appeal. Its matches count as they are again.\n• `auto` — `team`, `enabled`, `reason`: switches automatic exclusion off (or back on) for one team. The reason is required.\n\n**Automatic exclusion**: when staff record the forfeit that reaches the season\'s threshold, the team is excluded at once. Its manager and staff get a direct message, the results channel announces it, and the validation queue is told.\n\n**The 50% rule**: only matches really played count (not forfeits), out of all the team\'s matches of the season.\n• At least half played: its validated results stand; its other matches become forfeit wins for its opponents.\n• Less than half: every one of its matches becomes a forfeit win for its opponents, except those the opponent itself forfeited.\nThe excluded team shows last in the standings, marked "Excluded". Its remaining matches are no longer played.',
 };

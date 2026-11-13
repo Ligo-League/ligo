@@ -27,6 +27,12 @@ import {
   storedLine,
 } from '../match-text.ts';
 import { described, english, MAX_CHOICE_LENGTH, MAX_CHOICES, STAFF_ONLY } from './describe.ts';
+import {
+  announceExclusion,
+  exclusionGroup,
+  exclusionRule,
+  handleExclusionGroup,
+} from './exclusion.ts';
 import type { Command, CommandContext, CommandInteraction } from './types.ts';
 
 const matchOption = {
@@ -263,6 +269,7 @@ export const staffCommand: Command = {
           },
         ],
       },
+      exclusionGroup,
     ],
   },
 
@@ -273,6 +280,10 @@ export const staffCommand: Command = {
     const group = interaction.options.getSubcommandGroup();
     if (group === 'sanction') {
       await sanctionGroup(interaction, context);
+      return;
+    }
+    if (group === 'exclusion') {
+      await handleExclusionGroup(interaction, context);
       return;
     }
     if (group !== 'match') {
@@ -359,6 +370,7 @@ export const staffCommand: Command = {
           matchId,
           side,
           warningReason: (count) => t(locale, 'sanction.reason.forfeits', { count }),
+          exclusionReason: (count) => t(locale, 'sanction.reason.exclusion', { count }),
         },
         context.now(),
       );
@@ -372,9 +384,15 @@ export const staffCommand: Command = {
         count: reply.count,
       };
       const lines = [t(locale, 'staff.match.forfeit', details)];
-      if (reply.consequence !== 'none') {
+      if (reply.excluded) {
+        lines.push(t(locale, 'staff.match.forfeit.excluded', details));
+      } else if (reply.consequence === 'exclusion' && reply.autoExclusionOffReason !== null) {
+        lines.push(t(locale, 'staff.match.forfeit.exclusionOff', details));
+      } else if (reply.consequence !== 'none') {
         lines.push(t(locale, `staff.match.forfeit.${reply.consequence}`, details));
       }
+      // The private answer first: the picture and the messages to the team take a moment.
+      await privately(lines.join('\n'));
       await announceWithCard(
         context,
         reply.resultsChannelId,
@@ -382,12 +400,29 @@ export const staffCommand: Command = {
         reply.match.id,
         'result',
       );
-      if (reply.consequence === 'exclusion') {
+      if (reply.excluded) {
+        await announceExclusion(context, {
+          team: details.team,
+          reason: t(locale, 'sanction.reason.exclusion', { count: reply.count }),
+          excluded: reply.excluded,
+          resultsChannelId: reply.resultsChannelId,
+          queueChannelId: reply.queueChannelId,
+          queueContent: t(locale, 'exclusion.queue.auto', {
+            ...details,
+            rule: exclusionRule(locale, reply.excluded.summary),
+          }),
+        });
+      } else if (reply.consequence === 'exclusion') {
         await notify(context, reply.queueChannelId, {
-          content: t(locale, 'queue.exclusion', details),
+          content:
+            reply.autoExclusionOffReason === null
+              ? t(locale, 'queue.exclusion', details)
+              : t(locale, 'exclusion.queue.off', {
+                  ...details,
+                  reason: reply.autoExclusionOffReason,
+                }),
         });
       }
-      await privately(lines.join('\n'));
       return;
     }
 

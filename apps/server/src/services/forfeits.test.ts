@@ -2,6 +2,7 @@ import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import { setAutoExclusion } from './exclusions.ts';
 import { recordForfeit, searchForfeitableMatches } from './forfeits.ts';
 import type { Actor } from './permissions.ts';
 import { voidMatch } from './reports.ts';
@@ -17,6 +18,7 @@ const STAFF: Actor = {
 };
 const MEMBER: Actor = { ...STAFF, memberRoleIds: [] };
 const warningReason = (count: number) => `warning after ${count} forfeits`;
+const exclusionReason = (count: number) => `excluded after ${count} forfeits`;
 // In leagueDatabase(): match 1 is Alpha 7-4 Bravo (validated); match 2 is Charlie v Alpha, which
 // Charlie (side A) forfeited; match 3 is Bravo v Charlie, to play.
 const forfeit = (
@@ -25,7 +27,7 @@ const forfeit = (
   side: 'a' | 'b',
   actor: Actor = STAFF,
   now = 9000,
-) => recordForfeit(db, actor, { matchId, side, warningReason }, now);
+) => recordForfeit(db, actor, { matchId, side, warningReason, exclusionReason }, now);
 const table = (db: ReturnType<typeof leagueDatabase>) => {
   const standings = getStandings(db, { guildId: TEST_GUILD, division: 'L1' });
   if (!standings.ok) throw new Error(standings.error);
@@ -78,8 +80,7 @@ describe('recordForfeit', () => {
     ]);
   });
 
-  it('reports the exclusion threshold without excluding or sanctioning anyone', () => {
-    const db = leagueDatabase();
+  const exclusionAtTwo = (db: ReturnType<typeof leagueDatabase>) => {
     db.update(leagueGuild).set({ alertsChannelId: QUEUE }).run();
     db.update(season)
       .set({
@@ -90,21 +91,39 @@ describe('recordForfeit', () => {
         },
       })
       .run();
+  };
+  const charlieSlot = (db: ReturnType<typeof leagueDatabase>) =>
+    db.select().from(schema.slot).where(eq(schema.slot.teamId, 3)).get();
 
+  it('excludes the team at the exclusion threshold, in the same transaction (O-05)', () => {
+    const db = leagueDatabase();
+    exclusionAtTwo(db);
+    // Charlie's second forfeit. It played 0 of its 2 matches: every one becomes a forfeit win.
     expect(forfeit(db, 3, 'b')).toMatchObject({
       ok: true,
       count: 2,
       consequence: 'exclusion',
       queueChannelId: QUEUE,
+      excluded: { teamId: 3, summary: { played: 0, total: 2, resultsStand: false } },
+      autoExclusionOffReason: null,
     });
+    expect(charlieSlot(db)).toMatchObject({ status: 'excluded', excludedAt: 9000 });
+    expect(db.select().from(sanction).all()).toMatchObject([
+      { kind: 'exclusion', reason: 'excluded after 2 forfeits', matchId: 3, endsAt: null },
+    ]);
+  });
+
+  it('leaves a team alone when staff switched its automatic exclusion off, and says why', () => {
+    const db = leagueDatabase();
+    exclusionAtTwo(db);
+    setAutoExclusion(db, STAFF, { teamId: 3, enabled: false, reason: 'Accord du staff' }, 100);
+    expect(forfeit(db, 3, 'b')).toMatchObject({
+      consequence: 'exclusion',
+      excluded: null,
+      autoExclusionOffReason: 'Accord du staff',
+    });
+    expect(charlieSlot(db)?.status).toBe('active');
     expect(db.select().from(sanction).all()).toEqual([]);
-    expect(
-      db
-        .select()
-        .from(schema.slot)
-        .all()
-        .map((row) => row.status),
-    ).toEqual(Array.from({ length: 5 }, () => 'active'));
   });
 
   it('turns a validated result into a forfeit, and counts again after an annulment', () => {

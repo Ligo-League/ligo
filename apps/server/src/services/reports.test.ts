@@ -345,7 +345,12 @@ describe('answerReport', () => {
     ).toMatchObject([{ resolution: 'result_entered' }]);
     expect(
       await settled((db) =>
-        recordForfeit(db, STAFF, { matchId: 3, side: 'a', warningReason: () => 'x' }, 9600),
+        recordForfeit(
+          db,
+          STAFF,
+          { matchId: 3, side: 'a', warningReason: () => 'x', exclusionReason: () => 'x' },
+          9600,
+        ),
       ),
     ).toMatchObject([{ resolution: 'forfeit' }]);
     const [row] = await settled((db) => validateResult(db, STAFF, { matchId: 3 }, 9600));

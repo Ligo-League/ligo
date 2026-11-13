@@ -11,8 +11,9 @@ import { requireStaff, type Actor } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
 import { settleDisputes } from './disputes.ts';
+import { excludeSlot, type Excluded } from './exclusions.ts';
 
-const { auditLog, game, match, sanction } = schema;
+const { auditLog, game, match, sanction, slot } = schema;
 
 export type ForfeitError =
   'not_linked' | 'not_staff' | 'match_not_found' | 'wrong_status' | 'unsupported_series';
@@ -29,6 +30,10 @@ export type ForfeitReply =
       queueChannelId: string | null;
       /** Where results are announced: a forfeit counts in the standings like any result. */
       resultsChannelId: string | null;
+      /** The team, when this forfeit excluded it automatically. */
+      excluded: Excluded | null;
+      /** Why staff switched the automatic exclusion off for this team, when they did. */
+      autoExclusionOffReason: string | null;
     }
   | { ok: false; error: ForfeitError };
 
@@ -36,13 +41,18 @@ export type ForfeitReply =
  * League staff record that one team forfeited a match: only staff can, a team never claims a
  * forfeit win itself. The opponent's win counts at once. Reaching the season's warning threshold
  * adds a warning sanction in the same transaction; `warningReason` words it. Reaching the
- * exclusion threshold is reported to the caller and decides nothing: excluding a team is a
- * staff decision of its own.
+ * exclusion threshold excludes the team in the same transaction (O-05), unless staff switched
+ * that off for it; `exclusionReason` words the sanction. Staff can reinstate it on appeal.
  */
 export function recordForfeit(
   db: Db,
   actor: Actor,
-  request: { matchId: number; side: 'a' | 'b'; warningReason: (count: number) => string },
+  request: {
+    matchId: number;
+    side: 'a' | 'b';
+    warningReason: (count: number) => string;
+    exclusionReason: (count: number) => string;
+  },
   now: number,
 ): ForfeitReply {
   const staff = requireStaff(db, actor);
@@ -107,6 +117,27 @@ export function recordForfeit(
         })
         .run();
     }
+    let excluded: Excluded | null = null;
+    let autoExclusionOffReason: string | null = null;
+    if (consequence === 'exclusion') {
+      const slotRow = tx.select().from(slot).where(eq(slot.id, team.slotId)).get();
+      autoExclusionOffReason = slotRow?.autoExclusionOffReason ?? null;
+      if (autoExclusionOffReason === null) {
+        // Null when the team is already excluded: a later forfeit changes nothing more.
+        excluded = excludeSlot(
+          tx,
+          {
+            seasonId: season.id,
+            slotId: team.slotId,
+            reason: request.exclusionReason(count),
+            decidedBy: staffPlayer.id,
+            automatic: true,
+            matchId: found.id,
+          },
+          now,
+        );
+      }
+    }
     tx.insert(auditLog)
       .values({
         actorPlayerId: staffPlayer.id,
@@ -131,6 +162,8 @@ export function recordForfeit(
       consequence,
       queueChannelId: league.guild.alertsChannelId,
       resultsChannelId: resultsChannelFor(league, found),
+      excluded,
+      autoExclusionOffReason,
     };
   });
 }

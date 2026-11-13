@@ -19,6 +19,7 @@ import {
   type MatchVeto,
 } from '@ligo/db';
 import { and, asc, desc, eq, isNotNull } from 'drizzle-orm';
+import { hasExcludedTeam } from './exclusions.ts';
 import { teamsActedFor, type Actor, type TeamRoleHeld } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { leagueMatch } from './reports.ts';
@@ -189,6 +190,7 @@ export type StartVetoError =
   | 'match_not_found'
   | 'not_your_match'
   | 'not_schedulable'
+  | 'team_excluded'
   | 'already_started'
   | 'no_format'
   | 'pool_size'
@@ -244,6 +246,7 @@ export function startVeto(
       return { ok: false, error: 'not_your_match' };
     }
     if (found.status !== 'scheduled') return { ok: false, error: 'not_schedulable' };
+    if (hasExcludedTeam(tx, found)) return { ok: false, error: 'team_excluded' };
     if (loadVeto(tx, found)) return { ok: false, error: 'already_started' };
 
     const frozen = vetoSettings(tx, league, found);
@@ -341,6 +344,7 @@ export type VetoChoiceError =
   | 'not_your_match'
   | 'not_your_turn'
   | 'invalid_choice'
+  | 'team_excluded'
   | 'not_schedulable';
 
 export type VetoChoiceReply = { ok: true; view: VetoView } | { ok: false; error: VetoChoiceError };
@@ -368,6 +372,7 @@ export function chooseVetoStep(
     if (state.status === 'done') return { ok: false, error: 'finished' };
     if (state.step !== request.step) return { ok: false, error: 'stale' };
     if (found.status !== 'scheduled') return { ok: false, error: 'not_schedulable' };
+    if (hasExcludedTeam(tx, found)) return { ok: false, error: 'team_excluded' };
 
     const acting = teamsActedFor(tx, actor);
     if (!actsFor(acting.teams, found, 'a') && !actsFor(acting.teams, found, 'b')) {
@@ -419,7 +424,7 @@ export function runVetoTick(db: Db, now: number, random: (below: number) => numb
   for (const { id } of candidates) {
     const view = db.transaction((tx): VetoView | null => {
       const [found] = listLeagueMatches(tx, { matchId: id });
-      const stored = found && loadVeto(tx, found);
+      const stored = found && !hasExcludedTeam(tx, found) ? loadVeto(tx, found) : null;
       if (!stored) return null;
       const state = stateOf(stored);
       if (state.status === 'done') return null;

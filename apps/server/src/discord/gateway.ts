@@ -14,6 +14,8 @@ export interface DiscordGateway {
     message: OutgoingMessage,
   ): Promise<{ messageId: string; url: string }>;
   editMessage(channelId: string, messageId: string, message: OutgoingMessage): Promise<void>;
+  /** Sends a direct message. Rejects when the member closed them or left every shared server. */
+  sendDirectMessage(userId: string, message: OutgoingMessage): Promise<void>;
   /** Downloads a file attached to a command. Rejects other hosts and files over `maxBytes`. */
   downloadAttachment(url: string, maxBytes: number): Promise<Uint8Array>;
 }
@@ -64,6 +66,11 @@ export function createDiscordGateway(client: Client): DiscordGateway {
     async editMessage(channelId, messageId, message) {
       const channel = await sendable(channelId);
       await channel.messages.edit(messageId, toDiscordMessage(message));
+    },
+
+    async sendDirectMessage(userId, message) {
+      const user = await client.users.fetch(userId);
+      await user.send(toDiscordMessage(message));
     },
 
     async downloadAttachment(url, maxBytes) {

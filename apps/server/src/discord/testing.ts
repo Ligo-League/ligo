@@ -17,6 +17,7 @@ import type { DiscordGateway } from './gateway.ts';
 type OptionValue =
   | string
   | number
+  | boolean
   | CommandAttachment
   | { user: { id: string; displayName: string } }
   | { channel: { id: string } };
@@ -65,6 +66,10 @@ export function fakeInteraction(commandName: string, input: FakeInput = {}): Fak
       getInteger: (name) => {
         const value = option(name);
         return typeof value === 'number' ? value : null;
+      },
+      getBoolean: (name) => {
+        const value = option(name);
+        return typeof value === 'boolean' ? value : null;
       },
       getAttachment: (name) => {
         const value = option(name);
@@ -238,6 +243,8 @@ export interface FakeGateway extends DiscordGateway {
   posted: { channelId: string; messageId: string; message: OutgoingMessage; edits: number }[];
   /** Addresses downloaded, in order. */
   downloads: string[];
+  /** Direct messages sent, in order. */
+  direct: { userId: string; message: OutgoingMessage }[];
   /** Set to make the next calls fail, as when Discord is unreachable or a channel is gone. */
   failing: boolean;
 }
@@ -247,6 +254,7 @@ export function fakeGateway(): FakeGateway {
   const gateway: FakeGateway = {
     posted: [],
     downloads: [],
+    direct: [],
     failing: false,
     postMessage(channelId, message) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
@@ -265,6 +273,11 @@ export function fakeGateway(): FakeGateway {
       if (!entry) return Promise.reject(new Error('Unknown message'));
       entry.message = message;
       entry.edits += 1;
+      return Promise.resolve();
+    },
+    sendDirectMessage(userId, message) {
+      if (gateway.failing) return Promise.reject(new Error('Direct messages are closed'));
+      gateway.direct.push({ userId, message });
       return Promise.resolve();
     },
     downloadAttachment(url, maxBytes) {

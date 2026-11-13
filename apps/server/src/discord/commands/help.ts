@@ -15,6 +15,7 @@ export const HELP_TOPICS = [
   'match-veto',
   'staff-match',
   'staff-sanction',
+  'staff-exclusion',
   'team',
   'league',
 ] as const;
@@ -27,6 +28,7 @@ const PAGES: Record<HelpTopic, MessageKey> = {
   'match-veto': 'help.page.matchVeto',
   'staff-match': 'help.page.staffMatch',
   'staff-sanction': 'help.page.staffSanction',
+  'staff-exclusion': 'help.page.staffExclusion',
   team: 'help.page.team',
   league: 'help.page.league',
 };

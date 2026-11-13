@@ -30,6 +30,7 @@ import {
 } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { settleDisputes, type DisputeResolution } from './disputes.ts';
+import { hasExcludedTeam } from './exclusions.ts';
 import { ensurePlayer } from './players.ts';
 import { isAcceptableScreenshot, SCREENSHOT_MAX_BYTES, type Screenshot } from './results.ts';
 import { listTeamStaff, type TeamMember } from './team-staff.ts';
@@ -82,6 +83,7 @@ export type ReportError =
   | 'match_not_found'
   | 'not_your_match'
   | 'not_reportable'
+  | 'team_excluded'
   | 'unsupported_series'
   | 'invalid_score'
   | 'screenshot_required'
@@ -130,6 +132,8 @@ export function checkReport(
     validation: rulesetJson.result_validation,
   });
   if (!step.ok) return { ok: false, error: 'not_reportable' };
+  // An excluded team plays no more: the 50% rule decides its matches.
+  if (hasExcludedTeam(db, found)) return { ok: false, error: 'team_excluded' };
   if (found.bestOf !== 1) return { ok: false, error: 'unsupported_series' };
 
   const { scoreA, scoreB } = request;
@@ -295,6 +299,7 @@ export function searchReportableMatches(
   const matches = listLeagueMatches(db, { seasonId: league.season.id })
     .filter((found) => found.status === 'scheduled' && found.bestOf === 1)
     .filter((found) => sideOf(teams, found) !== null)
+    .filter((found) => !hasExcludedTeam(db, found))
     .filter(matchQuery(query))
     .slice(0, limit);
   return { ok: true, matches };

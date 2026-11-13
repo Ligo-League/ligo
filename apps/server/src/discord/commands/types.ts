@@ -56,6 +56,7 @@ export interface CommandInteraction extends InteractionBase {
     /** The value given for an option, or null when it was left out. */
     getString(name: string): string | null;
     getInteger(name: string): number | null;
+    getBoolean(name: string): boolean | null;
     getAttachment(name: string): CommandAttachment | null;
     /** The member picked for a user option. */
     getUser(name: string): { id: string; displayName: string } | null;

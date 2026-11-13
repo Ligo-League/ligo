@@ -74,6 +74,7 @@ async function renderTable(
       colors: row.team.colors,
       logo: row.team.logoKey === null ? null : (logos.get(row.team.logoKey) ?? null),
       zoneColor: row.zone === null ? null : theme[ZONE_COLORS[row.zone]],
+      note: row.excluded ? t(locale, 'standings.excluded') : null,
     })),
     legend,
     theme: standings.theme,

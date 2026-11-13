@@ -19,6 +19,7 @@ import {
   type LeagueMatch,
 } from '@ligo/db';
 import { and, eq, isNotNull } from 'drizzle-orm';
+import { hasExcludedTeam } from './exclusions.ts';
 import { matchQuery } from './match-search.ts';
 import { requireStaff, teamsActedFor, type Actor, type TeamRoleHeld } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
@@ -51,6 +52,7 @@ export type ProposeError =
   | 'match_not_found'
   | 'not_your_match'
   | 'not_schedulable'
+  | 'team_excluded'
   | ProposeRefusal;
 
 export type ProposeReply =
@@ -85,6 +87,7 @@ export function proposeTime(
     const side = sideOf(acting.teams, found);
     if (side === null) return { ok: false, error: 'not_your_match' };
     if (found.status !== 'scheduled') return { ok: false, error: 'not_schedulable' };
+    if (hasExcludedTeam(tx, found)) return { ok: false, error: 'team_excluded' };
     const allowed = canProposeAt(request.at, periodOf(league, found), now);
     if (!allowed.ok) return allowed;
 
@@ -143,6 +146,7 @@ export type AnswerProposalError =
   | 'not_your_match'
   | 'not_opponent'
   | 'not_schedulable'
+  | 'team_excluded'
   | 'in_past';
 
 export type AnswerProposalReply =
@@ -190,6 +194,7 @@ export function answerProposal(
       return { ok: false, error: 'not_opponent' };
     }
     if (found.status !== 'scheduled') return { ok: false, error: 'not_schedulable' };
+    if (hasExcludedTeam(tx, found)) return { ok: false, error: 'team_excluded' };
     const accept = request.action === 'accept';
     if (accept && proposal.at <= now) return { ok: false, error: 'in_past' };
 
@@ -315,7 +320,8 @@ export function runSchedulingTick(db: Db, now: number): SchedulingNotice[] {
     const notice = db.transaction((tx): SchedulingNotice | null => {
       // Read again inside the transaction: a team may have just agreed a time.
       const [found] = listLeagueMatches(tx, { matchId: candidate.matchId });
-      if (!found) return null;
+      // An excluded team plays no more: no extension, no automatic time.
+      if (!found || hasExcludedTeam(tx, found)) return null;
       const period = playPeriod(found.window, candidate.scheduling);
       if (dueSchedulingAction(found, period, now) !== 'start_extension') return null;
       // dueSchedulingAction only answers 'start_extension' when there is an automatic time.

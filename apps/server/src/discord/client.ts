@@ -185,6 +185,7 @@ export function createDiscordClient(deps: {
         getSubcommandGroup: () => interaction.options.getSubcommandGroup(false),
         getString: (name) => interaction.options.getString(name),
         getInteger: (name) => interaction.options.getInteger(name),
+        getBoolean: (name) => interaction.options.getBoolean(name),
         getAttachment: (name) => {
           const attachment = interaction.options.getAttachment(name);
           return (
