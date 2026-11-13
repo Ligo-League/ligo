@@ -301,6 +301,24 @@ whichever turn is due. To see a timeout, lower `step_seconds` in the league's `r
 (at least 30), start a veto and wait: the clock picks a random map and the message says
 "temps écoulé".
 
+## 12. Exclusion
+
+Run `pnpm discord:register` again (it adds `/staff exclusion`), then restart `pnpm dev` (it applies
+migration `0005`).
+
+1. With a test team you manage (`/team manager`), record forfeits against it with
+   `/staff match forfeit` until it reaches the season's threshold (3 in Season 3; lower it in the
+   season's settings to try it faster). At the 2nd, the bot adds a warning; at the 3rd, it
+   excludes the team: you get a direct message, the results channel announces it, the staff queue
+   explains the 50% rule's outcome.
+2. `/standings`: the team is last, marked "Exclue", and its opponents got their forfeit wins.
+3. `/staff exclusion reinstate team reason`: the team is back, the table as before.
+4. `/staff exclusion auto team enabled:False reason`: the next forfeit at the threshold only
+   alerts the staff queue. `/staff exclusion exclude` still works on that team.
+
+Existing Season 3 forfeits exclude nobody by themselves: only a new forfeit that reaches the
+threshold does.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                               |

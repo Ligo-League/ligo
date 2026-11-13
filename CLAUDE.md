@@ -24,7 +24,9 @@ The maintainer manages, designs and reviews. You write the code. The process is:
 4. **Tests first in `packages/core`.** Write or update the tests, show them, then implement.
 5. **Ask, don't invent.** League rules come from the design doc and the LFR rulebook. If a rule is
    missing or ambiguous (`docs/open-questions.md` lists the open questions), stop and ask, and add
-   the question to that file. Never invent a rule.
+   the question to that file. Never invent a rule. When a rule is decided, update
+   `docs/rules-season-4.md` too: it is the draft of the next rulebook, in French, and says how
+   Ligo enforces each rule.
 6. **Finish with a check.** End every task by running `pnpm typecheck`, `pnpm lint` and `pnpm test`,
    and report the results honestly, including failures.
 
@@ -59,6 +61,7 @@ apps/worker        job runner: verify replays, stitch, render images
 parsers/r6         r6-dissect fork (git submodule) + cmd/wasm + build script
 deploy/            compose.yml, Caddyfile, litestream.yml, restore.sh
 docs/design.md     the design document
+docs/rules-season-4.md  the draft Season 4 rulebook (French): every decided rule and how Ligo enforces it
 ```
 
 ### Dependency rules (enforced in review)

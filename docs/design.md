@@ -391,10 +391,16 @@ A restart keeps the score from before the crash. Each team may call one re-host 
 
 - Only staff record a forfeit (`/staff match forfeit`).
 - A team's forfeits are counted from its forfeit matches of the stage, never stored, so an annulled forfeit stops counting. The `slot.forfeits` column is therefore unused.
-- `season.settings_json.forfeits` holds the thresholds, `{ "warning_at": 2, "exclusion_at": 3 }` in LFR; either can be null. Reaching `warning_at` adds a `warning` sanction automatically. Reaching `exclusion_at` alerts the staff queue and excludes nobody: exclusion is a staff decision, and its rule is not settled (O-04, O-05).
-- `excludeSlot()` (not built yet):
-    - if the team played at least 50% of its matches, its results stand and its remaining matches become forfeit wins for the opponents;
-    - otherwise every match of the team, past ones included, becomes a forfeit win for the opponents, and the slot is lost. Every changed match is audited and standings are recomputed.
+- `season.settings_json.forfeits` holds the thresholds, `{ "warning_at": 2, "exclusion_at": 3 }` in LFR; either can be null. Reaching `warning_at` adds a `warning` sanction automatically.
+- **Automatic exclusion** (maintainer, 13 November 2026, O-05): the forfeit that reaches `exclusion_at` excludes the team in the same transaction: `slot.status = 'excluded'`, an `exclusion` sanction, the audit entry. The team's manager and staff get a direct message with the reason and how to appeal; the results channel announces it without the reason; the staff queue is told, with any direct message that could not be delivered.
+- **Appeal:** staff reverse an exclusion with `/staff exclusion reinstate` and a reason: the slot is active again and the sanction gets its end date.
+- **Exemption:** staff switch the automatic exclusion off for one team with `/staff exclusion auto`, always with a reason (`slot.auto_exclusion_off_*`), and back on. Reaching the threshold then only alerts the staff queue. Staff can still exclude any team with `/staff exclusion exclude`, for forfeits or another reason of the rulebook.
+- **The 50% rule** (maintainer, 13 November 2026, O-04), applied by `packages/core/exclusion.ts` when standings are computed, never written into results, so a reinstatement restores every match:
+    - only matches really played (validated, with a score) count as played; forfeits do not, whoever forfeited. Counting them would let a team that forfeits often pass the threshold and keep its results, the opposite of the rule's aim;
+    - half of all the team's matches of the regular season, void ones aside; "at least half" is played × 2 ≥ total;
+    - at least half played: its validated results stand, and every match not yet validated becomes a forfeit win for the opponent;
+    - less than half: every match of the team becomes a forfeit win for the opponent, so every opponent gets the same result from it, except a match the opponent itself forfeited, which stays its loss and still counts in its forfeits; a match between two excluded teams counts for neither;
+    - the excluded team is listed last, marked "Exclue" (rank "EX" in the text table). Its remaining matches can no longer be reported, scheduled or vetoed, and the clocks skip them. Losing the slot for next season belongs to `closeSeason()` (phase 6).
 
 **Sanctions**
 
@@ -459,6 +465,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 | `/stream title match:<autocomplete>`             | commentators            | Returns the mandatory title, e.g. "LFR Ligue 1 – RCK Esport VS Greed Esport"                            |
 | `/staff match validate\|result\|forfeit\|void`   | staff                   | Validation and direct changes, audited; `schedule` sets any match time                                  |
 | `/staff sanction add\|list`                      | staff                   | A warning or a change of points for a team; its sanctions this season                                   |
+| `/staff exclusion exclude\|reinstate\|auto`      | staff                   | Exclude a team, reinstate it on appeal, switch its automatic exclusion off or on (with a reason)        |
 | `/team manager`, `/team staff add\|remove\|list` | staff                   | Who acts for each team, until registration fills it in                                                  |
 | `/league channel`, `/league channels`            | staff                   | Staff queue, schedule and results channels, results also per division; the list                         |
 | `/season create\|schedule\|publish\|close`       | staff                   | Season setup; `schedule` previews, `close` runs promotion and relegation                                |
@@ -1061,7 +1068,7 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
     - `/match propose-time`, the map veto, `/match report` with screenshot, opponent confirmation, the staff validation queue;
     - deadlines with extension and Sunday 21:00 auto-scheduling, side, overtime side and host;
     - forfeits, sanctions, audit log. Done when a full week of results comes in through teams and is validated by staff with no manual table edits.
-3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; the website side of every bot action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, team staff, league channels). Done when Season 4 registrations are taken on the website, and every bot action of phases 1 and 2 can also be done there.
+3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; the website side of every bot action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, exclusions, team staff, league channels, match times and the veto). Done when Season 4 registrations are taken on the website, and every bot action of phases 1 and 2 can also be done there.
 4. **Schedule and channels.** Round-robin generation, `/season publish`, weekly channels, MOSS channels, the reconciler across the league servers, team roles. Done when Season 4's weeks are generated, published, run and archived automatically.
 5. **R6 replays.** WebAssembly build of the fork, browser uploader, normaliser, raw upload and server verification, stitching and review, match cards. Done when a re-hosted map uploaded by both teams stitches automatically and verifies, and a tampered JSON is caught.
 6. **Season end and cups.** `closeSeason()` with promotion, relegation and barrages (format pending); Coupe de France bracket with BO1 → BO3 → BO5; tie-break matches. Done when Season 4 closes and the cup runs to a final on the platform.
@@ -1121,7 +1128,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Results               | Screenshot proof, both teams check, administration validates                                                                              | Rulebook      |
 | Map score             | A map is won at 7 rounds out of 12; at 6–6 a best-of-3 overtime ends it 8–6 or 8–7. Stored as the `game_score` setting                    | You           |
 | Re-host               | Score kept; one per team, staff may order more                                                                                            | Rulebook, you |
-| Forfeits              | Staff only; warning at the 2nd, exclusion at the 3rd; the 50% rule on exclusion                                                           | Rulebook      |
+| Forfeits              | Staff only; warning at the 2nd; automatic exclusion at the 3rd, with appeal and per-team exemption; the 50% rule counts only played matches | Rulebook, you |
 | Promotion             | Last 2 of a division with a lower one go down, the lower's first 2 go up; the one above the relegated plays the lower's 3rd (settings)      | You           |
 | National              | Later; not needed until the owner launches it                                                                                             | You           |
 | Rosters               | 5 players and up to 2 substitutes; one manager and up to 3 team staff                                                                     | Rulebook form |
@@ -1138,7 +1145,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 
 **Still open**
 
-Open questions are kept in `docs/open-questions.md`: one entry per question, with what the platform does until it is answered. Questions marked `O-` are for the league owner, those marked `M-` for the maintainer. An answered question moves to the end of that file, and its rule into this document.
+Open questions are kept in `docs/open-questions.md`: one entry per question, with what the platform does until it is answered. Questions marked `O-` are for the league owner, those marked `M-` for the maintainer. An answered question moves to the end of that file, and its rule into this document. The rules a league must follow, as decided, are gathered in French in `docs/rules-season-4.md`, the draft of the Season 4 rulebook, with how Ligo enforces each one.
 
 **Sources**
 

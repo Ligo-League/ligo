@@ -99,7 +99,11 @@ section 16.
   excluded team. Blocks the exclusion command (phase 2).
 - **Until answered:** Ligo has no exclusion. Results of withdrawn teams stand as they are on
   score7.
-- **Answer:**
+- **Answer (maintainer, 13 November 2026, the rule for Season 4):** only matches really played
+  count as played; forfeits do not, whoever forfeited. Half of all the team's matches of the
+  regular season. Less than half played: every match becomes a forfeit win for the opponent,
+  except one the opponent forfeited itself. Design doc section 5, "Forfeits and exclusion".
+  Still open for the owner: Nova 1 (4 of 11 played, results kept on score7) in Season 3.
 
 #### O-05 · Exclusion at the third forfeit
 
@@ -110,7 +114,10 @@ section 16.
   (phase 2).
 - **Until answered:** the bot will add the warning automatically at the 2nd forfeit and only
   alert the staff at the 3rd.
-- **Answer:**
+- **Answer (maintainer, 13 November 2026):** automatic, with a message to the team. Staff can
+  reverse it on appeal, and can switch the automatic exclusion off for a team, always with a
+  reason; only staff can. Existing Season 3 forfeits exclude nobody: only a new forfeit that
+  reaches the threshold does (Starly Esport Club stays as it is until staff act).
 
 ### Results
 
