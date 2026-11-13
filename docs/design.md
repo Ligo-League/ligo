@@ -307,9 +307,9 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 **Scheduling (`scheduling_json`)**
 
 1. **Round robin by the circle method.** Shuffle with a stored seed; pair position i with n − 1 − i; keep position 0 fixed and rotate the rest each round. `rounds_per_week: 1` gives 9 weeks for 10 teams. The rulebook's "4 weeks, 2 matches per week" is a Season 2 leftover to correct for Season 4.
-2. **Date negotiation.** Teams agree a date and time through `/match propose-time`; the other team accepts with a button.
-3. **Extension.** No agreement during the planned week: the bot grants one extra week automatically.
-4. **Auto-scheduling.** Still no agreement: the bot sets the match to Sunday 21:00 of the second week and announces it (`auto_scheduled = true`).
+2. **Date negotiation.** Teams agree a date and time through `/match propose-time`; the other team accepts or declines with a button (`match_proposal`). A time must fall in the match's week or its extension; staff can set any time (`/staff match schedule`). A team's new proposal replaces its pending one.
+3. **Extension and auto-scheduling.** When the planned week ends without an agreed time, the bot grants the extension and at once sets the match to Sunday 21:00 of the extension week (`auto_scheduled = true`), announcing both in the schedule channel. A time the teams agree afterwards replaces it. If the bot was off past that Sunday slot, it sets nothing and staff decide. (Maintainer's reading, 13 November 2026, until the owner confirms: O-13.)
+4. **Settings** (`scheduling_json`): `time_zone` (`Europe/Paris`), `extension_weeks` (1), `auto_slot` (`{ "weekday": 7, "time": "21:00" }`, or null for none). `packages/core/scheduling.ts` computes the period; a clock in the server checks every minute.
 5. **Coupe de France.** 7 days to agree and no extension; otherwise Sunday 21:00. A team that doesn't show is disqualified; if neither shows, both are, and the next-round opponent gets a bye.
 6. **Sides and host.**
     - League: the lower-ranked team at match time picks the starting side and starts the veto; the other team picks the overtime side; the higher-ranked team hosts.
@@ -446,15 +446,15 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 | `/leaderboard metric:<choice>`                   | everyone                | Top 10 for one metric, with coverage                                                                    |
 | `/rules [section]`                               | everyone                | Link to the current rulebook version on the website                                                     |
 | `/link`                                          | players                 | Opens the website to link Ubisoft, Riot or Epic accounts                                                |
-| `/match propose-time when:<datetime>`            | team managers and staff | Posts a proposal with Accept and Decline buttons                                                        |
+| `/match propose-time match date time`            | team managers and staff | Posts a proposal with Accept and Decline buttons                                                        |
 | `/match report match score_a score_b screenshot` | team managers and staff | Reports a BO1 result; the screenshot becomes `evidence`. A modal with a score per map comes with series |
 | `/match rehost`                                  | team managers and staff | Records the team's re-host for the current map                                                          |
 | `/register`, `/mercato`                          | team managers           | Open the website forms (too many fields for a modal)                                                    |
 | `/stream title match:<autocomplete>`             | commentators            | Returns the mandatory title, e.g. "LFR Ligue 1 – RCK Esport VS Greed Esport"                            |
-| `/staff match validate\|result\|forfeit\|void`   | staff                   | Validation and direct changes, audited                                                                  |
+| `/staff match validate\|result\|forfeit\|void`   | staff                   | Validation and direct changes, audited; `schedule` sets any match time                                  |
 | `/staff sanction add\|list`                      | staff                   | A warning or a change of points for a team; its sanctions this season                                   |
 | `/team manager`, `/team staff add\|remove\|list` | staff                   | Who acts for each team, until registration fills it in                                                  |
-| `/league channel`, `/league channels`            | staff                   | Staff queue and results channels, results also per division; the list                                   |
+| `/league channel`, `/league channels`            | staff                   | Staff queue, schedule and results channels, results also per division; the list                         |
 | `/season create\|schedule\|publish\|close`       | staff                   | Season setup; `schedule` previews, `close` runs promotion and relegation                                |
 | `/week publish week:<n>`                         | staff                   | Creates that week's channels now instead of on schedule                                                 |
 | `/accreditation grant\|revoke`                   | staff                   | Commentator accreditations                                                                              |

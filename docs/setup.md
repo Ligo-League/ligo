@@ -264,6 +264,23 @@ Other staff actions:
 - `/staff sanction add` gives a team a warning or a change of points (`points:-1` takes one
   away), and `/staff sanction list` shows a team's sanctions.
 
+## 11. Phase 2b: agreeing a match time
+
+Run `pnpm discord:register` again, then restart `pnpm dev` (it applies the new migrations).
+
+1. Create a `#planning` channel, then `/league channel kind:Planning des matchs channel:#planning`.
+2. As manager of one team, `/match propose-time`: pick the match, a day from the list, and a
+   time such as `21:00`. The message shows the time in your own time zone, with Accepter and
+   Refuser for the other team.
+3. As the other team, click **Accepter**: the message says who accepted, and `#planning` gets
+   "Horaire fixé".
+4. `/staff match schedule` sets any time for a match, even outside its week.
+
+The clock checks every minute. A match still without a time when its week ends gets its
+extension: the bot sets it to the Sunday 21:00 of the extension week and posts the notice in
+`#planning`, pinging both teams. To see it, pick a match of a week that has just ended and has no
+time. A match whose Sunday slot has already passed is left to staff.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                               |

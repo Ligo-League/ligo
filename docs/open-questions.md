@@ -67,6 +67,15 @@ section 16.
   not show who replaced whom. Ligo treats each name on score7 as one team for the whole season.
 - **Answer:**
 
+#### O-24 · A time outside the week and its extension
+
+- **Question:** may two teams agree to play outside their week and its extension, for example a
+  week early or after the extension? Who allows it?
+- **Why it matters:** `/match propose-time` refuses such a time today.
+- **Until answered:** teams may only propose a time inside the week or its extension; league
+  staff can set any time with `/staff match schedule`.
+- **Answer:**
+
 ### Forfeits and exclusion
 
 #### O-04 · The 50% rule
@@ -160,9 +169,12 @@ section 16.
 
 - **Question:** when two teams agree on no date, the rulebook grants one extra week, then sets
   the match to Sunday 21:00 of the second week. Is this still the rule for Season 4, and is
-  Sunday 21:00 French time?
+  Sunday 21:00 French time? When is the Sunday time fixed: as soon as the extension starts, or
+  later in the extension week? Can the teams still agree another time once it is fixed?
 - **Why it matters:** automatic scheduling (phase 2b).
-- **Until answered:** not built yet; these values will be settings.
+- **Until answered:** settings with these defaults (one week, Sunday 21:00, Europe/Paris). The
+  bot fixes the Sunday time as soon as the extension starts, and a time the teams agree later
+  replaces it (maintainer's choice, 13 November 2026).
 - **Answer:**
 
 #### O-14 · Re-hosts
@@ -368,6 +380,17 @@ section 16.
 - **Why it matters:** the schema of `league_guild`, and every command that finds the league from
   the server. Divisions of one competition can already have their own results channels.
 - **Until answered:** one competition per server. Planned with cups, phase 6.
+- **Answer:**
+
+#### M-17 · A design of its own for each league's images
+
+- **Question:** LFR, LFV, FRFL and LFRL may each want images that reflect their game: colours,
+  pictures, fonts. Which of these should a league be able to set, and from where (website,
+  settings file)?
+- **Why it matters:** the image renderer reads its colours from `competition.theme_json` today;
+  pictures and fonts would need more settings and stored files.
+- **Until answered:** one design, with the colours a league can already override. To settle with
+  the owner before the images are styled (phase 9).
 - **Answer:**
 
 ## Answered
