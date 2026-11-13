@@ -353,15 +353,20 @@ section 16.
 - **Until answered:** the column stays, always at 0, and nothing reads it.
 - **Answer:**
 
+## Answered
+
 #### M-15 · Announcing results entered by staff
 
-- **Question:** a result validated from a team's report is announced in the results channel. A
-  result typed directly by staff with `/staff match result`, or a forfeit, is not. Should they be?
-- **Why it matters:** teams may expect every result in that channel.
-- **Until answered:** only validated reports are announced.
-- **Answer:**
+- **Answer (maintainer, 13 November 2026):** every result that counts is announced in the
+  results channel: validated reports, results typed by staff (and their corrections), and
+  forfeits.
 
-## Answered
+#### The website and the bot
+
+- **Answer (maintainer, 13 November 2026):** the website is the main tool and every bot action
+  can also be done there. The bot is for quick access inside Discord (staff setup, teams
+  reporting from their call) and stays feature complete for what it covers. Discord's one-line
+  descriptions are not enough, so `/help` explains each command. Design doc section 3.
 
 #### Team commands and staff commands
 

@@ -125,6 +125,13 @@ lfr-league/
 - Apps depend on packages, never the reverse.
 - Bot commands and website routes call the same service functions in `apps/server/services/`. No logic lives in a command handler.
 
+**Website first, bot for quick access** (decided 13 November 2026)
+
+- The website is the main tool. Every action the bot offers can also be done on the website, which has room for more fields, uploads, replays and explanations.
+- The bot is a convenience inside Discord: quick lookups, staff setup without leaving the server, and teams reporting and confirming a result from their voice call right after the match.
+- The bot stays feature complete for what it covers: an action started in Discord can be finished in Discord. An action that needs more than a command can carry (registration, mercato, replay uploads, the stat grid) is not squeezed into one; the bot links to its website page.
+- Because both call the same services, a new action gets both a command and a page, or the plan says why one of them waits. Until the website exists (phase 3) the bot carries every action; phase 3 adds the website side of those built before it.
+
 ## 4. Domain model and database schema
 
 Everything hangs off org → competition → season → division → stage → match → game. Matches are played between lineups, stats are one narrow table for every title, and R6 replay detail lives in its own tables attached to a game.
@@ -413,7 +420,7 @@ The rulebook's list maps to `sanction.kind`: warning, administrative defeat, poi
 
 ## 6. Discord bot
 
-One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Each server maps to one competition through `league_guild`, so commands never ask which league. The bot is a thin adapter: commands call the same services as the website, and all channel and role changes go through one reconciler.
+One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Each server maps to one competition through `league_guild`, so commands never ask which league. The bot is the quick-access side of the platform (section 3): commands call the same services as the website, and all channel and role changes go through one reconciler. Discord limits a command's description to one short sentence, so `/help` explains each command in full.
 
 **Who can do what**
 
@@ -427,6 +434,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 
 | Command                                          | Who                     | Does                                                                                                    |
 | ------------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/help [command]`                                | everyone                | What each command does, who may use it and how; staff commands are listed for staff only                |
 | `/standings [division]`                          | everyone                | Standings image for the current season                                                                  |
 | `/fixtures [week]`                               | everyone                | The week's matches with times, host, side choice and results                                            |
 | `/stats player:<autocomplete>`                   | everyone                | Player card image (consenting players only)                                                             |
@@ -495,7 +503,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 
 ## 7. Website
 
-The website is the public face of every league (standings, fixtures, brackets, stats, rules) and the workbench for everything Discord can't carry: registration, mercato, uploads, stat sheets, validation and sanctions.
+The website is the main tool of the platform (section 3): the public face of every league (standings, fixtures, brackets, stats, rules), the workbench for everything Discord can't carry (registration, mercato, uploads, stat sheets), and a second way to do every action the bot offers, such as reporting and confirming a result, validation, forfeits, sanctions, team staff and league channels.
 
 **Authentication**
 
@@ -1003,7 +1011,7 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
     - `/match propose-time`, the map veto, `/match report` with screenshot, opponent confirmation, the staff validation queue;
     - deadlines with extension and Sunday 21:00 auto-scheduling, side, overtime side and host;
     - forfeits, sanctions, audit log. Done when a full week of results comes in through teams and is validated by staff with no manual table edits.
-3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid. Done when Season 4 registrations are taken on the website.
+3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; the website side of every bot action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, team staff, league channels). Done when Season 4 registrations are taken on the website, and every bot action of phases 1 and 2 can also be done there.
 4. **Schedule and channels.** Round-robin generation, `/season publish`, weekly channels, MOSS channels, the reconciler across the league servers, team roles. Done when Season 4's weeks are generated, published, run and archived automatically.
 5. **R6 replays.** WebAssembly build of the fork, browser uploader, normaliser, raw upload and server verification, stitching and review, match cards. Done when a re-hosted map uploaded by both teams stitches automatically and verifies, and a tampered JSON is caught.
 6. **Season end and cups.** `closeSeason()` with promotion, relegation and barrages (format pending); Coupe de France bracket with BO1 → BO3 → BO5; tie-break matches. Done when Season 4 closes and the cup runs to a final on the platform.

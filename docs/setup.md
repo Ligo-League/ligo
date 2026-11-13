@@ -235,8 +235,11 @@ Other staff actions:
 
 - `/staff match validate` validates a reported result without the button, and
   `/staff match void` annuls a match, with a reason.
-- `/staff match forfeit` records which team forfeited. At a team's 2nd forfeit a warning is added
-  by itself; at the 3rd the bot alerts `#validation` and leaves the decision to staff.
+- `/staff match result` enters or corrects a result directly; it counts at once and is announced
+  in `#résultats`, a correction as "Résultat corrigé".
+- `/staff match forfeit` records which team forfeited, and announces it in `#résultats`. At a
+  team's 2nd forfeit a warning is added by itself; at the 3rd the bot alerts `#validation` and
+  leaves the decision to staff.
 - `/staff sanction add` gives a team a warning or a change of points (`points:-1` takes one
   away), and `/staff sanction list` shows a team's sanctions.
 
@@ -253,6 +256,6 @@ Other staff actions:
 | `/standings` answers "Ce serveur n'est relié à aucune ligue."                     | The server is not linked. Redo step 9: `DISCORD_STAFF_ROLE_ID` in `.env`, then `pnpm seed`.                 |
 | `/match` answers "Cette commande est réservée au staff de la ligue."              | You do not hold the role whose ID is in `DISCORD_STAFF_ROLE_ID`. Give yourself the `Staff` role (step 9.1). |
 | `/match report` answers "La ligue n'a pas encore choisi son salon de validation." | The staff queue channel is not set. Run `/league channel` (step 10.2).                                      |
-| `/match report` suggests no match                                                 | You are not manager or staff of a team with a match still to play. Run `/team manager` (step 10.3).         |
+| `/match report` suggests only "Tu ne gères aucune équipe…"                        | You are not manager or staff of any team. Run `/team manager` (step 10.3).                                  |
 | `/ping` does not appear when typing `/`                                           | Run `pnpm discord:register` again, then reload Discord (Ctrl+R).                                            |
 | `/ping` appears but answers "The application did not respond"                     | `pnpm dev` is not running, or it stopped with an error. Look at its terminal.                               |

@@ -68,6 +68,8 @@ docs/design.md     the design document
 - Apps depend on packages; packages never import apps.
 - Discord commands and HTTP routes are thin adapters. Logic lives in service functions under
   `apps/server/src/services/`, which both adapters call. Never put logic in a command handler.
+- Website first: the website is the main tool, the bot is quick access inside Discord. Every bot
+  action also gets a website page, or the plan says why it waits (design doc section 3).
 - Only `apps/server` talks to Discord.
 
 ## Commands
