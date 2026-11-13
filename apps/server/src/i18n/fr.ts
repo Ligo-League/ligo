@@ -351,6 +351,12 @@ export const fr = {
   'card.when': '{date} · {time} {zone}',
   'card.winner': 'Victoire de {team}',
   'card.forfeitBy': 'Forfait de {team}',
+  'standings.zone.champion': 'Champion',
+  'standings.zone.promotion': 'Montée',
+  'standings.zone.barrage_promotion': 'Barrage de montée',
+  'standings.zone.qualification': 'Qualification',
+  'standings.zone.barrage_relegation': 'Barrage de maintien',
+  'standings.zone.relegation': 'Relégation',
 } as const;
 
 export type MessageKey = keyof typeof fr;

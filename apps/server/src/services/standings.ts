@@ -1,8 +1,11 @@
 import {
   computeStandings,
   rankChanges,
+  divisionZones,
   recentForm,
+  zoneAt,
   type FormResult,
+  type StandingsZoneKind,
   type StandingsRow,
 } from '@ligo/core';
 import { findGuildLeague, loadStandingsInput, type Db, type Theme } from '@ligo/db';
@@ -13,6 +16,8 @@ export interface StandingsTableRow extends Omit<StandingsRow, 'entry'> {
   form: FormResult[];
   /** Places gained since the previous week (negative: lost); null before there is one. */
   change: number | null;
+  /** What the row's place leads to (title, promotion, barrage, relegation); null for none. */
+  zone: StandingsZoneKind | null;
 }
 
 const FORM_LENGTH = 5;
@@ -70,9 +75,16 @@ export function getStandings(
       throw new Error(`Standings of ${division.name} failed: ${JSON.stringify(standings.error)}`);
     }
     const changes = rankChanges(data.input);
+    // A division above or below, among the league's leagues of this season (all of them, even
+    // when only one division was asked for).
+    const zones = divisionZones(league.competition.rulesetJson.promotion, {
+      size: standings.rows.length,
+      hasUpper: league.divisions.some((other) => other.division.level === division.level - 1),
+      hasLower: league.divisions.some((other) => other.division.level === division.level + 1),
+    });
     tables.push({
       division: division.name,
-      rows: standings.rows.map(({ entry, ...row }) => {
+      rows: standings.rows.map(({ entry, ...row }, index) => {
         const team = data.teams.find((candidate) => candidate.entry === entry);
         // computeStandings returns exactly the entries it was given, which come from `teams`.
         if (!team) throw new Error(`Standings row for unknown entry ${entry}`);
@@ -81,6 +93,8 @@ export function getStandings(
           team: { name: team.name, tag: team.tag, colors: team.colors, logoKey: team.logoKey },
           form: recentForm(data.input.matches, entry, FORM_LENGTH),
           change: changes?.get(entry) ?? null,
+          // By place in the table: two teams sharing a rank each show their own row's zone.
+          zone: zoneAt(zones, index + 1),
         };
       }),
     });

@@ -1,5 +1,6 @@
 import { slugify } from '@ligo/core';
-import { renderStandingsPng } from '@ligo/render';
+import { STANDINGS_ZONE_KINDS, type StandingsZoneKind } from '@ligo/core';
+import { renderStandingsPng, resolveTheme, type ImageTheme } from '@ligo/render';
 import { ApplicationCommandOptionType } from 'discord.js';
 import type { AssetStore } from '../../assets/store.ts';
 import { catalogs, t, type Locale, type MessageKey } from '../../i18n/index.ts';
@@ -24,6 +25,15 @@ const choice = (value: string, key: MessageKey) => ({
 
 type Standings = Extract<StandingsReply, { ok: true }>;
 
+/** Each zone's colour, from the league's theme. */
+const ZONE_COLORS: Record<StandingsZoneKind, keyof ImageTheme> = {
+  champion: 'accent',
+  promotion: 'win',
+  barrage_promotion: 'barrage',
+  barrage_relegation: 'barrage',
+  relegation: 'loss',
+};
+
 async function renderTable(
   locale: Locale,
   standings: Standings,
@@ -34,6 +44,12 @@ async function renderTable(
     assets,
     table.rows.map((row) => row.team.logoKey),
   );
+  const theme = resolveTheme(standings.theme);
+  const shown = new Set(table.rows.map((row) => row.zone));
+  const legend = STANDINGS_ZONE_KINDS.filter((kind) => shown.has(kind)).map((kind) => ({
+    color: theme[ZONE_COLORS[kind]],
+    label: t(locale, `standings.zone.${kind}`),
+  }));
   const data = await renderStandingsPng({
     title: table.division,
     subtitle: t(locale, 'standings.subtitle', {
@@ -57,7 +73,9 @@ async function renderTable(
       name: row.team.name,
       colors: row.team.colors,
       logo: row.team.logoKey === null ? null : (logos.get(row.team.logoKey) ?? null),
+      zoneColor: row.zone === null ? null : theme[ZONE_COLORS[row.zone]],
     })),
+    legend,
     theme: standings.theme,
   });
   const slug = slugify(table.division);

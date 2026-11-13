@@ -335,4 +335,10 @@ export const en: Record<MessageKey, string> = {
   'card.when': '{date} · {time} {zone}',
   'card.winner': '{team} wins',
   'card.forfeitBy': 'Forfeit by {team}',
+  'standings.zone.champion': 'Champion',
+  'standings.zone.promotion': 'Promotion',
+  'standings.zone.barrage_promotion': 'Promotion barrage',
+  'standings.zone.qualification': 'Qualification',
+  'standings.zone.barrage_relegation': 'Relegation barrage',
+  'standings.zone.relegation': 'Relegation',
 };

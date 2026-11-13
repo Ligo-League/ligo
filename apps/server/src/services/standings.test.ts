@@ -29,6 +29,7 @@ describe('getStandings', () => {
         points: 6,
         form: ['W', 'W'],
         change: 0,
+        zone: 'champion',
       },
       {
         rank: 2,
@@ -43,6 +44,7 @@ describe('getStandings', () => {
         points: 0,
         form: ['L'],
         change: 0,
+        zone: 'relegation',
       },
       {
         rank: 3,
@@ -57,7 +59,20 @@ describe('getStandings', () => {
         points: 0,
         form: ['L'],
         change: 0,
+        zone: 'relegation',
       },
+    ]);
+  });
+
+  it("marks the places by the league's promotion rule: Ligue 2 goes up, with no league below it", () => {
+    // Three teams in Ligue 1 with Ligue 2 below: champion, then the last 2 go down.
+    // Two teams in Ligue 2, nothing below: the first 2 go up, nobody goes down.
+    const standings = getStandings(leagueDatabase(), { guildId: TEST_GUILD });
+    expect(
+      standings.ok && standings.tables.map((table) => table.rows.map((row) => row.zone)),
+    ).toEqual([
+      ['champion', 'relegation', 'relegation'],
+      ['promotion', 'promotion'],
     ]);
   });
 
