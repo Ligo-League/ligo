@@ -1,4 +1,5 @@
-import { findGuildLeague, type Db, type GuildLeague } from '@ligo/db';
+import { findGuildLeague, schema, type Db, type GuildLeague } from '@ligo/db';
+import { and, eq, isNull } from 'drizzle-orm';
 
 /** Who is acting, as Discord reports it for the interaction being handled. */
 export interface Actor {
@@ -25,4 +26,32 @@ export function requireStaff(
     return { ok: false, error: 'not_staff' };
   }
   return { ok: true, league };
+}
+
+export interface TeamRoleHeld {
+  teamId: number;
+  role: 'manager' | 'staff';
+}
+
+/**
+ * The teams a Discord user may act for, as their manager or staff, read from the database on
+ * every call. A user the platform has never seen acts for none.
+ */
+export function teamsActedFor(
+  db: Pick<Db, 'select'>,
+  actor: Pick<Actor, 'user'>,
+): { playerId: number | null; teams: TeamRoleHeld[] } {
+  const { player, teamStaff } = schema;
+  const found = db
+    .select({ id: player.id })
+    .from(player)
+    .where(eq(player.discordUserId, actor.user.id))
+    .get();
+  if (!found) return { playerId: null, teams: [] };
+  const teams = db
+    .select({ teamId: teamStaff.teamId, role: teamStaff.role })
+    .from(teamStaff)
+    .where(and(eq(teamStaff.playerId, found.id), isNull(teamStaff.until)))
+    .all();
+  return { playerId: found.id, teams };
 }
