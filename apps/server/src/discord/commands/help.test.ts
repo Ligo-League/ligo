@@ -32,6 +32,7 @@ const FACTS: HelpFacts[] = [
     rules: {
       validation: 'staff',
       teamRoles: { managers_max: 3, coaches_max: 1 },
+      requestHours: 24,
       forfeits: { warning_at: 2, exclusion_at: 3 },
       extensionWeeks: 1,
       autoSlot: { weekday: 7, time: '21:00' },
@@ -42,6 +43,7 @@ const FACTS: HelpFacts[] = [
     rules: {
       validation: 'opponent',
       teamRoles: { managers_max: 10, coaches_max: 1 },
+      requestHours: 24,
       forfeits: { warning_at: null, exclusion_at: null },
       extensionWeeks: 2,
       autoSlot: null,
@@ -52,6 +54,7 @@ const FACTS: HelpFacts[] = [
     rules: {
       validation: 'staff',
       teamRoles: { managers_max: 0, coaches_max: 1 },
+      requestHours: 24,
       forfeits: null,
       extensionWeeks: 1,
       autoSlot: { weekday: 7, time: '21:00' },
@@ -93,6 +96,7 @@ describe('/help', () => {
       rules: {
         validation,
         teamRoles: { managers_max: 3, coaches_max: 1 },
+        requestHours: 24,
         forfeits: null,
         extensionWeeks: 1,
         autoSlot: { weekday: 7, time: '21:00' },
@@ -109,6 +113,7 @@ describe('/help', () => {
         rules: {
           validation: 'staff',
           teamRoles: { managers_max: 3, coaches_max: 1 },
+          requestHours: 24,
           forfeits: null,
           extensionWeeks: 1,
           autoSlot,
@@ -126,6 +131,7 @@ describe('/help', () => {
     const both = page({
       validation: 'staff',
       teamRoles: { managers_max: 3, coaches_max: 1 },
+      requestHours: 24,
       forfeits: { warning_at: 2, exclusion_at: 3 },
       extensionWeeks: 1,
       autoSlot: null,
@@ -135,6 +141,7 @@ describe('/help', () => {
     const none = page({
       validation: 'staff',
       teamRoles: { managers_max: 3, coaches_max: 1 },
+      requestHours: 24,
       forfeits: { warning_at: null, exclusion_at: null },
       extensionWeeks: 1,
       autoSlot: null,

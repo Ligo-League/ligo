@@ -150,12 +150,11 @@ export const fr = {
     'Score impossible avec le règlement de la ligue : une carte se termine entre {widest} et {closest}, ou en prolongation ({overtime}).',
   'match.error.invalid_screenshot':
     'La capture doit être une image PNG, JPEG ou WebP de moins de 20 Mo, jointe à la commande.',
-  'command.team.description': 'Les responsables des équipes, réservé au staff de la ligue.',
-  'command.team.owner.description': "Désigne le propriétaire d'une équipe.",
+  'command.team.description': 'Les responsables des équipes : les changer, ou en faire la demande.',
+  'command.team.owner.description': 'Confie une équipe à un nouveau propriétaire.',
   'command.team.member.description': "Managers et coach d'une équipe.",
   'command.team.member.add.description': 'Ajoute un manager ou un coach à une équipe.',
-  'command.team.member.remove.description':
-    "Retire un responsable d'une équipe, propriétaire compris.",
+  'command.team.member.remove.description': "Retire un responsable d'une équipe.",
   'command.team.list.description': "Affiche les responsables d'une équipe.",
   'command.team.option.role': 'Le rôle dans l’équipe.',
   'team.role.owner': 'Propriétaire',
@@ -163,6 +162,69 @@ export const fr = {
   'team.role.coach': 'Coach',
   'command.team.option.team': "L'équipe : tape son nom ou son tag, puis choisis dans la liste.",
   'command.team.option.member': 'Le membre Discord concerné.',
+  'command.team.leave.description': 'Quitte une équipe dont tu es responsable.',
+  'command.team.requests.description': 'Les demandes des équipes en attente de réponse du staff.',
+  'command.team.option.teamOptional':
+    "L'équipe, choisie dans la liste ; inutile si tu n'es responsable que d'une seule.",
+  'command.team.option.note': 'Un mot pour le staff de la ligue, facultatif.',
+  'team.error.not_official':
+    "Tu n'es pas responsable de cette équipe, ni d'aucune équipe de cette saison.",
+  'team.error.team_required': "Choisis l'équipe avec l'option `team`.",
+  'team.error.not_allowed':
+    'Le coach ne peut pas faire cette demande : demande au propriétaire ou à un manager.',
+  'team.error.owner_only': "Seul le propriétaire de l'équipe peut faire cette demande.",
+  'team.error.queue_not_set':
+    "Le staff de la ligue n'a pas encore choisi sa file de validation : préviens-le.",
+  'team.error.already_requested': 'Cette demande attend déjà une réponse du staff.',
+  'request.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
+  'request.error.not_staff': 'Seul le staff de la ligue répond aux demandes.',
+  'request.error.not_found': 'Demande introuvable.',
+  'request.error.not_pending': 'Cette demande a déjà reçu une réponse.',
+  'request.error.not_yours':
+    "Seuls l'auteur de la demande et le propriétaire de l'équipe peuvent la retirer.",
+  'request.error.reason_required': "Indique la raison du refus : l'équipe la lira.",
+  'request.error.already_on_team':
+    "Ce membre a déjà un rôle dans l'équipe : la demande ne peut plus s'appliquer. Refuse-la en donnant la raison.",
+  'request.error.not_on_team':
+    "Ce membre n'est plus responsable de l'équipe : la demande ne peut plus s'appliquer. Refuse-la en donnant la raison.",
+  'request.error.owner_cannot_leave': 'Le propriétaire ne peut pas être retiré par une demande.',
+  'request.what.owner': "Confier l'équipe à {subject}.",
+  'request.what.add': 'Ajouter {subject} comme {role}.',
+  'request.what.remove': 'Retirer {subject} des responsables.',
+  'request.what.leave': "{subject} quitte l'équipe.",
+  'request.outcome.approved': '✅ Approuvée par {by}.',
+  'request.outcome.rejected': '❌ Refusée par {by} : {reason}',
+  'request.outcome.withdrawn': '↩️ Retirée par {by}.',
+  'request.queue.title': '📨 **Demande n°{id}** · {team} ({tag})',
+  'request.queue.by': 'Par {requester}.',
+  'request.queue.byWithDeadline': 'Par {requester}. Réponse attendue avant le {deadline}.',
+  'request.queue.applied':
+    'ℹ️ {team} ({tag}) : {what} Par {requester}, sans validation nécessaire.',
+  'request.button.approve': 'Approuver',
+  'request.button.reject': 'Refuser',
+  'request.button.withdraw': 'Retirer n°{id}',
+  'request.form.title': 'Refuser la demande n°{id}',
+  'request.form.reason': 'Raison du refus',
+  'request.form.reasonHint': "L'équipe la lira dans un message privé.",
+  'request.dm.approved':
+    'La demande n°{id} pour {team} est acceptée par le staff de la ligue : {what}',
+  'request.dm.rejected':
+    'La demande n°{id} pour {team} est refusée par le staff de la ligue : {what}\nRaison : {reason}',
+  'request.dm.removed':
+    "Tu ne fais plus partie des responsables de {team} : son propriétaire t'a retiré.",
+  'request.dmFailed':
+    "Demande n°{id} : {count} membre(s) n'ont pas pu être prévenus en message privé.",
+  'request.withdrawn': 'Demande n°{id} retirée.',
+  'request.applied': 'Fait : {what}',
+  'request.filed':
+    'Demande n°{id} envoyée au staff de la ligue : {what}\nRéponse attendue avant le {deadline}. Tu peux la retirer avec `/team requests`.',
+  'request.list.title': '**Demandes en attente**',
+  'request.list.empty': 'Aucune demande en attente.',
+  'request.list.line': '• n°{id} · {tag} · {what} · {at}',
+  'request.list.deadline': '· réponse {deadline}',
+  'request.list.overdue': '· ⚠️ en retard ({deadline})',
+  'request.reminder':
+    '⏰ {role} La demande n°{id} ({team}) attend une réponse, attendue {deadline}. {link}',
   'team.summary': '{team} ({tag}) : propriétaire {owner} ; managers {managers} ; coach {coach}.',
   'team.none': 'aucun',
   'team.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
@@ -262,9 +324,9 @@ export const fr = {
   'help.choice.team': '/team',
   'help.choice.league': '/league channel',
   'help.overview':
-    "**Les commandes de Ligo**\n• `/standings` — le classement de la saison, en image ou en texte.\n• `/match propose-time` — proposer un horaire de match à l'équipe adverse.\n• `/match veto` — le veto des cartes, avant le match.\n• `/match report` — signaler le résultat d'un match de ton équipe, avec la capture d'écran du tableau des scores.\n• `/help` — cette aide. `/help command:` explique une commande en détail.",
+    "**Les commandes de Ligo**\n• `/standings` — le classement de la saison, en image ou en texte.\n• `/match propose-time` — proposer un horaire de match à l'équipe adverse.\n• `/match veto` — le veto des cartes, avant le match.\n• `/match report` — signaler le résultat d'un match de ton équipe, avec la capture d'écran du tableau des scores.\n• `/team` — les responsables de ton équipe, et tes demandes de changement au staff.\n• `/help` — cette aide. `/help command:` explique une commande en détail.",
   'help.overview.staff':
-    '**Staff de la ligue**\n• `/staff match` — valider, saisir, corriger ou annuler un résultat ; enregistrer un forfait.\n• `/staff sanction` — un avertissement ou des points pour une équipe, et la liste de ses sanctions.\n• `/staff exclusion` — exclure une équipe, la réintégrer après un appel, régler son exclusion automatique.\n• `/team` — les responsables de chaque équipe : propriétaire, managers, coach.\n• `/league channel` — les salons du bot : file de validation et résultats.\n\n**Mise en place**\n1. `/league channel` deux fois : la file de validation du staff, puis le salon des résultats.\n2. `/team owner` pour chaque équipe.\nLes équipes peuvent alors signaler leurs résultats avec `/match report`.',
+    '**Staff de la ligue**\n• `/staff match` — valider, saisir, corriger ou annuler un résultat ; enregistrer un forfait.\n• `/staff sanction` — un avertissement ou des points pour une équipe, et la liste de ses sanctions.\n• `/staff exclusion` — exclure une équipe, la réintégrer après un appel, régler son exclusion automatique.\n• `/team` — les responsables de chaque équipe, et les demandes des équipes.\n• `/league channel` — les salons du bot : file de validation et résultats.\n\n**Mise en place**\n1. `/league channel` deux fois : la file de validation du staff, puis le salon des résultats.\n2. `/team owner` pour chaque équipe.\nLes équipes peuvent alors signaler leurs résultats avec `/match report`.',
   'help.page.standings':
     "**`/standings`** — le classement de la saison en cours\nOuvert à tous.\n\n• `division` (facultatif) : « Ligue 1 » ou « L1 », par exemple. Sans elle, toutes les divisions.\n• `format` (facultatif) : Image (par défaut) ou Texte.\n\nSeuls comptent les résultats validés et les forfaits, avec les points des sanctions. Un résultat signalé mais pas encore validé n'apparaît pas.\nColonnes : MJ matchs joués, W victoires, L défaites, RW manches gagnées, RL manches perdues, Diff (RW − RL), PTS points. Les égalités sont départagées selon le règlement de la ligue.",
   'help.page.match':
@@ -291,8 +353,9 @@ export const fr = {
   'help.page.staffSanction':
     "**`/staff sanction`** — les sanctions d'équipe, réservé au staff de la ligue\n• `add` — `team`, `kind`, `reason`, et `points` pour une sanction en points.\n  – Avertissement : gardé dans la liste, sans effet sur le classement.\n  – Points au classement : `points:-1` retire un point, `points:2` en ajoute deux. Le classement suit aussitôt.\n• `list` — les sanctions d'une équipe cette saison, avec date et motif. Les avertissements automatiques des forfaits y figurent.\n\nUne sanction ne se supprime pas : pour en annuler une, ajoute la sanction inverse (`points:1` après `points:-1`) avec son motif.",
   'help.page.team':
-    "**`/team`** — qui agit pour chaque équipe, réservé au staff de la ligue\nLes responsables d'une équipe (son propriétaire, ses managers et son coach) signalent ses résultats, proposent ses horaires et font son veto. En attendant les inscriptions sur le site, c'est ici qu'on les désigne.\n\n• `/team owner` — désigne le propriétaire d'une équipe (`team`, `member`). L'ancien propriétaire quitte l'équipe.\n• `/team member add` — ajoute un manager ou un coach (`role`).\n• `/team member remove` — retire un responsable de l'équipe, propriétaire compris.\n• `/team list` — les responsables d'une équipe.\n\nUne même personne peut être responsable de plusieurs équipes.",
-  'help.team.max': 'Une équipe a un propriétaire, {managers} managers et {coaches} coach au plus.',
+    "**`/team`** — qui agit pour chaque équipe\nLes responsables d'une équipe (son propriétaire, ses managers et son coach) signalent ses résultats, proposent ses horaires et font son veto.\n\n**Pour les équipes** — le propriétaire et les managers demandent, le staff de la ligue approuve ou refuse avec une raison :\n• `/team member add` — ajouter un manager ou un coach (`member`, `role`).\n• `/team owner` — confier l'équipe à quelqu'un ; réservé au propriétaire, qui quitte alors l'équipe.\n• `/team member remove` — retirer un responsable ; réservé au propriétaire, sans validation.\n• `/team leave` — quitter l'équipe, sans validation ; le propriétaire la confie d'abord.\n• `/team requests` — tes demandes en attente, pour les retirer.\n• `/team list` — les responsables de ton équipe.\n`team` ne sert que si tu es responsable de plusieurs équipes ; `note` est un mot pour le staff. La réponse arrive en message privé.\n\n**Pour le staff de la ligue** — les mêmes commandes changent l'équipe directement, sans demande (`team` obligatoire). Les demandes arrivent dans la file de validation avec **Approuver** et **Refuser** ; `/team requests` les liste toutes.",
+  'help.team.max':
+    'Une équipe a un propriétaire, {managers} managers et {coaches} coach au plus. Le staff répond aux demandes en {hours} h.',
   'help.page.league':
     "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
   'command.match.veto.description': "Lance le veto des cartes d'un match de ton équipe.",

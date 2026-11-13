@@ -26,6 +26,8 @@ export interface OutgoingMessage {
   buttons?: readonly MessageButton[];
   /** The only users the message may notify; a mention of anyone else shows without pinging. */
   mentionUserIds?: readonly string[];
+  /** The only roles the message may notify, such as the staff role in a reminder. */
+  mentionRoleIds?: readonly string[];
 }
 
 /** A reply to an interaction; `ephemeral` shows it to the member alone. */

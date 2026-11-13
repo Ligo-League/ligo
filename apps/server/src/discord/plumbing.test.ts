@@ -209,14 +209,18 @@ describe('toDiscordModal', () => {
 });
 
 describe('toDiscordMessage', () => {
-  it('notifies nobody unless users are named: a team name cannot ping @everyone', () => {
+  it('notifies nobody unless users or roles are named: a team name cannot ping @everyone', () => {
     expect(toDiscordMessage({ content: '@everyone <@&1> <@2>' }).allowedMentions).toEqual({
       parse: [],
       users: [],
+      roles: [],
     });
     expect(toDiscordMessage({ content: 'hi <@2>', mentionUserIds: ['2'] }).allowedMentions).toEqual(
-      { parse: [], users: ['2'] },
+      { parse: [], users: ['2'], roles: [] },
     );
+    expect(
+      toDiscordMessage({ content: '<@&1> <@&3>', mentionRoleIds: ['1'] }).allowedMentions,
+    ).toEqual({ parse: [], users: [], roles: ['1'] });
   });
 
   it('puts the buttons in one row and sends none when there are none', () => {

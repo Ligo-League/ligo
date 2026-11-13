@@ -1,11 +1,14 @@
 import type { Db } from '@ligo/db';
 import { t, type Locale } from '../i18n/index.ts';
 import { randomInt } from 'node:crypto';
+import { recordQueuePost } from '../services/queue-posts.ts';
+import { runRequestTick } from '../services/requests.ts';
 import { runSchedulingTick } from '../services/scheduling.ts';
 import { runVetoTick } from '../services/veto.ts';
 import { vetoMessage } from './veto-message.ts';
 import type { DiscordGateway } from './gateway.ts';
 import { discordTime, matchFixture, mention } from './match-text.ts';
+import { postLink, requestQueueMessage } from './request-text.ts';
 import type { ErrorLogger } from './router.ts';
 
 // The bot's clock: what happens because time passed, not because someone clicked. Each tick reads
@@ -21,10 +24,53 @@ export interface ClockDeps {
   random?: (below: number) => number;
 }
 
-/** One tick: deadlines first, then veto steps out of time. Never throws. */
+/** One tick: deadlines first, then veto steps out of time, then reminders. Never throws. */
 export async function tick(deps: ClockDeps): Promise<void> {
   await scheduleTick(deps);
   await vetoTick(deps);
+  await requestTick(deps);
+}
+
+/**
+ * Reminds league staff of team requests about to pass their deadline, pinging the staff role.
+ * A request whose post never reached the queue is posted again with its buttons.
+ */
+async function requestTick(deps: ClockDeps): Promise<void> {
+  const { locale } = deps;
+  let reminders: ReturnType<typeof runRequestTick>;
+  try {
+    reminders = runRequestTick(deps.db, deps.now());
+  } catch (error) {
+    deps.logger.error({ err: error }, 'Request tick failed');
+    return;
+  }
+  for (const reminder of reminders) {
+    const { request, queueChannelId, staffRoleId } = reminder;
+    try {
+      let { post } = reminder;
+      if (!post) {
+        const posted = await deps.gateway.postMessage(
+          queueChannelId,
+          requestQueueMessage(locale, request),
+        );
+        post = { channelId: queueChannelId, messageId: posted.messageId };
+        recordQueuePost(deps.db, { entity: 'request', entityId: request.id }, post, deps.now());
+      }
+      await deps.gateway.postMessage(queueChannelId, {
+        content: t(locale, 'request.reminder', {
+          role: `<@&${staffRoleId}>`,
+          id: request.id,
+          team: request.team.name,
+          deadline: discordTime(request.deadline ?? request.requestedAt, 'R'),
+          link: postLink(reminder.guildId, post),
+        }),
+        mentionRoleIds: [staffRoleId],
+      });
+    } catch (error) {
+      // The reminder is marked as sent; the request still shows in `/team requests`.
+      deps.logger.error({ err: error, requestId: request.id }, 'Could not post a reminder');
+    }
+  }
 }
 
 /** Plays the veto steps whose time ran out and updates their messages. */

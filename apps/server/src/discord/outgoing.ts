@@ -22,7 +22,7 @@ const ROW_SIZE = 5;
 
 /** An outgoing message in the shape discord.js sends, for a reply, a post or an edit. */
 export function toDiscordMessage(message: OutgoingMessage) {
-  const { content, files = [], buttons = [], mentionUserIds = [] } = message;
+  const { content, files = [], buttons = [], mentionUserIds = [], mentionRoleIds = [] } = message;
   return {
     content,
     files: files.map((file) => new AttachmentBuilder(Buffer.from(file.data), { name: file.name })),
@@ -40,8 +40,8 @@ export function toDiscordMessage(message: OutgoingMessage) {
       ),
     ),
     // Text coming from team names or notes must never ping @everyone or a role: only the users
-    // the caller names are notified.
-    allowedMentions: { parse: [], users: [...mentionUserIds] },
+    // and roles the caller names are notified.
+    allowedMentions: { parse: [], users: [...mentionUserIds], roles: [...mentionRoleIds] },
   };
 }
 

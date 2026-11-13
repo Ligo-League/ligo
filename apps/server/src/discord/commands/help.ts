@@ -89,6 +89,7 @@ export function helpPage(locale: Locale, topic: HelpTopic, facts: HelpFacts): st
       ? `${page}\n${t(locale, 'help.team.max', {
           managers: rules.teamRoles.managers_max,
           coaches: rules.teamRoles.coaches_max,
+          hours: rules.requestHours,
         })}`
       : page;
   }

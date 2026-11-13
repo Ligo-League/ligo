@@ -10,6 +10,8 @@ export interface HelpFacts {
   rules: {
     validation: RulesetSettings['result_validation'];
     teamRoles: RulesetSettings['team_roles'];
+    /** How long league staff have to answer a team's request. */
+    requestHours: number;
     /** Null before a season starts: thresholds are a season setting. */
     forfeits: ForfeitThresholds | null;
     extensionWeeks: number;
@@ -30,6 +32,7 @@ export function helpFacts(
     rules: {
       validation: rulesetJson.result_validation,
       teamRoles: rulesetJson.team_roles,
+      requestHours: rulesetJson.requests.answer_within_hours,
       forfeits: league.season?.settingsJson.forfeits ?? null,
       extensionWeeks: league.competition.schedulingJson.extension_weeks,
       autoSlot: league.competition.schedulingJson.auto_slot,
