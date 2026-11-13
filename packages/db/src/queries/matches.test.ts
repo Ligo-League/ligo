@@ -1,11 +1,12 @@
+import { weekWindow } from '@ligo/core';
 import { describe, expect, it } from 'vitest';
-import { evidence, matchSlot, player } from '../schema/index.ts';
+import { evidence, match, matchSlot, player } from '../schema/index.ts';
 import type { MatchRow } from '../seed/matches-csv.ts';
 import type { TeamRow } from '../seed/parse-teams-csv.ts';
 import { seedLfr } from '../seed/seed-lfr.ts';
 import { seedMatches } from '../seed/seed-matches.ts';
 import { openTestDatabase } from '../testing.ts';
-import { latestScoreEvidence, listLeagueMatches } from './matches.ts';
+import { latestScoreEvidence, listLeagueMatches, listMatchesWithoutTime } from './matches.ts';
 
 const teamRow = (division: string, tag: string, name: string): TeamRow => ({
   division,
@@ -44,6 +45,26 @@ function seeded() {
   return db;
 }
 
+describe('listMatchesWithoutTime', () => {
+  it('lists the matches still to play, with no time, whose week has ended', () => {
+    const db = seeded();
+    const week2End = weekWindow('2026-10-19', 2, 'Europe/Paris').end;
+    // Match 2 (week 2) is the only one still to play.
+    expect(listMatchesWithoutTime(db, week2End - 1)).toEqual([]);
+    expect(listMatchesWithoutTime(db, week2End)).toMatchObject([
+      {
+        matchId: 2,
+        competitionId: 1,
+        scheduling: { time_zone: 'Europe/Paris', extension_weeks: 1 },
+      },
+    ]);
+    db.update(match)
+      .set({ scheduledAt: week2End - 1 })
+      .run();
+    expect(listMatchesWithoutTime(db, week2End)).toEqual([]);
+  });
+});
+
 describe('listLeagueMatches', () => {
   it('lists a season by division level, then week, with teams and the first game', () => {
     expect(listLeagueMatches(seeded(), { seasonId: 1 })).toEqual([
@@ -58,6 +79,9 @@ describe('listLeagueMatches', () => {
         status: 'validated',
         a: { teamId: 3, name: 'Alpha', tag: 'ALP' },
         b: { teamId: 4, name: 'Bravo', tag: 'BRV' },
+        window: weekWindow('2026-10-19', 1, 'Europe/Paris'),
+        scheduledAt: null,
+        autoScheduled: false,
         reportedBy: null,
         confirmedBy: null,
         game: { id: 2, scoreA: 7, scoreB: 4, forfeitSide: null, status: 'final' },
@@ -73,6 +97,9 @@ describe('listLeagueMatches', () => {
         status: 'scheduled',
         a: { teamId: 4, name: 'Bravo', tag: 'BRV' },
         b: { teamId: 3, name: 'Alpha', tag: 'ALP' },
+        window: weekWindow('2026-10-19', 2, 'Europe/Paris'),
+        scheduledAt: null,
+        autoScheduled: false,
         reportedBy: null,
         confirmedBy: null,
         game: null,
@@ -88,6 +115,9 @@ describe('listLeagueMatches', () => {
         status: 'forfeit',
         a: { teamId: 1, name: 'Xray', tag: 'XRA' },
         b: { teamId: 2, name: 'Yankee', tag: 'YAN' },
+        window: weekWindow('2026-10-19', 1, 'Europe/Paris'),
+        scheduledAt: null,
+        autoScheduled: false,
         reportedBy: null,
         confirmedBy: null,
         game: { id: 1, scoreA: 0, scoreB: 0, forfeitSide: 'b', status: 'final' },

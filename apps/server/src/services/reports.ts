@@ -52,7 +52,7 @@ const actsFor = (teams: readonly TeamRoleHeld[], found: LeagueMatch, side: Side)
   teams.some((held) => held.teamId === found[side].teamId);
 
 /** The match of that ID if it belongs to the league of the server, else nothing. */
-function leagueMatch(
+export function leagueMatch(
   db: Pick<Db, 'select'>,
   league: GuildLeague,
   matchId: number,

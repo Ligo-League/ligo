@@ -1,6 +1,8 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import type { SchedulingSettings } from '@ligo/core';
+import { and, asc, desc, eq, inArray, isNull, lte } from 'drizzle-orm';
 import type { Db } from '../client.ts';
 import {
+  competition,
   division,
   evidence,
   game,
@@ -40,6 +42,11 @@ export interface LeagueMatch {
   status: MatchRow['status'];
   a: MatchTeam;
   b: MatchTeam;
+  /** The planned week of play: `start` included, `end` excluded. */
+  window: { start: number; end: number };
+  /** The agreed or automatic start of the match, when one is set. */
+  scheduledAt: number | null;
+  autoScheduled: boolean;
   /** The players who reported and confirmed the result, when a team did. */
   reportedBy: number | null;
   confirmedBy: number | null;
@@ -111,6 +118,9 @@ export function listLeagueMatches(
       status: row.match.status,
       a: { teamId: a.teamId, name: a.name, tag: a.tag },
       b: { teamId: b.teamId, name: b.name, tag: b.tag },
+      window: { start: row.match.windowStart, end: row.match.windowEnd },
+      scheduledAt: row.match.scheduledAt,
+      autoScheduled: row.match.autoScheduled,
       reportedBy: row.match.reportedBy,
       confirmedBy: row.match.confirmedBy,
       game: first
@@ -138,4 +148,27 @@ export function latestScoreEvidence(db: Pick<Db, 'select'>, matchId: number) {
     .where(and(eq(evidence.matchId, matchId), eq(evidence.kind, 'score_screenshot')))
     .orderBy(desc(evidence.id))
     .get();
+}
+
+/**
+ * Matches still to play with no time set whose week of play has ended by `now`, in any league,
+ * with the scheduling settings of their competition: what the clock looks at.
+ */
+export function listMatchesWithoutTime(
+  db: Pick<Db, 'select'>,
+  now: number,
+): { matchId: number; competitionId: number; scheduling: SchedulingSettings }[] {
+  return db
+    .select({
+      matchId: match.id,
+      competitionId: competition.id,
+      scheduling: competition.schedulingJson,
+    })
+    .from(match)
+    .innerJoin(stage, eq(match.stageId, stage.id))
+    .innerJoin(season, eq(stage.seasonId, season.id))
+    .innerJoin(competition, eq(season.competitionId, competition.id))
+    .where(and(eq(match.status, 'scheduled'), isNull(match.scheduledAt), lte(match.windowEnd, now)))
+    .orderBy(asc(match.id))
+    .all();
 }
