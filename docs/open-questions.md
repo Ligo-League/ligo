@@ -54,6 +54,19 @@ section 16.
   computes no promotion or relegation.
 - **Answer:**
 
+#### O-23 · Replacement teams in Ligue 2
+
+- **Question:** some Ligue 2 teams are newcomers that replaced teams that stopped playing. Which
+  teams are replacements, which team did each one replace, and from which week? Did the newcomer
+  take over the departed team's remaining fixtures and its results so far, or start from zero?
+  Is there a rule for this, or is it decided case by case?
+- **Why it matters:** whose points are whose in the standings, whose forfeits count towards a
+  warning, the 50% rule (O-04), and how a replacement is recorded from Season 4: as a transfer
+  of the departed team's slot (design doc section 4, `slot_transfer`) or as a new slot.
+- **Until answered:** on score7 every Ligue 2 team has 11 fixtures from week 1, so the data does
+  not show who replaced whom. Ligo treats each name on score7 as one team for the whole season.
+- **Answer:**
+
 ### Forfeits and exclusion
 
 #### O-04 · The 50% rule
