@@ -856,7 +856,7 @@ Images are rendered on the server with Satori (layout to SVG) and resvg (SVG to 
 
 | Template      | Content                                                                                                                         | Used by                   |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `standings`   | Division table with up to 12 rows: rank, logo, name, J, V, D, F, C, D, PTS (columns from the competition's settings), form dots | `/standings`, weekly post |
+| `standings`   | Division table with up to 12 rows: rank, rank change, logo, name, J, V, D, F, C, D, PTS (columns from the competition's settings), form dots | `/standings`, weekly post |
 | `player-card` | Name, team, key stats for the season, percentile bars against the division, top operators                                       | `/stats player`           |
 | `team-card`   | Record, map win rates, attack and defense round %, top players                                                                  | `/stats team`             |
 | `match-card`  | Score per game, scoreboard per side, best rated player                                                                          | Result post               |
@@ -871,6 +871,30 @@ Images are rendered on the server with Satori (layout to SVG) and resvg (SVG to 
 - Cache key: SHA-256 of template ID, template version and the input JSON. The PNG is stored in `image_cache` and on disk; a Discord message attaches it as `attachment://<name>.png`.
 - Templates are JSX components in `packages/render`; the website reuses them for link-preview images.
 - Snapshot tests render each template with fixture data, and a reviewer compares the PNGs when a template changes.
+
+**Rank change.** The standings show each team's move since the previous week, so readers see trends: an arrow up or down with the number of places, or a dash. The previous table counts the same results except those of the latest week that has a counted result; sanctions count in both tables. `/standings` as text shows the same column.
+
+**Social images**
+
+League staff post simple images on social networks without any design tool. Every image below is rendered from the platform's data, in the league's theme (M-17), and posted where staff can save it and share it. The format is a square 1080 × 1080 PNG, which every network accepts (M-18 asks whether a portrait format is wanted too).
+
+| Template         | Content                                                                         | When it is posted                                                                 | Phase |
+| ---------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----- |
+| `match-time`     | One match: both logos and names, division, week, date and time                  | In the schedule channel, each time a time is agreed or set                        | 2b    |
+| `result`         | One match: both logos, the winner highlighted, the score, the map if known      | In the results channel, when the result is validated (or a forfeit is recorded)   | 2b    |
+| `game-day`       | The day's matches: logos, names and times, all divisions                        | On the morning of each day with matches, and on request                           | 4     |
+| `week-schedule`  | A division's week: each match with logos and time, or its score once validated | When the week starts, then again with the results                                 | 4     |
+| `game-on`        | One match about to start: both logos, "live", the stream link if any            | At the match's time                                                               | 4     |
+| `team-move`      | A team joining or leaving the league: logo, name, division                      | When staff add a team to a season or a team withdraws                             | 4     |
+| `champions`      | A competition's winner: logo, name, competition and season, the final's score   | When a stage closes                                                               | 6     |
+| `veto` (proposed) | One match's veto: bans in order, the map played, starting and overtime sides   | When the veto ends                                                                | 4     |
+| `roster-move` (proposed) | A player joining or leaving a team (mercato)                            | When staff approve a roster move                                                  | 4     |
+| `bracket` (proposed) | A cup bracket with the results so far                                       | After each round of the cup                                                       | 6     |
+| `season-end` (proposed) | Promotions, relegations and barrages                                     | When a season closes                                                              | 6     |
+
+- The `award-card` of section 17 joins this list once awards exist.
+- On request: staff will get `/staff image` and a page of the website listing each image with a download button (phase 3 for the page). Until then, the bot attaches the image to the announcement it already posts.
+- Each image's cache key includes the logos' hashes, so a new logo gives a new image.
 
 ## 12. The group's other leagues
 

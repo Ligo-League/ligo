@@ -162,7 +162,8 @@ section 16.
   higher-ranked team hosts. What happens when both teams have the same rank, for example in
   week 1 when nobody has played?
 - **Why it matters:** the bot announces who picks and who hosts for every match (phase 2b).
-- **Until answered:** not built yet.
+- **Until answered:** the bot flips a coin when the veto starts, says so in its message and
+  records it in the audit log (maintainer's choice, 13 November 2026).
 - **Answer:**
 
 #### O-13 · Deadlines
@@ -391,6 +392,19 @@ section 16.
   pictures and fonts would need more settings and stored files.
 - **Until answered:** one design, with the colours a league can already override. To settle with
   the owner before the images are styled (phase 9).
+- **Answer:**
+
+#### M-18 · Social images: format, and which ones post on their own
+
+- **Question:** the social images (design doc section 11) are square, 1080 × 1080. Does LFR also
+  want a portrait format (1080 × 1350, the tallest Instagram allows) or a wide one for X? And
+  which images should the bot post on its own, rather than only on request: the day's matches each
+  morning, the week's schedule, "game on" at each match's time?
+- **Why it matters:** each format is a layout to draw; automatic posts need a channel and must not
+  flood it.
+- **Until answered:** square only. The bot attaches `match-time` and `result` images to the
+  announcements it already posts; the others wait for their phase. Proposed extra images (veto,
+  roster move, bracket, season end) are listed in section 11 for the owner to choose from.
 - **Answer:**
 
 ## Answered
