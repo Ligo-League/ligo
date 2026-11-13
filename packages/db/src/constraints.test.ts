@@ -119,6 +119,36 @@ describe('database constraints', () => {
     ).toHaveLength(2);
   });
 
+  describe('dispute', () => {
+    // Only the CHECK constraints are under test: parents are left out on purpose.
+    function insert(columns: string, values: string) {
+      const { db } = seededDatabase();
+      db.$client.pragma('foreign_keys = OFF');
+      return () =>
+        db.$client
+          .prepare(
+            `insert into dispute (match_id, evidence_id, reason, raised_by, at${columns})
+             values (1, 1, 'wrong_score', 1, 10${values})`,
+          )
+          .run();
+    }
+
+    it('accepts an open dispute and a settled one', () => {
+      expect(insert('', '')).not.toThrow();
+      expect(
+        insert(', resolution, resolved_by, resolved_at', ", 'validated', 1, 20"),
+      ).not.toThrow();
+    });
+
+    it.each([
+      ['an unknown resolution', ', resolution, resolved_by, resolved_at', ", 'forgotten', 1, 20"],
+      ['a resolution without who settled it', ', resolution, resolved_at', ", 'rejected', 20"],
+      ['who settled it without a resolution', ', resolved_by, resolved_at', ', 1, 20'],
+    ])('refuses %s', (_label, columns, values) => {
+      expect(insert(columns, values)).toThrow(/CHECK/);
+    });
+  });
+
   it('refuse a row pointing at a missing parent', () => {
     const { db } = seededDatabase();
     const orphan = { orgId: 999, slug: 'bob', displayName: 'Bob', createdAt: 1 };

@@ -15,6 +15,13 @@
       "when": 1794571700849,
       "tag": "0001_division_results_channel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794572189278,
+      "tag": "0002_dispute",
+      "breakpoints": true
     }
   ]
 }

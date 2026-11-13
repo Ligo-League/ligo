@@ -5,10 +5,12 @@ import { applyMigrations } from './migrate.ts';
 import * as schema from './schema/index.ts';
 import { openTestDatabase } from './testing.ts';
 
-// Schema v1: the tables phase 0 is allowed to create (design doc section 15, "Start here today").
-const SCHEMA_V1_TABLES = [
+// Schema v1, the tables phase 0 was allowed to create (design doc section 15, "Start here
+// today"), plus each table a later migration adds: 0002 adds `dispute`.
+const SCHEMA_TABLES = [
   'audit_log',
   'competition',
+  'dispute',
   'division',
   'evidence',
   'game',
@@ -46,9 +48,9 @@ function tableNames(db: ReturnType<typeof openTestDatabase>): string[] {
 }
 
 describe('migrations from an empty database', () => {
-  it('create exactly the schema v1 tables', () => {
+  it('create exactly the expected tables', () => {
     const db = openTestDatabase();
-    expect(tableNames(db)).toEqual(SCHEMA_V1_TABLES);
+    expect(tableNames(db)).toEqual(SCHEMA_TABLES);
   });
 
   it('leave every table empty', () => {
@@ -69,14 +71,14 @@ describe('migrations from an empty database', () => {
   it('can be applied again without changing anything', () => {
     const db = openTestDatabase();
     applyMigrations(db);
-    expect(tableNames(db)).toEqual(SCHEMA_V1_TABLES);
+    expect(tableNames(db)).toEqual(SCHEMA_TABLES);
   });
 });
 
 describe('the Drizzle schema and the migrations agree', () => {
   it('declares the same tables', () => {
     const declared = drizzleTables.map((table) => getTableConfig(table).name).sort();
-    expect(declared).toEqual(SCHEMA_V1_TABLES);
+    expect(declared).toEqual(SCHEMA_TABLES);
   });
 
   it.each(drizzleTables.map((table) => [getTableConfig(table).name, table] as const))(

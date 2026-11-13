@@ -11,6 +11,7 @@ import {
 import { jsonText, oneOf } from '../columns.ts';
 import { gameBansSchema } from '../json.ts';
 import {
+  DISPUTE_RESOLUTIONS,
   EVIDENCE_KINDS,
   EVIDENCE_VISIBILITIES,
   GAME_STATUSES,
@@ -193,5 +194,41 @@ export const sanction = sqliteTable(
     index('sanction_season_idx').on(t.seasonId),
     check('sanction_target_kind_check', oneOf(t.targetKind, SANCTION_TARGETS)),
     check('sanction_kind_check', oneOf(t.kind, SANCTION_KINDS)),
+  ],
+);
+
+// A team disputing a reported result, and how staff settled it. The reason and details are
+// shown to staff only: a reason can accuse a player.
+export const dispute = sqliteTable(
+  'dispute',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    matchId: integer('match_id')
+      .notNull()
+      .references(() => match.id),
+    // The report disputed: its score screenshot.
+    evidenceId: integer('evidence_id')
+      .notNull()
+      .references(() => evidence.id),
+    // A key of the competition's `dispute_reasons`, or "other"; kept if the label changes.
+    reason: text('reason').notNull(),
+    details: text('details'),
+    raisedBy: integer('raised_by')
+      .notNull()
+      .references(() => player.id),
+    at: integer('at').notNull(),
+    resolution: text('resolution', { enum: DISPUTE_RESOLUTIONS }),
+    resolvedBy: integer('resolved_by').references(() => player.id),
+    resolvedAt: integer('resolved_at'),
+  },
+  (t) => [
+    index('dispute_match_idx').on(t.matchId),
+    // A null resolution passes: SQLite's CHECK fails only on false.
+    check('dispute_resolution_check', oneOf(t.resolution, DISPUTE_RESOLUTIONS)),
+    // Settled entirely or not at all.
+    check(
+      'dispute_resolved_check',
+      sql`(${t.resolution} is null) = (${t.resolvedBy} is null) and (${t.resolution} is null) = (${t.resolvedAt} is null)`,
+    ),
   ],
 );
