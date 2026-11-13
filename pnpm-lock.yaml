@@ -275,7 +275,11 @@ importers:
         specifier: ^0.63.2
         version: 0.63.2
 
-  packages/titles: {}
+  packages/titles:
+    dependencies:
+      '@ligo/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 

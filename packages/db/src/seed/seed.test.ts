@@ -147,7 +147,10 @@ describe('seedLfr', () => {
       {
         title: 'r6',
         participantMode: 'team',
-        rulesetJson: { result_validation: 'staff' },
+        rulesetJson: {
+          result_validation: 'staff',
+          game_score: { win_at: 7, overtime_rounds: 3 },
+        },
         pointsJson: {
           outcomes: { win: 3, loss: 0 },
           forfeit: { winner: 3, loser: 0, counts_as_played: true },

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { computeStandings } from '@ligo/core';
+import { computeStandings, isPossibleGameScore } from '@ligo/core';
+import { R6_GAME_SCORE } from '@ligo/titles';
 import { parse } from 'csv-parse/sync';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
@@ -67,6 +68,15 @@ describe('LFR Season 3 from the committed fixtures', () => {
     expect(seedSummary.created.matches).toBe(matches.matches.length);
     const drawn = matches.matches.filter((match) => match.result.kind === 'draw');
     expect(seedSummary.draws).toHaveLength(drawn.length);
+  });
+
+  it('holds only scores a map of R6 can end on', () => {
+    const impossible = matches.matches.filter(
+      ({ result }) =>
+        result.kind === 'played' &&
+        !isPossibleGameScore(R6_GAME_SCORE, result.scoreA, result.scoreB),
+    );
+    expect(impossible).toEqual([]);
   });
 
   it.each(LFR_DIVISION_NAMES)('reproduces the score7 table of %s', (divisionName) => {

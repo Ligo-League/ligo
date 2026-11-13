@@ -6,3 +6,5 @@
  */
 export const TITLES = ['r6', 'valorant', 'rocket_league', 'lol', 'cs'] as const;
 export type Title = (typeof TITLES)[number];
+
+export * from './r6/ruleset.ts';
