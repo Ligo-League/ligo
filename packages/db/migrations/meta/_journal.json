@@ -36,6 +36,13 @@
       "when": 1794578354323,
       "tag": "0004_veto",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794589507791,
+      "tag": "0005_auto_exclusion",
+      "breakpoints": true
     }
   ]
 }

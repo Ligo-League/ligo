@@ -1,4 +1,4 @@
-import type { StandingsInput, StandingsMatch } from '@ligo/core';
+import type { PendingMatch, StandingsInput, StandingsMatch } from '@ligo/core';
 import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { Db } from '../client.ts';
 import {
@@ -25,6 +25,8 @@ export interface StandingsTeam {
   colors: string[];
   /** Where the team's logo is stored, or null when it has none. */
   logoKey: string | null;
+  /** The team was excluded from the season (`slot.status = 'excluded'`). */
+  excluded: boolean;
 }
 
 export interface StageStandingsData {
@@ -62,13 +64,15 @@ export function loadStandingsInput(
       slug: team.slug,
       colors: team.colorsJson,
       logoKey: team.logoKey,
+      slotStatus: slot.status,
     })
     .from(stageEntry)
     .innerJoin(slot, eq(stageEntry.slotId, slot.id))
     .innerJoin(team, eq(slot.teamId, team.id))
     .where(eq(stageEntry.stageId, stageId))
     .orderBy(asc(team.name), asc(stageEntry.id))
-    .all();
+    .all()
+    .map(({ slotStatus, ...row }) => ({ ...row, excluded: slotStatus === 'excluded' }));
 
   const counted = db
     .select({ id: match.id, status: match.status, week: match.week })
@@ -77,8 +81,25 @@ export function loadStandingsInput(
     // By week, so that a team's latest results can be read off the end of the list.
     .orderBy(asc(match.week), asc(match.id))
     .all();
+  // Matches that do not count yet: still to play, or reported and not validated. The 50% rule
+  // turns some of them into forfeits when a team is excluded.
+  const waiting = db
+    .select({ id: match.id, week: match.week })
+    .from(match)
+    .where(
+      and(
+        eq(match.stageId, stageId),
+        inArray(match.status, ['scheduled', 'reported', 'confirmed', 'disputed']),
+      ),
+    )
+    .orderBy(asc(match.week), asc(match.id))
+    .all();
   const matchIds = counted.map((row) => row.id);
-  const sides = db.select().from(matchSlot).where(inArray(matchSlot.matchId, matchIds)).all();
+  const sides = db
+    .select()
+    .from(matchSlot)
+    .where(inArray(matchSlot.matchId, [...matchIds, ...waiting.map((row) => row.id)]))
+    .all();
   const games = db
     .select()
     .from(game)
@@ -137,11 +158,23 @@ export function loadStandingsInput(
     }
   }
 
+  // A bracket match waiting for its teams has no entries yet: it is nobody's pending match.
+  const pending = waiting.flatMap(({ id, week }): PendingMatch[] => {
+    const entryOf = (side: 'a' | 'b') =>
+      sides.find((row) => row.matchId === id && row.side === side && row.sourceKind === 'entry')
+        ?.sourceRef;
+    const a = entryOf('a');
+    const b = entryOf('b');
+    return a === undefined || b === undefined ? [] : [{ id, week, a, b }];
+  });
+
   return {
     teams,
     input: {
       entries: teams.map((row) => row.entry),
       matches,
+      pending,
+      excluded: teams.filter((row) => row.excluded).map((row) => row.entry),
       points: context.competition.pointsJson,
       tiebreak: context.competition.tiebreakJson,
       forfeitScore: context.season.settingsJson.forfeit_score,

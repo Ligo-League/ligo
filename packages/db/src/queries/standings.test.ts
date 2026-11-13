@@ -1,7 +1,7 @@
 import { computeStandings } from '@ligo/core';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { match, player, sanction, season } from '../schema/index.ts';
+import { match, player, sanction, season, slot } from '../schema/index.ts';
 import type { MatchRow } from '../seed/matches-csv.ts';
 import type { TeamRow } from '../seed/parse-teams-csv.ts';
 import { seedLfr } from '../seed/seed-lfr.ts';
@@ -62,6 +62,7 @@ describe('loadStandingsInput', () => {
         slug: 'alpha',
         colors: ['#112233'],
         logoKey: null,
+        excluded: false,
       },
       {
         entry: 2,
@@ -72,6 +73,7 @@ describe('loadStandingsInput', () => {
         slug: 'bravo',
         colors: ['#112233'],
         logoKey: null,
+        excluded: false,
       },
       {
         entry: 1,
@@ -82,6 +84,7 @@ describe('loadStandingsInput', () => {
         slug: 'charlie',
         colors: ['#112233'],
         logoKey: null,
+        excluded: false,
       },
     ]);
     expect(input.entries).toEqual([3, 2, 1]);
@@ -131,6 +134,26 @@ describe('loadStandingsInput', () => {
     expect(load(db, 2).input.matches).toEqual([
       { id: 8, week: 1, a: 4, b: 5, result: { kind: 'played', games: [{ a: 8, b: 6 }] } },
     ]);
+  });
+
+  it('lists the matches that do not count yet, and the excluded entries, for the 50% rule', () => {
+    const db = seeded([
+      fixture(1, 'BBB', 'CCC', { kind: 'played', scoreA: 7, scoreB: 4 }),
+      fixture(2, 'ZED', 'BBB'),
+      fixture(3, 'CCC', 'ZED'),
+      fixture(4, 'BBB', 'ZED'),
+    ]);
+    db.update(match).set({ status: 'reported' }).where(eq(match.id, 3)).run();
+    db.update(match).set({ status: 'void' }).where(eq(match.id, 4)).run();
+    db.update(slot).set({ status: 'excluded', excludedAt: 5 }).where(eq(slot.id, 1)).run();
+    const { input, teams } = load(db);
+    expect(input.pending).toEqual([
+      { id: 2, week: 2, a: 3, b: 1 },
+      { id: 3, week: 3, a: 2, b: 3 },
+    ]);
+    // Slot 1 is ZED's, stage entry 3.
+    expect(input.excluded).toEqual([3]);
+    expect(teams.find((row) => row.entry === 3)?.excluded).toBe(true);
   });
 
   it('turns sanctions with points into deltas for the entries of this stage', () => {

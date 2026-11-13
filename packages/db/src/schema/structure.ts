@@ -123,6 +123,12 @@ export const slot = sqliteTable(
     status: text('status', { enum: SLOT_STATUSES }).notNull().default('active'),
     forfeits: integer('forfeits').notNull().default(0),
     excludedAt: integer('excluded_at'),
+    // Staff can switch off the automatic exclusion for one team, always with a reason (O-05).
+    // The three are set and cleared together by the service: SQLite cannot add a CHECK to an
+    // existing table without rebuilding it, which other tables' foreign keys forbid here.
+    autoExclusionOffReason: text('auto_exclusion_off_reason'),
+    autoExclusionOffBy: integer('auto_exclusion_off_by').references(() => player.id),
+    autoExclusionOffAt: integer('auto_exclusion_off_at'),
   },
   (t) => [
     unique('slot_division_team_unique').on(t.divisionId, t.teamId),
