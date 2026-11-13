@@ -8,6 +8,8 @@ export type MatchSide = 'a' | 'b';
 /** One match that counts. `a` and `b` are stage entries; the caller filters out the rest. */
 export interface StandingsMatch {
   id: number;
+  /** The week the match belongs to, if the stage has weeks; used by `rankChanges`. */
+  week?: number | null;
   a: number;
   b: number;
   result:
@@ -186,6 +188,30 @@ function countMatch(winner: Tally, loser: Tally): void {
   winner.wins += 1;
   loser.played += 1;
   loser.losses += 1;
+}
+
+/**
+ * Each entry's move since the previous week, in places: positive when it went up. The previous
+ * table counts the same results except those of the latest week that has one; a match without a
+ * week, and every sanction, counts in both. An entry's change is null while the previous table
+ * counts no match, since everyone shares first place there. Null when the settings cannot rank.
+ */
+export function rankChanges(input: StandingsInput): Map<number, number | null> | null {
+  const current = computeStandings(input);
+  if (!current.ok) return null;
+  const weeks = input.matches.flatMap((match) => (match.week == null ? [] : [match.week]));
+  const latest = weeks.length === 0 ? null : Math.max(...weeks);
+  const before = input.matches.filter((match) => match.week !== latest);
+  const previous =
+    latest === null || before.length === 0 ? null : computeStandings({ ...input, matches: before });
+  const changes = new Map<number, number | null>();
+  for (const row of current.rows) {
+    const old = previous?.ok
+      ? previous.rows.find((candidate) => candidate.entry === row.entry)
+      : undefined;
+    changes.set(row.entry, old ? old.rank - row.rank : null);
+  }
+  return changes;
 }
 
 export type FormResult = 'W' | 'L';

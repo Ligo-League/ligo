@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { PointsSettings, TiebreakSettings } from './settings.ts';
 import {
   computeStandings,
+  rankChanges,
   recentForm,
   type StandingsInput,
   type StandingsMatch,
@@ -462,5 +463,68 @@ describe('recentForm', () => {
     };
     expect(recentForm([series, unfinished], 1, 5)).toEqual(['W']);
     expect(recentForm([series, unfinished], 2, 5)).toEqual(['L']);
+  });
+});
+
+describe('rankChanges', () => {
+  const changesOf = (overrides: Partial<StandingsInput>) => {
+    const changes = rankChanges(input(overrides));
+    if (!changes) throw new Error('Expected rank changes');
+    return changes;
+  };
+  const inWeek = (week: number, match: StandingsMatch): StandingsMatch => ({ ...match, week });
+
+  it('compares the table with the one before the latest week that has a result', () => {
+    // Week 1: 1 beats 2, 3 beats 4 by more. Week 2: 4 beats 3 by a lot, 2 beats 1.
+    const matches = [
+      inWeek(1, played(1, 2, 7, 5)),
+      inWeek(1, played(3, 4, 7, 1)),
+      inWeek(2, played(4, 3, 7, 0)),
+      inWeek(2, played(2, 1, 7, 6)),
+    ];
+    // Before week 2: 3 (+6), 1 (+2), 2 (-2), 4 (-6). After, everyone has 3 points:
+    // 1 and 4 share first place (+1), 2 and 3 share third (-1).
+    const result = rankChanges(input({ matches }));
+    expect(result).toEqual(
+      new Map([
+        [1, 1],
+        [2, 0],
+        [3, -2],
+        [4, 3],
+      ]),
+    );
+  });
+
+  it('counts a late match of an earlier week in both tables', () => {
+    const matches = [inWeek(1, played(1, 2, 7, 5)), inWeek(2, played(3, 4, 7, 5))];
+    // The previous table has week 1 only: 1 first, 3 and 4 shared second, 2 last.
+    expect(changesOf({ matches }).get(3)).toBe(1);
+  });
+
+  it('has no change before the second week with results', () => {
+    const matches = [inWeek(1, played(1, 2, 7, 5))];
+    expect([...changesOf({ matches }).values()]).toEqual([null, null, null, null]);
+    expect([...changesOf({}).values()]).toEqual([null, null, null, null]);
+  });
+
+  it('keeps sanctions in both tables, so a sanction alone moves nobody between weeks', () => {
+    const matches = [inWeek(1, played(1, 2, 7, 5)), inWeek(2, played(3, 4, 7, 5))];
+    const pointDeltas = [{ entry: 2, delta: 10 }];
+    expect(changesOf({ matches, pointDeltas }).get(2)).toBe(0);
+  });
+
+  it('counts a match without a week in both tables', () => {
+    const matches = [
+      played(1, 2, 7, 5),
+      inWeek(1, played(3, 4, 7, 5)),
+      inWeek(2, played(2, 4, 7, 0)),
+    ];
+    // Before week 2, 1 shares first place with 3; then 2 passes both.
+    expect(changesOf({ matches }).get(1)).toBe(-1);
+  });
+
+  it('gives nothing when the settings cannot rank', () => {
+    const tiebreak: TiebreakSettings = { criteria: ['h2h_points'], unresolved_tie: 'shared' };
+    expect(rankChanges(input({ tiebreak }))).toBeNull();
   });
 });
