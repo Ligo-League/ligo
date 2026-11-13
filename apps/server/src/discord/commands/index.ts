@@ -1,3 +1,4 @@
+import { leagueCommand } from './league.ts';
 import { matchCommand } from './match.ts';
 import { pingCommand } from './ping.ts';
 import { standingsCommand } from './standings.ts';
@@ -10,4 +11,5 @@ export const commands: readonly Command[] = [
   standingsCommand,
   matchCommand,
   teamCommand,
+  leagueCommand,
 ];

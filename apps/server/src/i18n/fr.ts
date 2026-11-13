@@ -74,6 +74,20 @@ export const fr = {
   'team.error.not_on_team': "Ce membre n'est ni manager ni staff de cette équipe.",
   'team.error.staff_full':
     'Cette équipe a déjà {max} membres de staff, le maximum prévu par la ligue.',
+  'command.league.description': 'Réglages de la ligue sur ce serveur, réservés au staff.',
+  'command.league.channel.description': 'Choisit le salon que le bot utilise pour un usage.',
+  'command.league.channel.option.kind': 'À quoi sert le salon.',
+  'command.league.channel.option.channel': 'Le salon textuel à utiliser.',
+  'league.channel.kind.staff_queue': 'File de validation du staff',
+  'league.channel.kind.results': 'Résultats validés',
+  'league.channel.notice.staff_queue':
+    'Les résultats signalés par les équipes arriveront ici pour être validés par le staff.',
+  'league.channel.notice.results': 'Les résultats validés seront annoncés ici.',
+  'league.channel.set': 'Salon enregistré : {kind} dans <#{channel}>.',
+  'league.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
+  'league.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
+  'league.error.cannot_post':
+    'Je ne peux pas écrire dans ce salon. Donne-moi « Voir le salon » et « Envoyer des messages », puis réessaie.',
   'error.unknownCommand': 'Commande inconnue.',
   'error.unknownButton': "Ce bouton n'est plus utilisable.",
   'error.unexpected': 'Une erreur est survenue. Réessaie dans un instant.',
