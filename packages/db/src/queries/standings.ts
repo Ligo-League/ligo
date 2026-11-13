@@ -71,7 +71,7 @@ export function loadStandingsInput(
     .all();
 
   const counted = db
-    .select({ id: match.id, status: match.status })
+    .select({ id: match.id, status: match.status, week: match.week })
     .from(match)
     .where(and(eq(match.stageId, stageId), inArray(match.status, ['validated', 'forfeit'])))
     // By week, so that a team's latest results can be read off the end of the list.
@@ -86,7 +86,7 @@ export function loadStandingsInput(
     .orderBy(asc(game.matchId), asc(game.n))
     .all();
 
-  const matches = counted.map(({ id, status }): StandingsMatch => {
+  const matches = counted.map(({ id, status, week }): StandingsMatch => {
     // A league stage is played between its entries; a bracket source here is corrupt data.
     const entryOf = (side: 'a' | 'b') => {
       const found = sides.find((row) => row.matchId === id && row.side === side);
@@ -98,10 +98,17 @@ export function loadStandingsInput(
     if (status === 'forfeit') {
       const forfeitedBy = matchGames[0]?.forfeitSide;
       if (!forfeitedBy) throw new Error(`Forfeit match ${id} does not say which side forfeited`);
-      return { id, a: entryOf('a'), b: entryOf('b'), result: { kind: 'forfeit', forfeitedBy } };
+      return {
+        id,
+        week,
+        a: entryOf('a'),
+        b: entryOf('b'),
+        result: { kind: 'forfeit', forfeitedBy },
+      };
     }
     return {
       id,
+      week,
       a: entryOf('a'),
       b: entryOf('b'),
       result: {

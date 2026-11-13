@@ -125,11 +125,11 @@ describe('loadStandingsInput', () => {
     set(7, 'disputed');
 
     expect(load(db).input.matches).toEqual([
-      { id: 1, a: 1, b: 2, result: { kind: 'played', games: [{ a: 7, b: 4 }] } },
-      { id: 2, a: 3, b: 1, result: { kind: 'forfeit', forfeitedBy: 'b' } },
+      { id: 1, week: 1, a: 1, b: 2, result: { kind: 'played', games: [{ a: 7, b: 4 }] } },
+      { id: 2, week: 2, a: 3, b: 1, result: { kind: 'forfeit', forfeitedBy: 'b' } },
     ]);
     expect(load(db, 2).input.matches).toEqual([
-      { id: 8, a: 4, b: 5, result: { kind: 'played', games: [{ a: 8, b: 6 }] } },
+      { id: 8, week: 1, a: 4, b: 5, result: { kind: 'played', games: [{ a: 8, b: 6 }] } },
     ]);
   });
 
