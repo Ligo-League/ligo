@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { weekWindow, zonedMidnight } from './time.ts';
+import { weekWindow, zonedDate, zonedDateTime, zonedMidnight } from './time.ts';
 
 const PARIS = 'Europe/Paris';
 const HOUR = 3_600_000;
@@ -76,5 +76,72 @@ describe('weekWindow', () => {
         expect(localTime).toBe('00:00');
       }),
     );
+  });
+});
+
+describe('zonedDateTime', () => {
+  const at = (date: string, time: string, zone = PARIS) => {
+    const result = zonedDateTime(date, time, zone);
+    return result.ok ? iso(result.at) : result.error;
+  };
+
+  it.each([
+    ['2026-11-22', '21:00', '2026-11-22T20:00:00.000Z'], // winter time, UTC+1
+    ['2026-10-20', '21:30', '2026-10-20T19:30:00.000Z'], // summer time, UTC+2
+    ['2026-11-22', '00:00', '2026-11-21T23:00:00.000Z'],
+    ['2026-11-22', '23:59', '2026-11-22T22:59:00.000Z'],
+    ['2027-03-28', '03:00', '2027-03-28T01:00:00.000Z'], // just after the clocks go forward
+  ])('%s %s in Paris is %s', (date, time, expected) => {
+    expect(at(date, time)).toBe(expected);
+  });
+
+  it('refuses a time the clocks skip when they go forward', () => {
+    expect(at('2027-03-28', '02:30')).toBe('nonexistent_time');
+  });
+
+  it('takes the first of the two 02:30 when the clocks go back', () => {
+    expect(at('2026-10-25', '02:30')).toBe('2026-10-25T00:30:00.000Z');
+  });
+
+  it.each([
+    ['2026-02-30', '21:00', 'invalid_date'],
+    ['22/11/2026', '21:00', 'invalid_date'],
+    ['2026-11-22', '24:00', 'invalid_time'],
+    ['2026-11-22', '21h', 'invalid_time'],
+    ['2026-11-22', '9:5', 'invalid_time'],
+  ])('refuses %s %s', (date, time, error) => {
+    expect(at(date, time)).toBe(error);
+  });
+
+  it('accepts one-digit hours, as people type them', () => {
+    expect(at('2026-11-22', '9:00')).toBe('2026-11-22T08:00:00.000Z');
+  });
+
+  it('round-trips with zonedDate for any minute of a year', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 365 * 24 * 60 }), (minutes) => {
+        const instant = Date.UTC(2026, 0, 1) + minutes * 60_000;
+        const local = zonedDate(instant, PARIS);
+        const back = zonedDateTime(local.date, local.time, PARIS);
+        // During the hour repeated in October, the first of the two instants comes back.
+        expect(back.ok && (back.at === instant || back.at === instant - HOUR)).toBe(true);
+      }),
+    );
+  });
+});
+
+describe('zonedDate', () => {
+  it('gives the local date, time and weekday (1 = Monday, 7 = Sunday)', () => {
+    expect(zonedDate(Date.parse('2026-11-22T20:00:00Z'), PARIS)).toEqual({
+      date: '2026-11-22',
+      time: '21:00',
+      weekday: 7,
+    });
+    // Late on Sunday in UTC is already Monday in Paris.
+    expect(zonedDate(Date.parse('2026-11-22T23:30:00Z'), PARIS)).toEqual({
+      date: '2026-11-23',
+      time: '00:30',
+      weekday: 1,
+    });
   });
 });

@@ -26,7 +26,12 @@ const LFR_S3 = {
     team_staff_max: 3,
     dispute_reasons: DEFAULT_DISPUTE_REASONS,
   },
-  scheduling: { rounds_per_week: 1 },
+  scheduling: {
+    rounds_per_week: 1,
+    time_zone: 'Europe/Paris',
+    extension_weeks: 1,
+    auto_slot: { weekday: 7, time: '21:00' },
+  },
   season: { forfeit_score: [0, 0], map_pool: [], forfeits: { warning_at: 2, exclusion_at: 3 } },
   stage: { seed: 20261019 },
 };
@@ -312,7 +317,24 @@ describe('JSON round trip', () => {
         ),
       }),
     ],
-    ['scheduling', schedulingSchema, fc.record({ rounds_per_week: positive })],
+    [
+      'scheduling',
+      schedulingSchema,
+      fc.record({
+        rounds_per_week: positive,
+        time_zone: fc.constantFrom('Europe/Paris', 'UTC', 'America/New_York'),
+        extension_weeks: fc.integer({ min: 1, max: 4 }),
+        auto_slot: fc.option(
+          fc.record({
+            weekday: fc.integer({ min: 1, max: 7 }),
+            time: fc
+              .tuple(fc.integer({ min: 0, max: 23 }), fc.integer({ min: 0, max: 59 }))
+              .map(([h, m]) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`),
+          }),
+          { nil: null },
+        ),
+      }),
+    ],
     [
       'season',
       seasonSettingsSchema,

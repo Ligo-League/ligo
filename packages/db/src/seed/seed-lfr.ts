@@ -7,6 +7,7 @@ import type { TeamRow } from './parse-teams-csv.ts';
 
 // LFR Season 3 as described in the design doc (sections 5 and 16). Data, not rules: every value
 // below is an ordinary row or setting that staff will be able to change.
+const LFR_TIME_ZONE_SETTING = 'Europe/Paris';
 const ORG: typeof org.$inferInsert = { name: 'LFR', slug: 'lfr', locale: 'fr', settingsJson: {} };
 const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   title: 'r6',
@@ -27,7 +28,13 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
     forfeit: { winner: 3, loser: 0, counts_as_played: true },
   },
   tiebreakJson: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
-  schedulingJson: { rounds_per_week: 1 },
+  // Rulebook: one extra week without an agreed time, then Sunday 21:00, French time.
+  schedulingJson: {
+    rounds_per_week: 1,
+    time_zone: LFR_TIME_ZONE_SETTING,
+    extension_weeks: 1,
+    auto_slot: { weekday: 7, time: '21:00' },
+  },
   statSchemaVersion: 1,
   themeJson: {},
 };
@@ -62,7 +69,7 @@ const DIVISIONS: Omit<typeof division.$inferInsert, 'seasonId'>[] = [
 export const LFR_DIVISION_NAMES = DIVISIONS.map((entry) => entry.name);
 
 /** LFR plays and schedules in French time. */
-export const LFR_TIME_ZONE = 'Europe/Paris';
+export const LFR_TIME_ZONE = LFR_TIME_ZONE_SETTING;
 
 /** The seeded season with its competition, or undefined before `seedLfr` has run. */
 export function findLfrSeason(db: Pick<Db, 'select'>) {

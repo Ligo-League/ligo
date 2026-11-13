@@ -112,8 +112,32 @@ export const rulesetSchema = z.strictObject({
 export type RulesetSettings = z.infer<typeof rulesetSchema>;
 
 /** `competition.scheduling_json`. */
+const isTimeZone = (zone: string) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const schedulingSchema = z.strictObject({
   rounds_per_week: z.int().min(1),
+  /** Where weeks start at midnight and match times are typed; an IANA zone. */
+  time_zone: z.string().refine(isTimeZone, { error: 'Unknown time zone.' }).default('Europe/Paris'),
+  /** Weeks added when the teams agree no time during their week; LFR's rulebook gives one. */
+  extension_weeks: z.int().min(1).max(4).default(1),
+  /**
+   * The time the match is set to when the extension starts without an agreed time, on the last
+   * such weekday of the extension (1 = Monday, 7 = Sunday). Null: no automatic time.
+   */
+  auto_slot: z
+    .strictObject({
+      weekday: z.int().min(1).max(7),
+      time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    })
+    .nullable()
+    .default({ weekday: 7, time: '21:00' }),
 });
 export type SchedulingSettings = z.infer<typeof schedulingSchema>;
 
