@@ -288,6 +288,7 @@ describe('answerReport', () => {
       return reply.ok ? reply.dispute : reply.error;
     };
     expect(await answer('other', 'Ils ont joué à six.')).toEqual({
+      id: 1,
       reason: 'other',
       label: null,
       details: 'Ils ont joué à six.',

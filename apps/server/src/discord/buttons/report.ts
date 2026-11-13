@@ -20,7 +20,7 @@ import type {
   FormSubmitInteraction,
   ButtonInteraction,
 } from '../commands/types.ts';
-import { mention, notify, storedLine } from '../match-text.ts';
+import { mention, notifyQueue, storedLine } from '../match-text.ts';
 
 // The buttons under a result report. The custom ID names the match and, as nonce, the evidence
 // row of the report it belongs to; the services re-check who clicks and the match's state.
@@ -78,12 +78,20 @@ async function announceAnswer(
     });
     // A block quote keeps the team's own words apart from the bot's; mentions never ping.
     const details = reply.dispute.details === null ? '' : `\n>>> ${reply.dispute.details}`;
-    await notify(context, reply.queueChannelId, { content: reason + details });
+    await notifyQueue(
+      context,
+      reply.queueChannelId,
+      { content: reason + details },
+      { entity: 'dispute', entityId: reply.dispute.id },
+    );
     return;
   }
-  await notify(context, reply.queueChannelId, {
-    content: t(locale, `queue.${reply.status}`, { line, member }),
-  });
+  await notifyQueue(
+    context,
+    reply.queueChannelId,
+    { content: t(locale, `queue.${reply.status}`, { line, member }) },
+    { entity: 'match', entityId: reply.match.id },
+  );
 }
 
 /** Confirm, under the public report: for the other team. */

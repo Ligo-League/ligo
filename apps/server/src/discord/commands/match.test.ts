@@ -104,9 +104,12 @@ describe('/match report', () => {
     expect(status()).toBe('reported');
   });
 
-  it('posts it in the staff queue with the buttons for staff', async () => {
-    const { run, gateway } = session();
+  it('posts it in the staff queue with the buttons for staff, and records the post', async () => {
+    const { db, run, gateway } = session();
     await run(report(BRAVO));
+    expect(db.select().from(schema.queuePost).all()).toMatchObject([
+      { entity: 'match', entityId: 3, channelId: QUEUE, messageId: gateway.posted[0]?.messageId },
+    ]);
     expect(gateway.posted).toMatchObject([
       {
         channelId: QUEUE,
@@ -293,7 +296,7 @@ describe('report buttons', () => {
   });
 
   it('records the sent dispute: the public message names no reason, staff get it all', async () => {
-    const { run, send, gateway, status } = session();
+    const { db, run, send, gateway, status } = session();
     await run(report(BRAVO));
     const interaction = await send('report-dispute:3:1', CHARLIE, {
       reason: 'ineligible_player',
@@ -313,6 +316,12 @@ describe('report buttons', () => {
     );
     // The team's words reach staff, but cannot ping anyone.
     expect(queued?.message.mentionUserIds ?? []).toEqual([]);
+    const dispute = db.select().from(schema.dispute).get();
+    expect(db.select().from(schema.queuePost).all().at(-1)).toMatchObject({
+      entity: 'dispute',
+      entityId: dispute?.id,
+      messageId: queued?.messageId,
+    });
   });
 
   it('refuses "Autre" without details: nothing changes, and the member can try again', async () => {

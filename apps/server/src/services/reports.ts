@@ -32,6 +32,7 @@ import { resultsChannelFor } from './league-channels.ts';
 import { settleDisputes, type DisputeResolution } from './disputes.ts';
 import { hasExcludedTeam } from './exclusions.ts';
 import { ensurePlayer } from './players.ts';
+import { recordQueuePost } from './queue-posts.ts';
 import { isAcceptableScreenshot, SCREENSHOT_MAX_BYTES, type Screenshot } from './results.ts';
 import { listTeamStaff, type TeamMember } from './team-staff.ts';
 
@@ -271,6 +272,12 @@ export async function reportResult(
       files: [screenshot],
     });
     db.update(evidence).set({ url: post.url }).where(eq(evidence.id, stored.evidenceId)).run();
+    recordQueuePost(
+      db,
+      { entity: 'match', entityId: stored.match.id },
+      { channelId: first.queueChannelId, messageId: post.messageId },
+      now,
+    );
   } catch {
     // The report is stored and staff can still find it with their command; only the queue
     // post is missing.
@@ -343,7 +350,8 @@ export type AnswerReply =
       ok: true;
       match: LeagueMatch;
       status: 'confirmed' | 'disputed' | 'validated';
-      dispute: DisputeDetails | null;
+      /** The dispute stored, with its row's ID for its post in the staff queue. */
+      dispute: (DisputeDetails & { id: number }) | null;
       queueChannelId: string | null;
       resultsChannelId: string | null;
     }
@@ -506,7 +514,7 @@ export function answerReport(
       ok: true,
       match: found,
       status,
-      dispute,
+      dispute: dispute && disputeId !== null ? { ...dispute, id: disputeId } : null,
       queueChannelId: league.guild.alertsChannelId,
       resultsChannelId: resultsChannelFor(league, found),
     };

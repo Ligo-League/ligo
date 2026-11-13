@@ -1,6 +1,7 @@
 import { describeGameScores, type GameScoreSettings } from '@ligo/core';
 import type { LeagueMatch } from '@ligo/db';
 import { t, type Locale } from '../i18n/index.ts';
+import { recordQueuePost, type QueueEntity } from '../services/queue-posts.ts';
 import { MAX_CHOICE_LENGTH } from './commands/describe.ts';
 import type { CommandContext, OutgoingMessage } from './commands/types.ts';
 
@@ -88,6 +89,26 @@ export const mention = (discordUserId: string) => `<@${discordUserId}>`;
  * not undo the step it reports, which is already stored: the failure is left to the caller's
  * reply and to Discord's own audit of the bot's permissions.
  */
+/**
+ * Posts in the staff queue and records the post by what it is about, so that whoever handles it
+ * can later mark it as handled. False when there is no queue or the post failed.
+ */
+export async function notifyQueue(
+  context: CommandContext,
+  channelId: string | null,
+  message: OutgoingMessage,
+  about: { entity: QueueEntity; entityId: number },
+): Promise<boolean> {
+  if (!channelId) return false;
+  try {
+    const post = await context.gateway.postMessage(channelId, message);
+    recordQueuePost(context.db, about, { channelId, messageId: post.messageId }, context.now());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function notify(
   context: CommandContext,
   channelId: string | null,
