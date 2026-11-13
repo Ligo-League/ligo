@@ -56,6 +56,7 @@ export const fr = {
   'match.error.invalid_screenshot':
     'La capture doit être une image PNG, JPEG ou WebP de moins de 20 Mo, jointe à la commande.',
   'error.unknownCommand': 'Commande inconnue.',
+  'error.unknownButton': "Ce bouton n'est plus utilisable.",
   'error.unexpected': 'Une erreur est survenue. Réessaie dans un instant.',
 } as const;
 

@@ -52,5 +52,6 @@ export const en: Record<MessageKey, string> = {
   'match.error.invalid_screenshot':
     'The screenshot must be a PNG, JPEG or WebP image under 20 MB, attached to the command.',
   'error.unknownCommand': 'Unknown command.',
+  'error.unknownButton': 'This button can no longer be used.',
   'error.unexpected': 'Something went wrong. Please try again in a moment.',
 };

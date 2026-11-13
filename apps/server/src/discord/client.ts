@@ -1,11 +1,11 @@
 import type { Db } from '@ligo/db';
 import {
-  AttachmentBuilder,
   Client,
   Events,
   GatewayIntentBits,
   MessageFlags,
   type AutocompleteInteraction as DiscordAutocomplete,
+  type ButtonInteraction as DiscordButton,
   type ChatInputCommandInteraction,
   type Interaction,
 } from 'discord.js';
@@ -14,17 +14,24 @@ import { DEFAULT_LOCALE } from '../i18n/index.ts';
 import type { Actor } from '../services/permissions.ts';
 import type {
   AutocompleteInteraction,
+  ButtonHandler,
+  ButtonInteraction,
   Command,
   CommandContext,
   CommandInteraction,
+  ReplyMessage,
 } from './commands/types.ts';
-import { routeAutocomplete, routeCommand } from './router.ts';
+import { createDiscordGateway } from './gateway.ts';
+import { toDiscordMessage } from './outgoing.ts';
+import { routeAutocomplete, routeButton, routeCommand } from './router.ts';
 
 // Discord shows at most this many suggestions for an option.
 const MAX_CHOICES = 25;
 
-/** Who used the command, with the roles Discord sent along with the interaction. */
-function actorOf(interaction: ChatInputCommandInteraction | DiscordAutocomplete): Actor {
+/** Who acted, with the roles Discord sent along with the interaction. */
+function actorOf(
+  interaction: ChatInputCommandInteraction | DiscordAutocomplete | DiscordButton,
+): Actor {
   const roles = interaction.member?.roles;
   // A cached member carries a role manager; an uncached one the plain list of role IDs.
   const memberRoleIds = !roles ? [] : Array.isArray(roles) ? roles : [...roles.cache.keys()];
@@ -35,23 +42,38 @@ function actorOf(interaction: ChatInputCommandInteraction | DiscordAutocomplete)
   };
 }
 
+/** Sends a reply, or completes a deferred one. */
+async function sendReply(
+  interaction: ChatInputCommandInteraction | DiscordButton,
+  { ephemeral, ...message }: ReplyMessage,
+): Promise<void> {
+  const payload = toDiscordMessage(message);
+  // A deferred reply was announced as public and can only be completed, not made private.
+  if (interaction.deferred) await interaction.editReply(payload);
+  else if (ephemeral) await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
+  else await interaction.reply(payload);
+}
+
 /**
  * The gateway client. Guild Members is a privileged intent: it must be enabled in the Developer
  * Portal (docs/setup.md), and the reconciler will need it to read role membership.
  */
 export function createDiscordClient(deps: {
   commands: readonly Command[];
+  buttons: readonly ButtonHandler[];
   logger: Logger;
   db: Db;
 }): Client {
-  const { commands, logger, db } = deps;
+  const { commands, buttons, logger, db } = deps;
   const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   });
+  const gateway = createDiscordGateway(client);
   const contextNow = (): CommandContext => ({
     locale: DEFAULT_LOCALE,
     gatewayPingMs: client.ws.ping,
     db,
+    gateway,
     now: () => Date.now(),
   });
 
@@ -81,6 +103,25 @@ export function createDiscordClient(deps: {
       });
       return;
     }
+
+    if (interaction.isButton()) {
+      const adapter: ButtonInteraction = {
+        ...actorOf(interaction),
+        customId: interaction.customId,
+        get answered() {
+          return interaction.replied;
+        },
+        reply: (message) => sendReply(interaction, message),
+        async update(message) {
+          await interaction.update(toDiscordMessage(message));
+        },
+      };
+      routeButton(buttons, adapter, contextNow(), logger).catch((error: unknown) => {
+        logger.error({ err: error }, 'Could not answer button');
+      });
+      return;
+    }
+
     if (!interaction.isChatInputCommand()) return;
 
     const adapter: CommandInteraction = {
@@ -100,6 +141,14 @@ export function createDiscordClient(deps: {
             }
           );
         },
+        getUser: (name) => {
+          const user = interaction.options.getUser(name);
+          return user && { id: user.id, displayName: user.displayName };
+        },
+        getChannel: (name) => {
+          const channel = interaction.options.getChannel(name);
+          return channel && { id: channel.id };
+        },
       },
       get answered() {
         return interaction.replied;
@@ -107,18 +156,7 @@ export function createDiscordClient(deps: {
       async defer() {
         await interaction.deferReply();
       },
-      async reply({ content, ephemeral, files = [] }) {
-        const message = {
-          content,
-          files: files.map(
-            (file) => new AttachmentBuilder(Buffer.from(file.data), { name: file.name }),
-          ),
-        };
-        // A deferred reply was announced as public and can only be completed, not made private.
-        if (interaction.deferred) await interaction.editReply(message);
-        else if (ephemeral) await interaction.reply({ ...message, flags: MessageFlags.Ephemeral });
-        else await interaction.reply(message);
-      },
+      reply: (message) => sendReply(interaction, message),
     };
 
     routeCommand(commands, adapter, contextNow(), logger).catch((error: unknown) => {

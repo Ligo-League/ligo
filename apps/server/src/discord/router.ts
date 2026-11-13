@@ -1,6 +1,9 @@
 import { t } from '../i18n/index.ts';
+import { parseButtonId } from './button-id.ts';
 import type {
   AutocompleteInteraction,
+  ButtonHandler,
+  ButtonInteraction,
   Command,
   CommandContext,
   CommandInteraction,
@@ -60,5 +63,32 @@ export async function routeAutocomplete(
   } catch (error) {
     logger.error({ err: error, command: interaction.commandName }, 'Autocomplete failed');
     await interaction.respond([]);
+  }
+}
+
+/**
+ * Runs the handler of a clicked button. A button this bot cannot read, or one whose handler is
+ * gone, is answered privately; so is a failure, without its details.
+ */
+export async function routeButton(
+  handlers: readonly ButtonHandler[],
+  interaction: ButtonInteraction,
+  context: CommandContext,
+  logger: ErrorLogger,
+): Promise<void> {
+  const target = parseButtonId(interaction.customId);
+  const handler = target && handlers.find((candidate) => candidate.action === target.action);
+  if (!target || !handler) {
+    await interaction.reply({ content: t(context.locale, 'error.unknownButton'), ephemeral: true });
+    return;
+  }
+
+  try {
+    await handler.execute(interaction, target, context);
+  } catch (error) {
+    logger.error({ err: error, action: target.action, entityId: target.entityId }, 'Button failed');
+    if (!interaction.answered) {
+      await interaction.reply({ content: t(context.locale, 'error.unexpected'), ephemeral: true });
+    }
   }
 }

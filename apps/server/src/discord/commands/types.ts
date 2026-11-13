@@ -2,11 +2,34 @@ import type { Db } from '@ligo/db';
 import type { RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js';
 import type { Locale } from '../../i18n/index.ts';
 import type { Actor } from '../../services/permissions.ts';
+import type { ButtonTarget } from '../button-id.ts';
+import type { DiscordGateway } from '../gateway.ts';
 
 /** A file the bot attaches to its reply. */
 export interface CommandFile {
   name: string;
   data: Uint8Array;
+}
+
+/** A button under a message. Its `customId` comes from `buttonId`. */
+export interface MessageButton {
+  customId: string;
+  label: string;
+  style: 'primary' | 'secondary' | 'success' | 'danger';
+}
+
+/** A message the bot sends: a reply, a post in a channel, or an edit. */
+export interface OutgoingMessage {
+  content: string;
+  files?: readonly CommandFile[];
+  buttons?: readonly MessageButton[];
+  /** The only users the message may notify; a mention of anyone else shows without pinging. */
+  mentionUserIds?: readonly string[];
+}
+
+/** A reply to an interaction; `ephemeral` shows it to the member alone. */
+export interface ReplyMessage extends OutgoingMessage {
+  ephemeral: boolean;
 }
 
 /** A file attached to a command, as Discord describes it. */
@@ -29,6 +52,10 @@ export interface CommandInteraction extends InteractionBase {
     getString(name: string): string | null;
     getInteger(name: string): number | null;
     getAttachment(name: string): CommandAttachment | null;
+    /** The member picked for a user option. */
+    getUser(name: string): { id: string; displayName: string } | null;
+    /** The channel picked for a channel option. */
+    getChannel(name: string): { id: string } | null;
   };
   /** True once the reply itself has been sent; a deferral alone does not count. */
   readonly answered: boolean;
@@ -37,11 +64,7 @@ export interface CommandInteraction extends InteractionBase {
    * rendering an image. The reply that follows is then visible to everyone.
    */
   defer(): Promise<void>;
-  reply(message: {
-    content: string;
-    ephemeral: boolean;
-    files?: readonly CommandFile[];
-  }): Promise<void>;
+  reply(message: ReplyMessage): Promise<void>;
 }
 
 export interface AutocompleteChoice {
@@ -59,10 +82,22 @@ export interface AutocompleteInteraction extends InteractionBase {
   respond(choices: readonly AutocompleteChoice[]): Promise<void>;
 }
 
+/** A member clicked a button under one of the bot's messages. */
+export interface ButtonInteraction extends Actor {
+  customId: string;
+  /** True once the click has been answered, by a reply or by an update. */
+  readonly answered: boolean;
+  /** Answers with a new message. */
+  reply(message: ReplyMessage): Promise<void>;
+  /** Replaces the message the button sits on, for example to remove buttons that were used. */
+  update(message: OutgoingMessage): Promise<void>;
+}
+
 export interface CommandContext {
   locale: Locale;
   gatewayPingMs: number;
   db: Db;
+  gateway: DiscordGateway;
   /** The current time in Unix milliseconds; services take it as a parameter. */
   now(): number;
 }
@@ -72,4 +107,15 @@ export interface Command {
   data: RESTPostAPIChatInputApplicationCommandsJSONBody;
   execute(interaction: CommandInteraction, context: CommandContext): Promise<void>;
   autocomplete?(interaction: AutocompleteInteraction, context: CommandContext): Promise<void>;
+}
+
+/** What a kind of button does. Thin, like a command: it calls a service and formats the answer. */
+export interface ButtonHandler {
+  /** The first part of the custom IDs it answers. */
+  action: string;
+  execute(
+    interaction: ButtonInteraction,
+    target: ButtonTarget,
+    context: CommandContext,
+  ): Promise<void>;
 }

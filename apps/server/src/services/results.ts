@@ -1,6 +1,7 @@
 import { isPossibleGameScore, type GameScoreSettings } from '@ligo/core';
 import { listLeagueMatches, schema, type Db, type LeagueMatch } from '@ligo/db';
 import { eq } from 'drizzle-orm';
+import { isDiscordAttachmentUrl } from './attachments.ts';
 import { requireStaff, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 
@@ -52,18 +53,16 @@ const OPEN_STATUSES: readonly LeagueMatch['status'][] = [
   'validated',
 ];
 
-// A screenshot attached to a slash command is hosted by Discord; anything else was not uploaded
-// through the command and is refused.
-const SCREENSHOT_HOSTS = ['cdn.discordapp.com', 'media.discordapp.net'];
 const SCREENSHOT_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-const SCREENSHOT_MAX_BYTES = 20 * 1024 * 1024;
+export const SCREENSHOT_MAX_BYTES = 20 * 1024 * 1024;
 
-function isAcceptableScreenshot(screenshot: Screenshot): boolean {
-  if (!URL.canParse(screenshot.url)) return false;
-  const url = new URL(screenshot.url);
+/**
+ * A screenshot attached to a slash command is hosted by Discord; anything else was not uploaded
+ * through the command and is refused.
+ */
+export function isAcceptableScreenshot(screenshot: Screenshot): boolean {
   return (
-    url.protocol === 'https:' &&
-    SCREENSHOT_HOSTS.includes(url.hostname) &&
+    isDiscordAttachmentUrl(screenshot.url) &&
     screenshot.contentType !== null &&
     SCREENSHOT_TYPES.includes(screenshot.contentType) &&
     screenshot.size > 0 &&
