@@ -345,7 +345,28 @@ section 16.
 - **Until answered:** phase 10 comes last.
 - **Answer:**
 
+#### M-14 · The stored forfeit counter
+
+- **Question:** forfeits are now counted from the matches, so the `slot.forfeits` column is never
+  written. Remove it in a later migration?
+- **Why it matters:** an unused column invites someone to trust it.
+- **Until answered:** the column stays, always at 0, and nothing reads it.
+- **Answer:**
+
+#### M-15 · Announcing results entered by staff
+
+- **Question:** a result validated from a team's report is announced in the results channel. A
+  result typed directly by staff with `/staff match result`, or a forfeit, is not. Should they be?
+- **Why it matters:** teams may expect every result in that channel.
+- **Until answered:** only validated reports are announced.
+- **Answer:**
+
 ## Answered
+
+#### Team commands and staff commands
+
+- **Answer (maintainer, 13 November 2026):** two commands, because Discord can hide a whole
+  command only: `/match` for teams, visible to everyone, and a hidden `/staff` for staff.
 
 #### Points per win in Season 3
 

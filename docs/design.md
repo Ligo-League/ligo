@@ -330,10 +330,15 @@ These sequences follow common R6 Circuit-based rulebooks ([example](https://www.
 **Result lifecycle (LFR)**
 
 1. `scheduled`: channel created, window and deadline set.
-2. `reported`: a captain enters the score and attaches a screenshot of the final scoreboard (required `evidence`).
-3. The opponent confirms (`confirmed`) or disputes (`disputed`, staff alerted).
-4. Staff validate (`validated`). Only now does the result count.
-5. Staff can set any result, forfeit or void directly; everything is audited.
+2. `reported`: the team's manager or one of its staff runs `/match report` with the score and a screenshot of the final scoreboard (required `evidence`). The bot posts the report in public, pings the other team's manager and staff, and posts it in the staff queue channel.
+3. The opponent confirms (`confirmed`) or disputes (`disputed`, staff alerted), with the buttons under the report.
+4. Staff validate (`validated`) with the button in the queue or `/staff match validate`. Only now does the result count; it is announced in the results channel. Staff can instead reject the report: the match goes back to `scheduled`.
+5. Staff can set any result (`/staff match result`), forfeit or void directly; everything is audited.
+
+- The steps, and who may take each, are one table in `packages/core` (`match-lifecycle.ts`). With `result_validation: 'opponent'`, the opponent's confirmation validates.
+- Staff may validate before the opponent answers; whether they should is an open question (O-06).
+- Until R2 (phase 5), the lasting copy of the screenshot is the bot's post in the staff queue, and `evidence.url` is the link to that message: the address Discord gives for an upload expires.
+- A button belongs to one report: its ID carries the `evidence` row of that report, so a button under an older report is refused.
 
 **Game score**
 
@@ -369,9 +374,10 @@ A restart keeps the score from before the crash. Each team may call one re-host 
 
 **Forfeits and exclusion**
 
-- Only staff record a forfeit.
-- `slot.forfeits` counts per season: the second forfeit adds an official warning automatically; the third excludes the team.
-- `excludeSlot()`:
+- Only staff record a forfeit (`/staff match forfeit`).
+- A team's forfeits are counted from its forfeit matches of the stage, never stored, so an annulled forfeit stops counting. The `slot.forfeits` column is therefore unused.
+- `season.settings_json.forfeits` holds the thresholds, `{ "warning_at": 2, "exclusion_at": 3 }` in LFR; either can be null. Reaching `warning_at` adds a `warning` sanction automatically. Reaching `exclusion_at` alerts the staff queue and excludes nobody: exclusion is a staff decision, and its rule is not settled (O-04, O-05).
+- `excludeSlot()` (not built yet):
     - if the team played at least 50% of its matches, its results stand and its remaining matches become forfeit wins for the opponents;
     - otherwise every match of the team, past ones included, becomes a forfeit win for the opponents, and the slot is lost. Every changed match is audited and standings are recomputed.
 
@@ -411,7 +417,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 
 **Who can do what**
 
-- **Staff:** the staff role configured per server. Staff commands also set `default_member_permissions` so Discord hides them from others.
+- **Staff:** the staff role configured per server. Staff commands also set `default_member_permissions` so Discord hides them from others. Discord hides a whole command, never one subcommand, so team actions and staff actions are separate commands: `/match` for teams, `/staff` for staff.
 - **Team managers and staff:** from `team_staff` (one manager, up to 3 staff), who act for the team.
 - **Players:** any Discord user linked to a `player` row.
 - **Commentators:** players holding a `commentator` accreditation.
@@ -419,26 +425,29 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 
 **Commands**
 
-| Command                                     | Who                     | Does                                                                         |
-| ------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------- |
-| `/standings [division]`                     | everyone                | Standings image for the current season                                       |
-| `/fixtures [week]`                          | everyone                | The week's matches with times, host, side choice and results                 |
-| `/stats player:<autocomplete>`              | everyone                | Player card image (consenting players only)                                  |
-| `/stats team:<autocomplete>`                | everyone                | Team card image                                                              |
-| `/leaderboard metric:<choice>`              | everyone                | Top 10 for one metric, with coverage                                         |
-| `/rules [section]`                          | everyone                | Link to the current rulebook version on the website                          |
-| `/link`                                     | players                 | Opens the website to link Ubisoft, Riot or Epic accounts                     |
-| `/match propose-time when:<datetime>`       | team managers and staff | Posts a proposal with Accept and Decline buttons                             |
-| `/match report screenshot:<attachment>`     | team managers and staff | Opens a modal: score per map, overtime; the screenshot becomes `evidence`    |
-| `/match rehost`                             | team managers and staff | Records the team's re-host for the current map                               |
-| `/register`, `/mercato`                     | team managers           | Open the website forms (too many fields for a modal)                         |
-| `/stream title match:<autocomplete>`        | commentators            | Returns the mandatory title, e.g. "LFR Ligue 1 – RCK Esport VS Greed Esport" |
-| `/match validate\|result\|forfeit\|void`    | staff                   | Validation and direct changes, audited                                       |
-| `/season create\|schedule\|publish\|close`  | staff                   | Season setup; `schedule` previews, `close` runs promotion and relegation     |
-| `/week publish week:<n>`                    | staff                   | Creates that week's channels now instead of on schedule                      |
-| `/sanction`, `/accreditation grant\|revoke` | staff                   | Sanctions and commentator accreditations                                     |
-| `/admin sync [dry_run]`                     | staff                   | Runs the reconciler; dry run prints the diff                                 |
-| `/admin reparse game:<id>`                  | staff                   | Re-runs replay verification and stitching for a game                         |
+| Command                                          | Who                     | Does                                                                                                    |
+| ------------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/standings [division]`                          | everyone                | Standings image for the current season                                                                  |
+| `/fixtures [week]`                               | everyone                | The week's matches with times, host, side choice and results                                            |
+| `/stats player:<autocomplete>`                   | everyone                | Player card image (consenting players only)                                                             |
+| `/stats team:<autocomplete>`                     | everyone                | Team card image                                                                                         |
+| `/leaderboard metric:<choice>`                   | everyone                | Top 10 for one metric, with coverage                                                                    |
+| `/rules [section]`                               | everyone                | Link to the current rulebook version on the website                                                     |
+| `/link`                                          | players                 | Opens the website to link Ubisoft, Riot or Epic accounts                                                |
+| `/match propose-time when:<datetime>`            | team managers and staff | Posts a proposal with Accept and Decline buttons                                                        |
+| `/match report match score_a score_b screenshot` | team managers and staff | Reports a BO1 result; the screenshot becomes `evidence`. A modal with a score per map comes with series |
+| `/match rehost`                                  | team managers and staff | Records the team's re-host for the current map                                                          |
+| `/register`, `/mercato`                          | team managers           | Open the website forms (too many fields for a modal)                                                    |
+| `/stream title match:<autocomplete>`             | commentators            | Returns the mandatory title, e.g. "LFR Ligue 1 – RCK Esport VS Greed Esport"                            |
+| `/staff match validate\|result\|forfeit\|void`   | staff                   | Validation and direct changes, audited                                                                  |
+| `/staff sanction add\|list`                      | staff                   | A warning or a change of points for a team; its sanctions this season                                   |
+| `/team manager`, `/team staff add\|remove\|list` | staff                   | Who acts for each team, until registration fills it in                                                  |
+| `/league channel kind channel`                   | staff                   | The staff queue channel and the results channel                                                         |
+| `/season create\|schedule\|publish\|close`       | staff                   | Season setup; `schedule` previews, `close` runs promotion and relegation                                |
+| `/week publish week:<n>`                         | staff                   | Creates that week's channels now instead of on schedule                                                 |
+| `/accreditation grant\|revoke`                   | staff                   | Commentator accreditations                                                                              |
+| `/admin sync [dry_run]`                          | staff                   | Runs the reconciler; dry run prints the diff                                                            |
+| `/admin reparse game:<id>`                       | staff                   | Re-runs replay verification and stitching for a game                                                    |
 
 **Interaction rules**
 
