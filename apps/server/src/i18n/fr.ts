@@ -37,6 +37,17 @@ export const fr = {
   'command.staff.match.validate.description': 'Valide un résultat signalé par une équipe.',
   'command.staff.match.void.description': 'Annule un match, avec un motif.',
   'command.staff.match.void.option.reason': 'Le motif, conservé dans le journal.',
+  'command.staff.match.forfeit.description': "Enregistre le forfait d'une équipe sur un match.",
+  'command.staff.match.forfeit.option.team': "L'équipe qui déclare forfait.",
+  'command.staff.match.forfeit.side.a': 'La première équipe citée',
+  'command.staff.match.forfeit.side.b': 'La seconde équipe citée',
+  'command.staff.sanction.description': 'Sanctions.',
+  'command.staff.sanction.add.description': 'Donne une sanction à une équipe.',
+  'command.staff.sanction.list.description': "Affiche les sanctions d'une équipe cette saison.",
+  'command.staff.sanction.option.kind': 'Le type de sanction.',
+  'command.staff.sanction.option.reason': 'Le motif de la sanction.',
+  'command.staff.sanction.option.points':
+    'Points à ajouter au classement : un nombre négatif en retire (par exemple -1).',
   'command.staff.match.result.description': "Enregistre ou corrige le résultat d'un match.",
   'command.staff.match.option.match':
     'Le match : tape une équipe, une division ou une semaine (s3), puis choisis dans la liste.',
@@ -72,6 +83,30 @@ export const fr = {
   'result.announce': 'Résultat validé — {line}.',
   'staff.match.validated': 'Résultat validé : {line}.',
   'staff.match.voided': 'Match annulé : {fixture}.',
+  'staff.match.forfeit':
+    'Forfait enregistré : {fixture}. {team} déclare forfait ({count} cette saison).',
+  'staff.match.forfeit.warning': 'Un avertissement a été ajouté automatiquement à {team}.',
+  'staff.match.forfeit.exclusion':
+    "{team} atteint le seuil d'exclusion avec {count} forfaits. L'exclusion reste une décision du staff.",
+  'queue.exclusion':
+    "{team} atteint le seuil d'exclusion avec {count} forfaits ({fixture}). Une décision du staff est attendue.",
+  'sanction.reason.forfeits': 'Avertissement automatique : {count} forfaits cette saison.',
+  'sanction.kind.warning': 'Avertissement',
+  'sanction.kind.points': 'Points au classement',
+  'sanction.kindPoints': '{points} point(s) au classement',
+  'sanction.line': '{date} — {kind} — {reason}',
+  'sanction.added': 'Sanction enregistrée pour {team} : {sanction}',
+  'sanction.list.title': 'Sanctions de {team} cette saison :',
+  'sanction.list.none': 'Aucune sanction pour {team} cette saison.',
+  'sanction.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
+  'sanction.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
+  'sanction.error.no_season': "Aucune saison n'est en cours.",
+  'sanction.error.team_not_found':
+    'Équipe introuvable dans la saison en cours. Choisis-la dans la liste proposée.',
+  'sanction.error.reason_required': 'Un motif est nécessaire.',
+  'sanction.error.points_required':
+    'Indique un nombre de points non nul, entre -100 et 100 (négatif pour en retirer).',
+  'sanction.error.points_not_allowed': 'Un avertissement ne porte pas de points.',
   'match.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'match.error.not_your_match': "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
   'match.error.not_reportable': 'Ce match a déjà un résultat signalé ou validé.',

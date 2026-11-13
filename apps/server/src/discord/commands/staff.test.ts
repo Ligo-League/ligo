@@ -273,3 +273,180 @@ describe('/staff match validate and void', () => {
     expect(await ids('void')).toEqual([1, 2, 3, 4]);
   });
 });
+
+describe('/staff match forfeit', () => {
+  const QUEUE = '800000000000000001';
+  function league() {
+    const db = leagueDatabase();
+    db.update(schema.leagueGuild).set({ alertsChannelId: QUEUE }).run();
+    const gateway = fakeGateway();
+    return { context: fakeContext({ db, gateway }), db, gateway };
+  }
+
+  it('records the forfeit and names the team, privately', async () => {
+    const { context, db } = league();
+    // Match 3 is Bravo v Charlie; Bravo (the first team named) forfeits.
+    const { replies } = await run(staffMatch('forfeit', { match: 3, team: 'a' }), context);
+    expect(replies).toEqual([
+      {
+        content:
+          'Forfait enregistré : Ligue 1, semaine 3 : Bravo – Charlie. Bravo déclare forfait (1 cette saison).',
+        ephemeral: true,
+      },
+    ]);
+    expect(db.select().from(schema.match).all()[2]?.status).toBe('forfeit');
+  });
+
+  it('says when the automatic warning was added, and stores its reason in French', async () => {
+    const { context, db, gateway } = league();
+    // Charlie already forfeited match 2: its second forfeit reaches the warning threshold.
+    const { replies } = await run(staffMatch('forfeit', { match: 3, team: 'b' }), context);
+    expect(replies[0]?.content).toBe(
+      [
+        'Forfait enregistré : Ligue 1, semaine 3 : Bravo – Charlie. Charlie déclare forfait (2 cette saison).',
+        'Un avertissement a été ajouté automatiquement à Charlie.',
+      ].join('\n'),
+    );
+    expect(db.select().from(schema.sanction).all()).toMatchObject([
+      { kind: 'warning', reason: 'Avertissement automatique : 2 forfaits cette saison.' },
+    ]);
+    expect(gateway.posted).toEqual([]);
+  });
+
+  it('alerts the staff queue at the exclusion threshold, and excludes nobody', async () => {
+    const { context, db, gateway } = league();
+    db.update(schema.season)
+      .set({
+        settingsJson: {
+          forfeit_score: [0, 0],
+          map_pool: [],
+          forfeits: { warning_at: null, exclusion_at: 2 },
+        },
+      })
+      .run();
+    const { replies } = await run(staffMatch('forfeit', { match: 3, team: 'b' }), context);
+    expect(replies[0]?.content).toContain(
+      "Charlie atteint le seuil d'exclusion avec 2 forfaits. L'exclusion reste une décision du staff.",
+    );
+    expect(gateway.posted).toMatchObject([
+      {
+        channelId: QUEUE,
+        message: {
+          content:
+            "Charlie atteint le seuil d'exclusion avec 2 forfaits (Ligue 1, semaine 3 : Bravo – Charlie). Une décision du staff est attendue.",
+        },
+      },
+    ]);
+    expect(
+      db
+        .select()
+        .from(schema.slot)
+        .all()
+        .every((row) => row.status === 'active'),
+    ).toBe(true);
+  });
+
+  it.each([
+    [
+      staffMatch('forfeit', { match: 2, team: 'a' }),
+      "Ce match n'attend pas cette action : il a déjà été traité.",
+    ],
+    [staffMatch('forfeit', { match: 3, team: 'c' }), 'Commande inconnue.'],
+    [staffMatch('forfeit', { match: 3 }), 'Commande inconnue.'],
+    [
+      staffMatch('forfeit', { match: 3, team: 'a' }, { ...STAFF, memberRoleIds: [] }),
+      'Cette commande est réservée au staff de la ligue.',
+    ],
+  ])('refuses privately: %j', async (input, content) => {
+    const { context, db } = league();
+    expect((await run(input, context)).replies).toEqual([{ content, ephemeral: true }]);
+    expect(db.select().from(schema.match).all()[2]?.status).toBe('scheduled');
+  });
+
+  it('suggests the matches a forfeit can be recorded on', async () => {
+    const choices = (await suggestFor('', STAFF, 'match', 'forfeit'))[0];
+    expect(choices?.map((choice) => choice.value)).toEqual([3, 1, 4]);
+  });
+});
+
+describe('/staff sanction', () => {
+  const sanction = (
+    subcommand: string,
+    options: FakeInput['options'],
+    who: FakeInput = STAFF,
+  ): FakeInput => ({ ...who, subcommandGroup: 'sanction', subcommand, options });
+  // 1 800 000 000 000 ms is 15 January 2027 in French time.
+  const DATE = '15/01/2027';
+
+  it('takes points away, shows it in the list, and the standings follow', async () => {
+    const context = fakeContext({ db: leagueDatabase() });
+    const added = await run(
+      sanction('add', { team: 1, kind: 'points', points: -2, reason: 'Retard répété' }),
+      context,
+    );
+    expect(added.replies).toEqual([
+      {
+        content: `Sanction enregistrée pour Alpha Esport : ${DATE} — -2 point(s) au classement — Retard répété`,
+        ephemeral: true,
+      },
+    ]);
+    await run(sanction('add', { team: 1, kind: 'warning', reason: 'Comportement' }), context);
+
+    const listed = await run(sanction('list', { team: 1 }), context);
+    expect(listed.replies[0]?.content).toBe(
+      [
+        'Sanctions de Alpha Esport cette saison :',
+        `${DATE} — -2 point(s) au classement — Retard répété`,
+        `${DATE} — Avertissement — Comportement`,
+      ].join('\n'),
+    );
+    expect(context.db.select().from(schema.sanction).all()).toMatchObject([
+      { kind: 'points', pointsDelta: -2 },
+      { kind: 'warning', pointsDelta: null },
+    ]);
+  });
+
+  it('says so when a team has no sanction', async () => {
+    const { replies } = await run(sanction('list', { team: 2 }));
+    expect(replies[0]?.content).toBe('Aucune sanction pour Bravo cette saison.');
+  });
+
+  it.each([
+    [
+      sanction('add', { team: 1, kind: 'points', reason: 'x' }),
+      'Indique un nombre de points non nul, entre -100 et 100 (négatif pour en retirer).',
+    ],
+    [
+      sanction('add', { team: 1, kind: 'warning', points: -1, reason: 'x' }),
+      'Un avertissement ne porte pas de points.',
+    ],
+    [sanction('add', { team: 1, kind: 'points', points: -1 }), 'Un motif est nécessaire.'],
+    [sanction('add', { team: 1, kind: 'exclusion', reason: 'x' }), 'Commande inconnue.'],
+    [
+      sanction('add', { team: 'alpha', kind: 'warning', reason: 'x' }),
+      'Équipe introuvable dans la saison en cours. Choisis-la dans la liste proposée.',
+    ],
+    [
+      sanction('add', { team: 1, kind: 'warning', reason: 'x' }, { ...STAFF, memberRoleIds: [] }),
+      'Cette commande est réservée au staff de la ligue.',
+    ],
+    [
+      sanction('list', { team: 1 }, { ...STAFF, memberRoleIds: [] }),
+      'Cette commande est réservée au staff de la ligue.',
+    ],
+  ])('refuses privately and stores nothing: %j', async (input, content) => {
+    const { replies, db } = await run(input);
+    expect(replies).toEqual([{ content, ephemeral: true }]);
+    expect(db.select().from(schema.sanction).all()).toEqual([]);
+  });
+
+  it('suggests teams for the team option', async () => {
+    const interaction = fakeAutocomplete(
+      'staff',
+      { name: 'team', value: 'br' },
+      { ...STAFF, subcommandGroup: 'sanction', subcommand: 'add' },
+    );
+    await staffCommand.autocomplete?.(interaction, fakeContext({ db: leagueDatabase() }));
+    expect(interaction.responses).toEqual([[{ name: 'Bravo (BRV) · Ligue 1', value: 2 }]]);
+  });
+});
