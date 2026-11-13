@@ -1034,7 +1034,7 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
 
 ## 16. Decisions and open questions
 
-Most configuration is now settled by the Season 3 rulebook and your answers. The questions left change settings, not architecture, and none blocks phases 0–2.
+Most configuration is now settled by the Season 3 rulebook and your answers. Most questions left change settings, not architecture; the ones that block a phase say so in `docs/open-questions.md`.
 
 **Settled**
 
@@ -1071,26 +1071,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. The
 
 **Still open**
 
-- [ ] Ligue 2 has 12 teams in Season 3 and score7 schedules its 11 rounds, two more than the season's 9 weeks: confirm its calendar, and which places go up, to barrage and down.
-- [ ] Nightwolves against Outsouki (week 5): score7's draw is an entry error, to be corrected there as a forfeit. Both teams have forfeited every other fixture they had left, so the owner must say which one forfeits this match, or what is recorded when neither team plays.
-- [ ] Division limits and promotion or relegation places as settings (a maximum size, places counted from the top and the bottom) instead of fixed ranks such as "9th–10th".
-- [ ] Barrages: best-of and timing (you are asking the owner).
-- [ ] Cup: the formal rule for which team picks the starting side, expected for Season 4.
-- [ ] Cup seeding: random draw, or by league and final rank?
-- [ ] Re-host allowance: confirm one per team per map, and that staff can order more.
-- [ ] Replays in Season 4: go or no-go in mid-December (section 15).
-- [ ] Stats consent as a rulebook requirement (you are asking the owner).
-- [ ] Season 4 start date.
-- [ ] Rulebook source text (coming). Fix the "4 weeks × 2 matches" leftover and drop the draw column at the same time.
-- [ ] Veto: check the BLAST R6 Global Rulebook's 2026 map-ban change before Season 4.
-- [ ] National: regions and playoff qualifiers, once the owner launches it.
-- [ ] Team level: the formula from results and external anchors to the 0–10 scale, the baseline of each division, the tier list of external events and what a placement is worth, and who sees the level (section 17).
-- [ ] Workspace access: confirm that league staff cannot open a team's workspace.
-- [ ] Practice stats inside a team: confirm that teammates may see each other's practice figures without public stats consent.
-- [ ] Scouting for LFR: public, registered teams only, or off (ask the owner).
-- [ ] Recruitment: may a player on a roster post a listing, and does the rulebook say anything about approaching rostered players (ask the owner)?
-- [ ] Awards: the metric and the minimum rounds for player of the week, and the list of season awards.
-- [ ] Whether the first two steps of phase 10 move ahead of phases 7–9.
+Open questions are kept in `docs/open-questions.md`: one entry per question, with what the platform does until it is answered. Questions marked `O-` are for the league owner, those marked `M-` for the maintainer. An answered question moves to the end of that file, and its rule into this document.
 
 **Sources**
 

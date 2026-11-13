@@ -23,7 +23,8 @@ The maintainer manages, designs and reviews. You write the code. The process is:
    excluding generated migrations and fixtures). Split larger work into steps.
 4. **Tests first in `packages/core`.** Write or update the tests, show them, then implement.
 5. **Ask, don't invent.** League rules come from the design doc and the LFR rulebook. If a rule is
-   missing or ambiguous (section 16 lists open questions), stop and ask. Never invent a rule.
+   missing or ambiguous (`docs/open-questions.md` lists the open questions), stop and ask, and add
+   the question to that file. Never invent a rule.
 6. **Finish with a check.** End every task by running `pnpm typecheck`, `pnpm lint` and `pnpm test`,
    and report the results honestly, including failures.
 
