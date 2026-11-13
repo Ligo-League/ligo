@@ -92,6 +92,24 @@ describe('/staff match result', () => {
     ]);
   });
 
+  it("announces in the division's own channel when it has one, else in the league's", async () => {
+    const db = leagueDatabase();
+    db.update(schema.leagueGuild).set({ resultsChannelId: '800000000000000002' }).run();
+    db.update(schema.division)
+      .set({ resultsChannelId: '800000000000000003' })
+      .where(eq(schema.division.name, 'Ligue 1'))
+      .run();
+    const gateway = fakeGateway();
+    const context = fakeContext({ db, gateway });
+    // Match 3 is in Ligue 1; match 4 (Xray v Yankee) is in Ligue 2 and already has a result.
+    await run(result({ match: 3, score_a: 7, score_b: 5 }), context);
+    await run(result({ match: 4, score_a: 7, score_b: 5 }), context);
+    expect(gateway.posted.map((post) => post.channelId)).toEqual([
+      '800000000000000003',
+      '800000000000000002',
+    ]);
+  });
+
   it('records the result even when no results channel is set', async () => {
     const gateway = fakeGateway();
     const { db } = await run(

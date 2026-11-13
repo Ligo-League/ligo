@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { isDiscordAttachmentUrl } from './attachments.ts';
 import { requireStaff, type Actor } from './permissions.ts';
 import { matchQuery } from './match-search.ts';
+import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
 
 const { auditLog, evidence, game, match } = schema;
@@ -171,7 +172,7 @@ export function recordResult(
       scoreA,
       scoreB,
       previous,
-      resultsChannelId: league.guild.resultsChannelId,
+      resultsChannelId: resultsChannelFor(league, found),
     };
   });
 }

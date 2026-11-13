@@ -8,6 +8,7 @@ import { listLeagueMatches, loadStandingsInput, schema, type Db, type LeagueMatc
 import { eq } from 'drizzle-orm';
 import { matchQuery } from './match-search.ts';
 import { requireStaff, type Actor } from './permissions.ts';
+import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
 
 const { auditLog, game, match, sanction } = schema;
@@ -127,7 +128,7 @@ export function recordForfeit(
       count,
       consequence,
       queueChannelId: league.guild.alertsChannelId,
-      resultsChannelId: league.guild.resultsChannelId,
+      resultsChannelId: resultsChannelFor(league, found),
     };
   });
 }

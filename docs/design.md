@@ -173,7 +173,8 @@ registration   id, season_id, team_id, form_json, status ('draft'|'submitted'|'f
 competition    id, org_id, title, name, slug, participant_mode ('team'|'mixed'),
                ruleset_json, points_json, tiebreak_json, scheduling_json, stat_schema_version, theme_json
 season         id, competition_id, name, starts_on, ends_on, settings_json, status ('registration'|'active'|'cup'|'closed')
-division       id, season_id, name, kind ('league'|'regional'), level, region NULL, category_prefix
+division       id, season_id, name, kind ('league'|'regional'), level, region NULL, category_prefix,
+               results_channel_id NULL
 slot           id, division_id, team_id, status ('active'|'frozen'|'withdrawn'|'excluded'),
                forfeits, excluded_at NULL
 slot_transfer  id, slot_id, from_team_id, to_team_id, requested_by, approved_by NULL, at
@@ -450,7 +451,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 | `/staff match validate\|result\|forfeit\|void`   | staff                   | Validation and direct changes, audited                                                                  |
 | `/staff sanction add\|list`                      | staff                   | A warning or a change of points for a team; its sanctions this season                                   |
 | `/team manager`, `/team staff add\|remove\|list` | staff                   | Who acts for each team, until registration fills it in                                                  |
-| `/league channel kind channel`                   | staff                   | The staff queue channel and the results channel                                                         |
+| `/league channel`, `/league channels`            | staff                   | Staff queue and results channels, results also per division; the list                                   |
 | `/season create\|schedule\|publish\|close`       | staff                   | Season setup; `schedule` previews, `close` runs promotion and relegation                                |
 | `/week publish week:<n>`                         | staff                   | Creates that week's channels now instead of on schedule                                                 |
 | `/accreditation grant\|revoke`                   | staff                   | Commentator accreditations                                                                              |
@@ -480,7 +481,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 
 - `moss-<tag>`: one private channel per team (team role and staff only), replacing the rulebook's "Moss-\[équipe\]". The bot posts a receipt there when a MOSS file is uploaded on the website.
 - `#mercato`: the bot posts each approved transfer using the rulebook's form fields.
-- Results channel: validated results only.
+- Results channel: every result that counts (validated reports, staff entries and corrections, forfeits). A division can have its own (`division.results_channel_id`), else the league's applies; several divisions may share one. A new season copies each division's channel from the previous season's division of the same level (phase 4).
 - Mixed-team matches (FRFL): each lineup member is allowed individually, and the channel is named `m{n}-{yyyy-mm-dd}`.
 
 **Reconciler**

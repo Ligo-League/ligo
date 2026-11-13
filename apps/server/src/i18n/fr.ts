@@ -166,6 +166,22 @@ export const fr = {
     'Les résultats signalés par les équipes arriveront ici pour être validés par le staff.',
   'league.channel.notice.results': 'Les résultats validés seront annoncés ici.',
   'league.channel.set': 'Salon enregistré : {kind} dans <#{channel}>.',
+  'command.league.channel.option.division':
+    'Pour les résultats : une division seulement. Sans elle, toute la ligue.',
+  'command.league.channels.description': 'Affiche les salons que le bot utilise.',
+  'league.channel.notice.resultsDivision':
+    'Les résultats validés de {division} seront annoncés ici.',
+  'league.channel.setDivision': 'Salon enregistré : {kind} de {division} dans <#{channel}>.',
+  'league.channel.cleared':
+    "{division} n'a plus son propre salon : ses résultats seront annoncés dans celui de la ligue.",
+  'league.channels.title': '**Salons du bot**',
+  'league.channels.unset': 'non choisi',
+  'league.channels.inherited': 'celui de la ligue',
+  'league.channels.division': '• {division} : {channel}',
+  'league.error.channel_required': 'Choisis le salon à utiliser.',
+  'league.error.division_not_found': 'Division inconnue. Choisis-la dans la liste proposée.',
+  'league.error.queue_per_division':
+    'La file de validation est commune à toute la ligue : choisis-la sans division.',
   'league.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'league.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
   'league.error.cannot_post':
@@ -207,7 +223,7 @@ export const fr = {
     "**`/team`** — qui agit pour chaque équipe, réservé au staff de la ligue\nLe manager et le staff d'une équipe peuvent signaler et confirmer ses résultats. En attendant les inscriptions sur le site, c'est ici qu'on les désigne.\n\n• `/team manager` — désigne le manager d'une équipe (`team`, `member`). L'ancien manager perd ce rôle.\n• `/team staff add` — ajoute un membre au staff d'une équipe.\n• `/team staff remove` — retire un membre de l'équipe, manager compris.\n• `/team staff list` — le manager et le staff d'une équipe.\n\nUne même personne peut gérer plusieurs équipes.",
   'help.team.max': 'Une équipe a un manager et {max} membres de staff au plus.',
   'help.page.league':
-    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Garde-le réservé au staff.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
+    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
 } as const;
 
 export type MessageKey = keyof typeof fr;

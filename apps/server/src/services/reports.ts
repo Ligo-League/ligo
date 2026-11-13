@@ -26,6 +26,7 @@ import {
   type Actor,
   type TeamRoleHeld,
 } from './permissions.ts';
+import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
 import { isAcceptableScreenshot, SCREENSHOT_MAX_BYTES, type Screenshot } from './results.ts';
 import { listTeamStaff, type TeamMember } from './team-staff.ts';
@@ -383,7 +384,7 @@ export function answerReport(
       match: found,
       status,
       queueChannelId: league.guild.alertsChannelId,
-      resultsChannelId: league.guild.resultsChannelId,
+      resultsChannelId: resultsChannelFor(league, found),
     };
   });
 }
@@ -455,7 +456,7 @@ function staffStep(
         at: now,
       })
       .run();
-    return { ok: true, match: found, status, resultsChannelId: league.guild.resultsChannelId };
+    return { ok: true, match: found, status, resultsChannelId: resultsChannelFor(league, found) };
   });
 }
 

@@ -216,6 +216,10 @@ One-time setup, as staff:
 2. `/league channel kind:File de validation du staff channel:#validation`, then
    `/league channel kind:Résultats validés channel:#résultats`. The bot posts a notice in each
    channel; if it cannot write there, it says so and stores nothing.
+   To give a division its own results channel, add `division:` (for example
+   `/league channel kind:Résultats validés channel:#résultats-l1 division:Ligue 1`). The same
+   command without `channel` gives the division back the league's channel. `/league channels`
+   shows what is set.
 3. `/team manager team:<a team> member:<a Discord member>` for the two teams of a match that is
    still to play. To test alone, make yourself manager of both. `/team staff list` shows a team.
 

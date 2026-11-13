@@ -161,6 +161,22 @@ export const en: Record<MessageKey, string> = {
     'Results reported by teams will arrive here to be validated by staff.',
   'league.channel.notice.results': 'Validated results will be announced here.',
   'league.channel.set': 'Channel saved: {kind} in <#{channel}>.',
+  'command.league.channel.option.division':
+    'For results: one division only. Without it, the whole league.',
+  'command.league.channels.description': 'Shows the channels the bot uses.',
+  'league.channel.notice.resultsDivision':
+    'Validated results of {division} will be announced here.',
+  'league.channel.setDivision': 'Channel saved: {kind} of {division} in <#{channel}>.',
+  'league.channel.cleared':
+    "{division} no longer has its own channel: its results will be announced in the league's.",
+  'league.channels.title': "**The bot's channels**",
+  'league.channels.unset': 'not set',
+  'league.channels.inherited': "the league's",
+  'league.channels.division': '• {division}: {channel}',
+  'league.error.channel_required': 'Pick the channel to use.',
+  'league.error.division_not_found': 'Unknown division. Pick it from the suggested list.',
+  'league.error.queue_per_division':
+    'The validation queue is shared by the whole league: set it without a division.',
   'league.error.not_linked': 'This server is not linked to a league.',
   'league.error.not_staff': 'This command is for league staff only.',
   'league.error.cannot_post':
@@ -201,5 +217,5 @@ export const en: Record<MessageKey, string> = {
     "**`/team`** — who acts for each team, for league staff only\nA team's manager and staff can report and confirm its results. Until registration moves to the website, this is where they are named.\n\n• `/team manager` — names a team's manager (`team`, `member`). The previous manager loses that role.\n• `/team staff add` — adds a member to a team's staff.\n• `/team staff remove` — removes a member from the team, the manager included.\n• `/team staff list` — a team's manager and staff.\n\nThe same person can manage several teams.",
   'help.team.max': 'A team has one manager and at most {max} staff members.',
   'help.page.league':
-    "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. Keep it staff-only.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
+    "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
 };
