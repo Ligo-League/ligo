@@ -6,7 +6,8 @@ import * as schema from './schema/index.ts';
 import { openTestDatabase } from './testing.ts';
 
 // Schema v1, the tables phase 0 was allowed to create (design doc section 15, "Start here
-// today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`.
+// today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`,
+// 0004 `veto_step`.
 const SCHEMA_TABLES = [
   'audit_log',
   'competition',
@@ -31,6 +32,7 @@ const SCHEMA_TABLES = [
   'stage_entry',
   'team',
   'team_staff',
+  'veto_step',
 ];
 
 // The schema module also exports the enum lists; keep only the tables.

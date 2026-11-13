@@ -43,6 +43,9 @@ export const PROPOSAL_STATUSES = [
   'superseded',
   'withdrawn',
 ] as const;
+/** One step of a map veto (design doc section 5); `decider` is the map left, nobody's choice. */
+export const VETO_ACTIONS = ['ban', 'pick', 'decider', 'side', 'ot_side'] as const;
+export const START_SIDES = ['attack', 'defense'] as const;
 /** How staff settled a disputed report: the action that took the match out of dispute. */
 export const DISPUTE_RESOLUTIONS = [
   'validated',

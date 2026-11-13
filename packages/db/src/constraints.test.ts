@@ -149,6 +149,33 @@ describe('database constraints', () => {
     });
   });
 
+  describe('veto_step', () => {
+    function insert(seq: number, values: string) {
+      const { db } = seededDatabase();
+      db.$client.pragma('foreign_keys = OFF');
+      const statement = (n: number, rest: string) =>
+        `insert into veto_step (match_id, seq, side, action, map, start_side, at) values (1, ${n}, ${rest}, 10)`;
+      db.$client.exec(statement(0, "'a', 'ban', 'Bank', null"));
+      return () => db.$client.exec(statement(seq, values));
+    }
+
+    it('accepts a side step and the decider, which has no team', () => {
+      expect(insert(1, "'b', 'side', null, 'attack'")).not.toThrow();
+      expect(insert(1, "null, 'decider', 'Villa', null")).not.toThrow();
+    });
+
+    it('refuses a second step with the same number, so a double click plays once', () => {
+      expect(insert(0, "'b', 'ban', 'Villa', null")).toThrow(/UNIQUE|PRIMARY/);
+    });
+
+    it.each([
+      ['an unknown action', "'b', 'protect', 'Villa', null"],
+      ['an unknown side', "'b', 'side', null, 'middle'"],
+    ])('refuses %s', (_label, values) => {
+      expect(insert(1, values)).toThrow(/CHECK/);
+    });
+  });
+
   it('refuse a row pointing at a missing parent', () => {
     const { db } = seededDatabase();
     const orphan = { orgId: 999, slug: 'bob', displayName: 'Bob', createdAt: 1 };

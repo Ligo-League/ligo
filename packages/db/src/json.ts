@@ -1,3 +1,4 @@
+import { vetoFormatSchema } from '@ligo/core';
 import { z } from 'zod';
 import { SIDES } from './schema/enums.ts';
 
@@ -41,6 +42,17 @@ export const gameBansSchema = z.array(
   z.strictObject({ side: z.enum(SIDES), map: z.string().min(1) }),
 );
 export type GameBans = z.infer<typeof gameBansSchema>;
+
+/**
+ * `match.veto_json`: the veto's format, pool and timer, frozen when it starts, so that staff
+ * changing the settings mid-veto cannot break the steps already taken.
+ */
+export const matchVetoSchema = z.strictObject({
+  format: vetoFormatSchema,
+  pool: z.array(z.string().min(1)),
+  step_seconds: z.int().min(1),
+});
+export type MatchVeto = z.infer<typeof matchVetoSchema>;
 
 /** `audit_log.before_json` / `after_json`: a snapshot of the changed entity. */
 export const auditSnapshotSchema = z.record(z.string(), z.unknown());

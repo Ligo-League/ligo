@@ -9,7 +9,7 @@ import {
   unique,
 } from 'drizzle-orm/sqlite-core';
 import { jsonText, oneOf } from '../columns.ts';
-import { gameBansSchema } from '../json.ts';
+import { gameBansSchema, matchVetoSchema } from '../json.ts';
 import {
   DISPUTE_RESOLUTIONS,
   PROPOSAL_STATUSES,
@@ -22,7 +22,9 @@ import {
   SANCTION_KINDS,
   SANCTION_TARGETS,
   SIDES,
+  START_SIDES,
   STATS_SOURCES,
+  VETO_ACTIONS,
 } from './enums.ts';
 import { player, team } from './people.ts';
 import { season, stage } from './structure.ts';
@@ -52,6 +54,11 @@ export const match = sqliteTable(
     confirmedBy: integer('confirmed_by').references(() => player.id),
     validatedBy: integer('validated_by').references(() => player.id),
     validatedAt: integer('validated_at'),
+    // The veto, once started: its frozen settings, and the bot message that shows it.
+    vetoJson: jsonText(matchVetoSchema)('veto_json'),
+    vetoStartedAt: integer('veto_started_at'),
+    vetoChannelId: text('veto_channel_id'),
+    vetoMessageId: text('veto_message_id'),
   },
   (t) => [
     index('match_stage_week_idx').on(t.stageId, t.week),
@@ -258,5 +265,33 @@ export const matchProposal = sqliteTable(
     index('match_proposal_match_idx').on(t.matchId),
     check('match_proposal_side_check', oneOf(t.side, SIDES)),
     check('match_proposal_status_check', oneOf(t.status, PROPOSAL_STATUSES)),
+  ],
+);
+
+// One step of a map veto, in order. The steps are the veto's whole state (packages/core veto.ts);
+// the primary key makes a second click on the same step fail instead of playing twice.
+export const vetoStep = sqliteTable(
+  'veto_step',
+  {
+    matchId: integer('match_id')
+      .notNull()
+      .references(() => match.id),
+    seq: integer('seq').notNull(),
+    // The match side that chose; null for the decider, which nobody picks.
+    side: text('side', { enum: SIDES }),
+    action: text('action', { enum: VETO_ACTIONS }).notNull(),
+    map: text('map'),
+    startSide: text('start_side', { enum: START_SIDES }),
+    gameN: integer('game_n'),
+    at: integer('at').notNull(),
+    // Null when the clock chose for a team that ran out of time, and for the decider.
+    byPlayerId: integer('by_player_id').references(() => player.id),
+    timedOut: integer('timed_out', { mode: 'boolean' }).notNull().default(false),
+  },
+  (t) => [
+    primaryKey({ columns: [t.matchId, t.seq] }),
+    check('veto_step_side_check', oneOf(t.side, SIDES)),
+    check('veto_step_action_check', oneOf(t.action, VETO_ACTIONS)),
+    check('veto_step_start_side_check', oneOf(t.startSide, START_SIDES)),
   ],
 );
