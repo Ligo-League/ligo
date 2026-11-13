@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
 import {
+  DEFAULT_DISPUTE_REASONS,
   pointsSchema,
   rulesetSchema,
   schedulingSchema,
@@ -23,6 +24,7 @@ const LFR_S3 = {
     result_validation: 'staff',
     game_score: { win_at: 7, overtime_rounds: 3 },
     team_staff_max: 3,
+    dispute_reasons: DEFAULT_DISPUTE_REASONS,
   },
   scheduling: { rounds_per_week: 1 },
   season: { forfeit_score: [0, 0], map_pool: [], forfeits: { warning_at: 2, exclusion_at: 3 } },
@@ -149,6 +151,50 @@ describe('rulesetSchema', () => {
     expect(accepts(rulesetSchema, { result_validation: 'staff', team_staff_max: -1 })).toBe(false);
   });
 
+  it('offers the standard dispute reasons unless the league sets its own', () => {
+    const { dispute_reasons } = rulesetSchema.parse({ result_validation: 'staff' });
+    expect(dispute_reasons.map((reason) => reason.key)).toEqual([
+      'wrong_score',
+      'screenshot',
+      'ineligible_player',
+      'not_played',
+      'technical',
+    ]);
+    expect(dispute_reasons[0]).toEqual({
+      key: 'wrong_score',
+      label: { fr: 'Score incorrect', en: 'Wrong score' },
+    });
+    // "Other" is always offered by the platform, so a league may list no reason of its own.
+    expect(accepts(rulesetSchema, { result_validation: 'staff', dispute_reasons: [] })).toBe(true);
+    expect(
+      accepts(rulesetSchema, {
+        result_validation: 'staff',
+        dispute_reasons: [{ key: 'late', label: { fr: 'Retard' } }],
+      }),
+    ).toBe(true);
+  });
+
+  it.each([
+    ['the key reserved for "other"', [{ key: 'other', label: { fr: 'Autre' } }]],
+    ['a key that is not a short identifier', [{ key: 'Bad key', label: { fr: 'x' } }]],
+    ['an empty label', [{ key: 'x', label: { fr: '' } }]],
+    ['a label longer than Discord shows', [{ key: 'x', label: { fr: 'a'.repeat(101) } }]],
+    ['no French label', [{ key: 'x', label: { en: 'x' } }]],
+    [
+      'the same key twice',
+      [
+        { key: 'x', label: { fr: 'a' } },
+        { key: 'x', label: { fr: 'b' } },
+      ],
+    ],
+    [
+      'more reasons than a list holds next to "other"',
+      Array.from({ length: 25 }, (_, n) => ({ key: `r${n}`, label: { fr: 'x' } })),
+    ],
+  ])('refuses dispute reasons with %s', (_label, dispute_reasons) => {
+    expect(accepts(rulesetSchema, { result_validation: 'staff', dispute_reasons })).toBe(false);
+  });
+
   it('checks no score unless the league sets a rule', () => {
     // Settings stored before this key existed must keep reading.
     expect(rulesetSchema.parse({ result_validation: 'staff' }).game_score).toBeNull();
@@ -251,6 +297,19 @@ describe('JSON round trip', () => {
           fc.record({ win_at: fc.integer({ min: 2, max: 50 }), overtime_rounds: positive }),
         ),
         team_staff_max: fc.integer({ min: 0, max: 20 }),
+        dispute_reasons: fc.uniqueArray(
+          fc.record({
+            key: fc.stringMatching(/^[a-z][a-z0-9_]{0,31}$/).filter((key) => key !== 'other'),
+            label: fc.record(
+              {
+                fr: fc.string({ minLength: 1, maxLength: 100 }),
+                en: fc.string({ minLength: 1, maxLength: 100 }),
+              },
+              { requiredKeys: ['fr'] },
+            ),
+          }),
+          { maxLength: 24, selector: (reason) => reason.key },
+        ),
       }),
     ],
     ['scheduling', schedulingSchema, fc.record({ rounds_per_week: positive })],

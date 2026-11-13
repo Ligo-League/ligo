@@ -57,6 +57,42 @@ export const gameScoreSchema = z.strictObject({
 });
 export type GameScoreSettings = z.infer<typeof gameScoreSchema>;
 
+/** The key of the reason every dispute form offers last, with details required. */
+export const OTHER_DISPUTE_REASON = 'other';
+
+/** A reason a team can give when it disputes a reported result. */
+export const disputeReasonSchema = z.strictObject({
+  /** Stored with the dispute, so a label can be reworded without losing the history. */
+  key: z
+    .string()
+    .regex(/^[a-z][a-z0-9_]{0,31}$/)
+    .refine((key) => key !== OTHER_DISPUTE_REASON, { error: '"other" is always offered.' }),
+  // Discord shows at most 100 characters per entry of a list.
+  label: z.strictObject({
+    fr: z.string().min(1).max(100),
+    en: z.string().min(1).max(100).optional(),
+  }),
+});
+export type DisputeReason = z.infer<typeof disputeReasonSchema>;
+
+/** The reasons offered until a league sets its own; agreed with the maintainer, 13 Nov 2026. */
+export const DEFAULT_DISPUTE_REASONS: readonly DisputeReason[] = [
+  { key: 'wrong_score', label: { fr: 'Score incorrect', en: 'Wrong score' } },
+  {
+    key: 'screenshot',
+    label: { fr: 'Capture manquante ou illisible', en: 'Screenshot missing or unreadable' },
+  },
+  {
+    key: 'ineligible_player',
+    label: { fr: 'Joueur non inscrit ou non éligible', en: 'Unregistered or ineligible player' },
+  },
+  { key: 'not_played', label: { fr: 'Match non joué', en: 'Match not played' } },
+  {
+    key: 'technical',
+    label: { fr: 'Problème technique ou re-host', en: 'Technical problem or re-host' },
+  },
+];
+
 /** `competition.ruleset_json`. */
 export const rulesetSchema = z.strictObject({
   result_validation: z.enum(RESULT_VALIDATION_MODES),
@@ -64,6 +100,14 @@ export const rulesetSchema = z.strictObject({
   game_score: gameScoreSchema.nullable().default(null),
   /** How many staff members a team may have besides its one manager. */
   team_staff_max: z.int().min(0).default(3),
+  /** Offered when a team disputes a result, before "other"; Discord lists 25 entries at most. */
+  dispute_reasons: z
+    .array(disputeReasonSchema)
+    .max(24)
+    .refine((reasons) => hasNoDuplicates(reasons.map((reason) => reason.key)), {
+      error: 'A dispute reason key can appear only once.',
+    })
+    .default(() => DEFAULT_DISPUTE_REASONS.map((reason) => ({ ...reason }))),
 });
 export type RulesetSettings = z.infer<typeof rulesetSchema>;
 

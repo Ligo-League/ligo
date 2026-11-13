@@ -204,6 +204,7 @@ describe('/staff match result', () => {
           result_validation: 'staff',
           game_score: { win_at: 13, overtime_rounds: 2 },
           team_staff_max: 3,
+          dispute_reasons: [],
         },
       })
       .run();

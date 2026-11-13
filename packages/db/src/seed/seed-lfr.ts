@@ -1,3 +1,4 @@
+import { DEFAULT_DISPUTE_REASONS } from '@ligo/core';
 import { R6_GAME_SCORE } from '@ligo/titles';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client.ts';
@@ -13,7 +14,13 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   slug: 'lfr',
   participantMode: 'team',
   // One manager and up to three staff per team, from the rulebook's registration form.
-  rulesetJson: { result_validation: 'staff', game_score: R6_GAME_SCORE, team_staff_max: 3 },
+  // Dispute reasons agreed with the maintainer on 13 November 2026, the platform's defaults.
+  rulesetJson: {
+    result_validation: 'staff',
+    game_score: R6_GAME_SCORE,
+    team_staff_max: 3,
+    dispute_reasons: [...DEFAULT_DISPUTE_REASONS],
+  },
   // 3 points per win in Season 3, as the league's score7 tables are configured.
   pointsJson: {
     outcomes: { win: 3, loss: 0 },

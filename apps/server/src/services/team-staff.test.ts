@@ -102,7 +102,14 @@ describe('addTeamStaff and removeTeamStaff', () => {
     expect(setTeamManager(db, STAFF, { teamId: ALPHA, member: member(4) }, 9).ok).toBe(true);
 
     db.update(schema.competition)
-      .set({ rulesetJson: { result_validation: 'staff', game_score: null, team_staff_max: 4 } })
+      .set({
+        rulesetJson: {
+          result_validation: 'staff',
+          game_score: null,
+          team_staff_max: 4,
+          dispute_reasons: [],
+        },
+      })
       .run();
     expect(addTeamStaff(db, STAFF, { teamId: ALPHA, member: member(5) }, 10).ok).toBe(true);
   });
