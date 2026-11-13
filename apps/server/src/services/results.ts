@@ -6,6 +6,7 @@ import { requireStaff, type Actor } from './permissions.ts';
 import { matchQuery } from './match-search.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
+import { settleDisputes } from './disputes.ts';
 
 const { auditLog, evidence, game, match } = schema;
 
@@ -134,6 +135,7 @@ export function recordResult(
       .set({ status: 'validated', validatedBy: staffPlayer.id, validatedAt: now })
       .where(eq(match.id, found.id))
       .run();
+    settleDisputes(tx, found.id, 'result_entered', staffPlayer.id, now);
 
     const evidenceId = screenshot
       ? tx

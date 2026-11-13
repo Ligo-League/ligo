@@ -6,6 +6,8 @@ import type {
   CommandAttachment,
   CommandContext,
   CommandInteraction,
+  Form,
+  FormSubmitInteraction,
   OutgoingMessage,
   ReplyMessage,
 } from './commands/types.ts';
@@ -96,23 +98,38 @@ export interface FakeButton extends ButtonInteraction {
   replies: ReplyMessage[];
   /** What the message carrying the button was replaced with, if it was. */
   updates: OutgoingMessage[];
+  /** The forms the click opened. */
+  forms: Form[];
 }
 
 /** An in-memory stand-in for a click on a button. */
 export function fakeButton(customId: string, input: FakeInput = {}): FakeButton {
   const replies: ReplyMessage[] = [];
   const updates: OutgoingMessage[] = [];
+  const forms: Form[] = [];
   const once = () => {
-    // Discord accepts one answer per click: a reply or an update.
-    if (replies.length + updates.length > 0) throw new Error('Interaction already answered');
+    // Discord accepts one answer per click: a reply, an update or a form.
+    if (replies.length + updates.length + forms.length > 0) {
+      throw new Error('Interaction already answered');
+    }
   };
   return {
     ...actorOf(input),
     customId,
     replies,
     updates,
+    forms,
     get answered() {
-      return replies.length + updates.length > 0;
+      return replies.length + updates.length + forms.length > 0;
+    },
+    showForm(form) {
+      try {
+        once();
+      } catch (error) {
+        return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+      }
+      forms.push(form);
+      return Promise.resolve();
     },
     reply(message) {
       try {
@@ -129,6 +146,50 @@ export function fakeButton(customId: string, input: FakeInput = {}): FakeButton 
       } catch (error) {
         return Promise.reject(error instanceof Error ? error : new Error(String(error)));
       }
+      updates.push(message);
+      return Promise.resolve();
+    },
+  };
+}
+
+export interface FakeForm extends FormSubmitInteraction {
+  replies: ReplyMessage[];
+  updates: OutgoingMessage[];
+}
+
+/** An in-memory stand-in for a sent form, with what was typed and picked in it. */
+export function fakeForm(
+  customId: string,
+  values: { text?: Record<string, string>; selected?: Record<string, readonly string[]> } = {},
+  input: FakeInput = {},
+): FakeForm {
+  const replies: ReplyMessage[] = [];
+  const updates: OutgoingMessage[] = [];
+  const once = () => {
+    if (replies.length + updates.length > 0) {
+      return Promise.reject(new Error('Interaction already answered'));
+    }
+    return null;
+  };
+  return {
+    ...actorOf(input),
+    customId,
+    replies,
+    updates,
+    get answered() {
+      return replies.length + updates.length > 0;
+    },
+    getText: (id) => values.text?.[id] || null,
+    getSelected: (id) => values.selected?.[id] ?? [],
+    reply(message) {
+      const refused = once();
+      if (refused) return refused;
+      replies.push(message);
+      return Promise.resolve();
+    },
+    update(message) {
+      const refused = once();
+      if (refused) return refused;
       updates.push(message);
       return Promise.resolve();
     },

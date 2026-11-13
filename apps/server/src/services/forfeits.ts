@@ -10,6 +10,7 @@ import { matchQuery } from './match-search.ts';
 import { requireStaff, type Actor } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
+import { settleDisputes } from './disputes.ts';
 
 const { auditLog, game, match, sanction } = schema;
 
@@ -83,6 +84,7 @@ export function recordForfeit(
       .set({ status: 'forfeit', validatedBy: staffPlayer.id, validatedAt: now })
       .where(eq(match.id, found.id))
       .run();
+    settleDisputes(tx, found.id, 'forfeit', staffPlayer.id, now);
 
     // Counted after the change, over the stage, from the same data standings use.
     const stage = loadStandingsInput(tx, found.stageId);

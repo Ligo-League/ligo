@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { isDiscordAttachmentUrl } from '../services/attachments.ts';
 import { buttonId, parseButtonId } from './button-id.ts';
-import type { ButtonHandler } from './commands/types.ts';
+import type { ButtonHandler, FormHandler } from './commands/types.ts';
 import { readCapped } from './gateway.ts';
-import { toDiscordMessage } from './outgoing.ts';
-import { routeButton } from './router.ts';
-import { fakeButton, fakeContext, fakeGateway } from './testing.ts';
+import { toDiscordMessage, toDiscordModal } from './outgoing.ts';
+import { routeButton, routeForm } from './router.ts';
+import { fakeButton, fakeContext, fakeForm, fakeGateway } from './testing.ts';
 
 describe('button IDs', () => {
   it('are written as action:entityId:nonce and read back', () => {
@@ -101,6 +101,110 @@ describe('routeButton', () => {
     await routeButton([halfDone], interaction, context, { error: vi.fn() });
     expect(interaction.updates).toHaveLength(1);
     expect(interaction.replies).toEqual([]);
+  });
+});
+
+describe('routeForm', () => {
+  const context = fakeContext();
+
+  it('runs the handler of the action with what was sent', async () => {
+    const seen = vi.fn();
+    const handler: FormHandler = {
+      action: 'report-dispute',
+      async execute(interaction, target) {
+        seen(target, interaction.getSelected('reason'), interaction.getText('details'));
+        await interaction.update({ content: 'disputed' });
+      },
+    };
+    const interaction = fakeForm('report-dispute:3:9', {
+      selected: { reason: ['wrong_score'] },
+      text: { details: 'Mauvais score' },
+    });
+    await routeForm([handler], interaction, context, { error: vi.fn() });
+    expect(seen).toHaveBeenCalledWith(
+      { action: 'report-dispute', entityId: 3, nonce: '9' },
+      ['wrong_score'],
+      'Mauvais score',
+    );
+    expect(interaction.updates).toEqual([{ content: 'disputed' }]);
+  });
+
+  it('reads an empty or missing field as nothing', () => {
+    const interaction = fakeForm('a:1:1', { text: { details: '' } });
+    expect(interaction.getText('details')).toBeNull();
+    expect(interaction.getText('missing')).toBeNull();
+    expect(interaction.getSelected('missing')).toEqual([]);
+  });
+
+  it('answers a form nothing handles privately, and a failure without its details', async () => {
+    const unknown = fakeForm('gone:1:1');
+    await routeForm([], unknown, context, { error: vi.fn() });
+    expect(unknown.replies).toEqual([
+      { content: "Ce formulaire n'est plus utilisable.", ephemeral: true },
+    ]);
+
+    const logger = { error: vi.fn() };
+    const broken = fakeForm('broken:2:x');
+    await routeForm(
+      [{ action: 'broken', execute: () => Promise.reject(new Error('secret detail')) }],
+      broken,
+      context,
+      logger,
+    );
+    expect(logger.error).toHaveBeenCalledOnce();
+    expect(broken.replies).toEqual([
+      { content: 'Une erreur est survenue. Réessaie dans un instant.', ephemeral: true },
+    ]);
+  });
+});
+
+describe('toDiscordModal', () => {
+  it('puts each field under its own label: a list, then a long text', () => {
+    const modal = toDiscordModal({
+      customId: 'report-dispute:3:9',
+      title: 'Contester le résultat',
+      fields: [
+        {
+          kind: 'select',
+          id: 'reason',
+          label: 'Motif',
+          options: [
+            { value: 'wrong_score', label: 'Score incorrect' },
+            { value: 'other', label: 'Autre' },
+          ],
+        },
+        {
+          kind: 'text',
+          id: 'details',
+          label: 'Détails',
+          description: 'Obligatoires pour « Autre ».',
+          required: false,
+          maxLength: 1000,
+        },
+      ],
+    }).toJSON();
+    expect(modal).toMatchObject({
+      custom_id: 'report-dispute:3:9',
+      title: 'Contester le résultat',
+      components: [
+        {
+          label: 'Motif',
+          component: {
+            custom_id: 'reason',
+            required: true,
+            options: [
+              { value: 'wrong_score', label: 'Score incorrect' },
+              { value: 'other', label: 'Autre' },
+            ],
+          },
+        },
+        {
+          label: 'Détails',
+          description: 'Obligatoires pour « Autre ».',
+          component: { custom_id: 'details', required: false, max_length: 1000, style: 2 },
+        },
+      ],
+    });
   });
 });
 

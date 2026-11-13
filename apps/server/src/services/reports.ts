@@ -1,6 +1,8 @@
 import {
   isPossibleGameScore,
   nextMatchStatus,
+  OTHER_DISPUTE_REASON,
+  type DisputeReason,
   type GameScoreSettings,
   type MatchAction,
   type MatchActor,
@@ -27,11 +29,12 @@ import {
   type TeamRoleHeld,
 } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
+import { settleDisputes, type DisputeResolution } from './disputes.ts';
 import { ensurePlayer } from './players.ts';
 import { isAcceptableScreenshot, SCREENSHOT_MAX_BYTES, type Screenshot } from './results.ts';
 import { listTeamStaff, type TeamMember } from './team-staff.ts';
 
-const { auditLog, evidence, game, match } = schema;
+const { auditLog, dispute: disputeTable, evidence, game, match } = schema;
 
 type Side = 'a' | 'b';
 const other = (side: Side): Side => (side === 'a' ? 'b' : 'a');
@@ -301,63 +304,159 @@ export function searchReportableMatches(
 // The opponent confirms or disputes
 
 export type AnswerError =
-  'not_linked' | 'match_not_found' | 'stale' | 'not_your_match' | 'not_opponent' | 'wrong_status';
+  | 'not_linked'
+  | 'match_not_found'
+  | 'stale'
+  | 'not_your_match'
+  | 'not_opponent'
+  | 'wrong_status'
+  | 'reason_unknown'
+  | 'details_required'
+  | 'details_too_long';
+
+/** The longest explanation a team can give with a dispute. */
+export const DISPUTE_DETAILS_MAX_LENGTH = 1000;
+
+type AnswerTarget = { matchId: number; evidenceId: number };
+export type AnswerRequest = AnswerTarget &
+  (
+    | { action: 'confirm' }
+    /** `reason` is a key of the competition's dispute reasons, or "other". */
+    | { action: 'dispute'; reason: string; details: string | null }
+  );
+
+/** The dispute as stored, with its label so the staff queue can show it. */
+export interface DisputeDetails {
+  reason: string;
+  /** Null for "other", which has no label in the settings. */
+  label: DisputeReason['label'] | null;
+  details: string | null;
+}
 
 export type AnswerReply =
   | {
       ok: true;
       match: LeagueMatch;
       status: 'confirmed' | 'disputed' | 'validated';
+      dispute: DisputeDetails | null;
       queueChannelId: string | null;
       resultsChannelId: string | null;
     }
   | { ok: false; error: AnswerError };
 
+type AnswerCheck =
+  | {
+      ok: true;
+      found: LeagueMatch;
+      playerId: number;
+      status: 'confirmed' | 'disputed' | 'validated';
+    }
+  | { ok: false; error: AnswerError };
+
+/** Whether this member may answer this report so, read again from the database each time. */
+function checkAnswer(
+  db: Pick<Db, 'select'>,
+  league: GuildLeague,
+  actor: Actor,
+  request: AnswerTarget & { action: 'confirm' | 'dispute' },
+): AnswerCheck {
+  const found = leagueMatch(db, league, request.matchId);
+  if (!found) return { ok: false, error: 'match_not_found' };
+  if (latestScoreEvidence(db, found.id)?.id !== request.evidenceId) {
+    return { ok: false, error: 'stale' };
+  }
+
+  const acting = teamsActedFor(db, actor);
+  if (acting.playerId === null || sideOf(acting.teams, found) === null) {
+    return { ok: false, error: 'not_your_match' };
+  }
+  const reporterTeams = found.reportedBy === null ? [] : teamsOfPlayer(db, found.reportedBy);
+  const reportingSide = sideOf(reporterTeams, found) ?? 'a';
+  const kind: MatchActor = actsFor(acting.teams, found, other(reportingSide))
+    ? 'opposing_team'
+    : 'reporting_team';
+  const step = nextMatchStatus({
+    status: found.status,
+    action: request.action,
+    actor: kind,
+    validation: league.competition.rulesetJson.result_validation,
+  });
+  if (!step.ok) {
+    return { ok: false, error: step.error === 'not_allowed' ? 'not_opponent' : 'wrong_status' };
+  }
+  // `confirm` and `dispute` lead to exactly these three statuses.
+  const status = step.status as 'confirmed' | 'disputed' | 'validated';
+  return { ok: true, found, playerId: acting.playerId, status };
+}
+
+/** A reason the league offers, or "other" with details; details are trimmed, empty is none. */
+function checkDisputeInput(
+  reasons: readonly DisputeReason[],
+  reason: string,
+  rawDetails: string | null,
+): { ok: true; dispute: DisputeDetails } | { ok: false; error: AnswerError } {
+  const details = rawDetails?.trim() || null;
+  if (details !== null && details.length > DISPUTE_DETAILS_MAX_LENGTH) {
+    return { ok: false, error: 'details_too_long' };
+  }
+  if (reason === OTHER_DISPUTE_REASON) {
+    // "Other" says nothing by itself: staff need the team's own words.
+    if (details === null) return { ok: false, error: 'details_required' };
+    return { ok: true, dispute: { reason, label: null, details } };
+  }
+  const known = reasons.find((candidate) => candidate.key === reason);
+  if (!known) return { ok: false, error: 'reason_unknown' };
+  return { ok: true, dispute: { reason, label: known.label, details } };
+}
+
 /**
- * The other team confirms the reported result, or disputes it. `evidenceId` names the report
- * the button belongs to: a button left under an older report is stale.
+ * Before the dispute form opens: may this member dispute this report? Answers with the reasons
+ * the league offers, without writing anything; `answerReport` checks everything again.
+ */
+export function checkDispute(
+  db: Pick<Db, 'select'>,
+  actor: Actor,
+  request: AnswerTarget,
+): { ok: true; reasons: readonly DisputeReason[] } | { ok: false; error: AnswerError } {
+  const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
+  if (!league) return { ok: false, error: 'not_linked' };
+  const check = checkAnswer(db, league, actor, { ...request, action: 'dispute' });
+  if (!check.ok) return check;
+  return { ok: true, reasons: league.competition.rulesetJson.dispute_reasons };
+}
+
+/**
+ * The other team confirms the reported result, or disputes it with a reason. `evidenceId` names
+ * the report the button belongs to: a button left under an older report is stale.
  */
 export function answerReport(
   db: Db,
   actor: Actor,
-  request: { matchId: number; evidenceId: number; action: 'confirm' | 'dispute' },
+  request: AnswerRequest,
   now: number,
 ): AnswerReply {
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
   if (!league) return { ok: false, error: 'not_linked' };
 
   return db.transaction((tx): AnswerReply => {
-    const found = leagueMatch(tx, league, request.matchId);
-    if (!found) return { ok: false, error: 'match_not_found' };
-    if (latestScoreEvidence(tx, found.id)?.id !== request.evidenceId) {
-      return { ok: false, error: 'stale' };
+    const check = checkAnswer(tx, league, actor, request);
+    if (!check.ok) return check;
+    const { found, playerId, status } = check;
+    let dispute: DisputeDetails | null = null;
+    if (request.action === 'dispute') {
+      const input = checkDisputeInput(
+        league.competition.rulesetJson.dispute_reasons,
+        request.reason,
+        request.details,
+      );
+      if (!input.ok) return input;
+      dispute = input.dispute;
     }
-
-    const acting = teamsActedFor(tx, actor);
-    if (acting.playerId === null || sideOf(acting.teams, found) === null) {
-      return { ok: false, error: 'not_your_match' };
-    }
-    const reporterTeams = found.reportedBy === null ? [] : teamsOfPlayer(tx, found.reportedBy);
-    const reportingSide = sideOf(reporterTeams, found) ?? 'a';
-    const kind: MatchActor = actsFor(acting.teams, found, other(reportingSide))
-      ? 'opposing_team'
-      : 'reporting_team';
-    const step = nextMatchStatus({
-      status: found.status,
-      action: request.action,
-      actor: kind,
-      validation: league.competition.rulesetJson.result_validation,
-    });
-    if (!step.ok) {
-      return { ok: false, error: step.error === 'not_allowed' ? 'not_opponent' : 'wrong_status' };
-    }
-    // `confirm` and `dispute` lead to exactly these three statuses.
-    const status = step.status as 'confirmed' | 'disputed' | 'validated';
 
     tx.update(match)
       .set({
         status,
-        ...(request.action === 'confirm' ? { confirmedBy: acting.playerId } : {}),
+        ...(request.action === 'confirm' ? { confirmedBy: playerId } : {}),
         // Where the opponent validates, the confirmation makes the result count.
         ...(status === 'validated' ? { validatedAt: now } : {}),
       })
@@ -366,15 +465,34 @@ export function answerReport(
     if (status === 'validated' && found.game) {
       tx.update(game).set({ status: 'final' }).where(eq(game.id, found.game.id)).run();
     }
+    const disputeId = dispute
+      ? tx
+          .insert(disputeTable)
+          .values({
+            matchId: found.id,
+            evidenceId: request.evidenceId,
+            reason: dispute.reason,
+            details: dispute.details,
+            raisedBy: playerId,
+            at: now,
+          })
+          .returning({ id: disputeTable.id })
+          .get().id
+      : null;
     tx.insert(auditLog)
       .values({
-        actorPlayerId: acting.playerId,
+        actorPlayerId: playerId,
         actorKind: 'user',
         action: `match.${request.action}`,
         entity: 'match',
         entityId: String(found.id),
         beforeJson: { status: found.status },
-        afterJson: { status, evidenceId: request.evidenceId },
+        // The details stay in the dispute row, shown to staff only, not in the general log.
+        afterJson: {
+          status,
+          evidenceId: request.evidenceId,
+          ...(dispute ? { disputeId, reason: dispute.reason } : {}),
+        },
         at: now,
       })
       .run();
@@ -383,6 +501,7 @@ export function answerReport(
       ok: true,
       match: found,
       status,
+      dispute,
       queueChannelId: league.guild.alertsChannelId,
       resultsChannelId: resultsChannelFor(league, found),
     };
@@ -405,6 +524,12 @@ export type StaffStepReply =
   | { ok: false; error: StaffStepError };
 
 const REASON_MAX_LENGTH = 500;
+
+const SETTLED_BY = {
+  validate: 'validated',
+  reject: 'rejected',
+  void: 'voided',
+} as const satisfies Record<string, DisputeResolution>;
 
 function staffStep(
   db: Db,
@@ -444,6 +569,7 @@ function staffStep(
       now,
     );
     apply(tx, found, staffPlayer.id);
+    settleDisputes(tx, found.id, SETTLED_BY[action], staffPlayer.id, now);
     tx.insert(auditLog)
       .values({
         actorPlayerId: staffPlayer.id,

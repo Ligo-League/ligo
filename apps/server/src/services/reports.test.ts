@@ -5,6 +5,7 @@ import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import type { Actor } from './permissions.ts';
 import {
   answerReport,
+  checkDispute,
   checkReport,
   rejectResult,
   reportResult,
@@ -15,10 +16,12 @@ import {
   type ReportDetails,
   type ReportRequest,
 } from './reports.ts';
+import { recordForfeit } from './forfeits.ts';
+import { recordResult } from './results.ts';
 import { getStandings } from './standings.ts';
 import { addTeamStaff, setTeamManager } from './team-staff.ts';
 
-const { auditLog, competition, evidence, game, leagueGuild, match } = schema;
+const { auditLog, competition, dispute, evidence, game, leagueGuild, match } = schema;
 
 const QUEUE = '800000000000000001';
 const RESULTS = '800000000000000002';
@@ -45,6 +48,7 @@ const SCREENSHOT = {
   size: 250_000,
 };
 const REQUEST = { matchId: 3, scoreA: 7, scoreB: 5, screenshot: SCREENSHOT };
+const DISPUTE = { action: 'dispute', reason: 'wrong_score', details: null } as const;
 const queueMessage = (report: ReportDetails) => ({
   content: `queue ${report.match.id} ${report.scoreA}-${report.scoreB} #${report.evidenceId}`,
 });
@@ -235,18 +239,118 @@ describe('answerReport', () => {
     }
   });
 
-  it('lets the other team dispute, which leaves the decision to staff', async () => {
+  it('lets the other team dispute with a reason, which leaves the decision to staff', async () => {
     const { db, report, stored } = league();
     const evidenceId = await evidenceIdOf(report);
-    expect(
-      answerReport(db, CHARLIE_MANAGER, { matchId: 3, evidenceId, action: 'dispute' }, 9500),
-    ).toMatchObject({ ok: true, status: 'disputed' });
+    const request = { matchId: 3, evidenceId, ...DISPUTE, details: '  On a gagné 7-5, pas 5-7.  ' };
+    expect(answerReport(db, CHARLIE_MANAGER, request, 9500)).toMatchObject({
+      ok: true,
+      status: 'disputed',
+      dispute: {
+        reason: 'wrong_score',
+        label: { fr: 'Score incorrect', en: 'Wrong score' },
+        details: 'On a gagné 7-5, pas 5-7.',
+      },
+    });
     expect(stored()).toMatchObject({ status: 'disputed', confirmedBy: null });
-    expect(db.select().from(auditLog).all().at(-1)).toMatchObject({
+    expect(db.select().from(dispute).all()).toMatchObject([
+      {
+        matchId: 3,
+        evidenceId,
+        reason: 'wrong_score',
+        details: 'On a gagné 7-5, pas 5-7.',
+        at: 9500,
+        resolution: null,
+      },
+    ]);
+    // The details can accuse someone: they stay in the dispute row, out of the general log.
+    const audit = db.select().from(auditLog).all().at(-1);
+    expect(audit).toMatchObject({
       action: 'match.dispute',
       beforeJson: { status: 'reported' },
-      afterJson: { status: 'disputed' },
+      afterJson: { status: 'disputed', reason: 'wrong_score' },
     });
+    expect(JSON.stringify(audit)).not.toContain('On a gagné');
+  });
+
+  it('takes "other" only with details, and keeps details within the limit', async () => {
+    const answer = async (reason: string, details: string | null) => {
+      const { db, report, dump } = league();
+      const evidenceId = await evidenceIdOf(report);
+      const before = dump();
+      const reply = answerReport(
+        db,
+        CHARLIE_MANAGER,
+        { matchId: 3, evidenceId, action: 'dispute', reason, details },
+        9500,
+      );
+      if (!reply.ok) expect(dump()).toBe(before);
+      return reply.ok ? reply.dispute : reply.error;
+    };
+    expect(await answer('other', 'Ils ont joué à six.')).toEqual({
+      reason: 'other',
+      label: null,
+      details: 'Ils ont joué à six.',
+    });
+    expect(await answer('other', null)).toBe('details_required');
+    expect(await answer('other', '   ')).toBe('details_required');
+    expect(await answer('not_played', null)).toMatchObject({ reason: 'not_played', details: null });
+    expect(await answer('cheating', 'x')).toBe('reason_unknown');
+    expect(await answer('wrong_score', 'x'.repeat(1001))).toBe('details_too_long');
+    expect(await answer('wrong_score', 'x'.repeat(1000))).toMatchObject({ reason: 'wrong_score' });
+  });
+
+  it("offers the league's reasons before the form opens, and checks the same as a dispute", async () => {
+    const { db, report, dump } = league();
+    const evidenceId = await evidenceIdOf(report);
+    const before = dump();
+    const allowed = checkDispute(db, CHARLIE_MANAGER, { matchId: 3, evidenceId });
+    expect(allowed.ok && allowed.reasons.map((reason) => reason.key)).toEqual([
+      'wrong_score',
+      'screenshot',
+      'ineligible_player',
+      'not_played',
+      'technical',
+    ]);
+    expect(checkDispute(db, BRAVO_MANAGER, { matchId: 3, evidenceId })).toEqual({
+      ok: false,
+      error: 'not_opponent',
+    });
+    expect(checkDispute(db, CHARLIE_MANAGER, { matchId: 3, evidenceId: 999 })).toEqual({
+      ok: false,
+      error: 'stale',
+    });
+    expect(dump()).toBe(before);
+  });
+
+  it('closes a dispute with the staff decision that ends it, and who took it', async () => {
+    const settled = async (decide: (db: ReturnType<typeof leagueDatabase>) => unknown) => {
+      const { db, report } = league();
+      const evidenceId = await evidenceIdOf(report);
+      answerReport(db, CHARLIE_MANAGER, { matchId: 3, evidenceId, ...DISPUTE }, 9500);
+      decide(db);
+      return db.select().from(dispute).all();
+    };
+    expect(await settled((db) => validateResult(db, STAFF, { matchId: 3 }, 9600))).toMatchObject([
+      { resolution: 'validated', resolvedAt: 9600 },
+    ]);
+    expect(await settled((db) => rejectResult(db, STAFF, { matchId: 3 }, 9600))).toMatchObject([
+      { resolution: 'rejected' },
+    ]);
+    expect(
+      await settled((db) => voidMatch(db, STAFF, { matchId: 3, reason: 'Rejoué' }, 9600)),
+    ).toMatchObject([{ resolution: 'voided' }]);
+    expect(
+      await settled((db) => recordResult(db, STAFF, { matchId: 3, scoreA: 5, scoreB: 7 }, 9600)),
+    ).toMatchObject([{ resolution: 'result_entered' }]);
+    expect(
+      await settled((db) =>
+        recordForfeit(db, STAFF, { matchId: 3, side: 'a', warningReason: () => 'x' }, 9600),
+      ),
+    ).toMatchObject([{ resolution: 'forfeit' }]);
+    const [row] = await settled((db) => validateResult(db, STAFF, { matchId: 3 }, 9600));
+    expect(row?.resolvedBy).not.toBeNull();
+    expect(row?.resolvedBy).not.toBe(row?.raisedBy);
   });
 
   it('validates on confirmation where the league lets the opponent validate', async () => {
@@ -276,7 +380,8 @@ describe('answerReport', () => {
       const { db, report, dump } = league();
       const evidenceId = await evidenceIdOf(report);
       const before = dump();
-      expect(answerReport(db, actor, { matchId: 3, evidenceId, action }, 9500)).toEqual({
+      const request = action === 'confirm' ? { action } : DISPUTE;
+      expect(answerReport(db, actor, { matchId: 3, evidenceId, ...request }, 9500)).toEqual({
         ok: false,
         error,
       });
@@ -316,8 +421,8 @@ describe('validateResult and rejectResult', () => {
       const { db, report, stored } = league();
       const evidenceId = await evidenceIdOf(report);
       if (state !== 'reported') {
-        const action = state === 'confirmed' ? 'confirm' : 'dispute';
-        answerReport(db, CHARLIE_MANAGER, { matchId: 3, evidenceId, action }, 9200);
+        const answer = state === 'confirmed' ? ({ action: 'confirm' } as const) : DISPUTE;
+        answerReport(db, CHARLIE_MANAGER, { matchId: 3, evidenceId, ...answer }, 9200);
       }
 
       const reply = validateResult(db, STAFF, { matchId: 3, evidenceId }, 9500);

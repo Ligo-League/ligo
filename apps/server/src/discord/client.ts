@@ -8,6 +8,7 @@ import {
   type ButtonInteraction as DiscordButton,
   type ChatInputCommandInteraction,
   type Interaction,
+  type ModalSubmitInteraction as DiscordModalSubmit,
 } from 'discord.js';
 import type { Logger } from 'pino';
 import { DEFAULT_LOCALE } from '../i18n/index.ts';
@@ -19,18 +20,21 @@ import type {
   Command,
   CommandContext,
   CommandInteraction,
+  FormHandler,
+  FormSubmitInteraction,
   ReplyMessage,
 } from './commands/types.ts';
 import { createDiscordGateway } from './gateway.ts';
-import { toDiscordMessage } from './outgoing.ts';
-import { routeAutocomplete, routeButton, routeCommand } from './router.ts';
+import { toDiscordMessage, toDiscordModal } from './outgoing.ts';
+import { routeAutocomplete, routeButton, routeCommand, routeForm } from './router.ts';
 
 // Discord shows at most this many suggestions for an option.
 const MAX_CHOICES = 25;
 
 /** Who acted, with the roles Discord sent along with the interaction. */
 function actorOf(
-  interaction: ChatInputCommandInteraction | DiscordAutocomplete | DiscordButton,
+  interaction:
+    ChatInputCommandInteraction | DiscordAutocomplete | DiscordButton | DiscordModalSubmit,
 ): Actor {
   const roles = interaction.member?.roles;
   // A cached member carries a role manager; an uncached one the plain list of role IDs.
@@ -44,7 +48,7 @@ function actorOf(
 
 /** Sends a reply, or completes a deferred one. */
 async function sendReply(
-  interaction: ChatInputCommandInteraction | DiscordButton,
+  interaction: ChatInputCommandInteraction | DiscordButton | DiscordModalSubmit,
   { ephemeral, ...message }: ReplyMessage,
 ): Promise<void> {
   const payload = toDiscordMessage(message);
@@ -61,10 +65,11 @@ async function sendReply(
 export function createDiscordClient(deps: {
   commands: readonly Command[];
   buttons: readonly ButtonHandler[];
+  forms: readonly FormHandler[];
   logger: Logger;
   db: Db;
 }): Client {
-  const { commands, buttons, logger, db } = deps;
+  const { commands, buttons, forms, logger, db } = deps;
   const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   });
@@ -105,19 +110,60 @@ export function createDiscordClient(deps: {
     }
 
     if (interaction.isButton()) {
+      // Opening a form answers the click without marking it as replied.
+      let formShown = false;
       const adapter: ButtonInteraction = {
         ...actorOf(interaction),
         customId: interaction.customId,
         get answered() {
-          return interaction.replied;
+          return interaction.replied || formShown;
         },
         reply: (message) => sendReply(interaction, message),
         async update(message) {
           await interaction.update(toDiscordMessage(message));
         },
+        async showForm(form) {
+          await interaction.showModal(toDiscordModal(form));
+          formShown = true;
+        },
       };
       routeButton(buttons, adapter, contextNow(), logger).catch((error: unknown) => {
         logger.error({ err: error }, 'Could not answer button');
+      });
+      return;
+    }
+
+    if (interaction.isModalSubmit()) {
+      const adapter: FormSubmitInteraction = {
+        ...actorOf(interaction),
+        customId: interaction.customId,
+        get answered() {
+          return interaction.replied;
+        },
+        getText(id) {
+          // discord.js throws for a field the form does not have.
+          try {
+            return interaction.fields.getTextInputValue(id) || null;
+          } catch {
+            return null;
+          }
+        },
+        getSelected(id) {
+          try {
+            return interaction.fields.getStringSelectValues(id);
+          } catch {
+            return [];
+          }
+        },
+        reply: (message) => sendReply(interaction, message),
+        async update(message) {
+          // Every form of this bot opens from a button, so it has a message to replace.
+          if (!interaction.isFromMessage()) throw new Error('Form not opened from a message');
+          await interaction.update(toDiscordMessage(message));
+        },
+      };
+      routeForm(forms, adapter, contextNow(), logger).catch((error: unknown) => {
+        logger.error({ err: error }, 'Could not answer form');
       });
       return;
     }

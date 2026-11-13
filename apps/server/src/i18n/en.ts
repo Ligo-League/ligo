@@ -111,6 +111,17 @@ export const en: Record<MessageKey, string> = {
   'match.error.no_season': 'This league has no season in progress.',
   'report.hint.nothingLeft': "No match to report: your teams' matches all have a result.",
   'report.hint.noMatch': 'None of your matches to report matches "{query}".',
+  'dispute.form.title': 'Dispute the result',
+  'dispute.form.reason': 'Reason',
+  'dispute.form.details': 'Details',
+  'dispute.form.detailsHint': 'Required for "Other". Read by league staff only.',
+  'dispute.reason.other': 'Other',
+  'queue.disputedWithReason':
+    '{line} — disputed by {member}. Reason: **{reason}**. A staff decision is expected.',
+  'match.error.reason_unknown': 'The league does not offer this reason. Click Dispute again.',
+  'match.error.details_required':
+    'For "Other", explain the problem in the details. Click Dispute again.',
+  'match.error.details_too_long': 'The details are over {max} characters. Click Dispute again.',
   'match.error.not_linked': 'This server is not linked to a league.',
   'match.error.not_your_match': 'You are neither manager nor staff of either team of this match.',
   'match.error.not_reportable': 'This match already has a reported or validated result.',
@@ -183,6 +194,7 @@ export const en: Record<MessageKey, string> = {
     'I cannot write in that channel. Give me "View Channel" and "Send Messages", then try again.',
   'error.unknownCommand': 'Unknown command.',
   'error.unknownButton': 'This button can no longer be used.',
+  'error.unknownForm': 'This form can no longer be used.',
   'error.unexpected': 'Something went wrong. Please try again in a moment.',
   'command.help.description': "Explains the bot's commands in detail.",
   'command.help.option.command': 'The command to explain. Without it, the list of commands.',
@@ -201,9 +213,9 @@ export const en: Record<MessageKey, string> = {
   'help.page.match':
     '**`/match report`** — report the result of a match\nFor the manager and staff of both teams. League staff name them with `/team manager`.\n\n• `match`: pick it from the list. It shows only your teams\' matches still to play; type a name, a tag or "s3" (week 3) to narrow it.\n• `score_a` and `score_b`: rounds won by the first and the second team named, in the match\'s order, not necessarily yours first.\n• `screenshot`: the scoreboard screenshot, required. PNG, JPEG or WebP, {maxMb} MB at most.\n\nA score the rulebook makes impossible (7–6, for example) is refused. A forfeit is not reported here: tell the league staff.',
   'help.match.steps.staff':
-    '**Then**\n1. The bot posts the result with the screenshot and mentions the other team.\n2. The other team clicks **Confirmer** (confirm) or **Contester** (dispute). A dispute alerts staff.\n3. Staff click **Valider** (validate) or **Refuser** (reject). Once rejected, the match can be reported again.\n4. Once validated, the result is announced in the results channel and counts in the standings.',
+    '**Then**\n1. The bot posts the result with the screenshot and mentions the other team.\n2. The other team clicks **Confirmer** (confirm) or **Contester** (dispute). To dispute, it picks a reason and can add details, read by staff only.\n3. Staff click **Valider** (validate) or **Refuser** (reject). Once rejected, the match can be reported again.\n4. Once validated, the result is announced in the results channel and counts in the standings.',
   'help.match.steps.opponent':
-    '**Then**\n1. The bot posts the result with the screenshot and mentions the other team.\n2. The other team clicks **Confirmer** (confirm): the result is validated, announced in the results channel and counts in the standings. **Contester** (dispute) alerts the league staff, who decide.',
+    '**Then**\n1. The bot posts the result with the screenshot and mentions the other team.\n2. The other team clicks **Confirmer** (confirm): the result is validated, announced in the results channel and counts in the standings. **Contester** (dispute) asks for a reason and details, read by the league staff, who decide.',
   'help.page.staffMatch':
     '**`/staff match`** — results, for league staff only\n`match`: type a team, a division (L1) or a week (s3), then pick from the list.\n\n• `result` — enters or corrects a score (`score_a`, `score_b`, optional `screenshot`). It counts at once, without validation, and is announced in the results channel, a correction too.\n• `validate` — validates a result reported by a team, like the **Valider** button. The list offers only matches waiting for staff.\n• `void` — annuls a match, with a reason (`reason`) kept in the log. Nothing is deleted; the match stops counting.\n• `forfeit` — records a forfeit by the first or the second team named (`team`). It is announced in the results channel.',
   'help.staffMatch.footer':

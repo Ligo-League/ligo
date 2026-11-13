@@ -113,6 +113,20 @@ export const fr = {
   'match.error.no_season': "Cette ligue n'a pas de saison en cours.",
   'report.hint.nothingLeft': 'Aucun match à signaler : ceux de tes équipes ont déjà un résultat.',
   'report.hint.noMatch': 'Aucun de tes matchs à signaler ne correspond à « {query} ».',
+  'dispute.form.title': 'Contester le résultat',
+  'dispute.form.reason': 'Motif',
+  'dispute.form.details': 'Détails',
+  'dispute.form.detailsHint':
+    'Obligatoires pour « Autre ». Lus par le staff de la ligue seulement.',
+  'dispute.reason.other': 'Autre',
+  'queue.disputedWithReason':
+    '{line} — contesté par {member}. Motif : **{reason}**. Une décision du staff est attendue.',
+  'match.error.reason_unknown':
+    "Ce motif n'est pas proposé par la ligue. Clique de nouveau sur Contester.",
+  'match.error.details_required':
+    'Pour « Autre », explique le problème dans les détails. Clique de nouveau sur Contester.',
+  'match.error.details_too_long':
+    'Les détails dépassent {max} caractères. Clique de nouveau sur Contester.',
   'match.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'match.error.not_your_match': "Tu n'es ni manager ni staff d'une des deux équipes de ce match.",
   'match.error.not_reportable': 'Ce match a déjà un résultat signalé ou validé.',
@@ -188,6 +202,7 @@ export const fr = {
     'Je ne peux pas écrire dans ce salon. Donne-moi « Voir le salon » et « Envoyer des messages », puis réessaie.',
   'error.unknownCommand': 'Commande inconnue.',
   'error.unknownButton': "Ce bouton n'est plus utilisable.",
+  'error.unknownForm': "Ce formulaire n'est plus utilisable.",
   'error.unexpected': 'Une erreur est survenue. Réessaie dans un instant.',
   'command.help.description': 'Explique les commandes du bot en détail.',
   'command.help.option.command': 'La commande à expliquer. Sans elle, la liste des commandes.',
@@ -206,9 +221,9 @@ export const fr = {
   'help.page.match':
     "**`/match report`** — signaler le résultat d'un match\nPour le manager et le staff des deux équipes. Le staff de la ligue les désigne avec `/team manager`.\n\n• `match` : choisis-le dans la liste. Elle ne montre que les matchs de tes équipes encore à jouer ; tape un nom, un tag ou « s3 » (semaine 3) pour la filtrer.\n• `score_a` et `score_b` : les manches gagnées par la première et la seconde équipe citées, dans l'ordre du match, pas forcément la tienne d'abord.\n• `screenshot` : la capture du tableau des scores, obligatoire. PNG, JPEG ou WebP, {maxMb} Mo au plus.\n\nUn score impossible selon le règlement (7–6, par exemple) est refusé. Un forfait ne se signale pas : préviens le staff de la ligue.",
   'help.match.steps.staff':
-    "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** ou **Contester**. Une contestation alerte le staff.\n3. Le staff clique **Valider** ou **Refuser**. Refusé, le match peut être signalé de nouveau.\n4. Validé, le résultat est annoncé dans le salon des résultats et compte au classement.",
+    "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** ou **Contester**. Pour contester, elle choisit un motif et peut ajouter des détails, lus par le staff seulement.\n3. Le staff clique **Valider** ou **Refuser**. Refusé, le match peut être signalé de nouveau.\n4. Validé, le résultat est annoncé dans le salon des résultats et compte au classement.",
   'help.match.steps.opponent':
-    "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** : le résultat est validé, annoncé dans le salon des résultats et compte au classement. **Contester** alerte le staff de la ligue, qui tranche.",
+    "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** : le résultat est validé, annoncé dans le salon des résultats et compte au classement. **Contester** demande un motif et des détails, lus par le staff de la ligue, qui tranche.",
   'help.page.staffMatch':
     "**`/staff match`** — les résultats, réservé au staff de la ligue\n`match` : tape une équipe, une division (L1) ou une semaine (s3), puis choisis dans la liste.\n\n• `result` — saisit ou corrige un score (`score_a`, `score_b`, `screenshot` facultatif). Il compte aussitôt, sans validation, et il est annoncé dans le salon des résultats, une correction aussi.\n• `validate` — valide un résultat signalé par une équipe, comme le bouton **Valider**. La liste ne propose que les matchs en attente.\n• `void` — annule un match, avec un motif (`reason`) gardé dans le journal. Rien n'est supprimé ; le match ne compte plus.\n• `forfeit` — enregistre le forfait de la première ou de la seconde équipe citée (`team`). Il est annoncé dans le salon des résultats.",
   'help.staffMatch.footer':

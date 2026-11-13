@@ -5,6 +5,7 @@ import { loadConfig } from './config.ts';
 import { buttons } from './discord/buttons/index.ts';
 import { createDiscordClient } from './discord/client.ts';
 import { commands } from './discord/commands/index.ts';
+import { forms } from './discord/forms.ts';
 import { loginHint } from './discord/login-hint.ts';
 import { createLogger } from './logger.ts';
 
@@ -25,7 +26,7 @@ const db = openDatabase(databasePath);
 applyMigrations(db);
 logger.info({ path: databasePath }, 'Database ready');
 
-const client = createDiscordClient({ commands, buttons, logger, db });
+const client = createDiscordClient({ commands, buttons, forms, logger, db });
 
 const shutdown = (signal: string) => {
   logger.info({ signal }, 'Shutting down');

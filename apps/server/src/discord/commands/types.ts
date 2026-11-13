@@ -84,14 +84,55 @@ export interface AutocompleteInteraction extends InteractionBase {
   respond(choices: readonly AutocompleteChoice[]): Promise<void>;
 }
 
+/** One field of a form. Discord shows labels of 45 characters and list entries of 100 at most. */
+export type FormField =
+  | {
+      kind: 'select';
+      id: string;
+      label: string;
+      options: readonly { value: string; label: string }[];
+    }
+  | {
+      kind: 'text';
+      id: string;
+      label: string;
+      /** A line under the label, such as when the field becomes required. */
+      description?: string;
+      required: boolean;
+      maxLength: number;
+    };
+
+/** A form (a Discord modal) opened from a button. Its `customId` comes from `buttonId`. */
+export interface Form {
+  customId: string;
+  /** At most 45 characters. */
+  title: string;
+  fields: readonly FormField[];
+}
+
 /** A member clicked a button under one of the bot's messages. */
 export interface ButtonInteraction extends Actor {
   customId: string;
-  /** True once the click has been answered, by a reply or by an update. */
+  /** True once the click has been answered, by a reply, an update or a form. */
   readonly answered: boolean;
   /** Answers with a new message. */
   reply(message: ReplyMessage): Promise<void>;
   /** Replaces the message the button sits on, for example to remove buttons that were used. */
+  update(message: OutgoingMessage): Promise<void>;
+  /** Answers by opening a form; what the member sends arrives as a `FormSubmitInteraction`. */
+  showForm(form: Form): Promise<void>;
+}
+
+/** A member sent a form the bot opened from one of its buttons. */
+export interface FormSubmitInteraction extends Actor {
+  customId: string;
+  readonly answered: boolean;
+  /** What was typed in a text field, or null when it was left empty. */
+  getText(id: string): string | null;
+  /** The values picked in a list field; none when it is missing. */
+  getSelected(id: string): readonly string[];
+  reply(message: ReplyMessage): Promise<void>;
+  /** Replaces the message whose button opened the form. */
   update(message: OutgoingMessage): Promise<void>;
 }
 
@@ -109,6 +150,17 @@ export interface Command {
   data: RESTPostAPIChatInputApplicationCommandsJSONBody;
   execute(interaction: CommandInteraction, context: CommandContext): Promise<void>;
   autocomplete?(interaction: AutocompleteInteraction, context: CommandContext): Promise<void>;
+}
+
+/** What a kind of form does once sent. Thin, like a command. */
+export interface FormHandler {
+  /** The first part of the custom IDs it answers. */
+  action: string;
+  execute(
+    interaction: FormSubmitInteraction,
+    target: ButtonTarget,
+    context: CommandContext,
+  ): Promise<void>;
 }
 
 /** What a kind of button does. Thin, like a command: it calls a service and formats the answer. */

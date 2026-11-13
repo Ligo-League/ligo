@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { setTeamManager } from '../../services/team-staff.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../../testing.ts';
 import { buttons } from '../buttons/index.ts';
-import { routeButton } from '../router.ts';
+import { forms } from '../forms.ts';
+import { routeButton, routeForm } from '../router.ts';
 import {
   fakeAutocomplete,
   fakeButton,
   fakeContext,
+  fakeForm,
   fakeGateway,
   fakeInteraction,
   type FakeInput,
@@ -59,8 +61,24 @@ function session() {
     await routeButton(buttons, interaction, context, logger);
     return interaction;
   };
+  const send = async (
+    customId: string,
+    who: FakeInput,
+    values: { reason?: string; details?: string } = {},
+  ) => {
+    const interaction = fakeForm(
+      customId,
+      {
+        selected: values.reason === undefined ? {} : { reason: [values.reason] },
+        text: values.details === undefined ? {} : { details: values.details },
+      },
+      who,
+    );
+    await routeForm(forms, interaction, context, logger);
+    return interaction;
+  };
   const status = () => db.select().from(schema.match).all()[2]?.status;
-  return { db, gateway, context, run, click, status };
+  return { db, gateway, context, run, click, send, status };
 }
 
 describe('/match report', () => {
@@ -224,15 +242,103 @@ describe('report buttons', () => {
     });
   });
 
-  it('lets the other team dispute', async () => {
-    const { run, click, gateway, status } = session();
+  it('opens the dispute form for the other team, with the league\'s reasons then "Autre"', async () => {
+    const { run, click, status } = session();
     await run(report(BRAVO));
     const interaction = await click('report-dispute:3:1', CHARLIE);
-    expect(interaction.updates[0]?.content).toBe(
-      '**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — contesté par <@700000000000000002>. Le staff va trancher.',
-    );
+    expect(interaction.forms).toEqual([
+      {
+        customId: 'report-dispute:3:1',
+        title: 'Contester le résultat',
+        fields: [
+          {
+            kind: 'select',
+            id: 'reason',
+            label: 'Motif',
+            options: [
+              { value: 'wrong_score', label: 'Score incorrect' },
+              { value: 'screenshot', label: 'Capture manquante ou illisible' },
+              { value: 'ineligible_player', label: 'Joueur non inscrit ou non éligible' },
+              { value: 'not_played', label: 'Match non joué' },
+              { value: 'technical', label: 'Problème technique ou re-host' },
+              { value: 'other', label: 'Autre' },
+            ],
+          },
+          {
+            kind: 'text',
+            id: 'details',
+            label: 'Détails',
+            description: 'Obligatoires pour « Autre ». Lus par le staff de la ligue seulement.',
+            required: false,
+            maxLength: 1000,
+          },
+        ],
+      },
+    ]);
+    // Opening the form changes nothing yet.
+    expect(status()).toBe('reported');
+  });
+
+  it('tells someone who may not dispute at once, without opening the form', async () => {
+    const { run, click } = session();
+    await run(report(BRAVO));
+    const interaction = await click('report-dispute:3:1', BRAVO);
+    expect(interaction.forms).toEqual([]);
+    expect(interaction.replies).toEqual([
+      {
+        content: "Seule l'équipe adverse peut confirmer ou contester ce résultat.",
+        ephemeral: true,
+      },
+    ]);
+  });
+
+  it('records the sent dispute: the public message names no reason, staff get it all', async () => {
+    const { run, send, gateway, status } = session();
+    await run(report(BRAVO));
+    const interaction = await send('report-dispute:3:1', CHARLIE, {
+      reason: 'ineligible_player',
+      details: 'Leur 5e joueur @everyone n’est pas inscrit.',
+    });
+    expect(interaction.updates).toEqual([
+      {
+        content:
+          '**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — contesté par <@700000000000000002>. Le staff va trancher.',
+      },
+    ]);
     expect(status()).toBe('disputed');
-    expect(gateway.posted.at(-1)?.message.content).toContain('contesté par');
+    const queued = gateway.posted.at(-1);
+    expect(queued?.channelId).toBe(QUEUE);
+    expect(queued?.message.content).toBe(
+      'Ligue 1, semaine 3 : Bravo 7–5 Charlie — contesté par <@700000000000000002>. Motif : **Joueur non inscrit ou non éligible**. Une décision du staff est attendue.\n>>> Leur 5e joueur @everyone n’est pas inscrit.',
+    );
+    // The team's words reach staff, but cannot ping anyone.
+    expect(queued?.message.mentionUserIds ?? []).toEqual([]);
+  });
+
+  it('refuses "Autre" without details: nothing changes, and the member can try again', async () => {
+    const { run, send, gateway, status } = session();
+    await run(report(BRAVO));
+    const posts = gateway.posted.length;
+    const interaction = await send('report-dispute:3:1', CHARLIE, { reason: 'other' });
+    expect(interaction.replies).toEqual([
+      {
+        content:
+          'Pour « Autre », explique le problème dans les détails. Clique de nouveau sur Contester.',
+        ephemeral: true,
+      },
+    ]);
+    expect(status()).toBe('reported');
+    expect(gateway.posted).toHaveLength(posts);
+  });
+
+  it('checks the sender again: a form cannot be sent by the team that reported', async () => {
+    const { run, send, status } = session();
+    await run(report(BRAVO));
+    const interaction = await send('report-dispute:3:1', BRAVO, { reason: 'wrong_score' });
+    expect(interaction.replies[0]?.content).toBe(
+      "Seule l'équipe adverse peut confirmer ou contester ce résultat.",
+    );
+    expect(status()).toBe('reported');
   });
 
   it('lets staff validate from the queue: the result is announced', async () => {

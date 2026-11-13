@@ -7,6 +7,8 @@ import type {
   Command,
   CommandContext,
   CommandInteraction,
+  FormHandler,
+  FormSubmitInteraction,
 } from './commands/types.ts';
 
 export interface ErrorLogger {
@@ -87,6 +89,33 @@ export async function routeButton(
     await handler.execute(interaction, target, context);
   } catch (error) {
     logger.error({ err: error, action: target.action, entityId: target.entityId }, 'Button failed');
+    if (!interaction.answered) {
+      await interaction.reply({ content: t(context.locale, 'error.unexpected'), ephemeral: true });
+    }
+  }
+}
+
+/**
+ * Runs the handler of a sent form, found like a button's by the first part of its custom ID.
+ * A form this bot cannot read is answered privately; so is a failure, without its details.
+ */
+export async function routeForm(
+  handlers: readonly FormHandler[],
+  interaction: FormSubmitInteraction,
+  context: CommandContext,
+  logger: ErrorLogger,
+): Promise<void> {
+  const target = parseButtonId(interaction.customId);
+  const handler = target && handlers.find((candidate) => candidate.action === target.action);
+  if (!target || !handler) {
+    await interaction.reply({ content: t(context.locale, 'error.unknownForm'), ephemeral: true });
+    return;
+  }
+
+  try {
+    await handler.execute(interaction, target, context);
+  } catch (error) {
+    logger.error({ err: error, action: target.action, entityId: target.entityId }, 'Form failed');
     if (!interaction.answered) {
       await interaction.reply({ content: t(context.locale, 'error.unexpected'), ephemeral: true });
     }
