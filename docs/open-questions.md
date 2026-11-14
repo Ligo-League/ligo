@@ -67,25 +67,6 @@ section 16.
   not show who replaced whom. Ligo treats each name on score7 as one team for the whole season.
 - **Answer:**
 
-#### O-24 · A time outside the week and its extension
-
-- **Question:** may two teams agree to play outside their week and its extension, for example a
-  week early or after the extension? Who allows it?
-- **Why it matters:** `/match propose-time` refuses such a time today.
-- **Until answered:** teams may only propose a time inside the week or its extension; league
-  staff can set any time with `/staff match schedule`.
-- **Answer:**
-
-#### O-25 · Who enters the Coupe de France
-
-- **Question:** Civitas Esport's Season 3 standings image marks Ligue 1's 2nd to 7th as
-  "Qualification en coupe de France". The rulebook, as the design doc reads it, says every
-  registered team enters the cup. Which is right, and does Ligue 2 qualify the same way?
-- **Why it matters:** the standings would mark the qualifying places (design doc section 11,
-  "Zones"), and the cup bracket (phase 6) needs its entrants.
-- **Until answered:** every registered team enters; the standings mark no cup places.
-- **Answer:**
-
 ### Forfeits and exclusion
 
 #### O-04 · The 50% rule
@@ -153,71 +134,7 @@ section 16.
 - **Until answered:** Ligo follows score7 for Season 3: 3 points per win, no draws.
 - **Answer:**
 
-### Scheduling, sides and the map veto
-
-#### O-11 · Ban order
-
-- **Question:** BLAST changed its map-ban process for 2026. Does LFR follow the new BLAST order,
-  or keep alternate bans down to one map for a BO1?
-- **Why it matters:** the veto sequences (phase 2b). They are settings, so a change is cheap, but
-  the default must be right for Season 4.
-- **Until answered:** alternate bans down to one map for a BO1; the usual R6 sequences for BO3
-  and BO5.
-- **Answer:**
-
-#### O-12 · Side choice between teams of equal rank
-
-- **Question:** the lower-ranked team picks the starting side and bans first, and the
-  higher-ranked team hosts. What happens when both teams have the same rank, for example in
-  week 1 when nobody has played?
-- **Why it matters:** the bot announces who picks and who hosts for every match (phase 2b).
-- **Until answered:** the bot flips a coin when the veto starts, says so in its message and
-  records it in the audit log (maintainer's choice, 13 November 2026).
-- **Answer:**
-
-#### O-13 · Deadlines
-
-- **Question:** when two teams agree on no date, the rulebook grants one extra week, then sets
-  the match to Sunday 21:00 of the second week. Is this still the rule for Season 4, and is
-  Sunday 21:00 French time? When is the Sunday time fixed: as soon as the extension starts, or
-  later in the extension week? Can the teams still agree another time once it is fixed?
-- **Why it matters:** automatic scheduling (phase 2b).
-- **Until answered:** settings with these defaults (one week, Sunday 21:00, Europe/Paris). The
-  bot fixes the Sunday time as soon as the extension starts, and a time the teams agree later
-  replaces it (maintainer's choice, 13 November 2026).
-- **Answer:**
-
-#### O-14 · Re-hosts
-
-- **Question:** is the allowance one re-host per team per map, and can the staff order more?
-- **Why it matters:** the re-host command and the check that rebuilds a map from several lobbies
-  (phase 5).
-- **Until answered:** not built yet.
-- **Answer:**
-
 ### End of season and the cup
-
-#### O-15 · Barrages
-
-- **Question:** in which format are the barrages played (BO1, BO3, BO5), and when: before the
-  Coupe de France, during it, or after?
-- **Why it matters:** season closing (phase 6).
-- **Until answered:** not built yet.
-- **Answer:**
-
-#### O-16 · Promotion and relegation places
-
-- **Question:** should the places be fixed ranks ("9th and 10th go down") or counts from the top
-  and the bottom ("the last two go down"), given that a division's size can change? Is there a
-  maximum size per division?
-- **Why it matters:** season closing (phase 6); see also O-03.
-- **Until answered:** not built yet.
-- **Answer (maintainer, 13 November 2026, partial):** counts from the bottom, never fixed ranks.
-  The last 2 teams of a division that has a lower division go down at the end of the regular
-  season; the team just above them plays a barrage against the lower division's 3rd, the winner
-  taking the higher place; the lower division's first 2 go up. A division with no lower one sends
-  nobody down: Ligue 2 relegates nobody while there is no league below it. Every number is a
-  setting (`ruleset_json.promotion`). Still open for the owner: a maximum division size.
 
 #### O-17 · Coupe de France: sides and seeding
 
@@ -225,7 +142,14 @@ section 16.
   Season 4)? Is the bracket drawn at random, or seeded by league and final rank?
 - **Why it matters:** the cup bracket (phase 6).
 - **Until answered:** not built yet.
-- **Answer:**
+- **Answer (maintainer, 14 November 2026, partial):** the bracket is seeded by league and final
+  rank. In Season 2 only Ligue 1 played the cup, as a ladder: the 1st went straight to the final,
+  the 2nd to the semi-final, the 3rd to the quarter-final; 4th against 7th and 5th against 6th
+  opened, and each winner met the next higher-ranked team. Its flaw: the top team played a single
+  match and was sure of 2nd place and its prize money, which left no room for upsets. The
+  maintainer expects an ordinary seeded bracket instead, with Ligue 1 and Ligue 2 kept apart until
+  late rounds (semi-finals or the final). Still open for the owner: the shape of that bracket, and
+  who picks the starting side.
 
 #### O-18 · National leagues
 
@@ -233,7 +157,10 @@ section 16.
   playoffs?
 - **Why it matters:** only once the owner launches it (phase 9).
 - **Until answered:** not built.
-- **Answer:**
+- **Answer (maintainer, 14 November 2026, to confirm with the owner):** "national" probably means
+  France-wide, with teams from different départements: regional leaderboards inside France rather
+  than separate national leagues. There is no clean way to rank regions against each other, so the
+  idea needs the owner's own description before anything is designed.
 
 ### Season 4
 
@@ -245,24 +172,7 @@ section 16.
 - **Until answered:** the roadmap assumes late December or early January at the earliest.
 - **Answer:**
 
-#### O-20 · Replays and stats consent
-
-- **Question:** will uploading replays be mandatory in Season 4 (at least one team per match)?
-  Will accepting public player statistics become a rulebook requirement at registration?
-- **Why it matters:** whether replay upload must be ready for Season 4 (decision due
-  mid-December), and whether every player appears on stat pages.
-- **Until answered:** replays are optional and stats need each player's consent.
-- **Answer:**
-
 ### Team tools
-
-#### O-21 · Scouting pages
-
-- **Question:** may each team's tendencies from official matches (map bans, maps played, sites,
-  operators) be shown publicly, only to registered teams, or not at all?
-- **Why it matters:** the tendencies page (phase 10).
-- **Until answered:** not built; it will be a setting.
-- **Answer:**
 
 #### O-22 · Recruitment board
 
@@ -270,17 +180,13 @@ section 16.
   rulebook say anything about approaching players of another team?
 - **Why it matters:** the recruitment board (phase 10).
 - **Until answered:** not built; by default only players without a team could post.
-- **Answer:**
+- **Answer (maintainer, 14 November 2026, to confirm with the owner):** a team may approach another
+  team's players to recruit them in the next mercato window; that does no harm. A player should
+  not post themselves as available while they are on a roster, nor while no mercato window is
+  open. Until the owner decides otherwise, only a player without a team may post, and only during
+  an open window; both are settings.
 
 ## For the maintainer
-
-#### M-01 · Hosting for the first test with real teams
-
-- **Question:** phase 2 is done when a full week of results comes in through teams. The bot must
-  be online that whole week. Your PC left on, or the VPS now?
-- **Why it matters:** the first hosting trigger. No domain is needed until the website (phase 3).
-- **Until answered:** everything runs on your PC while `pnpm dev` is running.
-- **Answer:**
 
 #### M-02 · Forcing an unusual score
 
@@ -319,15 +225,6 @@ section 16.
 - **Question:** should a sanction be revocable, or only offset by another one?
 - **Why it matters:** the sanction table has no "revoked" state; adding one is a migration.
 - **Until answered:** a sanction can only be offset by an opposite one.
-- **Answer:**
-
-#### M-07 · Image templates without JSX
-
-- **Question:** the design doc says image templates are JSX components, but the server runs
-  TypeScript directly, which has no JSX. Keep building them as plain element trees, or add a
-  build step?
-- **Why it matters:** must be decided before the website (phase 3), which wants JSX pages.
-- **Until answered:** templates are plain element trees.
 - **Answer:**
 
 #### M-08 · Image cache
@@ -433,6 +330,84 @@ section 16.
 - **Answer:**
 
 ## Answered
+
+#### O-11 · Ban order
+
+- **Answer (maintainer, 14 November 2026):** LFR follows BLAST's map-ban process: the [BLAST R6
+  global rulebook, Season 2025](https://staticctf.ubisoft.com/J3yJr34U2pZ2Ieem48Dwy9uqj5PNUQTn/53GxmEddEWemHwz8BBbJpZ/96a6decc0ca03defc9c1ae9e06bd0809/BLASTR6_GLOBALRULEBOOK_SEASON_2025.pdf),
+  section 5.1.3.2. Its sequences are the ones Ligo already uses (BO1: eight alternate bans; BO3:
+  4 bans, 2 picks, 2 bans; BO5: 2 bans, 2 picks, 2 bans, 2 picks). After a coin toss, the winner
+  of a BO1 chooses either side selection or who bans first, and the other team makes the other
+  choice; in a BO3 or BO5 the winner chooses who bans first. The side of a picked map goes to the
+  team that did not pick it, and a new coin toss gives the side of the decider. The team without
+  side selection on a map picks its overtime side.
+
+#### O-12 · Side choice between teams of equal rank
+
+- **Answer (maintainer, 14 November 2026):** BLAST's coin toss (O-11), used only between teams of
+  equal rank. Teams of different rank keep the ranking rule: the lower-ranked team picks the
+  starting side and bans first, the higher-ranked team hosts. When the coin decides, Ligo names no
+  host: the two teams agree on it.
+
+#### O-13 · Deadlines
+
+- **Answer (maintainer, 14 November 2026):** confirmed for Season 4. One week of extension; as
+  soon as it starts, the bot sets the match to Sunday 21:00 Paris time and says that the teams can
+  still agree another time, which then replaces it.
+
+#### O-14 · Re-hosts
+
+- **Answer (maintainer, 14 November 2026):** one re-host per team per map. Staff may allow more,
+  at their discretion, when there is a real problem: a game bug, a serious incident at a player's
+  home. Built with replays (phase 5).
+
+#### O-15 · Barrages
+
+- **Answer (maintainer, 14 November 2026):** barrages, for a place in the higher division, are
+  played before the Coupe de France, as a BO1. The format is a setting (a BO3 is possible).
+
+#### O-16 · Promotion and relegation places
+
+- **Answer (maintainer, 13 and 14 November 2026):** counts from the bottom, never fixed ranks. The
+  last 2 teams of a division that has a lower division go down at the end of the regular season;
+  the team just above them plays a barrage against the lower division's 3rd, the winner taking the
+  higher place; the lower division's first 2 go up. A division with no lower one sends nobody
+  down. A division holds at most 12 teams: with one match a week, 12 teams already make a regular
+  season of about 2.6 months, which must fit inside an R6 season and leave room for the cup. Every
+  number is a setting (`ruleset_json.promotion`, and the division maximum).
+
+#### O-20 · Replays and stats consent
+
+- **Answer (maintainer, 14 November 2026):** uploading replays is mandatory in Season 4, and
+  accepting public player statistics is a requirement at registration. Replays (phase 5) are
+  therefore needed before Season 4.
+
+#### O-21 · Scouting pages
+
+- **Answer (maintainer, 14 November 2026):** public. Pro teams get the same from paid analysts,
+  and it is public information already for anyone who watches every match; most teams have neither
+  the time nor the people to do it.
+
+#### O-24 · A time outside the week and its extension
+
+- **Answer (maintainer, 14 November 2026):** only staff can set a time outside the week and its
+  extension, when both teams agree to it. Teams cannot propose one themselves.
+
+#### O-25 · Who enters the Coupe de France
+
+- **Answer (maintainer, 14 November 2026):** every team registered in LFR, Ligue 1 and Ligue 2.
+
+#### M-01 · Hosting for the first test with real teams
+
+- **Answer (maintainer, 14 November 2026):** the VPS and the domain are bought the week of
+  16 November; development stays on localhost until then. Phase 2's acceptance week, a full week of
+  results through teams, runs during the Season 3 shadow run alongside phase 3 instead of blocking
+  it.
+
+#### M-07 · Image templates without JSX
+
+- **Answer (maintainer, 14 November 2026):** no JSX and no build step. Website pages are Hono
+  `html` tagged templates, which escape every value; images stay plain element trees.
 
 #### O-07 · Who reports for a team
 

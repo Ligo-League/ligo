@@ -24,11 +24,15 @@ M-xx : mainteneur).
 ### 1.1 Divisions
 
 - La ligue compte des divisions classées par niveau : Ligue 1 (niveau 1), Ligue 2 (niveau 2).
-  Une division a autant d'équipes qu'elle a de places ; ce nombre n'est pas fixé par le
-  règlement.
+  Une division a autant d'équipes qu'elle a de places, **12 au maximum** : avec un match par
+  semaine, la saison régulière doit tenir dans une saison R6 et laisser la place à la Coupe de
+  France.
 - La saison régulière est un championnat aller simple : chaque équipe affronte chaque autre une
   fois, **un match par semaine**.
-- **Statut** : Décidée. La taille maximale d'une division reste à fixer (O-16).
+- **Statut** : Décidée.
+- **Appliquée par** : une inscription qui ferait dépasser 12 équipes dans une division est
+  refusée à la validation (phase 3), et le calendrier n'est généré que pour une division dans la
+  limite (phase 4).
 
 ### 1.2 Format des matchs
 
@@ -66,8 +70,11 @@ M-xx : mainteneur).
 - 5 joueurs et jusqu'à 2 remplaçants, dont **un capitaine**, qui est forcément un joueur.
   Mercato uniquement pendant les fenêtres annoncées, 3 mouvements par équipe, un joueur transféré
   est bloqué un jour.
-- **Statut** : Règlement S3 ; capitaine décidé. Ce que le capitaine peut faire reste à fixer
-  (M-19). Pas encore appliquée par l'outil (inscriptions et mercato sur le site, phase 3).
+- À l'inscription, chaque joueur **accepte la publication de ses statistiques**. Sans cet
+  accord, il ne peut pas figurer dans un effectif.
+- **Statut** : Règlement S3 ; capitaine et accord sur les statistiques décidés. Ce que le
+  capitaine peut faire reste à fixer (M-19). Pas encore appliquée par l'outil (inscriptions et
+  mercato sur le site, phase 3).
 
 ### 2.3 Demandes des équipes
 
@@ -106,15 +113,17 @@ M-xx : mainteneur).
   et il est aussitôt fixé au **dimanche 21:00** de cette semaine de prolongation.
 - Les équipes peuvent encore convenir d'un autre horaire pendant la prolongation ; il remplace
   l'horaire automatique.
-- **Statut** : Décidée (le moment où l'horaire automatique est fixé attend la confirmation du
-  propriétaire, O-13).
+- **Statut** : Décidée.
 - **Appliquée par** : l'horloge du bot accorde la prolongation, fixe l'horaire et prévient les
-  deux équipes dans le salon de planning, sans intervention du staff.
+  deux équipes dans le salon de planning, sans intervention du staff. Le message rappelle que les
+  équipes peuvent encore convenir d'un autre horaire.
 
 ### 3.3 Exceptions
 
-- Seul le staff peut fixer un horaire hors de la semaine et de sa prolongation.
-- **Statut** : Provisoire (O-24 : les équipes peuvent-elles convenir d'un horaire hors période ?).
+- Un match peut se jouer hors de sa semaine et de sa prolongation si **les deux équipes sont
+  d'accord**, mais seul le staff peut fixer cet horaire. Les équipes ne peuvent pas le proposer
+  elles-mêmes.
+- **Statut** : Décidée.
 - **Appliquée par** : `/staff match schedule`, enregistré dans l'historique.
 
 ### 3.4 Salon du match
@@ -129,32 +138,39 @@ M-xx : mainteneur).
 
 - L'équipe **la moins bien classée** au moment du veto choisit le côté de départ et commence le
   veto. L'autre équipe choisit le côté en prolongation. L'équipe **la mieux classée héberge**.
-- À égalité de classement (par exemple en semaine 1), **le bot tire au sort** l'équipe qui
-  choisit le côté de départ ; l'autre héberge.
-- **Statut** : Décidée ; le tirage au sort est provisoire (O-12).
+- À égalité de classement (par exemple en semaine 1), **pile ou face**, comme sur le circuit
+  BLAST. En BO1, le gagnant choisit soit **le choix du côté**, soit **qui bannit en premier** ;
+  le perdant prend l'autre décision. En BO3 et BO5, le gagnant choisit qui bannit en premier.
+  Après un pile ou face, **les équipes conviennent de l'hôte** entre elles.
+- **Statut** : Décidée.
 - **Appliquée par** : le bot calcule le classement en direct et fige ces rôles au lancement du
-  veto. Un tirage au sort est annoncé dans le message et gardé dans l'historique.
+  veto. Le pile ou face est tiré par le bot, annoncé dans le message et gardé dans l'historique.
+  Le choix qui suit le pile ou face, et l'hôte laissé aux équipes, arrivent avec la prochaine
+  mise à jour du veto (en cours).
 
 ### 4.2 Veto
 
-- BO1 : bans alternés, l'équipe A commence, jusqu'à ce qu'il reste une carte. L'équipe A choisit
-  son côté de départ, l'équipe B son côté en prolongation.
+- Le veto suit celui du circuit BLAST ([règlement BLAST R6 2025](https://staticctf.ubisoft.com/J3yJr34U2pZ2Ieem48Dwy9uqj5PNUQTn/53GxmEddEWemHwz8BBbJpZ/96a6decc0ca03defc9c1ae9e06bd0809/BLASTR6_GLOBALRULEBOOK_SEASON_2025.pdf),
+  article 5.1.3.2). L'équipe A est celle qui bannit en premier.
+- BO1 : bans alternés, l'équipe A commence, jusqu'à ce qu'il reste une carte. L'équipe qui a le
+  choix du côté choisit son côté de départ, l'autre son côté en prolongation.
 - BO3 : A ban, B ban, A ban, B ban, A pick, B pick, A ban, B ban ; la carte restante est la
   décisive. Pour une carte choisie, l'adversaire de celui qui l'a choisie prend le côté de
-  départ, celui qui l'a choisie le côté en prolongation ; pour la décisive, l'équipe à la
-  meilleure différence de manches sur les cartes précédentes choisit.
+  départ, celui qui l'a choisie le côté en prolongation ; pour la décisive, un nouveau pile ou
+  face désigne l'équipe qui choisit le côté.
 - BO5 : A ban, B ban, A pick, B pick, A ban, B ban, A pick, B pick ; la carte restante est la
   décisive. Côtés comme en BO3.
 - **4 minutes par étape.** Sans choix à temps, le bot choisit au hasard et le note.
-- **Statut** : Décidée ; l'ordre des bans attend la confirmation du propriétaire (O-11).
+- **Statut** : Décidée.
 - **Appliquée par** : `/match veto` ; seule l'équipe dont c'est le tour peut cliquer. La carte
   et les bans sont enregistrés avec le match.
 
 ### 4.3 Re-host
 
-- Le score d'avant l'incident est conservé. Chaque équipe peut demander un re-host par carte ;
-  le staff peut en ordonner d'autres et tranche en cas de désaccord.
-- **Statut** : Règlement S3. Pas encore appliquée par l'outil (phase 5, replays).
+- Le score d'avant l'incident est conservé. Chaque équipe peut demander **un re-host par
+  carte**. Le staff peut en accorder d'autres, à sa discrétion, pour un vrai problème (bug du
+  jeu, incident grave chez un joueur), et tranche en cas de désaccord.
+- **Statut** : Décidée. Pas encore appliquée par l'outil (phase 5, replays).
 
 ## 5. Résultats
 
@@ -274,7 +290,8 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 - La 1re de la Ligue 1 est championne (étoile Ligue 1).
 - Les places se comptent depuis le haut et le bas du classement : elles suivent la taille de la
   division.
-- **Statut** : Décidée. Le format et la date des barrages restent à fixer (O-15).
+- Les barrages se jouent **avant la Coupe de France**, en **BO1**.
+- **Statut** : Décidée.
 - **Appliquée par** : l'image du classement colore ces places (champion, montée, barrage,
   relégation). Les montées et descentes elles-mêmes seront appliquées en fin de saison
   (phase 6).
@@ -286,29 +303,30 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 - 7 jours pour convenir d'un horaire, sans prolongation ; à défaut, dimanche 21:00. Une équipe
   absente est disqualifiée ; si les deux sont absentes, les deux le sont et l'adversaire du tour
   suivant passe.
+- **Toutes les équipes inscrites en LFR**, Ligue 1 et Ligue 2, participent.
+- Le tableau est établi selon la ligue et le classement final : les mieux classées sont
+  favorisées.
 - Le staff désigne l'équipe qui choisit le côté de départ ; l'autre choisit le côté en
   prolongation ; les équipes conviennent de l'hôte.
-- **Statut** : Règlement S3 ; qui participe reste à confirmer (O-25), ainsi que le tirage et la
-  règle de choix des côtés (O-17). Pas encore appliquée par l'outil (phase 6).
+- **Statut** : Règlement S3 ; participants et principe du tableau décidés. La forme exacte du
+  tableau et la règle de choix des côtés restent à fixer (O-17). Pas encore appliquée par
+  l'outil (phase 6).
 
 ## 10. Divers
 
 - **MOSS** obligatoire pour chaque match ; les fichiers MOSS ne sont jamais publics.
 - Un membre du staff de la ligue ne joue pas dans le championnat.
 - Un joueur banni pour triche l'est sur toutes les ligues du groupe (LFR, LFV, LFRL).
-- **Statut** : Règlement S3. MOSS et replays sur le site en phase 5.
+- **Replays obligatoires** : pour chaque match, au moins une équipe envoie les replays de
+  chaque carte sur le site.
+- **Statut** : Règlement S3 ; replays obligatoires décidés. MOSS et replays sur le site en
+  phase 5.
 
 ---
 
 ## À trancher avant la Saison 4
 
-| Question | Sujet                                            | En attendant                                |
-| -------- | ------------------------------------------------ | ------------------------------------------- |
-| O-11     | Ordre des bans (nouvelle règle BLAST 2026 ?)     | Bans alternés en BO1, séquences R6 usuelles |
-| O-12     | Côtés entre deux équipes à égalité               | Tirage au sort par le bot                   |
-| O-13     | Moment où l'horaire automatique est fixé         | Dès le début de la prolongation             |
-| O-15     | Format et date des barrages                      | Non appliqué                                |
-| O-16     | Taille maximale d'une division                   | Aucune limite                               |
-| O-17     | Coupe de France : choix des côtés, tirage        | Non appliqué                                |
-| O-24     | Horaire hors de la semaine et de la prolongation | Seul le staff peut le fixer                 |
-| O-25     | Qui entre en Coupe de France                     | Toutes les équipes inscrites                |
+| Question | Sujet                                         | En attendant                        |
+| -------- | --------------------------------------------- | ----------------------------------- |
+| O-17     | Coupe de France : forme du tableau, côtés     | Non appliqué                        |
+| O-22     | Qui peut se déclarer disponible (recrutement) | Joueurs sans équipe, mercato ouvert |

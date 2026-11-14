@@ -88,7 +88,7 @@ Replays are parsed in the uploader's browser by WebAssembly builds of each title
 | --------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Language and runtime  | TypeScript on the current Node LTS                                                                        | Best Discord library, Satori is JavaScript-only, one language for bot, web, engine and stats |
 | Discord               | discord.js                                                                                                | Most complete coverage of slash commands, buttons, modals, permissions                       |
-| HTTP                  | Hono with server-rendered JSX                                                                             | Small, fast, one process with the bot                                                        |
+| HTTP                  | Hono with server-rendered `html` tagged templates (M-07: Node runs TypeScript directly, without JSX)      | Small, fast, one process with the bot                                                        |
 | Browser interactivity | htmx for forms; small Preact islands for the uploader and the stat grid                                   | No SPA framework to maintain                                                                 |
 | Replay parsing        | Each title's parser compiled to WebAssembly, run in a Web Worker in the browser and in Node on the server | One parser build, two places; no native binaries on the server                               |
 | Database              | SQLite in WAL mode, better-sqlite3, Drizzle ORM and drizzle-kit migrations                                | Zero-ops, fast, typed schema                                                                 |
@@ -269,7 +269,7 @@ The team development tools add tables and change three existing ones (practice m
 | Ligue 1          | 10                    | Round robin, 1 match per week over 9 weeks                                                                  | BO1, one map after bans                                                                               | 1st: Ligue 1 star. Last 2: down to L2. The one above them: barrage against L2 3rd (format to confirm)                       |
 | Ligue 2          | 12 in Season 3        | Same as Ligue 1                                                                                             | BO1                                                                                                   | 1st–2nd: up to L1. 3rd: barrage against L1's barrage team. Nobody goes down while no league exists below                    |
 | National (later) | Per region            | Regional round robin, 1 match per week; small regions can be merged. Not needed until the owner launches it | BO3                                                                                                   | Region winners go to playoffs (single elimination, BO5); semi-final winners up to L2                                         |
-| Coupe de France  | Every registered team | Single elimination, starting 1 week after the leagues end; replaces L1/L2 playoffs                          | BO1 before the round of 16; BO3 for the round of 16 and quarter-finals; BO5 for semi-finals and final | Winner: Champion de France                                                                                                   |
+| Coupe de France | Every LFR team, Ligue 1 and Ligue 2; single elimination seeded by league and final rank; BO1 before the round of 16, BO3 for the round of 16 and quarter-finals, BO5 for semi-finals and final | Rulebook, you |
 
 **Points and standings**
 
@@ -314,32 +314,32 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 
 1. **Round robin by the circle method.** Shuffle with a stored seed; pair position i with n − 1 − i; keep position 0 fixed and rotate the rest each round. `rounds_per_week: 1` gives 9 weeks for 10 teams. The rulebook's "4 weeks, 2 matches per week" is a Season 2 leftover to correct for Season 4.
 2. **Date negotiation.** Teams agree a date and time through `/match propose-time`; the other team accepts or declines with a button (`match_proposal`). A time must fall in the match's week or its extension; staff can set any time (`/staff match schedule`). A team's new proposal replaces its pending one.
-3. **Extension and auto-scheduling.** When the planned week ends without an agreed time, the bot grants the extension and at once sets the match to Sunday 21:00 of the extension week (`auto_scheduled = true`), announcing both in the schedule channel. A time the teams agree afterwards replaces it. If the bot was off past that Sunday slot, it sets nothing and staff decide. (Maintainer's reading, 13 November 2026, until the owner confirms: O-13.)
+3. **Extension and auto-scheduling.** When the planned week ends without an agreed time, the bot grants the extension and at once sets the match to Sunday 21:00 of the extension week (`auto_scheduled = true`), announcing both in the schedule channel. A time the teams agree afterwards replaces it. If the bot was off past that Sunday slot, it sets nothing and staff decide. (Confirmed for Season 4 by the maintainer, 14 November 2026: O-13. The announcement says the teams can still agree another time.)
 4. **Settings** (`scheduling_json`): `time_zone` (`Europe/Paris`), `extension_weeks` (1), `auto_slot` (`{ "weekday": 7, "time": "21:00" }`, or null for none). `packages/core/scheduling.ts` computes the period; a clock in the server checks every minute.
 5. **Coupe de France.** 7 days to agree and no extension; otherwise Sunday 21:00. A team that doesn't show is disqualified; if neither shows, both are, and the next-round opponent gets a bye.
 6. **Sides and host.**
-    - League: the lower-ranked team at match time picks the starting side and starts the veto; the other team picks the overtime side; the higher-ranked team hosts.
+    - League, different ranks: the lower-ranked team at match time has side selection and bans first; the other team picks the overtime side; the higher-ranked team hosts.
     - Cup: staff designate the team that picks the starting side (a formal rule is expected for Season 4); the other team picks the overtime side; the teams agree on the host.
     - The bot freezes `side_chooser`, `ot_side_chooser` and `host_side` when the veto starts.
-    - Equal ranks (week 1, or a shared rank): the bot flips a coin for the side chooser, says so in the veto message and records it in the audit log; the other team hosts (maintainer's choice, 13 November 2026, until the owner answers O-12).
+    - League, equal ranks (week 1, or a shared rank): BLAST's coin toss ([BLAST R6 global rulebook 2025](https://staticctf.ubisoft.com/J3yJr34U2pZ2Ieem48Dwy9uqj5PNUQTn/53GxmEddEWemHwz8BBbJpZ/96a6decc0ca03defc9c1ae9e06bd0809/BLASTR6_GLOBALRULEBOOK_SEASON_2025.pdf), section 5.1.3.2). The bot tosses the coin, says so in the veto message and records it in the audit log. In a BO1 the winner chooses either side selection or who bans first, and the other team makes the other choice; in a BO3 or BO5 the winner chooses who bans first. Ligo names no host: the teams agree on it (maintainer, 14 November 2026, O-11 and O-12).
 
 **Map veto**
 
 The veto runs on the website at `/matches/:id/veto`, linked from the match channel's control message. It uses the official competitive map pool and the standard competitive ban sequences. Until the website exists (phase 3), it runs in Discord: `/match veto` posts a message with one button per remaining map, then Attack and Defense for the side steps, and every step edits that message. The website page will use the same engine.
 
 - **Map pool:** stored per season in `season.settings_json`; staff update it when Ubisoft rotates maps. The current pool has 9 maps.
-- **Team A** is the team that picks the starting side (section above). Team A starts the veto.
+- **Team A** is the team that bans first. Without a coin toss it is also the team with side selection; after a coin toss in a BO1 the two can differ (section above).
 - **Sequences** are data, not code, so staff can follow a rule change without a release:
 
 | Format | Sequence (9-map pool)                                                                    | Sides                                                                                                                                                |
 | ------ | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| BO1    | A ban, B ban, A ban, B ban, A ban, B ban, A ban, B ban, remaining map played             | A picks the starting side, B the overtime side                                                                                                       |
-| BO3    | A ban, B ban, A ban, B ban, A pick, B pick, A ban, B ban, remaining map is the decider   | The opponent of the picker picks the starting side, the picker the overtime side; the team with the better round difference picks the decider's side |
+| BO1    | A ban, B ban, A ban, B ban, A ban, B ban, A ban, B ban, remaining map played             | The team with side selection picks the starting side, the other the overtime side                                                                    |
+| BO3    | A ban, B ban, A ban, B ban, A pick, B pick, A ban, B ban, remaining map is the decider   | The opponent of the picker picks the starting side, the picker the overtime side; a new coin toss gives side selection on the decider                |
 | BO5    | A ban, B ban, A pick, B pick, A ban, B ban, A pick, B pick, remaining map is the decider | Same side rules as BO3                                                                                                                               |
 
-These sequences follow common R6 Circuit-based rulebooks ([example](https://www.opleague.pro/styles/media/event/6175/rulebook.pdf)). BLAST adjusted its map-ban process for 2026, so check the BLAST R6 Global Rulebook before Season 4.
+These are the sequences of the [BLAST R6 global rulebook 2025](https://staticctf.ubisoft.com/J3yJr34U2pZ2Ieem48Dwy9uqj5PNUQTn/53GxmEddEWemHwz8BBbJpZ/96a6decc0ca03defc9c1ae9e06bd0809/BLASTR6_GLOBALRULEBOOK_SEASON_2025.pdf), section 5.1.3.2, which LFR follows (O-11). On any map, the team without side selection picks the overtime side.
 
-- **Settings** (`competition.ruleset_json.veto`): `formats`, by best-of (`bo1`, `bo3`, `bo5`), each a `sequence` of `A_ban`, `B_ban`, `A_pick`, `B_pick` and a `decider_side` (`team_a`, or `round_difference` for BO3 and BO5); `step_seconds` (240). The defaults are the table above (O-11).
+- **Settings** (`competition.ruleset_json.veto`): `formats`, by best-of (`bo1`, `bo3`, `bo5`), each a `sequence` of `A_ban`, `B_ban`, `A_pick`, `B_pick` and a `decider_side` (`team_a`, `coin`, or `round_difference`; `coin` for BO3 and BO5 by default); `step_seconds` (240). The defaults are the table above (O-11).
 - **Engine:** `packages/core/veto.ts` is a state machine: given format, pool and team A, it returns the next step and the valid choices. Each step is stored as a `veto_step` row; the decider is stored too, with no team, since nobody picks it. A side step follows each pick: the picker's opponent picks the starting side, then the picker the overtime side.
 - **Frozen at the start:** the format, the pool and the timer are copied into `match.veto_json`, so a settings change mid-veto cannot break it.
 - **Timer:** 4 minutes per step by default (the Six Invitational's value). A timed-out ban picks a random remaining map and is marked `timed_out`.
@@ -557,7 +557,7 @@ The website is the main tool of the platform (section 3): the public face of eve
 
 - Discord OAuth2, scope `identify`. The callback maps the Discord user ID to `player.discord_user_id`, creating the player if needed.
 - Session: signed, `httpOnly`, `SameSite=Lax` cookie holding the player ID; 30-day expiry. POST forms also carry a CSRF token.
-- Roles come from the database (staff list, `team_staff`, roster entries), never from the client.
+- Roles are read on the server, never taken from the client. Team roles come from the database (`team_staff`, roster entries). League staff are the members holding the staff role in the league's Discord server: the server asks the bot, and caches the answer for about a minute, so Discord stays the only staff list and the website and the bot always agree (maintainer, 14 November 2026).
 
 **Pages**
 
@@ -586,7 +586,7 @@ The team workspace, recruitment and awards pages are listed in section 17.
 - **Team:** name, city, status (association, association 1901, company, amateur), transparent PNG logo, at least 2 colours, manager, up to 3 staff, social links, team Discord, whether the team can stream on its own.
 - **Players:** 5 players and up to 2 substitutes, each with Ubisoft ID, Discord account (by login or invitation link), competitive rank and nationality.
 - **Rules acceptance:** the manager accepts the current rulebook version ("lu et approuvé"), stored with `rules_version_id` and a timestamp, replacing the signed page.
-- **Stats consent:** each player gives it from their invitation link; it can be made mandatory by competition setting.
+- **Stats consent:** each player gives it from their invitation link; it can be made mandatory by competition setting, and is mandatory in LFR from Season 4 (O-20).
 - **Status:** a registration is a `registration` request. Incomplete submissions are frozen until fixed, as the rulebook says; staff approve, which creates the team, its slot and roster entries, or refuse with a reason.
 
 **Mercato**
@@ -913,7 +913,7 @@ Images are rendered on the server with Satori (layout to SVG) and resvg (SVG to 
 - Team logos are fetched once from R2, resized to 128 px and embedded as data URLs. They are stored as PNG: resvg cannot decode WebP. Until R2 (phase 5), the same keys (`logos/<name>.png`) are read from `data/assets/render`, filled by `pnpm assets:logos` from the maintainer's collected files; logos uploaded on the website are converted on upload (phase 3). A team without a logo shows its colours.
 - Colours and logo come from `competition.theme_json`, so every title and league can have its own look.
 - Cache key: SHA-256 of template ID, template version and the input JSON. The PNG is stored in `image_cache` and on disk; a Discord message attaches it as `attachment://<name>.png`.
-- Templates are JSX components in `packages/render`; the website reuses them for link-preview images.
+- Templates are plain element trees in `packages/render` (no JSX, since Node runs TypeScript directly; M-07); the website reuses them for link-preview images.
 - Snapshot tests render each template with fixture data, and a reviewer compares the PNGs when a template changes.
 
 **Rank change.** The standings show each team's move since the previous week, so readers see trends: an arrow up or down with the number of places, or a dash. The previous table counts the same results except those of the latest week that has a counted result; sanctions count in both tables. `/standings` as text leaves it out: that table is already as wide as a phone screen allows.
@@ -1079,7 +1079,7 @@ Pure league logic gets exhaustive unit and property tests. Replay handling gets 
 | Reconciler             | Fake guild states                                                         | Fresh server, renamed channel, deleted role, missing permission, archived week, MOSS channels                                                                                   |
 | Database               | Migrations                                                                | From empty, and from the previous release's snapshot                                                                                                                            |
 | End to end             | Staging Discord server and staging bucket                                 | Publish a week, report, confirm and validate a result, upload a re-hosted map, see standings update                                                                             |
-| Map veto               | State-machine tests per format                                            | BO1/BO3/BO5 sequences on a 9-map pool, wrong-team and already-banned choices refused, timeouts, side and overtime-side assignment, decider side by round difference             |
+| Map veto | Official competitive pool; BLAST 2025 sequences (BO1 alternate bans down to one map), and a coin toss for the decider's side in BO3 and BO5 | You |
 | Practice privacy       | Query and route tests on a database holding official and practice matches | No practice match, game, stat or round in standings, public stats, leaderboards, awards, scouting or the team level; workspace routes refuse non-members, league staff included |
 | Practice grouping      | Synthetic segment fixtures                                                | Owning side resolved from 3 roster accounts; a folder matching neither side refused; rounds after the map is decided still counted; lobbies grouped by opponent and day         |
 | Team report            | Hand-built round facts                                                    | Win % per map, side, site and strat; opening duel and player-count states; plants; minimum sample hiding; sum first, divide last                                                |
@@ -1097,7 +1097,7 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
     - `/match propose-time`, the map veto, `/match report` with screenshot, opponent confirmation, the staff validation queue;
     - deadlines with extension and Sunday 21:00 auto-scheduling, side, overtime side and host;
     - forfeits, sanctions, audit log;
-    - team requests (2c): teams change their own officials through requests that staff approve or refuse, every staff-queue post recorded. Done when a full week of results comes in through teams and is validated by staff with no manual table edits.
+    - team requests (2c): teams change their own officials through requests that staff approve or refuse, every staff-queue post recorded. Accepted when a full week of results comes in through teams and is validated by staff with no manual table edits; that week runs during the Season 3 shadow run, alongside phase 3, instead of blocking it (maintainer, 14 November 2026).
 3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; the website side of every bot action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, exclusions, team officials and their requests, league channels, match times and the veto), with one page of every request waiting that marks the Discord posts as handled. Done when Season 4 registrations are taken on the website, and every bot action of phases 1 and 2 can also be done there.
 4. **Schedule and channels.** Round-robin generation, `/season publish`, weekly channels, MOSS channels, the reconciler across the league servers, team roles. Done when Season 4's weeks are generated, published, run and archived automatically.
 5. **R6 replays.** WebAssembly build of the fork, browser uploader, normaliser, raw upload and server verification, stitching and review, match cards. Done when a re-hosted map uploaded by both teams stitches automatically and verifies, and a tampered JSON is caught.
@@ -1119,7 +1119,7 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
 | Priority                                  | Scope                                                                                                                                     | Deadline                                                                                                     |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Blocking                                  | Phases 0–2, phase 4, and from phase 3: Discord login, public standings and fixtures, registration with rules acceptance and stats consent | Season 4 registration opens                                                                                  |
-| Blocking only if replays become mandatory | Phase 5, tested on Season 3 replays                                                                                                       | Mid-December go/no-go: not verified by then means replays stay optional in Season 4, but are still collected |
+| Blocking (replays are mandatory, O-20)    | Phase 5, tested on Season 3 replays                                                                                                       | Season 4 start                                                                                               |
 | Before first use                          | Mercato pages (first Season 4 window); phase 6 (Season 4 end and cup)                                                                     | When each is first needed                                                                                    |
 | Later                                     | Phases 7–10                                                                                                                               | After Season 4 runs smoothly                                                                                 |
 
@@ -1145,27 +1145,27 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Topic                 | Decision                                                                                                                                  | Source        |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
 | Season length         | 9 weeks, 1 match per team per week; the rulebook's "4 weeks × 2" is a Season 2 leftover                                                   | You           |
-| Division size         | Not fixed. A division has as many teams as it has slots (10 in Ligue 1, 12 in Ligue 2 in Season 3); any limit is a setting                | You           |
+| Division size | A division has as many teams as it has slots (10 in Ligue 1, 12 in Ligue 2 in Season 3), at most 12 so the regular season fits inside an R6 season with the cup after it; the maximum is a setting | You |
 | Points                | 3 points per win in Season 3, as score7 is set (1 in Season 2); F rounds won, C rounds lost, D = F − C; no draws                          | score7, you   |
 | Tie-break             | D; then a setting: shared rank (default), a BO1 tie-break match, or staff decision                                                        | Rulebook, you |
 | Forfeit score         | Season setting: 0–0 (Season 3) or 7–0 (Season 2)                                                                                          | You           |
 | L1/L2 matches         | BO1, one map after bans; teams pick date and time                                                                                         | Rulebook, you |
-| Scheduling            | One extra week if no agreement, then Sunday 21:00 of the second week                                                                      | Rulebook      |
-| League sides and host | Lower-ranked team picks the starting side and bans first; the other picks the overtime side; higher-ranked team hosts                     | Rulebook, you |
+| Scheduling | One extra week if no agreement; as soon as it starts, the match is set to Sunday 21:00 Paris time, which the teams can still change. Outside the week and its extension, only staff set a time, when both teams agree | Rulebook, you |
+| League sides and host | Lower-ranked team has side selection and bans first; the other picks the overtime side; higher-ranked team hosts. Equal ranks: BLAST coin toss, and the teams agree on the host | Rulebook, you |
 | Map veto              | Official competitive pool; alternate bans down to one map (BO1); standard R6 sequences for BO3 and BO5                                    | You           |
 | Coupe de France       | All teams, single elimination; BO1 before the round of 16, BO3 for the round of 16 and quarter-finals, BO5 for semi-finals and final      | Rulebook, you |
 | Cup sides and host    | Staff designate the starting-side team; the other picks the overtime side; teams agree on the host                                        | You           |
 | Results               | Screenshot proof, both teams check, administration validates                                                                              | Rulebook      |
 | Map score             | A map is won at 7 rounds out of 12; at 6–6 a best-of-3 overtime ends it 8–6 or 8–7. Stored as the `game_score` setting                    | You           |
-| Re-host               | Score kept; one per team, staff may order more                                                                                            | Rulebook, you |
+| Re-host | Score kept; one per team per map; staff may allow more at their discretion for a real problem | Rulebook, you |
 | Forfeits              | Staff only; warning at the 2nd; automatic exclusion at the 3rd, with appeal and per-team exemption; the 50% rule counts only played matches | Rulebook, you |
-| Promotion             | Last 2 of a division with a lower one go down, the lower's first 2 go up; the one above the relegated plays the lower's 3rd (settings)      | You           |
+| Promotion | Last 2 of a division with a lower one go down, the lower's first 2 go up; the one above the relegated plays the lower's 3rd, as a BO1 before the cup (settings) | You |
 | National              | Later; not needed until the owner launches it                                                                                             | You           |
 | Rosters               | 5 players and up to 2 substitutes, one of them captain; one owner, up to 3 managers and 1 coach (settings)                                | Rulebook, you |
 | Team requests         | Teams change their own officials by request; staff approve additions and handovers within 24 h, with a reason to refuse; removals apply at once | You           |
 | Mercato               | Announced windows only, 3 moves per team, 1-day block for a transferred player                                                            | Rulebook      |
 | MOSS                  | Mandatory for every match                                                                                                                 | Rulebook      |
-| Replays               | Likely mandatory, ideally from Season 4 (late December or early January at the earliest)                                                  | You           |
+| Replays | Mandatory from Season 4, at least one team per match; accepting public player stats is required at registration | You |
 | Staff                 | 3–5 people; staff cannot play in the championship                                                                                         | You, rulebook |
 | Discord               | One server per league: LFR, LFV, FRFL, LFRL                                                                                               | You           |
 | Cheating              | A ban covers LFR, LFV and LFRL                                                                                                            | Rulebook      |
