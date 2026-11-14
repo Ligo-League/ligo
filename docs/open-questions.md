@@ -176,6 +176,36 @@ section 16.
 - **Until answered:** the roadmap assumes late December or early January at the earliest.
 - **Answer:**
 
+#### O-29 · One player in two registrations
+
+- **Question:** may a player join two registrations of the same competition, for example two
+  rosters of different clubs while they decide, or must they be in one only?
+- **Why it matters:** joining from an invitation (phase 3d-4a-2). Once a team is approved, a
+  player on two rosters of one league breaks the lineups and the replay checks.
+- **Until answered:** a player is in one registration per competition at a time; joining a second
+  one is refused until they leave the first. Registrations in other competitions (LFV, say) don't
+  count.
+- **Answer:**
+
+#### O-30 · Who may be captain
+
+- **Question:** must the captain be one of the roster's players, starter or substitute, or may it
+  be someone else, such as the coach?
+- **Why it matters:** the filer names the captain at registration, and the captain acts in
+  matches (M-19).
+- **Until answered:** any player of the roster, starter or substitute.
+- **Answer:**
+
+#### O-31 · Conditions on players
+
+- **Question:** does LFR set any condition on who may play: a minimum age, a share of players
+  living in France or of French nationality, or a minimum rank?
+- **Why it matters:** a condition Ligo knows can be shown on the registration page and checked
+  before staff approve. Stats consent from a player under 15 may also need a parent's consent
+  in France.
+- **Until answered:** no condition is checked; nationality and rank are shown to staff.
+- **Answer:**
+
 ### Team tools
 
 #### O-22 · Recruitment board
@@ -444,6 +474,25 @@ section 16.
   approve it; the others may not hear of it.
 - **Until answered:** the request belongs to the competition of the server where it is filed,
   and its staff answer it, with the approval settings of club changes being those of team changes.
+- **Answer:**
+
+#### M-29 · When staff see a registration, and changes after it
+
+- **Question:** do staff see a registration as soon as it is filed, or only once the lineup is
+  complete and the filer sends it? And once it is sent, may the lineup still change (a player
+  leaving, a new one joining) before staff answer?
+- **Why it matters:** the registration page's actions (phase 3d-4a-2) and the staff queue (3d-4b).
+- **Until answered:** the filer sends the registration once the lineup is complete; staff see it
+  from then. After sending, the lineup is locked until staff answer; the filer may take it back
+  to change it, and sends it again.
+- **Answer:**
+
+#### M-30 · Membership of the league's Discord server
+
+- **Question:** must a player be a member of the league's Discord server to join a registration?
+- **Why it matters:** team roles and channels (phase 4) need it; checking it at join needs the
+  server's invitation link as a setting.
+- **Until answered:** not checked in phase 3; phase 4 checks it when it gives roles.
 - **Answer:**
 
 ## Answered
