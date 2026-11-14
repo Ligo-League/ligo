@@ -17,6 +17,7 @@ import {
   schema,
   type Db,
   type GuildLeague,
+  type League,
   type RequestPayload,
   type SeasonTeam,
   type Tx,
@@ -585,6 +586,15 @@ export function listRequests(db: Db, actor: Actor, teamId: number | null): ListR
     league = found.official.league;
     only = found.official.team.teamId;
   }
+  return { ok: true, staff: staff.ok, requests: pendingRequests(db, league, only) };
+}
+
+/** A league's requests waiting, oldest first; with `teamId`, that team's only. */
+export function pendingRequests(
+  db: Pick<Db, 'select'>,
+  league: Pick<League, 'competition'>,
+  teamId: number | null = null,
+): RequestView[] {
   const rows = db
     .select()
     .from(request)
@@ -592,13 +602,13 @@ export function listRequests(db: Db, actor: Actor, teamId: number | null): ListR
       and(
         eq(request.competitionId, league.competition.id),
         eq(request.status, 'pending'),
-        only === null ? undefined : eq(request.teamId, only),
+        teamId === null ? undefined : eq(request.teamId, teamId),
       ),
     )
-    .orderBy(asc(request.requestedAt))
+    .orderBy(asc(request.requestedAt), asc(request.id))
     .all();
   const settings = league.competition.rulesetJson.requests;
-  return { ok: true, staff: staff.ok, requests: rows.map((row) => viewOf(db, row, settings)) };
+  return rows.map((row) => viewOf(db, row, settings));
 }
 
 /** One reminder to post in a league's staff queue. */

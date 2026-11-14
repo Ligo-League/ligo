@@ -53,6 +53,11 @@ function sideOf(teams: readonly TeamRoleHeld[], found: LeagueMatch): Side | null
 const actsFor = (teams: readonly TeamRoleHeld[], found: LeagueMatch, side: Side) =>
   teams.some((held) => held.teamId === found[side].teamId);
 
+/** The side whose official reported the match's current result; null with no report. */
+export function reportingSide(db: Pick<Db, 'select'>, found: LeagueMatch): Side | null {
+  return found.reportedBy === null ? null : sideOf(teamsOfPlayer(db, found.reportedBy), found);
+}
+
 /** The match of that ID if it belongs to the league of the server, else nothing. */
 export function leagueMatch(
   db: Pick<Db, 'select'>,
@@ -383,9 +388,8 @@ function checkAnswer(
   if (acting.playerId === null || sideOf(acting.teams, found) === null) {
     return { ok: false, error: 'not_your_match' };
   }
-  const reporterTeams = found.reportedBy === null ? [] : teamsOfPlayer(db, found.reportedBy);
-  const reportingSide = sideOf(reporterTeams, found) ?? 'a';
-  const kind: MatchActor = actsFor(acting.teams, found, other(reportingSide))
+  const reporter = reportingSide(db, found) ?? 'a';
+  const kind: MatchActor = actsFor(acting.teams, found, other(reporter))
     ? 'opposing_team'
     : 'reporting_team';
   const step = nextMatchStatus({
