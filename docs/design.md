@@ -174,7 +174,7 @@ team           id, org_id, club_id, title, name, tag, slug, colors_json NULL, lo
 club_staff     club_id, player_id, role ('owner'|'manager'), since, until NULL   -- phase 3d
 team_staff     team_id, player_id, role ('owner'|'manager'|'coach'), since, until NULL
                -- 1 owner; managers and coaches up to ruleset.team_roles (3 and 1)
-               -- phase 3d: the owner moves to club_staff; team_staff keeps the roster's officials
+               -- since 0011 the owner is in club_staff; 'owner' rows left here are history
 org_ban        id, org_id, player_id NULL, external_account NULL, reason, decided_by, at
                -- cheat list shared by every league of the group
 accreditation  id, player_id, kind ('commentator'), granted_by, granted_at, revoked_at NULL
@@ -469,7 +469,8 @@ From phase 3d these become two levels (section 4, "Who acts, by level"): the clu
 
 Teams run themselves; the league only approves what its rules restrict (maintainer, 13 November 2026). With 20 or more teams, staff no longer make every change by hand: a team files a request, staff accept or refuse it, and everything is kept in `request`.
 
-- **Who asks:** the owner and managers ask to add a manager or a coach; only the owner hands the team over or removes an official; anyone but the owner may leave. The coach asks for nothing.
+- **Who asks:** the owner and managers ask to add a manager or a coach; only the club's owner and managers ask for a club manager; only the owner hands the club over or removes an official; anyone but the owner may leave. The coach asks for nothing. A request is filed through one of the club's rosters, in the competition of the server where it is filed, and that competition's staff answer it (M-27).
+- **Club managers:** at most `org.settings_json.club_roles.managers_max` (3 by default, like a roster's managers), a setting of the group since a club spans its competitions.
 - **Who answers**, per kind, in `ruleset.requests.approval`: `staff` (approve, or refuse with a reason the team reads) or `auto` (applied at once and recorded). Defaults: adding someone and handing the team over wait for staff; removing someone applies at once, since what a team does with its own officials is its business. Leaving always applies at once: nobody is kept on a team against their will.
 - **Approval re-checks the team**: a limit reached or a member who left since the request makes it fail, and staff refuse it with that reason. The change itself is the same audited edit as a staff change, with the request's ID.
 - **Deadline:** staff answer within `answer_within_hours` (24) and are reminded `remind_before_hours` (6) before, pinging the staff role. Nothing happens on its own at the deadline: the request shows as late.

@@ -428,6 +428,18 @@ section 16.
   changes, staff are told with a link to the post.
 - **Answer:**
 
+#### M-27 · Who answers a club's request
+
+- **Question:** a club may have rosters in several competitions (LFR and LFV, say). A request
+  about the club itself (handing it over, adding or removing a club manager) is filed through one
+  of its rosters: which staff answer it? The staff of that roster's competition, the group staff
+  (M-05), or should club changes apply at once, since they are the club's business?
+- **Why it matters:** the request is stored with one competition, and that competition's staff
+  approve it; the others may not hear of it.
+- **Until answered:** the request belongs to the competition of the server where it is filed,
+  and its staff answer it, with the approval settings of club changes being those of team changes.
+- **Answer:**
+
 ## Answered
 
 #### O-26 · Where a new roster starts

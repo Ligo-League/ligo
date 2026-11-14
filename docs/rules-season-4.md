@@ -73,7 +73,8 @@ M-xx : mainteneur).
 
 - Deux niveaux : les responsables du **club** (le propriétaire et ses managers) agissent pour
   toutes ses équipes ; ceux d'une **équipe** (managers, coach) pour cette équipe seulement.
-- Chaque équipe a **au plus 3 managers** et **au plus 1 coach**. Avec le **capitaine**, ce sont
+- Un club a **au plus 3 managers** en plus de son propriétaire ; chaque équipe a **au plus 3
+  managers** et **au plus 1 coach**. Avec le **capitaine**, ce sont
   eux qui agissent pour l'équipe dans ses matchs : proposer et accepter un horaire, faire le veto,
   signaler et confirmer un résultat. C'est d'abord le rôle du capitaine, mais un responsable peut
   toujours le faire.
@@ -84,9 +85,9 @@ M-xx : mainteneur).
 - Une même personne peut être responsable de plusieurs équipes.
 - **Statut** : Décidée (remplace « un manager et 3 membres de staff » du formulaire S3).
 - **Appliquée par** : chaque commande vérifie, au moment du clic, que la personne est responsable
-  de l'équipe concernée. Les rôles Discord ne suffisent pas. Les limites sont des réglages. Les deux
-  niveaux et le capitaine arrivent en phase 3 ; d'ici là, chaque équipe a un propriétaire et ses
-  responsables.
+  de l'équipe concernée, à son niveau ou à celui de son club. Les rôles Discord ne suffisent pas.
+  Les limites sont des réglages. Le capitaine agira dès que les effectifs seront enregistrés
+  (inscriptions sur le site, phase 3).
 
 ### 2.3 Effectifs
 
@@ -101,9 +102,10 @@ M-xx : mainteneur).
 ### 2.4 Demandes des équipes
 
 - Les équipes gèrent elles-mêmes leurs responsables, par **demande** au staff de la ligue :
-  - le propriétaire et les managers demandent d'**ajouter** un manager ou un coach ;
-  - seul le propriétaire peut **confier l'équipe** à un nouveau propriétaire, qui quitte alors
-    l'équipe ;
+  - le propriétaire et les managers demandent d'**ajouter** un manager ou un coach ; seuls le
+    propriétaire et les managers du club demandent un **manager du club** ;
+  - seul le propriétaire peut **confier le club** à un nouveau propriétaire, qui quitte alors
+    le club ;
   - seul le propriétaire peut **retirer** un responsable : c'est immédiat, sans validation ;
   - chacun peut **quitter** l'équipe, immédiatement, sauf le propriétaire.
 - Le staff répond **sous 24 heures** : il approuve, ou refuse en donnant une **raison**, que
