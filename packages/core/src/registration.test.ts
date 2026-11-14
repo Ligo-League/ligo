@@ -1,12 +1,18 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
+  ageOn,
+  checkBirthDate,
   checkGameProfile,
   checkRosterDetails,
+  lineupLocked,
   lineupStatus,
   mayJoin,
+  mayLeave,
+  playerGaps,
   ROSTER_COLORS_MAX,
   type LineupMember,
+  type PlayerProfile,
 } from './registration.ts';
 import { registrationSchema } from './settings.ts';
 
@@ -14,6 +20,9 @@ import { registrationSchema } from './settings.ts';
 // filer gives the roster's name, tag and colours, then invites players, who join with their own
 // account: each keeps their Ubisoft name, profileID and rank on their own profile. The roster is
 // complete with the league's number of starters, a captain, and every player ready.
+// Joining (maintainer, 14 November 2026): one roster per competition (O-29), the captain a starter
+// (O-30), a minimum age as a setting, counted on the season's first day (O-31, O-33), and lineups
+// locked a set number of days before the season (M-29, O-32).
 
 const SETTINGS = registrationSchema.parse({});
 const RANKS = ['unranked', 'gold', 'platinum', 'diamond', 'champion'] as const;
@@ -144,6 +153,14 @@ describe('lineupStatus', () => {
     expect(lineupStatus(two, SETTINGS).gaps).toEqual([{ gap: 'captain', have: 2 }]);
   });
 
+  it('wants the captain among the starters', () => {
+    const members = [
+      ...FIVE.map((entry) => ({ ...entry, captain: false })),
+      member(6, { role: 'sub', captain: true }),
+    ];
+    expect(lineupStatus(members, SETTINGS).gaps).toEqual([{ gap: 'captain_not_starter' }]);
+  });
+
   it('is complete for the lineups the league’s numbers allow, and only those', () => {
     fc.assert(
       fc.property(
@@ -166,23 +183,154 @@ describe('lineupStatus', () => {
   });
 });
 
+const READY: PlayerProfile = {
+  gameAccount: true,
+  nationality: 'FR',
+  statsConsent: true,
+  birthDate: '2000-05-17',
+};
+const LFR = registrationSchema.parse({ stats_consent_required: true, min_age: 16 });
+const STARTS_ON = '2027-01-04';
+
+describe('ageOn', () => {
+  it('counts full years, a birthday counting from its own day', () => {
+    expect(ageOn('2011-01-04', '2027-01-04')).toBe(16);
+    expect(ageOn('2011-01-05', '2027-01-04')).toBe(15);
+    expect(ageOn('2010-12-31', '2027-01-04')).toBe(16);
+  });
+
+  it('turns a 29 February birthday a year older on 1 March of other years', () => {
+    expect(ageOn('2008-02-29', '2025-02-28')).toBe(16);
+    expect(ageOn('2008-02-29', '2025-03-01')).toBe(17);
+    expect(ageOn('2008-02-29', '2028-02-29')).toBe(20);
+  });
+
+  it('never goes down as the date moves on', () => {
+    const date = fc
+      .date({ min: new Date('1950-01-01'), max: new Date('2060-12-31'), noInvalidDate: true })
+      .map((value) => value.toISOString().slice(0, 10));
+    fc.assert(
+      fc.property(date, date, date, (birth, first, second) => {
+        const [early, late] = first <= second ? [first, second] : [second, first];
+        expect(ageOn(birth, late)).toBeGreaterThanOrEqual(ageOn(birth, early));
+      }),
+    );
+  });
+});
+
+describe('checkBirthDate', () => {
+  it('takes a real date, not after today', () => {
+    expect(checkBirthDate(' 2008-02-29 ', '2026-11-15')).toEqual({ ok: true, value: '2008-02-29' });
+    expect(checkBirthDate('2026-11-15', '2026-11-15')).toEqual({ ok: true, value: '2026-11-15' });
+  });
+
+  it.each(['', '2007-02-29', '2008-13-01', '17/05/2000', '2026-11-16', '1899-12-31'])(
+    'refuses %j',
+    (input) => {
+      expect(checkBirthDate(input, '2026-11-15')).toEqual({
+        ok: false,
+        error: 'invalid_birth_date',
+      });
+    },
+  );
+});
+
+describe('lineupLocked', () => {
+  it('locks lineups the set number of days before the season’s first day', () => {
+    expect(lineupLocked('2027-01-03', STARTS_ON, 0)).toBe(false);
+    expect(lineupLocked('2027-01-04', STARTS_ON, 0)).toBe(true);
+    expect(lineupLocked('2026-12-31', STARTS_ON, 3)).toBe(false);
+    expect(lineupLocked('2027-01-01', STARTS_ON, 3)).toBe(true);
+  });
+});
+
+describe('playerGaps', () => {
+  it('finds nothing missing in a complete profile', () => {
+    expect(playerGaps(READY, LFR, STARTS_ON)).toEqual([]);
+  });
+
+  it('says everything that is missing, all at once', () => {
+    const empty = { gameAccount: false, nationality: null, statsConsent: false, birthDate: null };
+    expect(playerGaps(empty, LFR, STARTS_ON)).toEqual([
+      'game_account',
+      'nationality',
+      'stats_consent',
+      'birth_date',
+    ]);
+  });
+
+  it('counts the age on the season’s first day', () => {
+    expect(playerGaps({ ...READY, birthDate: '2011-01-04' }, LFR, STARTS_ON)).toEqual([]);
+    expect(playerGaps({ ...READY, birthDate: '2011-01-05' }, LFR, STARTS_ON)).toEqual([
+      'too_young',
+    ]);
+  });
+
+  it('asks neither consent nor a birth date of a league that does not require them', () => {
+    const profile = { ...READY, statsConsent: false, birthDate: null };
+    expect(playerGaps(profile, SETTINGS, STARTS_ON)).toEqual([]);
+  });
+});
+
 describe('mayJoin', () => {
-  it('lets a player join while places are left, once', () => {
-    expect(mayJoin(FIVE, 6, SETTINGS)).toEqual({ ok: true });
-    expect(mayJoin(FIVE, 3, SETTINGS)).toEqual({ ok: false, error: 'already_joined' });
+  const joiner = (playerId: number, overrides = {}) => ({
+    playerId,
+    gaps: [],
+    inOtherRegistration: false,
+    locked: false,
+    ...overrides,
+  });
+
+  it('lets a player join while places are left, once: as a starter, then as a substitute', () => {
+    expect(mayJoin([], joiner(1), SETTINGS)).toEqual({ ok: true, role: 'player' });
+    expect(mayJoin(FIVE, joiner(6), SETTINGS)).toEqual({ ok: true, role: 'sub' });
+    expect(mayJoin(FIVE, joiner(3), SETTINGS)).toEqual({ ok: false, error: 'already_joined' });
     const full = [...FIVE, member(6, { role: 'sub' }), member(7, { role: 'sub' })];
-    expect(mayJoin(full, 8, SETTINGS)).toEqual({ ok: false, error: 'roster_full' });
+    expect(mayJoin(full, joiner(8), SETTINGS)).toEqual({ ok: false, error: 'roster_full' });
+  });
+
+  it('refuses a player already in another roster of the competition', () => {
+    expect(mayJoin(FIVE, joiner(6, { inOtherRegistration: true }), SETTINGS)).toEqual({
+      ok: false,
+      error: 'in_other_registration',
+    });
+  });
+
+  it('refuses once the lineup is locked', () => {
+    expect(mayJoin(FIVE, joiner(6, { locked: true }), SETTINGS)).toEqual({
+      ok: false,
+      error: 'lineup_locked',
+    });
+  });
+
+  it('sends a player with something missing to complete their profile first', () => {
+    expect(mayJoin(FIVE, joiner(6, { gaps: ['nationality', 'too_young'] }), SETTINGS)).toEqual({
+      ok: false,
+      error: 'not_eligible',
+      gaps: ['nationality', 'too_young'],
+    });
+  });
+});
+
+describe('mayLeave', () => {
+  it('lets a player leave until the lineup locks', () => {
+    expect(mayLeave(FIVE, 3, false)).toEqual({ ok: true });
+    expect(mayLeave(FIVE, 3, true)).toEqual({ ok: false, error: 'lineup_locked' });
+    expect(mayLeave(FIVE, 9, false)).toEqual({ ok: false, error: 'not_joined' });
   });
 });
 
 describe('registration settings', () => {
-  it('asks for 5 starters and up to 2 substitutes, with 7 days to use an invitation', () => {
+  it('asks for 5 starters and up to 2 substitutes, with 7 days to use an invitation, and no age', () => {
     expect(registrationSchema.parse({})).toEqual({
       starters: 5,
       subs_max: 2,
       stats_consent_required: false,
       invite_days: 7,
+      min_age: null,
+      lineup_lock_days: 0,
     });
+    expect(registrationSchema.safeParse({ min_age: -1 }).success).toBe(false);
     expect(registrationSchema.safeParse({ starters: 0 }).success).toBe(false);
   });
 });

@@ -205,6 +205,10 @@ export const registrationSchema = z.strictObject({
   subs_max: z.int().min(0).max(20).default(2),
   stats_consent_required: z.boolean().default(false),
   invite_days: z.int().min(1).max(60).default(7),
+  /** Players are at least this old on the season's first day; null: no minimum (O-31, O-33). */
+  min_age: z.int().min(1).max(99).nullable().default(null),
+  /** Lineups lock this many days before the season starts, then change in mercato windows. */
+  lineup_lock_days: z.int().min(0).max(60).default(0),
 });
 export type RegistrationSettings = z.infer<typeof registrationSchema>;
 

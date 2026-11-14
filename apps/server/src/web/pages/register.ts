@@ -1,4 +1,4 @@
-import { ROSTER_COLORS_MAX, ROSTER_COLORS_MIN, type FieldErrors } from '@ligo/core';
+import { ROSTER_COLORS_MAX, ROSTER_COLORS_MIN, type FieldErrors, type LineupGap } from '@ligo/core';
 import type { R6Rank } from '@ligo/titles';
 import { html } from 'hono/html';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
@@ -259,8 +259,9 @@ const GAP_KEYS = {
   starters: 'web.registration.gap.starters',
   subs: 'web.registration.gap.subs',
   captain: 'web.registration.gap.captain',
+  captain_not_starter: 'web.registration.gap.captainNotStarter',
   not_ready: 'web.registration.gap.not_ready',
-} as const;
+} as const satisfies Record<LineupGap['gap'], MessageKey>;
 
 /** `/registrations/:id`: the filer follows the registration and shares the invitation. */
 export function registrationView(

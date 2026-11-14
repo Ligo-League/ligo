@@ -650,6 +650,7 @@ export const fr = {
   'web.registration.gap.starters': '{have} titulaire(s) sur {want}',
   'web.registration.gap.subs': '{have} remplaçants, {max} au plus',
   'web.registration.gap.captain': 'un capitaine à choisir ({have} pour l’instant)',
+  'web.registration.gap.captainNotStarter': 'un capitaine parmi les titulaires',
   'web.registration.gap.not_ready':
     '{count} joueur(s) au profil incomplet : compte Ubisoft, rang, nationalité ou consentement aux statistiques',
   'web.me.game': 'Compte Rainbow Six Siege',

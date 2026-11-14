@@ -4,6 +4,9 @@ import type { RegistrationSettings } from './settings.ts';
 // The filer gives the roster's details and shares an invitation; players join with their own
 // account, and keep their own Ubisoft name, profileID and rank on their profile, which Ligo never
 // looks up elsewhere. Pure checks: the server stores the registration and its players.
+// Joining (maintainer, 14 November 2026): one roster per competition (O-29), the captain a starter
+// (O-30), a minimum age as a setting, counted on the season's first day (O-31, O-33), and lineups
+// locked a set number of days before the season (M-29, O-32).
 
 export type FieldErrors<E extends string> = { field: string; error: E }[];
 
@@ -95,6 +98,7 @@ export type LineupGap =
   | { gap: 'starters'; have: number; want: number }
   | { gap: 'subs'; have: number; max: number }
   | { gap: 'captain'; have: number }
+  | { gap: 'captain_not_starter' }
   | { gap: 'not_ready'; playerIds: number[] };
 
 /**
@@ -112,24 +116,133 @@ export function lineupStatus(
   }
   const subs = members.length - starters;
   if (subs > settings.subs_max) gaps.push({ gap: 'subs', have: subs, max: settings.subs_max });
-  const captains = members.filter((entry) => entry.captain).length;
-  if (captains !== 1) gaps.push({ gap: 'captain', have: captains });
+  const captains = members.filter((entry) => entry.captain);
+  if (captains.length !== 1) gaps.push({ gap: 'captain', have: captains.length });
+  else if (captains[0]?.role !== 'player') gaps.push({ gap: 'captain_not_starter' });
   const notReady = members.filter((entry) => !entry.ready).map((entry) => entry.playerId);
   if (notReady.length > 0) gaps.push({ gap: 'not_ready', playerIds: notReady });
   return { complete: gaps.length === 0, gaps };
 }
 
-/** Whether a player may join: once, and while the roster has room for starters and subs. */
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** A calendar date's parts; throws on anything else, which callers have checked before. */
+function dateParts(date: string): [number, number, number] {
+  const match = ISO_DATE.exec(date);
+  if (!match) throw new RangeError(`Not a date: ${date}`);
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+/** Full years from a birth date to a date, both `YYYY-MM-DD`. */
+export function ageOn(birthDate: string, on: string): number {
+  const [birthYear, birthMonth, birthDay] = dateParts(birthDate);
+  const [year, month, day] = dateParts(on);
+  // Before the birthday's month and day, the year is not complete yet. Born on 29 February, a
+  // player is a year older on 1 March of other years.
+  const beforeBirthday = month < birthMonth || (month === birthMonth && day < birthDay);
+  return year - birthYear - (beforeBirthday ? 1 : 0);
+}
+
+/** A birth date as a player types it: a real date, from 1900, not after today. */
+export function checkBirthDate(
+  input: string,
+  today: string,
+): { ok: true; value: string } | { ok: false; error: 'invalid_birth_date' } {
+  const value = input.trim();
+  const match = ISO_DATE.exec(value);
+  const parsed = match ? new Date(`${value}T00:00:00Z`) : null;
+  // `Date` rolls 30 February over to March: the date read back must be the one typed.
+  const real =
+    parsed !== null && !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value);
+  return real && value >= '1900-01-01' && value <= today
+    ? { ok: true, value }
+    : { ok: false, error: 'invalid_birth_date' };
+}
+
+/** Whether lineups are locked on `today`: from `lockDays` days before the season's first day. */
+export function lineupLocked(today: string, seasonStartsOn: string, lockDays: number): boolean {
+  const [year, month, day] = dateParts(seasonStartsOn);
+  const lockOn = new Date(Date.UTC(year, month - 1, day - lockDays)).toISOString().slice(0, 10);
+  return today >= lockOn;
+}
+
+/** What Ligo knows of a player, for whether they may play in a league. */
+export interface PlayerProfile {
+  /** Their account in the competition's title, with a rank. */
+  gameAccount: boolean;
+  nationality: string | null;
+  statsConsent: boolean;
+  birthDate: string | null;
+}
+
+export type PlayerGap =
+  'game_account' | 'nationality' | 'stats_consent' | 'birth_date' | 'too_young';
+
+/**
+ * What keeps a player from playing in a league, all at once: their own details to complete, and
+ * the league's minimum age on the season's first day.
+ */
+export function playerGaps(
+  profile: PlayerProfile,
+  settings: RegistrationSettings,
+  seasonStartsOn: string,
+): PlayerGap[] {
+  const gaps: PlayerGap[] = [];
+  if (!profile.gameAccount) gaps.push('game_account');
+  if (profile.nationality === null) gaps.push('nationality');
+  if (settings.stats_consent_required && !profile.statsConsent) gaps.push('stats_consent');
+  if (settings.min_age !== null) {
+    if (profile.birthDate === null) gaps.push('birth_date');
+    else if (ageOn(profile.birthDate, seasonStartsOn) < settings.min_age) gaps.push('too_young');
+  }
+  return gaps;
+}
+
+export type JoinError =
+  'already_joined' | 'lineup_locked' | 'roster_full' | 'in_other_registration';
+
+/** A player opening an invitation, as the server found them. */
+export interface Joiner {
+  playerId: number;
+  gaps: readonly PlayerGap[];
+  /** They already play in another roster or registration of the same competition (O-29). */
+  inOtherRegistration: boolean;
+  locked: boolean;
+}
+
+/**
+ * Whether a player may join, and as what: a starter while starters are missing, then a
+ * substitute. The filer changes roles afterwards.
+ */
 export function mayJoin(
   members: readonly LineupMember[],
-  playerId: number,
+  joiner: Joiner,
   settings: RegistrationSettings,
-): { ok: true } | { ok: false; error: 'already_joined' | 'roster_full' } {
-  if (members.some((entry) => entry.playerId === playerId)) {
+):
+  | { ok: true; role: RegistrationRole }
+  | { ok: false; error: JoinError }
+  | { ok: false; error: 'not_eligible'; gaps: PlayerGap[] } {
+  if (members.some((entry) => entry.playerId === joiner.playerId)) {
     return { ok: false, error: 'already_joined' };
   }
+  if (joiner.locked) return { ok: false, error: 'lineup_locked' };
   if (members.length >= settings.starters + settings.subs_max) {
     return { ok: false, error: 'roster_full' };
   }
+  if (joiner.inOtherRegistration) return { ok: false, error: 'in_other_registration' };
+  if (joiner.gaps.length > 0) return { ok: false, error: 'not_eligible', gaps: [...joiner.gaps] };
+  const starters = members.filter((entry) => entry.role === 'player').length;
+  return { ok: true, role: starters < settings.starters ? 'player' : 'sub' };
+}
+
+/** Whether a player may leave a registration: theirs, until the lineup locks. */
+export function mayLeave(
+  members: readonly LineupMember[],
+  playerId: number,
+  locked: boolean,
+): { ok: true } | { ok: false; error: 'not_joined' | 'lineup_locked' } {
+  if (!members.some((entry) => entry.playerId === playerId))
+    return { ok: false, error: 'not_joined' };
+  if (locked) return { ok: false, error: 'lineup_locked' };
   return { ok: true };
 }

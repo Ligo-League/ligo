@@ -613,6 +613,7 @@ export const en: Record<MessageKey, string> = {
   'web.registration.gap.starters': '{have} starter(s) of {want}',
   'web.registration.gap.subs': '{have} substitutes, {max} at most',
   'web.registration.gap.captain': 'a captain to choose ({have} for now)',
+  'web.registration.gap.captainNotStarter': 'a captain among the starters',
   'web.registration.gap.not_ready':
     '{count} player(s) with an incomplete profile: Ubisoft account, rank, nationality or stats consent',
   'web.me.game': 'Rainbow Six Siege account',

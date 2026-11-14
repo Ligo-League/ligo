@@ -176,28 +176,6 @@ section 16.
 - **Until answered:** the roadmap assumes late December or early January at the earliest.
 - **Answer:**
 
-#### O-32 · When lineups lock before the season
-
-- **Question:** how many days before Season 4 starts are LFR lineups locked? From then on, a
-  lineup changes only during a mercato window.
-- **Why it matters:** the lock is a setting (`lineup_lock_days`, M-29); the filer's actions on the
-  registration page stop at that date.
-- **Until answered:** 0 days: lineups may change until the season starts.
-- **Answer:**
-
-#### O-33 · How the minimum age is checked
-
-- **Question:** LFR requires players to be 16 or older (O-31). On which date must they be 16: when
-  they join, or when the season starts? And is a birth date given by the player needed, or is a
-  declaration ("I am 16 or older") enough?
-- **Why it matters:** a birth date lets Ligo check the age on any date, and the next seasons
-  without asking again, but it is personal data to keep private.
-- **Until answered:** each player gives their birth date on `/me`; nobody else sees it (staff see
-  only "16 or older"); the age counts on the season's first day.
-- **Answer:**
-
-### Team tools
-
 #### O-22 · Recruitment board
 
 - **Question:** may a player who is on a roster post that they are looking for a team? Does the
@@ -465,19 +443,6 @@ section 16.
 - **Until answered:** the request belongs to the competition of the server where it is filed,
   and its staff answer it, with the approval settings of club changes being those of team changes.
 - **Answer:**
-
-#### M-31 · Eligibility settings other leagues need
-
-- **Question:** the Benelux league needs players aged 18 or older, at least 3 starters living in
-  the Benelux, PC only, and a club based in the Benelux (O-31). Are these built with LFR's age
-  check, or when the Benelux league comes to Ligo?
-- **Why it matters:** each needs data Ligo does not hold yet (country of residence, platform, the
-  club's country), so a field on `/me` or on the registration form, and a migration.
-- **Until answered:** only the minimum age is built now, as a setting; the design document lists
-  the others as settings to come.
-- **Answer:**
-
-## Answered
 
 #### O-29 · One player in two registrations
 
