@@ -465,6 +465,21 @@ section 10).
 5. On `/me`, the **Compte Rainbow Six Siege** form saves your Ubisoft name, your profileID if you
    have it, and your rank.
 
+## 21. Phase 3d-4a, second part: joining a team
+
+1. Optional: put the staging server's public invitation in `.env` as
+   `DISCORD_INVITE_URL=https://discord.gg/...` (Server Settings > Invites, or right-click a
+   channel > **Invite People**, with **Expire After: Never**).
+2. Restart `pnpm dev`: migration 0015 runs at start-up. Then `pnpm seed`: it sets LFR's minimum
+   age (16) and, if set, the invitation link.
+3. On `/me`, fill in your **Date de naissance**. Nobody else sees it.
+4. Open the invitation link from `/registrations/1` while logged in with a **second Discord
+   account** (another browser, or a private window): it is the one that joins. The page lists
+   what that player must complete on `/me` first. A player who is not on the staging server is
+   told to join it, with the link from step 1.
+5. Once joined, the player sees the registration on `/me`, with **Quitter l'équipe**; the filer
+   sees them on `/registrations/1`.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                               |

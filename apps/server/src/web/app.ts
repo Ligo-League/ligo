@@ -47,11 +47,24 @@ import {
   type RegisterValues,
 } from './pages/register.ts';
 import { inviteUrl } from '../services/invites.ts';
+import {
+  joinRegistration,
+  joinView,
+  leaveRegistration,
+  registrationsOf,
+} from '../services/joining.ts';
+import { joinPageView } from './pages/join.ts';
 import { rulesFormView, rulesPageView, type RulesFormValues } from './pages/rules.ts';
 import { seasonPageView } from './pages/season.ts';
 import { staffPage } from './pages/staff.ts';
 import { teamPageView } from './pages/team.ts';
-import { staffCompetitions, webActor, type RoleReader, type WebUser } from './roles.ts';
+import {
+  createMemberCheck,
+  staffCompetitions,
+  webActor,
+  type RoleReader,
+  type WebUser,
+} from './roles.ts';
 import {
   checkCsrfToken,
   csrfToken,
@@ -129,6 +142,13 @@ const STAFF_ERRORS = [
   'owner_cannot_leave',
   'role_full',
 ] as const;
+// An invitation link's token, as `/join/<invitation>/<token>` carries it.
+const INVITE_TOKEN = /^[\w-]{43}$/;
+
+/** A path as the error log keeps it: an invitation's token is a secret and never written down. */
+export const loggedPath = (path: string): string =>
+  path.replace(/^\/join\/([^/]*)\/[^/]+/, '/join/$1/…');
+
 const oneOf = <T extends string>(values: readonly T[], value: string | undefined): T | null =>
   values.find((candidate) => candidate === value) ?? null;
 // Pages show live data; static files change only with a release.
@@ -514,6 +534,68 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     );
   });
 
+  // Joining a registration from its invitation link (maintainer, 14 November 2026). The link
+  // holds a secret: pages under it are kept by no cache, and the path never reaches the log.
+  const memberOf = createMemberCheck(deps.gateway);
+  const inviteLink = (c: Context<Env>) => {
+    const id = c.req.param('id') ?? '';
+    const token = c.req.param('token') ?? '';
+    return login && ROW_ID.test(id) && INVITE_TOKEN.test(token)
+      ? { inviteId: Number(id), token, secret: login.secret }
+      : null;
+  };
+  const invalidInvite = (c: Context<Env>) =>
+    render(
+      c,
+      messagePage(locale, t(locale, 'web.join.invalid.title'), t(locale, 'web.join.invalid.body')),
+      404,
+    );
+  app.get('/join/:id/:token', async (c) => {
+    if (!login) return notFound(c);
+    c.header('Cache-Control', 'no-store');
+    const link = inviteLink(c);
+    if (!link) return invalidInvite(c);
+    const viewer = c.get('viewer');
+    // A dead link says so before asking anyone to log in.
+    const visitor = { id: -1, discordUserId: null };
+    const reply = await joinView(
+      db,
+      memberOf,
+      viewer ? { id: viewer.playerId, discordUserId: viewer.discordUserId } : visitor,
+      link,
+      deps.now(),
+    );
+    if (!reply.ok) return invalidInvite(c);
+    if (!viewer) return c.redirect(`/auth/login?next=${encodeURIComponent(c.req.path)}`, 303);
+    return render(c, joinPageView(locale, reply, { action: c.req.path, csrf: viewer.csrf }));
+  });
+  app.post('/join/:id/:token', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer } = guarded;
+    const link = inviteLink(c);
+    if (!link) return invalidInvite(c);
+    const reply = await joinRegistration(
+      db,
+      memberOf,
+      { id: viewer.playerId, discordUserId: viewer.discordUserId },
+      link,
+      deps.now(),
+    );
+    if (!reply.ok && reply.error === 'invalid_link') return invalidInvite(c);
+    // Joined or not, the page says where the player stands now.
+    return c.redirect(c.req.path, 303);
+  });
+  app.post('/registrations/:id/leave', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const id = c.req.param('id');
+    if (!ROW_ID.test(id)) return notFound(c);
+    const reply = leaveRegistration(db, guarded.viewer.playerId, Number(id), deps.now());
+    if (reply.ok) return c.redirect('/me?left=1', 303);
+    return reply.error === 'not_found' ? notFound(c) : c.redirect(`/me?error=${reply.error}`, 303);
+  });
+
   app.get('/c/:competition/:season', (c) => {
     const page = seasonPage(db, c.req.param('competition'), c.req.param('season'));
     return page.ok ? render(c, seasonPageView(locale, page)) : notFound(c);
@@ -582,7 +664,12 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     if (!viewer) return c.redirect('/auth/login?next=/me', 303);
     const profile = profileOf(db, viewer.playerId);
     if (!profile) return c.redirect('/auth/login?next=/me', 303);
-    const flash = c.req.query('saved') === '1' ? 'saved' : oneOf(ME_ERRORS, c.req.query('error'));
+    const flash =
+      c.req.query('saved') === '1'
+        ? 'saved'
+        : c.req.query('left') === '1'
+          ? 'left'
+          : oneOf(ME_ERRORS, c.req.query('error'));
     return showMe(c, viewer, profile, { flash, game: null });
   });
 
@@ -622,6 +709,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
         csrf: viewer.csrf,
         flash: state.flash,
         game,
+        registrations: registrationsOf(db, viewer.playerId, deps.now()),
       }),
       status,
     );
@@ -788,7 +876,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
 
   app.notFound(notFound);
   app.onError((error, c) => {
-    deps.logger.error({ err: error, path: c.req.path }, 'Web page failed');
+    deps.logger.error({ err: error, path: loggedPath(c.req.path) }, 'Web page failed');
     return render(c, errorPage(locale), 500);
   });
   return app;

@@ -1,6 +1,7 @@
 import { schema, type Db } from '@ligo/db';
 import { asc, eq } from 'drizzle-orm';
 import type { DiscordGateway } from '../discord/gateway.ts';
+import type { MemberCheck } from '../services/joining.ts';
 import type { Actor } from '../services/permissions.ts';
 
 // Who is league staff on the website: the members holding the staff role in the league's Discord
@@ -42,6 +43,20 @@ export function createRoleReader(
       if (oldest !== undefined) cache.delete(oldest);
     }
     return roles;
+  };
+}
+
+/**
+ * Whether a user is a member of a server, asked of the bot each time: a player who has just
+ * joined the server is let in at once (M-30). Null when Discord cannot be asked.
+ */
+export function createMemberCheck(gateway: Pick<DiscordGateway, 'memberRoleIds'>): MemberCheck {
+  return async (guildId, userId) => {
+    try {
+      return (await gateway.memberRoleIds(guildId, userId)) !== null;
+    } catch {
+      return null;
+    }
   };
 }
 

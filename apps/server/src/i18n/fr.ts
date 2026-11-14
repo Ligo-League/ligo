@@ -760,6 +760,42 @@ export const fr = {
   'web.me.birthDate.hint':
     'Demandée par les ligues qui ont un âge minimum. Personne d’autre ne la voit : le staff voit seulement si tu as l’âge requis.',
   'web.me.error.invalid_birth_date': 'Cette date de naissance n’est pas valable.',
+  'web.me.left': 'Tu as quitté l’équipe.',
+  'web.me.registrations': 'Mes inscriptions',
+  'web.me.registration': '{roster} — {competition}, {season}',
+  'web.me.registration.filed': 'inscrite par toi',
+  'web.me.registration.leave': 'Quitter l’équipe',
+  'web.me.error.lineup_locked':
+    'Les effectifs sont verrouillés : tu ne peux plus quitter cette équipe.',
+  'web.join.title': 'Rejoindre {roster}',
+  'web.join.intro':
+    '{filer} t’invite dans l’équipe {roster} ({tag}) du club {club}, pour {competition} — {season}.',
+  'web.join.shared':
+    'En rejoignant, ton nom, ton compte R6 et ton rang sont visibles par la personne qui a inscrit l’équipe et par le staff.',
+  'web.join.submit': 'Rejoindre {roster}',
+  'web.join.joined': 'Tu fais partie de cette équipe, comme {role}.',
+  'web.join.myPage': 'Voir ma page',
+  'web.join.complete': 'Avant de rejoindre, complète ta page :',
+  'web.join.gap.game_account': 'ton compte R6 (nom Ubisoft et rang)',
+  'web.join.gap.nationality': 'ta nationalité',
+  'web.join.gap.stats_consent': 'ton accord pour la publication de tes statistiques',
+  'web.join.gap.birth_date': 'ta date de naissance',
+  'web.join.openMyPage': 'Ouvrir ma page',
+  'web.join.reload': 'Puis recharge cette page.',
+  'web.join.tooYoung':
+    'La ligue demande d’avoir au moins {age} ans le {date}, premier jour de la saison.',
+  'web.join.notMember':
+    'Pour rejoindre une équipe, il faut être membre du serveur Discord de la ligue.',
+  'web.join.joinServer': 'Rejoindre le serveur Discord',
+  'web.join.discordUnavailable': 'Discord ne répond pas pour l’instant : réessaie dans un moment.',
+  'web.join.refused.lineup_locked':
+    'Les effectifs sont verrouillés : il n’est plus possible de rejoindre cette équipe.',
+  'web.join.refused.roster_full': 'Cette équipe est complète.',
+  'web.join.refused.in_other_registration':
+    'Tu fais déjà partie d’une autre équipe de cette compétition. Quitte-la depuis ta page pour rejoindre celle-ci.',
+  'web.join.invalid.title': 'Lien d’invitation invalide',
+  'web.join.invalid.body':
+    'Ce lien n’est plus valable : il a expiré, a été remplacé, ou l’inscription est close. Demande un nouveau lien à la personne qui a inscrit l’équipe.',
   'web.me.error.invalid_nationality': 'Choisis un pays dans la liste.',
   'web.me.staffQueue': 'Ouvrir la file du staff',
   'web.staff.title': 'File du staff',
