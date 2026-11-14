@@ -329,6 +329,17 @@ section 16.
 - **Until answered:** rosters are not in Ligo yet; only the owner, managers and coach act.
 - **Answer:**
 
+#### M-20 · Who opens the admin panel
+
+- **Question:** who may open each level of the admin panel (design doc section 7)? A
+  competition's staff, from their Discord role, for the competition and its leagues? And for
+  the organisation level (MBL Group: its competitions and Discord servers), a list of
+  organisation admins kept in Ligo, or the owners of the Discord servers?
+- **Why it matters:** the staff role itself is a setting of the panel, so someone must be able
+  to set it without already holding it, and a new competition needs someone to create it.
+- **Until answered:** nothing; the panel is the last step of phase 3.
+- **Answer:**
+
 ## Answered
 
 #### O-11 · Ban order

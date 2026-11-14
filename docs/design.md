@@ -579,9 +579,19 @@ The website is the main tool of the platform (section 3): the public face of eve
 | `/me`                          | logged-in player        | Linked accounts, nationality, stats consent                                                                                    |
 | `/staff/*`                     | staff                   | Validation queue, requests waiting (registrations, mercato, team officials), sanctions, forfeits, accreditations, unknown players, jobs, rules versions |
 | `/evidence/:id`                | staff (teams in 3e)     | A score screenshot the server kept; never public                                                                               |
+| `/admin/*`                     | see M-20                | The admin panel: organisation, then each competition, then each league (division), with their settings and Discord setup       |
 
 The team workspace, recruitment and awards pages are listed in section 17.
 
+**Admin panel** (maintainer, 14 November 2026)
+
+Every setting of a league, Discord included, can be changed on the website; the bot's setup commands stay as quick access. The panel follows the data model: an organisation (for example MBL Group), its competitions (LFR, LFV, LFRL), then each competition's leagues (Ligue 1, Ligue 2):
+
+- **Organisation:** name, language, its competitions, its Discord servers.
+- **Competition:** the ruleset and scheduling settings (points, tie-breakers, forfeits, veto, map pool, deadlines, requests), the linked Discord server, its staff role, and which channel does what (staff queue, schedule, results, mercato).
+- **League (division):** name, size, zones, results channel, and from phase 4 its Discord category, channel template and team roles, created by the reconciler.
+
+Each phase adds its own settings to the panel as it adds them to the bot. Who may open each level is open (M-20).
 
 **Registration** (replaces the rulebook's form posted in the registration channel)
 
@@ -1101,8 +1111,8 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
     - deadlines with extension and Sunday 21:00 auto-scheduling, side, overtime side and host;
     - forfeits, sanctions, audit log;
     - team requests (2c): teams change their own officials through requests that staff approve or refuse, every staff-queue post recorded. Accepted when a full week of results comes in through teams and is validated by staff with no manual table edits; that week runs during the Season 3 shadow run, alongside phase 3, instead of blocking it (maintainer, 14 November 2026).
-3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; the website side of every bot action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, exclusions, team officials and their requests, league channels, match times and the veto), with one page of every request waiting that marks the Discord posts as handled. Done when Season 4 registrations are taken on the website, and every bot action of phases 1 and 2 can also be done there.
-4. **Schedule and channels.** Round-robin generation, `/season publish`, weekly channels, MOSS channels, the reconciler across the league servers, team roles. Done when Season 4's weeks are generated, published, run and archived automatically.
+3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; the website side of every bot action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, exclusions, team officials and their requests, league channels, match times and the veto), with one page of every request waiting that marks the Discord posts as handled; the admin panel (section 7), with every setting phases 1 to 3 have, Discord channels included. Done when Season 4 registrations are taken on the website, and every bot action of phases 1 and 2 can also be done there.
+4. **Schedule and channels.** Round-robin generation, `/season publish`, weekly channels, MOSS channels, the reconciler across the league servers, team roles; their settings (categories, channel templates, team roles) in the admin panel. Done when Season 4's weeks are generated, published, run and archived automatically.
 5. **R6 replays.** WebAssembly build of the fork, browser uploader, normaliser, raw upload and server verification, stitching and review, match cards. Done when a re-hosted map uploaded by both teams stitches automatically and verifies, and a tampered JSON is caught.
 6. **Season end and cups.** `closeSeason()` with promotion, relegation and barrages (format pending); Coupe de France bracket with BO1 → BO3 → BO5; tie-break matches. Done when Season 4 closes and the cup runs to a final on the platform.
 7. **FRFL mixed mode.** Lineups per match, balanced proposals, OpenSkill, player standings, per-user channels. Done when one FRFL week runs end to end.
