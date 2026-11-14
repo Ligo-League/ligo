@@ -1,5 +1,5 @@
 import { schema, type Db, type Tx } from '@ligo/db';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, gte } from 'drizzle-orm';
 
 // The bot's posts in a staff queue channel, kept by what they are about, so that whoever handles
 // it, in Discord or later on the website, can mark each post as handled (maintainer,
@@ -25,15 +25,22 @@ export function recordQueuePost(
     .run();
 }
 
-/** Every post about it, oldest first. */
+/** Every post about it, oldest first; with `since`, only those posted from that time on. */
 export function queuePostsOf(
   db: Pick<Db, 'select'>,
   about: { entity: QueueEntity; entityId: number },
+  since?: number,
 ): PostRef[] {
   return db
     .select({ channelId: queuePost.channelId, messageId: queuePost.messageId })
     .from(queuePost)
-    .where(and(eq(queuePost.entity, about.entity), eq(queuePost.entityId, about.entityId)))
+    .where(
+      and(
+        eq(queuePost.entity, about.entity),
+        eq(queuePost.entityId, about.entityId),
+        since === undefined ? undefined : gte(queuePost.postedAt, since),
+      ),
+    )
     .orderBy(asc(queuePost.id))
     .all();
 }

@@ -2,6 +2,7 @@ import { describeGameScores, type GameScoreSettings } from '@ligo/core';
 import type { LeagueMatch } from '@ligo/db';
 import { t, type Locale } from '../i18n/index.ts';
 import { recordQueuePost, type QueueEntity } from '../services/queue-posts.ts';
+import type { DisputeDetails } from '../services/reports.ts';
 import { MAX_CHOICE_LENGTH } from './commands/describe.ts';
 import type { CommandContext, OutgoingMessage } from './commands/types.ts';
 
@@ -84,17 +85,43 @@ export function dayLabel(locale: Locale, date: string): string {
 /** A mention of a Discord user. It pings only when the message names them in `mentionUserIds`. */
 export const mention = (discordUserId: string) => `<@${discordUserId}>`;
 
+/** The reason in the member's language; "other" is worded by the bot, not the league. */
+export function reasonLabel(locale: Locale, dispute: Pick<DisputeDetails, 'label'>): string {
+  if (!dispute.label) return t(locale, 'dispute.reason.other');
+  return dispute.label[locale] ?? dispute.label.fr;
+}
+
 /**
- * Posts in one of the league's channels when it is set. A notice that cannot be delivered must
- * not undo the step it reports, which is already stored: the failure is left to the caller's
- * reply and to Discord's own audit of the bot's permissions.
+ * A dispute's post in the staff queue: who disputed and why, then the team's own words in a
+ * block quote, which keeps them apart from the bot's and runs to the end of the message. Once
+ * staff decided, `outcome` goes between the two.
  */
+export function disputeQueueMessage(
+  locale: Locale,
+  line: string,
+  raisedBy: string | null,
+  dispute: Pick<DisputeDetails, 'label' | 'details'>,
+  outcome: string | null = null,
+): OutgoingMessage {
+  const lines = [
+    t(locale, 'queue.disputedWithReason', {
+      line,
+      member: raisedBy === null ? '?' : mention(raisedBy),
+      reason: reasonLabel(locale, dispute),
+    }),
+  ];
+  if (outcome !== null) lines.push(outcome);
+  // Mentions in the team's words never ping: the message names no one to notify.
+  if (dispute.details !== null) lines.push(`>>> ${dispute.details}`);
+  return { content: lines.join('\n') };
+}
+
 /**
  * Posts in the staff queue and records the post by what it is about, so that whoever handles it
  * can later mark it as handled. False when there is no queue or the post failed.
  */
 export async function notifyQueue(
-  context: CommandContext,
+  context: Pick<CommandContext, 'db' | 'gateway' | 'now'>,
   channelId: string | null,
   message: OutgoingMessage,
   about: { entity: QueueEntity; entityId: number },
@@ -109,8 +136,13 @@ export async function notifyQueue(
   }
 }
 
+/**
+ * Posts in one of the league's channels when it is set. A notice that cannot be delivered must
+ * not undo the step it reports, which is already stored: the failure is left to the caller's
+ * reply and to Discord's own audit of the bot's permissions.
+ */
 export async function notify(
-  context: CommandContext,
+  context: Pick<CommandContext, 'gateway'>,
   channelId: string | null,
   message: OutgoingMessage,
 ): Promise<boolean> {

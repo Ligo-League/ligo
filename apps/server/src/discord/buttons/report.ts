@@ -9,7 +9,6 @@ import {
   validateResult,
   type AnswerError,
   type AnswerReply,
-  type DisputeDetails,
 } from '../../services/reports.ts';
 import { buttonId } from '../button-id.ts';
 import type {
@@ -20,7 +19,14 @@ import type {
   FormSubmitInteraction,
   ButtonInteraction,
 } from '../commands/types.ts';
-import { mention, notifyQueue, storedLine } from '../match-text.ts';
+import {
+  disputeQueueMessage,
+  mention,
+  notifyQueue,
+  reasonLabel,
+  storedLine,
+} from '../match-text.ts';
+import { announceReportDecision, reportDecisionMessage } from '../staff-decisions.ts';
 
 // The buttons under a result report. The custom ID names the match and, as nonce, the evidence
 // row of the report it belongs to; the services re-check who clicks and the match's state.
@@ -42,12 +48,6 @@ const ERROR_KEYS = {
 // Every refusal is worded without parameters but one, which names the limit.
 const refusal = (locale: Locale, error: AnswerError) =>
   t(locale, ERROR_KEYS[error], { max: DISPUTE_DETAILS_MAX_LENGTH });
-
-/** The reason in the member's language; "other" is worded by the bot, not the league. */
-function reasonLabel(locale: Locale, dispute: Pick<DisputeDetails, 'label'>): string {
-  if (!dispute.label) return t(locale, 'dispute.reason.other');
-  return dispute.label[locale] ?? dispute.label.fr;
-}
 
 /** Tells the channel, then staff, that the report was answered. Its buttons go once answered. */
 async function announceAnswer(
@@ -71,17 +71,10 @@ async function announceAnswer(
     return;
   }
   if (reply.dispute) {
-    const reason = t(locale, 'queue.disputedWithReason', {
-      line,
-      member,
-      reason: reasonLabel(locale, reply.dispute),
-    });
-    // A block quote keeps the team's own words apart from the bot's; mentions never ping.
-    const details = reply.dispute.details === null ? '' : `\n>>> ${reply.dispute.details}`;
     await notifyQueue(
       context,
       reply.queueChannelId,
-      { content: reason + details },
+      disputeQueueMessage(locale, line, interaction.user.id, reply.dispute),
       { entity: 'dispute', entityId: reply.dispute.id },
     );
     return;
@@ -205,23 +198,8 @@ const decide = (action: 'validate' | 'reject'): ButtonHandler => ({
       return;
     }
 
-    const line = storedLine(locale, reply.match);
-    const member = mention(interaction.user.id);
-    await interaction.update({
-      content: t(locale, action === 'validate' ? 'queue.validated' : 'queue.rejected', {
-        line,
-        member,
-      }),
-    });
-    if (reply.status === 'validated') {
-      await announceWithCard(
-        context,
-        reply.resultsChannelId,
-        { content: t(locale, 'result.announce', { line }) },
-        reply.match.id,
-        'result',
-      );
-    }
+    await interaction.update(reportDecisionMessage(locale, reply, interaction.user.id));
+    await announceReportDecision(context, reply, interaction.user.id);
   },
 });
 

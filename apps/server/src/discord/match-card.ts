@@ -112,7 +112,7 @@ export async function matchCardFile(
 
 /** Posts an announcement in one of the league's channels with the match's picture attached. */
 export async function announceWithCard(
-  context: CommandContext,
+  context: Pick<CommandContext, 'db' | 'assets' | 'locale' | 'gateway'>,
   channelId: string | null,
   message: OutgoingMessage,
   matchId: number,

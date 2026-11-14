@@ -379,6 +379,35 @@ describe('report buttons', () => {
     expect(gateway.posted).toHaveLength(posts);
   });
 
+  it('marks every queue post of the report, and keeps the team’s words on the dispute', async () => {
+    const { run, send, click, gateway } = session();
+    await run(report(BRAVO));
+    await send('report-dispute:3:1', CHARLIE, {
+      reason: 'ineligible_player',
+      details: 'Leur 5e joueur n’est pas inscrit.',
+    });
+    await click('report-validate:3:1', STAFF);
+    const queue = gateway.posted.filter((post) => post.channelId === QUEUE);
+    expect(queue.map((post) => [post.message, post.edits])).toEqual([
+      [
+        {
+          content: '**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — validé par <@222222222222222222>.',
+        },
+        1,
+      ],
+      [
+        {
+          content: [
+            'Ligue 1, semaine 3 : Bravo 7–5 Charlie — contesté par <@700000000000000002>. Motif : **Joueur non inscrit ou non éligible**. Une décision du staff est attendue.',
+            '✅ Résultat validé par <@222222222222222222>.',
+            '>>> Leur 5e joueur n’est pas inscrit.',
+          ].join('\n'),
+        },
+        1,
+      ],
+    ]);
+  });
+
   it.each([
     [
       'report-confirm:3:1',

@@ -11,9 +11,16 @@ import { discordTime, mention } from './match-text.ts';
 const nameOf = (person: PersonRef) =>
   person.discordUserId ? mention(person.discordUserId) : person.displayName;
 
-/** What the request asks, in a sentence: "Ajouter @X comme coach." */
-export function requestWhat(locale: Locale, request: RequestView): string {
-  const subject = nameOf(request.subject);
+/**
+ * What the request asks, in a sentence: "Ajouter @X comme coach." `name` writes a person: a
+ * Discord mention by default, a plain name on the website.
+ */
+export function requestWhat(
+  locale: Locale,
+  request: RequestView,
+  name: (person: PersonRef) => string = nameOf,
+): string {
+  const subject = name(request.subject);
   if (request.kind === 'team_owner') return t(locale, 'request.what.owner', { subject });
   if (request.kind === 'team_member_add') {
     const role = t(locale, `team.role.${request.role ?? 'manager'}`).toLowerCase();
@@ -111,7 +118,7 @@ export const postLink = (guildId: string, post: PostRef) =>
  * directly. Returns how many of them could not be told, for the staff queue to know.
  */
 export async function announceDecision(
-  context: CommandContext,
+  context: Pick<CommandContext, 'gateway' | 'locale'>,
   decided: { request: RequestView; posts: readonly PostRef[]; recipientIds: readonly string[] },
 ): Promise<number> {
   const { locale } = context;

@@ -17,7 +17,7 @@ import {
   type LeagueMatch,
   type Tx,
 } from '@ligo/db';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { CommandFile, OutgoingMessage } from '../discord/commands/types.ts';
 import type { DiscordGateway } from '../discord/gateway.ts';
 import { matchQuery } from './match-search.ts';
@@ -32,11 +32,11 @@ import { resultsChannelFor } from './league-channels.ts';
 import { settleDisputes, type DisputeResolution } from './disputes.ts';
 import { hasExcludedTeam } from './exclusions.ts';
 import { ensurePlayer } from './players.ts';
-import { recordQueuePost } from './queue-posts.ts';
+import { queuePostsOf, recordQueuePost, type PostRef } from './queue-posts.ts';
 import { isAcceptableScreenshot, SCREENSHOT_MAX_BYTES, type Screenshot } from './results.ts';
 import { listTeamStaff, type TeamMember } from './team-staff.ts';
 
-const { auditLog, dispute: disputeTable, evidence, game, match } = schema;
+const { auditLog, dispute: disputeTable, evidence, game, match, player } = schema;
 
 type Side = 'a' | 'b';
 const other = (side: Side): Side => (side === 'a' ? 'b' : 'a');
@@ -527,12 +527,26 @@ export function answerReport(
 export type StaffStepError =
   'not_linked' | 'not_staff' | 'match_not_found' | 'stale' | 'wrong_status' | 'reason_required';
 
+/** A dispute the staff step settled, with its posts in the staff queue. */
+export interface SettledDispute extends DisputeDetails {
+  id: number;
+  /** The Discord user who raised it, as its post names them. */
+  raisedBy: string | null;
+  posts: PostRef[];
+}
+
 export type StaffStepReply =
   | {
       ok: true;
       match: LeagueMatch;
       status: 'validated' | 'scheduled' | 'void';
       resultsChannelId: string | null;
+      /**
+       * The staff queue posts about the current report, to mark as handled wherever staff
+       * decided: in Discord or on the website. Posts about older reports were marked already.
+       */
+      posts: PostRef[];
+      disputes: SettledDispute[];
     }
   | { ok: false; error: StaffStepError };
 
@@ -581,6 +595,7 @@ function staffStep(
       { orgId: league.org.id, discordUserId: actor.user.id, displayName: actor.user.displayName },
       now,
     );
+    const handled = handledPosts(tx, league, found.id);
     apply(tx, found, staffPlayer.id);
     settleDisputes(tx, found.id, SETTLED_BY[action], staffPlayer.id, now);
     tx.insert(auditLog)
@@ -595,8 +610,41 @@ function staffStep(
         at: now,
       })
       .run();
-    return { ok: true, match: found, status, resultsChannelId: resultsChannelFor(league, found) };
+    return {
+      ok: true,
+      match: found,
+      status,
+      resultsChannelId: resultsChannelFor(league, found),
+      ...handled,
+    };
   });
+}
+
+/** The queue posts of the match's current report, and of the disputes still open about it. */
+function handledPosts(
+  tx: Tx,
+  league: GuildLeague,
+  matchId: number,
+): { posts: PostRef[]; disputes: SettledDispute[] } {
+  const since = latestScoreEvidence(tx, matchId)?.at ?? 0;
+  const reasons = league.competition.rulesetJson.dispute_reasons;
+  const open = tx
+    .select({ dispute: disputeTable, raisedBy: player.discordUserId })
+    .from(disputeTable)
+    .innerJoin(player, eq(disputeTable.raisedBy, player.id))
+    .where(and(eq(disputeTable.matchId, matchId), isNull(disputeTable.resolution)))
+    .all();
+  return {
+    posts: queuePostsOf(tx, { entity: 'match', entityId: matchId }, since),
+    disputes: open.map(({ dispute: row, raisedBy }) => ({
+      id: row.id,
+      reason: row.reason,
+      label: reasons.find((reason) => reason.key === row.reason)?.label ?? null,
+      details: row.details,
+      raisedBy,
+      posts: queuePostsOf(tx, { entity: 'dispute', entityId: row.id }),
+    })),
+  };
 }
 
 const setGameStatus = (tx: Tx, found: LeagueMatch, status: 'final' | 'void') => {

@@ -14,8 +14,8 @@ import type {
   FormHandler,
   FormSubmitInteraction,
 } from '../commands/types.ts';
-import { notify } from '../match-text.ts';
 import { announceDecision, requestQueueMessage } from '../request-text.ts';
+import { announceRequestDecision } from '../staff-decisions.ts';
 
 // The buttons under a team request: Approve and Refuse in the staff queue, Withdraw in the team's
 // own list. The custom ID names the request; the services re-check who clicks and its state.
@@ -27,23 +27,14 @@ export const refusal = (locale: Locale, reply: Failure) =>
     ? t(locale, 'team.error.role_full', { max: reply.max })
     : t(locale, `request.error.${reply.error}`);
 
-/**
- * Shows the decision on the post that was clicked, marks the request's other posts, and tells
- * the team. Direct messages that could not be delivered are reported in the staff queue.
- */
+/** Shows the decision on the post that was clicked, then everywhere else it goes. */
 async function decided(
   interaction: Pick<ButtonInteraction | FormSubmitInteraction, 'update'>,
   reply: Extract<AnswerReply, { ok: true }>,
   context: CommandContext,
 ): Promise<void> {
-  const { locale } = context;
-  await interaction.update(requestQueueMessage(locale, reply.request));
-  const failed = await announceDecision(context, reply);
-  if (failed > 0) {
-    await notify(context, reply.queueChannelId, {
-      content: t(locale, 'request.dmFailed', { id: reply.request.id, count: failed }),
-    });
-  }
+  await interaction.update(requestQueueMessage(context.locale, reply.request));
+  await announceRequestDecision(context, reply);
 }
 
 const approve: ButtonHandler = {

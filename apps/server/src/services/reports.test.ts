@@ -17,6 +17,7 @@ import {
   type ReportRequest,
 } from './reports.ts';
 import { recordForfeit } from './forfeits.ts';
+import { recordQueuePost } from './queue-posts.ts';
 import { recordResult } from './results.ts';
 import { getStandings } from './standings.ts';
 import { addTeamMember, setTeamOwner } from './team-staff.ts';
@@ -471,6 +472,41 @@ describe('validateResult and rejectResult', () => {
         .all()
         .filter((row) => row.matchId === 3),
     ).toMatchObject([{ scoreA: 5, scoreB: 7, status: 'pending' }]);
+  });
+
+  it('names the queue posts of the current report and of its open disputes, to mark', async () => {
+    const { db, gateway, report } = league();
+    await report();
+    rejectResult(db, STAFF, { matchId: 3 }, 9100);
+    const again = await report(BRAVO_MANAGER, REQUEST, 9200);
+    if (!again.ok) throw new Error(again.error);
+    const answer = answerReport(
+      db,
+      CHARLIE_MANAGER,
+      { matchId: 3, evidenceId: again.evidenceId, ...DISPUTE, details: 'Score faux' },
+      9300,
+    );
+    if (!answer.ok || !answer.dispute) throw new Error('The dispute was not stored');
+    const disputePost = { channelId: QUEUE, messageId: '42' };
+    recordQueuePost(db, { entity: 'dispute', entityId: answer.dispute.id }, disputePost, 9300);
+
+    const reply = validateResult(db, STAFF, { matchId: 3, evidenceId: again.evidenceId }, 9500);
+
+    // The first report's post was marked when it was rejected: only the second one is named.
+    expect(reply).toMatchObject({
+      ok: true,
+      posts: [{ channelId: QUEUE, messageId: gateway.posted[1]?.messageId }],
+      disputes: [
+        {
+          id: answer.dispute.id,
+          reason: 'wrong_score',
+          label: { fr: expect.any(String) as string },
+          details: 'Score faux',
+          raisedBy: CHARLIE_MANAGER.user.id,
+          posts: [disputePost],
+        },
+      ],
+    });
   });
 
   it.each([
