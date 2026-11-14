@@ -323,6 +323,12 @@ section 16.
 - **Answer (maintainer, 13 November 2026, partial):** roster moves, the bracket and the season end
   are wanted; roster moves go to a `#mercato` channel per league without mentions. Still open for
   the owner: other formats, and which images post on their own.
+- **Answer (maintainer, 14 November 2026, partial):** formats are settled: one design rendered in
+  every frame (square, portrait 4:5, landscape 16:9, link preview, and stories later). Posting
+  to social networks is a mode per network that each competition sets, `manual` by default
+  (design doc section 11). Still open for the owner: which images the bot posts in Discord on
+  its own (the day's matches each morning, the week's schedule, "game on"), and whether LFR
+  wants any network in `approve` or `auto`.
 
 #### M-20 · Who opens the admin panel
 
@@ -375,6 +381,52 @@ section 16.
   fallback, too tedious to require. Still open: how other Discord bots and tracker sites find a
   `profileID`, to look at before phase 5. Until then the form asks for the Ubisoft name, and the
   `profileID` when the player has it; neither is verified before a replay confirms it.
+
+#### M-24 · Funding: sponsors, legal structure and licences
+
+- **Question:** is there a sponsor for Ligo itself? Which legal structure receives the money
+  (an ASBL in Belgium, a loi 1901 association in France)? Do French law on paid video game
+  competitions and each publisher's community competition licence (Riot's for LFV above all)
+  allow a paid tier and donations to fund prize pools?
+- **Why it matters:** the paid tier and donations of design doc section 18; no money can be taken
+  before these are answered.
+- **Until answered:** nothing is built; Ligo is free and takes no money.
+- **Answer (partial, maintainer, 14 November 2026):** Ligo becomes a Belgian ASBL with a second
+  founder once the platform runs well enough; the ASBL receives all the money, pays the
+  maintainer for the work, and gives the rest to partnered leagues as sponsorship. If donations
+  cover everything, there is no paid tier. Prize pools are funded only in titles whose licence
+  allows it. Still open: a sponsor; the licence of each title (R6, Valorant, Rocket League),
+  and whether Ligo supports titles whose licence forbids funding prizes; whether French law on
+  paid competitions applies when a Belgian ASBL funds prizes in a French league; which public
+  funding to apply for (design doc section 18).
+
+#### M-25 · Automatic social posting in the paid plan
+
+- **Question:** does the league plan of design doc section 18 unlock automatic posting (`approve`
+  and `auto`) for X only, or for every network? Or does it stay free, since the league already
+  pays X itself through its own developer app?
+- **Why it matters:** the rule is that users pay for what costs money. Posting to X costs money
+  for each post, but that money goes to X from the league's own app, not from Ligo; what Ligo
+  carries is building and keeping the adapters working (X and Meta change their APIs and token
+  rules often). Charging for X only follows the rule; charging for every network charges for
+  posts that cost nothing to send.
+- **Until answered:** nothing is built (phase 9). The `manual` mode, the images page and the
+  share button are free in every case.
+- **Answer (partial, maintainer, 14 November 2026):** leaning towards the plan unlocking X only.
+  Still open: whether to charge at all while the league pays X itself, and the price.
+
+#### M-26 · A post whose result changes
+
+- **Question:** when a result already posted to a social network is corrected or voided, what
+  does Ligo do: delete the post, post a correction that replies to it, or leave it and only tell
+  staff?
+- **Why it matters:** results are never hard-deleted in Ligo, but a public post with a wrong
+  score stays visible on the network. Deleting is quiet but loses the post's likes and replies; a
+  correction is honest but adds a post, which costs money on X.
+- **Until answered:** Ligo never deletes or posts anything by itself after a correction. The
+  waiting time of `auto` lets staff cancel a post before it goes out, and when a posted result
+  changes, staff are told with a link to the post.
+- **Answer:**
 
 ## Answered
 

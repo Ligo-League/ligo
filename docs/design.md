@@ -16,7 +16,7 @@ The platform runs LFR's competitions end to end: schedule, Discord match channel
 6. Team development tools, R6 first: a private practice book for scrims and friendlies, a playbook, team reports, scouting, a recruitment board, external results, a team level and awards (section 17).
 7. Other organisations, much later.
 
-**Out of scope for v1:** public self-service signup for other leagues, live in-match tracking (a desktop companion app is a long-term idea if the league grows), mobile apps, fantasy or betting features, and the Valorant API before Riot grants a production key.
+**Out of scope for v1:** public self-service signup for other leagues, live in-match tracking (a desktop companion app is a long-term idea if the league grows), mobile apps, fantasy or betting features, and the Valorant API before Riot grants a production key. A paid tier for organisers is an idea for later (section 18).
 
 **Glossary**
 
@@ -953,7 +953,7 @@ Images are rendered on the server with Satori (layout to SVG) and resvg (SVG to 
 
 **Social images**
 
-League staff post simple images on social networks without any design tool. Every image below is rendered from the platform's data, in the league's theme (M-17), and posted where staff can save it and share it. The format is a square 1080 × 1080 PNG, which every network accepts (M-18 asks whether a portrait format is wanted too).
+League staff post simple images on social networks without any design tool. Every image below is rendered from the platform's data, in the league's theme (M-17), and posted where staff can save it and share it. Each one comes in every frame below, from one design (maintainer, 14 November 2026, M-18).
 
 | Template         | Content                                                                         | When it is posted                                                                 | Phase |
 | ---------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----- |
@@ -975,6 +975,82 @@ League staff post simple images on social networks without any design tool. Ever
 - Each image's cache key includes the logos' hashes, so a new logo gives a new image.
 - A time on an image is in the league's time zone, named by its short standard name (CET, CEST, GMT+1): it reads the same in every language.
 - A ban's reason on a `roster-move` image is the public reason staff write, never staff-only evidence.
+
+**Frames** (maintainer, 14 November 2026)
+
+Each network shows a different shape best, so a social image is drawn once and rendered in several frames. Satori lays out with flexbox, so a template takes the frame's width and height as input and chooses its layout from them; colours, fonts and pieces stay the same.
+
+| Frame       | Size        | Used for                                                    |
+| ----------- | ----------- | ----------------------------------------------------------- |
+| `square`    | 1080 × 1080 | Every network; the fallback                                 |
+| `portrait`  | 1080 × 1350 | Instagram and Facebook feeds (4:5, the most screen space)   |
+| `landscape` | 1600 × 900  | X, Bluesky, Discord (16:9)                                  |
+| `preview`   | 1200 × 630  | The website's link previews, shown by Discord and X         |
+| `story`     | 1080 × 1920 | Later, if a league wants stories (9:16)                     |
+
+- **Orientation decides the layout.** A match image puts both logos side by side with "VS" between them in `landscape`, and stacks them with the date box under them in `portrait`.
+- **Content that grows** (standings, `week-schedule`, `game-day`) fits the frame: row height is the space left divided by the number of rows, since a division's size is data. Below a minimum height, `landscape` moves to two columns; if that is still too small, the image splits into a carousel (up to 4 images on X and Bluesky, more on Instagram).
+- **A safe area.** The score, names and date stay inside a centred square, so a network that crops the image never cuts them.
+- **Only what is used.** A frame is rendered when a network set up for the league needs it, or when staff ask for it on the images page. The cache key includes the frame.
+- **JPEG as well as PNG.** Instagram accepts only JPEG, and Bluesky caps an image at about 1 MB; resvg writes PNG only, so a converter is added with this work (a new dependency, chosen then: `sharp` is fast but native, `jpeg-js` is pure JavaScript and slow, enough for a few images a week).
+- The Discord images of the table at the top of this section keep their rule (1200 px wide, height following content) until the styled images of phase 9 decide whether they move to `landscape`.
+- Snapshot tests render each template in each frame.
+
+**Social posting** (maintainer, 14 November 2026)
+
+The social images already appear at known events (the table above). Ligo can also put them on a league's social networks, with a caption, so that a league keeps a steady stream of posts without a community manager.
+
+*Modes.* Each competition chooses a mode for each network, because a league may want X by hand and Bluesky automatic:
+
+| Mode               | What Ligo does                                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `manual` (default) | Puts each image with its caption on the website's images page, with share, download and copy-caption buttons. No queue, no notice: the league posts by itself, or not at all |
+| `approve`          | Queues the post and tells staff; a staff member edits the caption if needed and clicks to publish                               |
+| `auto`             | Queues the post and publishes it after a waiting time (a setting, for example 15 minutes) unless staff edit or cancel it         |
+
+The waiting time of `auto` is also the safety net for a result validated by mistake: staff cancel the post while they correct the result. What happens to a post already published when its result changes is open (M-26).
+
+*The free route: the share button.* The images page has a **Share** button that calls the browser's Web Share API (`navigator.share` with the image file and the caption). On a phone it opens the share sheet with both attached; staff pick X, Instagram or any other app and post from their own account. It costs nothing, needs no API key, and is the main way to post to X for a league that does not pay for X's API. It works on Android, iOS and Chrome on Windows and ChromeOS; elsewhere (Firefox, Chrome on Linux) the page shows the download and copy-caption buttons instead. Instagram drops the text it is given, so the button copies the caption to the clipboard first. The page must be served over HTTPS, which `localhost` counts as.
+
+*Captions.* Each template has a default caption in the message catalog, in the competition's language, with placeholders: `{home} {score} {away} · {division}, week {week}`, the league's hashtags, and each team's handle on that network when its club has one. Staff may write their own caption for any post; an empty caption means the default. Ligo checks each network's length (280 characters on X, 300 on Bluesky) before queueing, and writes the image's alt text from the same data.
+
+*Networks.*
+
+| Network       | How Ligo posts                                                        | Cost                                                    | Notes                                                                                     |
+| ------------- | --------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Bluesky       | An app password of the league's account                               | Free                                                    | JPEG to stay under about 1 MB                                                             |
+| Mastodon      | An access token of the league's account                               | Free                                                    |                                                                                           |
+| X             | **The league's own X developer app**: its keys, then its account connected through OAuth | Pay per use, billed by X to the league: about $0.015 a post, about $0.20 when the post contains a link (prices of April 2026) | Ligo never posts to X with an app of its own. A caption with a link triggers a warning |
+| Facebook Page | A Meta app and a page token                                           | Free                                                    | Tokens last about 60 days                                                                 |
+| Instagram     | The same Meta app; a Business or Creator account                      | Free                                                    | JPEG only; the image must be at a public URL; a daily post limit read from the API        |
+| LinkedIn, TikTok | Not planned                                                        |                                                         | Access needs approval, and the audience does not fit                                      |
+
+*The X budget.* X bills the league for each post its app sends, so the competition's X settings show an estimate and hold a cap:
+
+- **Estimate.** Ligo knows how many matches each week has, how many weeks are left and which images are set to `approve` or `auto`; it multiplies the posts this gives by the price per post and shows, for example, "≈ 110 posts a month ≈ €1.60".
+- **Prices** are an instance setting that only the maintainer edits, in euros, with the date they were last checked against X's pricing page; the estimate shows that date.
+- **Cap.** A monthly amount in euros, **€0 by default**, so nothing is posted to X until a league chooses to spend. A button sets it to the estimate plus 10%; staff can also type any amount.
+- **When the cap is reached,** Ligo stops sending to X for the rest of the month: the posts fall back to `manual` on the images page, and staff are told once. Ligo counts what it sent at the price setting; X's own bill is the authority, and the page says so.
+
+*Accounts and secrets.* A network's credentials belong to the competition and are entered in the admin panel (who may open it: M-20). They are stored encrypted with a key from an environment variable, never shown again after saving, never logged, and every change writes `audit_log`. When a token expires or is refused, the network falls back to `manual` and staff are told.
+
+*Storage* (added with the phase that builds it, with its migration):
+
+```
+social_account  id, competition_id, network, credentials_enc, handle, mode, wait_minutes,
+                templates_json, monthly_cap_cents, status, created_at, updated_at
+social_post     id, competition_id, network, template, frame, image_key, caption NULL,
+                status ('queued' | 'posted' | 'cancelled' | 'failed' | 'fallback'),
+                scheduled_at, posted_at, external_id, cost_cents, source_type, source_id
+```
+
+`source_type` and `source_id` name what the post is about (a match, a week, a standings date), so a post is never sent twice for one event and network. The worker sends the queued posts that are due; each network is an adapter behind an interface with an in-memory fake, so tests never reach a network.
+
+*Hosting.* `approve` and `auto` need the worker running all the time, and Instagram needs each image at a public URL (R2 or the website): both are hosting triggers. The `manual` mode with the share button works from `localhost`.
+
+*Paid or free.* Whether automatic posting is part of a paid plan is open (M-25, section 18). The `manual` mode and the share button stay free in every case: posting by hand is part of running a league.
+
+*Phases.* The `manual` mode (default captions, share, download and copy buttons) arrives with the images page of phase 3; the frames come with the styled images of phase 9; `approve`, `auto`, the networks and the X budget are phase 9 too, after phase 4 has built `game-day` and `game-on`.
 
 **References for the final design** (maintainer, 13 November 2026; the files are kept outside the repository). The current templates are placeholders until the owner settles a design (M-17); these are the starting points:
 
@@ -1134,7 +1210,7 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
 6. **Season end and cups.** `closeSeason()` with promotion, relegation and barrages (format pending); Coupe de France bracket with BO1 → BO3 → BO5; tie-break matches. Done when Season 4 closes and the cup runs to a final on the platform.
 7. **FRFL mixed mode.** Lineups per match, balanced proposals, OpenSkill, player standings, per-user channels. Done when one FRFL week runs end to end.
 8. **LFRL Rocket League.** boxcars WebAssembly build, RL normaliser, metric schema and images. Done when a PC series' stats arrive from replays with no manual typing.
-9. **Polish and expansion.** Styled images, leaderboards with coverage, impact rating, National regions and playoffs, LFV replays and the Riot API once possible, other organisations.
+9. **Polish and expansion.** Styled images in every frame, automatic social posting (section 11), leaderboards with coverage, impact rating, National regions and playoffs, LFV replays and the Riot API once possible, other organisations.
 10. **Team development tools (R6, section 17).** In this order:
     - the practice book (replay upload and manual entry) and the team report;
     - the playbook and round tags;
@@ -1203,6 +1279,8 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Team obligations      | None: no team is required to upload scrims or enter external events; external results are shown on team pages and never worth points      | You           |
 | Match volume          | FRFL and the cup provide the extra matches; the league stays at one BO1 per week                                                          | You           |
 | Team level scale      | The 0–10 rubric of section 17                                                                                                             | You           |
+| Paid tier             | An idea for later: premium adds features and never makes a free one worse; league running and team improvement stay free (section 18)   | You           |
+| Social images         | One design rendered in every frame (square, portrait, landscape, preview); a posting mode per network: `manual` by default with a free share button, `approve` or `auto`; X only with the league's own developer app and a monthly cap, €0 by default (section 11) | You |
 
 **Still open**
 
@@ -1407,3 +1485,90 @@ The team level adds no table: baselines and event tiers are settings, and the ra
 
 - The practice book with map and score, the recruitment board, external results, the team level and awards need nothing specific to a title.
 - The site, strat and round-situation views need round facts, which only R6 replays produce today. Another shooter gets them when its normaliser emits round facts; its title folder then names its own dimensions (R6's site and operator are another game's bomb site and agent).
+
+## 18. Paid tier and funding
+
+An idea for later, not a phase of section 15: nothing here is built until you decide to. It is written down now so that no earlier choice makes it harder.
+
+**Why**
+
+Once several leagues run on one instance (LFR, LFV, FRFL, LFRL, Benelux R6 and others), with their divisions, cups, hundreds of teams and replays for several titles, the €5–10 a month of section 13 may no longer cover hosting. The money should also help the prize pools of competitions Ligo sponsors officially. An estimate, to check against real numbers when it happens: the instance stays within about €10–20 a month for a few hundred teams, as long as raw replays keep the one-season retention of section 8. Raw replays are the cost that grows; the database, the bot and the images stay small.
+
+**Principles**
+
+- **Premium adds features; it never makes a free feature worse.** No quota is cut from a free feature to sell it back.
+- **Everything that runs a league stays free:** registration, rosters, schedules, the veto, results, disputes, standings, brackets, public stats and images.
+- **Everything that helps a team improve stays free,** with no cap: the practice book, scrim stats and the other tools of section 17 are the heart of Ligo. If a team gets even 5% better from its own scrim stats, that is the goal.
+- **Paid features are hard to build or costly to run,** and sit outside the core: expensive tools by themselves, never stats or spreadsheets.
+- **No paid feature gives an edge in a competition.** Scouting an opponent, for example, stays a competition setting that applies to every team alike.
+
+**Organisers: the main paid tier**
+
+A league plan, paid by the organisation (the org of section 1), is the best fit: one payer per league, and features that cost the free tier nothing.
+
+| Feature                          | What the organiser gets                                                           |
+| -------------------------------- | --------------------------------------------------------------------------------- |
+| Own address and brand            | A custom domain or subdomain, and no Ligo branding on the site or images          |
+| Image themes and sponsor slots   | Custom themes for standings, match and stat images; sponsor logos on images and pages |
+| Caster overlays                  | OBS overlays for broadcasts: live standings, the match card, the veto             |
+| More storage                     | More space, or a longer retention of raw replays than one season                  |
+
+Several tournaments running at the same time are not a paid feature: they are not limited today, and become one only if they ever cost real resources.
+
+**Automatic social posting** (proposed, maintainer, 14 November 2026; open: M-25)
+
+The rule: **users pay for what costs money.** Posting to X costs money for every post, so automatic posting may join the league plan. Two ways are on the table:
+
+- **The plan unlocks X only.** `approve` and `auto` stay free on the free networks (Bluesky, Mastodon, Facebook, Instagram); the plan unlocks them for X. This follows the rule most closely, and is the maintainer's preference.
+- **The plan unlocks automatic posting on every network.** Simpler to explain, but it charges for posts that cost nothing to send.
+
+In both, the `manual` mode, the images page and the share button stay free (section 11), and the league pays X itself through its own developer app and the cap it sets.
+
+**Teams: advanced analysis, maybe**
+
+Stats and spreadsheets from a team's own replays stay free. A paid tier for teams makes sense only for tools that are expensive by themselves: hard to build, maintain and host, often once per title. Examples:
+
+- **A replay visualiser:** a 2D map replaying each round from the replay, like [VaLab](https://www.valab.gg/) for Valorant.
+- **Position analysis:** reading player positions from replays to point out placement problems or measure reaction times.
+
+Both depend on what each title's replay format exposes and what its parser can decode; they need research before they are even a plan.
+
+Every paid tool says on its page that it is paid and why (what it costs to build, maintain and host), and links to a free alternative when one exists.
+
+**Players**
+
+No paid tier is planned for players: cosmetic perks (a profile banner, a badge, a custom stat card) bring too little to be worth a price. They may become thanks for donors instead.
+
+**Donations and sponsors**
+
+- **Donations:** yes. A public page shows what hosting costs and what went to prize pools, so donors see where the money goes.
+- **Sponsors:** a sponsor for Ligo itself would cover hosting and prize pools almost at once. To look into (M-24).
+- **Donations first:** if donations alone cover what Ligo needs, there is no paid tier at all.
+
+**Structure** (maintainer, 14 November 2026)
+
+- **Ligo becomes a Belgian ASBL,** with a second founder, once the platform runs well enough to be worth the paperwork. Until then Ligo takes no money.
+- **The ASBL receives all the money:** donations, paid plans, sponsors.
+- **The maintainer is paid for developing and maintaining Ligo,** once the money allows it, in two stages:
+    1. **Volunteer.** The flat volunteer allowance (about €43 a day, capped at about €1,700–1,800 a year, both indexed yearly), plus real transport costs. A log of the days worked is the proof. The ASBL pays its own bills (VPS, R2, domain) directly rather than reimbursing them.
+    2. **Self-employed, per feature.** Once the money justifies it, contracts like "build feature X for Y€". The board approves each one only when the money is already in the account and a reserve for hosting remains. The price is fair (estimated days at a normal freelance rate, written in the decision). The contract says who owns the code. Each contract is listed on the public funding page. The switch happens on a set date, never mixing both statuses for the same work.
+- **What is left goes to partnered leagues,** as sponsorship and prize pools, so Ligo stays a real non-profit.
+- **Belgian ASBL law:** an ASBL may not give its founders, members or administrators any financial advantage beyond fair pay for real work (CSA, articles 1:2 and 1:4). So the maintainer's pay is an amount fixed in advance, in proportion to the work, decided by the board without the maintainer's vote (conflict of interest), never "whatever is left at the end of the year". Combining the roles of administrator and paid worker has rules of its own (self-employed or employee); see an accountant or a guichet d'entreprises when the ASBL is founded.
+
+**Publisher licences** (maintainer, 14 November 2026)
+
+Ligo funds prize pools only in titles whose publisher's community competition licence allows donations and a paid tier to fund them. Whether it supports the platform features for the other titles is still open (M-24). Riot's licence limits prize pools and monetisation for Valorant (LFV); Ubisoft and Epic have their own.
+
+French law on paid video game competitions (loi pour une République numérique, 2016, and its 2017 decree) may count prize pools funded by the players who compete as paid entry. Whether it applies when a Belgian ASBL funds prizes in a French league is still open (M-24).
+
+**Public funding** (leads, not checked in detail, November 2026)
+
+- **Sport subsidies (Adeps in the Fédération Wallonie-Bruxelles, COCOF in Brussels):** they require affiliation to a sports federation the FWB recognises, and esport has no such federation yet.
+- **The Belgian esport federations:** the Belgian Esports Federation (BESF) and WalBru Esport for French-speaking Belgium. The BESF received National Lottery support in 2021. Joining one may open doors that a lone ASBL cannot.
+- **Wallonia, through Digital Wallonia:** it supports Walga, which runs esport events across Wallonia. The 2024–2029 regional policy declaration (DPR) promises more support for esport and the sector around it.
+- **Erasmus+:** Small-scale Partnerships in sport or youth, aimed at grassroots organisations new to EU funding. One Erasmus+ sport project (ISCA, European Grassroots Esports) already brings young gamers into grassroots sport. It needs European partners, which partnered leagues abroad could be.
+- **Cities and provinces:** youth and sport services, and calls for projects such as those of the King Baudouin Foundation; to check case by case.
+
+**Payment fees**
+
+About €0.25 + 1.5% per card payment in the EU, about 10% of a €3 payment; yearly plans cost less in fees.
