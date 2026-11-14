@@ -1,4 +1,4 @@
-import type { TeamRole } from '@ligo/core';
+import { checkBirthDate, zonedDate, type TeamRole } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
 import { asc, eq, inArray } from 'drizzle-orm';
 import type { Locale } from '../i18n/index.ts';
@@ -137,6 +137,45 @@ export function setNationality(
       'player.nationality',
       { nationality: before?.nationality ?? null },
       { nationality },
+      now,
+    );
+  });
+  return { ok: true };
+}
+
+// Dates on `/me` are the group's: Paris, the only time zone a league uses yet.
+const TIME_ZONE = 'Europe/Paris';
+
+/**
+ * The player's birth date, for leagues with a minimum age (O-33); empty clears it. The audit
+ * says only whether one was given: the date itself stays on the player's row, which only they
+ * see.
+ */
+export function setBirthDate(
+  db: Db,
+  playerId: number,
+  input: string,
+  now: number,
+): { ok: true } | { ok: false; error: 'invalid_birth_date' } {
+  let birthDate: string | null = null;
+  if (input.trim() !== '') {
+    const checked = checkBirthDate(input, zonedDate(now, TIME_ZONE).date);
+    if (!checked.ok) return checked;
+    birthDate = checked.value;
+  }
+  db.transaction((tx) => {
+    const before = tx
+      .select({ birthDate: player.birthDate })
+      .from(player)
+      .where(eq(player.id, playerId))
+      .get();
+    tx.update(player).set({ birthDate }).where(eq(player.id, playerId)).run();
+    audit(
+      tx,
+      playerId,
+      'player.birth_date',
+      { given: (before?.birthDate ?? null) !== null },
+      { given: birthDate !== null },
       now,
     );
   });

@@ -3,13 +3,16 @@ import { t, type Locale } from '../../i18n/index.ts';
 import type { Profile } from '../../services/me.ts';
 import { csrfField, pageOf, type Html, type Page } from '../layout.ts';
 
+export const ME_ERRORS = ['invalid_nationality', 'invalid_birth_date'] as const;
+export type MeFlash = 'saved' | (typeof ME_ERRORS)[number];
+
 export interface MeData {
   profile: Profile;
   staffOf: string[];
   countries: { code: string; name: string }[];
   csrf: string;
   /** What the last form did, from the address it sent back to. */
-  flash: 'saved' | 'invalid_nationality' | null;
+  flash: MeFlash | null;
   /** The game account form, filled with what is stored or what was just typed. */
   game: Html;
 }
@@ -32,8 +35,8 @@ export function mePage(locale: Locale, data: MeData): Page {
   const flash =
     data.flash === 'saved'
       ? html`<p class="card flash">${t(locale, 'web.me.saved')}</p>`
-      : data.flash === 'invalid_nationality'
-        ? html`<p class="card flash error">${t(locale, 'web.me.error.invalid_nationality')}</p>`
+      : data.flash
+        ? html`<p class="card flash error">${t(locale, `web.me.error.${data.flash}`)}</p>`
         : '';
   const body = html`<h1>${t(locale, 'web.me.title')}</h1>
     ${flash}
@@ -80,6 +83,20 @@ export function mePage(locale: Locale, data: MeData): Page {
       </select>
       <button type="submit">${t(locale, 'web.me.save')}</button>
       <p class="muted">${t(locale, 'web.me.nationality.hint')}</p>
+    </form>
+    <h2>${t(locale, 'web.me.birthDate')}</h2>
+    <form class="card" method="post" action="/me/birth-date">
+      ${csrfField(data.csrf)}
+      <label for="birth_date">${t(locale, 'web.me.birthDate')}</label>
+      <input
+        id="birth_date"
+        name="birth_date"
+        type="date"
+        value="${player.birthDate ?? ''}"
+        min="1900-01-01"
+      />
+      <button type="submit">${t(locale, 'web.me.save')}</button>
+      <p class="muted">${t(locale, 'web.me.birthDate.hint')}</p>
     </form>
     <h2>${t(locale, 'web.me.consent.title')}</h2>
     <form class="card" method="post" action="/me/consent">

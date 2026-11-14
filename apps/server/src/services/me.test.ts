@@ -2,7 +2,14 @@ import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
-import { countryChoices, loginPlayer, profileOf, setNationality, setStatsConsent } from './me.ts';
+import {
+  countryChoices,
+  loginPlayer,
+  profileOf,
+  setBirthDate,
+  setNationality,
+  setStatsConsent,
+} from './me.ts';
 import { setTeamOwner } from './team-staff.ts';
 
 // A player's own account on the website (design doc section 7, `/me`).
@@ -73,6 +80,40 @@ describe('setNationality', () => {
       ok: false,
       error: 'invalid_nationality',
     });
+  });
+});
+
+describe('setBirthDate', () => {
+  // NOW is 15 January 2027 in Paris.
+  it('stores the date, and audits only that one was given, never the date', () => {
+    const db = leagueDatabase();
+    const login = loginPlayer(db, ANA, NOW);
+    if (!login.ok) throw new Error(login.error);
+    const id = login.player.id;
+    expect(setBirthDate(db, id, '2008-02-29', NOW)).toEqual({ ok: true });
+    expect(profileOf(db, id)?.player.birthDate).toBe('2008-02-29');
+    expect(setBirthDate(db, id, '', NOW)).toEqual({ ok: true });
+    expect(profileOf(db, id)?.player.birthDate).toBeNull();
+    const audit = db
+      .select()
+      .from(schema.auditLog)
+      .where(eq(schema.auditLog.action, 'player.birth_date'))
+      .all();
+    expect(audit.map((row) => [row.beforeJson, row.afterJson])).toEqual([
+      [{ given: false }, { given: true }],
+      [{ given: true }, { given: false }],
+    ]);
+  });
+
+  it.each(['2008-02-30', '29/02/2008', '2027-01-16', '1899-01-01'])('refuses %s', (input) => {
+    const db = leagueDatabase();
+    const login = loginPlayer(db, ANA, NOW);
+    if (!login.ok) throw new Error(login.error);
+    expect(setBirthDate(db, login.player.id, input, NOW)).toEqual({
+      ok: false,
+      error: 'invalid_birth_date',
+    });
+    expect(profileOf(db, login.player.id)?.player.birthDate).toBeNull();
   });
 });
 

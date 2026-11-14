@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { openDatabase } from '../client.ts';
 import { applyMigrations } from '../migrate.ts';
-import { linkGuild } from '../seed/link-guild.ts';
+import { isDiscordInvite, linkGuild } from '../seed/link-guild.ts';
 import { parseMatchesCsv } from '../seed/matches-csv.ts';
 import { parseTeamsCsv } from '../seed/parse-teams-csv.ts';
 import { hasChanges, LFR_DIVISION_NAMES, openLfrRegistration, seedLfr } from '../seed/seed-lfr.ts';
@@ -37,6 +37,11 @@ const guildId = process.env.DISCORD_GUILD_ID ?? '';
 const staffRoleId = process.env.DISCORD_STAFF_ROLE_ID ?? '';
 if (staffRoleId !== '' && !(SNOWFLAKE.test(guildId) && SNOWFLAKE.test(staffRoleId))) {
   console.error('DISCORD_GUILD_ID and DISCORD_STAFF_ROLE_ID must be IDs of 17 to 20 digits.');
+  process.exit(1);
+}
+const inviteUrl = process.env.DISCORD_INVITE_URL?.trim() || null;
+if (inviteUrl !== null && !isDiscordInvite(inviteUrl)) {
+  console.error('DISCORD_INVITE_URL must be a Discord invitation, such as https://discord.gg/abc.');
   process.exit(1);
 }
 
@@ -86,7 +91,7 @@ try {
         '(docs/setup.md).',
     );
   } else {
-    const linked = linkGuild(db, { guildId, staffRoleId }, now);
+    const linked = linkGuild(db, { guildId, staffRoleId, inviteUrl }, now);
     console.log(`Discord server ${guildId}: link to LFR ${linked}.`);
   }
 

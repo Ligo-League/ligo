@@ -718,6 +718,10 @@ export const en: Record<MessageKey, string> = {
     'You have not accepted the publication of your statistics. Without it, you appear in rosters and results, but not on stat pages or player leaderboards.',
   'web.me.consent.give': 'Accept publication',
   'web.me.consent.withdraw': 'Withdraw my consent',
+  'web.me.birthDate': 'Date of birth',
+  'web.me.birthDate.hint':
+    'Asked by leagues with a minimum age. Nobody else sees it: staff see only whether you are old enough.',
+  'web.me.error.invalid_birth_date': 'This date of birth is not valid.',
   'web.me.error.invalid_nationality': 'Pick a country from the list.',
   'web.me.staffQueue': 'Open the staff queue',
   'web.staff.title': 'Staff queue',

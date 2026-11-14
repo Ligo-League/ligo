@@ -182,6 +182,23 @@ describe('/me', () => {
     expect(player()?.statsConsentAt).toBeNull();
   });
 
+  it('stores the birth date, shown to the player only', async () => {
+    const { request, logIn, post } = site();
+    await logIn();
+    const saved = await post('/me/birth-date', { birth_date: '2008-02-29' });
+    expect(saved.headers.get('location')).toBe('/me?saved=1');
+    const page = await (await request('/me')).text();
+    expect(page).toMatch(
+      /<input\s+id="birth_date"\s+name="birth_date"\s+type="date"\s+value="2008-02-29"/,
+    );
+    expect(
+      (await post('/me/birth-date', { birth_date: '2008-02-30' })).headers.get('location'),
+    ).toBe('/me?error=invalid_birth_date');
+    expect(await (await request('/me?error=invalid_birth_date')).text()).toContain(
+      'Cette date de naissance n’est pas valable.',
+    );
+  });
+
   it('refuses a form from another site, without an origin, or without the token', async () => {
     const { db, request, logIn, post } = site();
     await logIn();

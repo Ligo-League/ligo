@@ -48,6 +48,25 @@ describe('linkGuild', () => {
     ).toHaveLength(2);
   });
 
+  it('keeps the server’s public invitation, and refuses anything else', () => {
+    const db = seeded();
+    const inviteUrl = 'https://discord.gg/lfr';
+    linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE }, 2000);
+    expect(linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE, inviteUrl }, 3000)).toBe(
+      'updated',
+    );
+    expect(db.select().from(leagueGuild).get()?.inviteUrl).toBe(inviteUrl);
+    for (const wrong of [
+      'http://discord.gg/lfr',
+      'https://evil.example/lfr',
+      'https://discord.gg/',
+    ]) {
+      expect(() =>
+        linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE, inviteUrl: wrong }, 4000),
+      ).toThrow(/Not a Discord invitation/);
+    }
+  });
+
   it('refuses to run before the competition exists', () => {
     expect(() =>
       linkGuild(openTestDatabase(), { guildId: GUILD, staffRoleId: STAFF_ROLE }, 1),

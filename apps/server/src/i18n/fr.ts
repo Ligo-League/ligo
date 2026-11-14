@@ -756,6 +756,10 @@ export const fr = {
     "Tu n'as pas accepté la publication de tes statistiques. Sans cet accord, tu apparais dans les effectifs et les résultats, mais pas sur les pages de statistiques ni dans les classements de joueurs.",
   'web.me.consent.give': 'Accepter la publication',
   'web.me.consent.withdraw': 'Retirer mon accord',
+  'web.me.birthDate': 'Date de naissance',
+  'web.me.birthDate.hint':
+    'Demandée par les ligues qui ont un âge minimum. Personne d’autre ne la voit : le staff voit seulement si tu as l’âge requis.',
+  'web.me.error.invalid_birth_date': 'Cette date de naissance n’est pas valable.',
   'web.me.error.invalid_nationality': 'Choisis un pays dans la liste.',
   'web.me.staffQueue': 'Ouvrir la file du staff',
   'web.staff.title': 'File du staff',

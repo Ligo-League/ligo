@@ -23,6 +23,7 @@ import {
   countryChoices,
   loginPlayer,
   profileOf,
+  setBirthDate,
   setNationality,
   setStatsConsent,
 } from '../services/me.ts';
@@ -37,7 +38,7 @@ import { clubPageView } from './pages/club.ts';
 import { errorPage, messagePage, notFoundPage } from './pages/errors.ts';
 import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
-import { mePage } from './pages/me.ts';
+import { ME_ERRORS, mePage, type MeFlash } from './pages/me.ts';
 import {
   EMPTY_REGISTER_VALUES,
   gameProfileForm,
@@ -581,11 +582,8 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     if (!viewer) return c.redirect('/auth/login?next=/me', 303);
     const profile = profileOf(db, viewer.playerId);
     if (!profile) return c.redirect('/auth/login?next=/me', 303);
-    const flash = c.req.query('saved') === '1' ? 'saved' : (c.req.query('error') ?? null);
-    return showMe(c, viewer, profile, {
-      flash: flash === 'saved' || flash === 'invalid_nationality' ? flash : null,
-      game: null,
-    });
+    const flash = c.req.query('saved') === '1' ? 'saved' : oneOf(ME_ERRORS, c.req.query('error'));
+    return showMe(c, viewer, profile, { flash, game: null });
   });
 
   // The game account part of `/me` is filled again with what was typed when it is refused.
@@ -594,7 +592,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     viewer: Viewer,
     profile: NonNullable<ReturnType<typeof profileOf>>,
     state: {
-      flash: 'saved' | 'invalid_nationality' | null;
+      flash: MeFlash | null;
       game: {
         values: { ubisoftName: string; profileId: string; rank: string };
         errors: FieldErrors<SaveProfileError>;
@@ -657,6 +655,15 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     const { viewer, form } = guarded;
     const value = typeof form.nationality === 'string' ? form.nationality : '';
     const reply = setNationality(db, viewer.playerId, value, deps.now());
+    return c.redirect(reply.ok ? '/me?saved=1' : `/me?error=${reply.error}`, 303);
+  });
+
+  app.post('/me/birth-date', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const value = typeof form.birth_date === 'string' ? form.birth_date : '';
+    const reply = setBirthDate(db, viewer.playerId, value, deps.now());
     return c.redirect(reply.ok ? '/me?saved=1' : `/me?error=${reply.error}`, 303);
   });
 

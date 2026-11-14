@@ -30,6 +30,9 @@ export const player = sqliteTable(
     discordUserId: text('discord_user_id').unique(),
     nationality: text('nationality'),
     statsConsentAt: integer('stats_consent_at'),
+    // YYYY-MM-DD, given by the player for leagues with a minimum age (O-33). Private: only the
+    // player sees it; staff see only whether they are old enough.
+    birthDate: text('birth_date'),
     createdAt: integer('created_at').notNull(),
   },
   (t) => [unique('player_org_slug_unique').on(t.orgId, t.slug)],

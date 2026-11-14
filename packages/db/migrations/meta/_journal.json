@@ -106,6 +106,13 @@
       "when": 1794694202451,
       "tag": "0014_registration",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1794700033907,
+      "tag": "0015_birth_date_invite_url",
+      "breakpoints": true
     }
   ]
 }
