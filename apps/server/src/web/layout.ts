@@ -7,19 +7,58 @@ import type { MatchLine, MatchResult } from '../services/site.ts';
 
 export type Html = ReturnType<typeof html>;
 
-export function layout(locale: Locale, title: string, body: Html): Html {
+/** What a page puts in the frame: its title and its content. */
+export interface Page {
+  title: string;
+  body: Html;
+}
+
+export const pageOf = (title: string, body: Html): Page => ({ title, body });
+
+/** Who is looking, for the header: a logged-in user, or a login link when login is on. */
+export interface Nav {
+  user: { name: string; csrf: string } | null;
+  login: boolean;
+  /** The current path, to come back to after login. */
+  path: string;
+}
+
+/** The hidden field every POST form carries (design doc section 7). */
+export const csrfField = (token: string): Html =>
+  html`<input type="hidden" name="_csrf" value="${token}" />`;
+
+function account(locale: Locale, nav: Nav): Html | string {
+  if (nav.user) {
+    return html`<nav class="account">
+      <a href="/me">${nav.user.name}</a>
+      <form method="post" action="/auth/logout">
+        ${csrfField(nav.user.csrf)}<button type="submit">${t(locale, 'web.auth.logout')}</button>
+      </form>
+    </nav>`;
+  }
+  if (!nav.login) return '';
+  const next = encodeURIComponent(nav.path);
+  return html`<nav class="account">
+    <a href="/auth/login?next=${next}">${t(locale, 'web.auth.login')}</a>
+  </nav>`;
+}
+
+export function layout(locale: Locale, page: Page, nav: Nav): Html {
   return html`<!doctype html>
     <html lang="${locale}">
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>${title} · ${t(locale, 'web.title')}</title>
+        <title>${page.title} · ${t(locale, 'web.title')}</title>
         <link rel="stylesheet" href="/static/site.css" />
         <script src="/static/htmx.min.js" defer></script>
       </head>
       <body>
-        <header class="site"><a class="brand" href="/">${t(locale, 'web.title')}</a></header>
-        <main>${body}</main>
+        <header class="site">
+          <a class="brand" href="/">${t(locale, 'web.title')}</a>
+          ${account(locale, nav)}
+        </header>
+        <main>${page.body}</main>
         <footer class="site">${t(locale, 'web.footer')}</footer>
       </body>
     </html>`;

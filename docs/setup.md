@@ -353,7 +353,8 @@ gets a message pinging the staff role with a link to the request.
 `Website ready` with the address, `http://127.0.0.1:3000` by default (`HOST` and `PORT` in
 `.env` change it).
 
-1. Open `http://127.0.0.1:3000`: the leagues and their seasons.
+1. Open `http://127.0.0.1:3000` (or `http://localhost:3000` once login is on, section 15): the
+   leagues and their seasons.
 2. Click **Saison 3**: the standings of each division, the latest validated results and the
    fixtures by week. A result reported but not validated yet shows "En attente de validation",
    never its score.
@@ -362,7 +363,27 @@ gets a message pinging the staff role with a link to the request.
 4. Validate a result in Discord, then reload the season page: the standings follow at once.
 
 Nobody else can open these pages yet: they are not on the internet until the VPS (design doc
-section 13). Login comes with phase 3b.
+section 13).
+
+## 15. Phase 3b: logging in with Discord
+
+1. In the Developer Portal, under OAuth2 > Redirects, add `http://localhost:3000/auth/callback`.
+2. In `.env`, fill `DISCORD_CLIENT_SECRET` (OAuth2 > Client Secret) and `SESSION_SECRET` (at
+   least 32 random characters, for example from `openssl rand -base64 48`). `PUBLIC_URL` stays
+   `http://localhost:3000`.
+3. Restart `pnpm dev`. Its terminal prints `Website ready` with `http://localhost:3000`. Without
+   the two secrets it prints "Website login is off" instead, and the site works without login.
+4. Open `http://localhost:3000` and click **Se connecter avec Discord**. Discord asks to share
+   your identity (name and avatar only); accept. You come back logged in, your name in the header.
+5. Click your name: **Mon compte** lists your teams, and "Staff de la ligue : LFR" when you hold
+   the staff role in the staging server. Remove the role in Discord: within a minute, the line
+   goes away.
+6. Pick a nationality and save; accept the publication of your statistics, then withdraw it.
+   Each change is in the audit log.
+7. **Se déconnecter** ends the session. A session also ends by itself after 30 days.
+
+`http://127.0.0.1:3000` now redirects to `http://localhost:3000`: the login cookie belongs to one
+address.
 
 ## If something goes wrong
 

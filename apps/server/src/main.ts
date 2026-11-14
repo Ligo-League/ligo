@@ -15,6 +15,8 @@ import { DEFAULT_LOCALE } from './i18n/index.ts';
 import { loginHint } from './discord/login-hint.ts';
 import { createLogger } from './logger.ts';
 import { createWebApp, loadStaticFiles } from './web/app.ts';
+import { createDiscordOAuth } from './web/oauth.ts';
+import { createRoleReader } from './web/roles.ts';
 
 // Server entry point (`pnpm dev`): the database, the Discord bot and the website.
 const loaded = loadConfig(process.env);
@@ -35,18 +37,36 @@ logger.info({ path: databasePath }, 'Database ready');
 
 const assets = createLocalAssetStore(resolve(config.assetsDir));
 const client = createDiscordClient({ commands, buttons, forms, logger, db, assets });
+// Calls through the gateway fail until the bot is connected; the website then sees no roles.
+const gateway = createDiscordGateway(client);
 
+const publicUrl = new URL(config.web.publicUrl);
+const login = config.web.login && {
+  oauth: createDiscordOAuth({
+    clientId: config.discordClientId,
+    clientSecret: config.web.login.clientSecret,
+    redirectUri: new URL('/auth/callback', publicUrl).href,
+  }),
+  secret: config.web.login.sessionSecret,
+  publicUrl,
+};
+if (!login)
+  logger.info('Website login is off: DISCORD_CLIENT_SECRET and SESSION_SECRET are not set');
 const web = createWebApp({
   db,
   assets,
   locale: DEFAULT_LOCALE,
   files: await loadStaticFiles(),
   logger,
+  login,
+  roles: createRoleReader(gateway),
+  now: () => Date.now(),
 });
 const server = serve(
   { fetch: web.fetch, hostname: config.web.host, port: config.web.port },
   (info) => {
-    logger.info({ address: `http://${config.web.host}:${String(info.port)}` }, 'Website ready');
+    const address = login ? publicUrl.origin : `http://${config.web.host}:${String(info.port)}`;
+    logger.info({ address }, 'Website ready');
   },
 );
 
@@ -57,7 +77,7 @@ client.once(Events.ClientReady, () => {
   stopClock = startClock(
     {
       db,
-      gateway: createDiscordGateway(client),
+      gateway,
       logger,
       locale: DEFAULT_LOCALE,
       now: () => Date.now(),

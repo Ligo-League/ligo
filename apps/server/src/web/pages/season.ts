@@ -3,9 +3,9 @@ import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
 import type { SeasonPage } from '../../services/site.ts';
 import type { StandingsTable } from '../../services/standings.ts';
-import { layout, matchList, type Html } from '../layout.ts';
+import { matchList, pageOf, type Html, type Page } from '../layout.ts';
 
-type Page = Extract<SeasonPage, { ok: true }>;
+type Data = Extract<SeasonPage, { ok: true }>;
 
 function standingsTable(locale: Locale, table: StandingsTable): Html {
   const column = (key: Parameters<typeof t>[1]) => t(locale, key);
@@ -67,7 +67,7 @@ function standingsTable(locale: Locale, table: StandingsTable): Html {
 }
 
 /** `/c/:competition/:season`: standings per division, latest results, fixtures by week. */
-export function seasonPageView(locale: Locale, page: Page): Html {
+export function seasonPageView(locale: Locale, page: Data): Page {
   const { competition, season } = page;
   const title = t(locale, 'web.season.title', {
     competition: competition.name,
@@ -111,5 +111,5 @@ export function seasonPageView(locale: Locale, page: Page): Html {
           )
         : html`<p class="muted">${t(locale, 'web.season.noFixtures')}</p>`
     }`;
-  return layout(locale, title, body);
+  return pageOf(title, body);
 }

@@ -515,4 +515,32 @@ export const en: Record<MessageKey, string> = {
   'web.error.body':
     'The site ran into a problem. Try again in a moment; if it persists, tell the staff.',
   'web.nav.home': 'Home',
+  'web.auth.login': 'Log in with Discord',
+  'web.auth.logout': 'Log out',
+  'web.auth.failed.title': 'Login failed',
+  'web.auth.failed.body':
+    'Logging in with Discord did not go through, or it expired. Try again from the "Log in" link.',
+  'web.auth.unavailable.body': 'Discord is not answering right now. Try again in a few minutes.',
+  'web.auth.cancelled.title': 'Login cancelled',
+  'web.auth.cancelled.body': 'You declined the login on Discord. Nothing was stored.',
+  'web.forbidden.title': 'Action refused',
+  'web.forbidden.body':
+    'This action came from another page, or your session changed. Reload the page and try again.',
+  'web.me.title': 'My account',
+  'web.me.discord': 'Logged in with the Discord account {name}.',
+  'web.me.teams': 'My teams',
+  'web.me.noTeams': 'You are an official of no team.',
+  'web.me.staff': 'League staff: {list}',
+  'web.me.nationality': 'Nationality',
+  'web.me.nationality.none': 'Not given',
+  'web.me.nationality.hint': 'Asked when a team registers, as the rulebook says.',
+  'web.me.save': 'Save',
+  'web.me.saved': 'Saved.',
+  'web.me.consent.title': 'Public statistics',
+  'web.me.consent.given': 'You accepted the publication of your statistics on {date}.',
+  'web.me.consent.none':
+    'You have not accepted the publication of your statistics. Without it, you appear in rosters and results, but not on stat pages or player leaderboards.',
+  'web.me.consent.give': 'Accept publication',
+  'web.me.consent.withdraw': 'Withdraw my consent',
+  'web.me.error.invalid_nationality': 'Pick a country from the list.',
 };

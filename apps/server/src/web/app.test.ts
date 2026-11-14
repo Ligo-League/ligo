@@ -20,6 +20,9 @@ function site(overrides: Partial<WebDeps> = {}) {
     locale: 'fr',
     files: FILES,
     logger,
+    login: null,
+    roles: () => Promise.resolve([]),
+    now: () => 1_800_000_000_000,
     ...overrides,
   });
   const get = async (path: string) => {

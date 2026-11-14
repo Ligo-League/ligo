@@ -61,8 +61,23 @@ footer.site {
 }
 
 header.site {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
   padding-top: 16px;
   padding-bottom: 16px;
+}
+
+nav.account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+nav.account form {
+  margin: 0;
 }
 
 header.site .brand {
@@ -226,4 +241,41 @@ ul.matches li:last-child {
   height: 16px;
   border-radius: 50%;
   border: 1px solid var(--line);
+}
+
+form.card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+form.card p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+select,
+button {
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  max-width: 100%;
+}
+
+button {
+  cursor: pointer;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.flash {
+  border-left: 4px solid var(--zone-promotion);
+}
+
+.flash.error {
+  border-left-color: var(--zone-relegation);
 }

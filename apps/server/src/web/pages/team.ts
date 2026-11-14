@@ -1,9 +1,9 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
 import type { TeamPage } from '../../services/site.ts';
-import { layout, matchList, safeColor, type Html } from '../layout.ts';
+import { matchList, safeColor, pageOf, type Page } from '../layout.ts';
 
-type Page = Extract<TeamPage, { ok: true }>;
+type Data = Extract<TeamPage, { ok: true }>;
 const ROLE_KEYS = {
   owner: 'team.role.owner',
   manager: 'team.role.manager',
@@ -13,7 +13,7 @@ const roleKey = (role: string) =>
   role in ROLE_KEYS ? ROLE_KEYS[role as keyof typeof ROLE_KEYS] : null;
 
 /** `/teams/:slug`: the team, its officials, and its matches of the latest season. */
-export function teamPageView(locale: Locale, page: Page): Html {
+export function teamPageView(locale: Locale, page: Data): Page {
   const { team, season } = page;
   const logoName = team.logoKey?.match(/^logos\/([a-z0-9][a-z0-9_-]{0,63})\.png$/)?.[1];
   const colors = team.colors.flatMap((color) => safeColor(color) ?? []);
@@ -64,5 +64,5 @@ export function teamPageView(locale: Locale, page: Page): Html {
           </div>`
         : html`<p class="muted">${t(locale, 'web.team.noMatches')}</p>`
     }`;
-  return layout(locale, team.name, body);
+  return pageOf(team.name, body);
 }

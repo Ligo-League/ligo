@@ -1,0 +1,305 @@
+import { schema } from '@ligo/db';
+import { eq } from 'drizzle-orm';
+import { describe, expect, it, vi } from 'vitest';
+import { fakeAssetStore } from '../assets/store.ts';
+import { leagueDatabase, TEST_STAFF_ROLE } from '../testing.ts';
+import { createWebApp } from './app.ts';
+import { fakeDiscordOAuth } from './oauth.ts';
+import { safeNext, SESSION_DAYS } from './session.ts';
+
+// Discord login, sessions, CSRF and `/me` (design doc section 7), through HTTP.
+
+const ORIGIN = 'http://localhost:3000';
+const ANA = { id: '700000000000000001', displayName: 'Ana' };
+const NOW = 1_800_000_000_000;
+const DAY = 24 * 3600 * 1000;
+
+function site() {
+  const db = leagueDatabase();
+  const oauth = fakeDiscordOAuth({ 'code-ana': ANA });
+  const logger = { error: vi.fn() };
+  let now = NOW;
+  let roles: string[] = [];
+  const app = createWebApp({
+    db,
+    assets: fakeAssetStore(),
+    locale: 'fr',
+    files: { css: '', htmx: '' },
+    logger,
+    login: { oauth, secret: 'x'.repeat(40), publicUrl: new URL(ORIGIN) },
+    roles: () => Promise.resolve(roles),
+    now: () => now,
+  });
+  // A browser: keeps the cookies the site sets, sends them back.
+  const jar = new Map<string, string>();
+  const request = async (path: string, init: RequestInit = {}) => {
+    const headers = new Headers(init.headers);
+    if (jar.size > 0) {
+      headers.set('Cookie', [...jar].map(([name, value]) => `${name}=${value}`).join('; '));
+    }
+    const response = await app.request(path.startsWith('http') ? path : ORIGIN + path, {
+      ...init,
+      headers,
+    });
+    for (const cookie of response.headers.getSetCookie()) {
+      const [pair = ''] = cookie.split(';');
+      const [name = '', value = ''] = pair.split('=');
+      if (value === '' || /Max-Age=0/i.test(cookie)) jar.delete(name);
+      else jar.set(name, pair.slice(name.length + 1));
+    }
+    return response;
+  };
+  const logIn = async (next = '/me') => {
+    await request(`/auth/login?next=${encodeURIComponent(next)}`);
+    const state = oauth.states.at(-1) ?? '';
+    return request(`/auth/callback?code=code-ana&state=${encodeURIComponent(state)}`);
+  };
+  /** A form posted from a page of this site, with the session's token unless given another. */
+  const post = async (
+    path: string,
+    fields: Record<string, string>,
+    extra: Record<string, string> = {},
+  ) => {
+    const page = await (await request('/me')).text();
+    const token = /name="_csrf" value="([^"]+)"/.exec(page)?.[1] ?? '';
+    return request(path, {
+      method: 'POST',
+      headers: { Origin: ORIGIN, 'Content-Type': 'application/x-www-form-urlencoded', ...extra },
+      body: new URLSearchParams({ _csrf: token, ...fields }),
+    });
+  };
+  const advance = (ms: number) => {
+    now += ms;
+  };
+  const setRoles = (value: string[]) => {
+    roles = value;
+  };
+  return { db, oauth, logger, jar, request, logIn, post, advance, setRoles };
+}
+
+describe('logging in with Discord', () => {
+  it('sends the browser to Discord with a state, and back where it was once logged in', async () => {
+    const { request, oauth, logIn, jar } = site();
+    const home = await (await request('/')).text();
+    expect(home).toContain('href="/auth/login?next=%2F"');
+    const redirect = await request('/auth/login?next=/c/lfr/saison-3');
+    expect(redirect.status).toBe(302);
+    expect(redirect.headers.get('location')).toBe(
+      `https://discord.example/authorize?state=${encodeURIComponent(oauth.states[0] ?? '')}`,
+    );
+    const back = await logIn('/c/lfr/saison-3');
+    expect(back.status).toBe(303);
+    expect(back.headers.get('location')).toBe('/c/lfr/saison-3');
+    expect(jar.has('ligo_session')).toBe(true);
+    const page = await (await request('/')).text();
+    expect(page).toContain('<a href="/me">Ana</a>');
+    expect(page).toContain('Se déconnecter');
+  });
+
+  it('sets a session cookie the page scripts cannot read, for 30 days', async () => {
+    const { request, oauth } = site();
+    await request('/auth/login');
+    const back = await request(`/auth/callback?code=code-ana&state=${oauth.states[0] ?? ''}`);
+    const cookie = back.headers.getSetCookie().find((value) => value.startsWith('ligo_session='));
+    expect(cookie).toMatch(/HttpOnly/);
+    expect(cookie).toMatch(/SameSite=Lax/);
+    expect(cookie).toMatch(/Path=\//);
+    expect(cookie).toContain(`Max-Age=${String(SESSION_DAYS * 24 * 3600)}`);
+    // Over plain http on localhost; `Secure` comes with an https PUBLIC_URL.
+    expect(cookie).not.toMatch(/Secure/);
+  });
+
+  it('creates the player on first login', async () => {
+    const { db, logIn } = site();
+    await logIn();
+    const found = db
+      .select()
+      .from(schema.player)
+      .where(eq(schema.player.discordUserId, ANA.id))
+      .get();
+    expect(found?.displayName).toBe('Ana');
+  });
+
+  it('refuses a wrong state, a missing one, and a state used twice', async () => {
+    const { request, oauth, jar } = site();
+    await request('/auth/login');
+    expect((await request('/auth/callback?code=code-ana&state=forged')).status).toBe(400);
+    // The login cookie is used once, even by a failed attempt.
+    const state = oauth.states[0] ?? '';
+    expect((await request(`/auth/callback?code=code-ana&state=${state}`)).status).toBe(400);
+    expect((await request('/auth/callback?code=code-ana')).status).toBe(400);
+    expect(jar.has('ligo_session')).toBe(false);
+  });
+
+  it('refuses a code Discord does not know, and says so when the user declined', async () => {
+    const { request, oauth } = site();
+    await request('/auth/login');
+    const refused = await request(`/auth/callback?code=stale&state=${oauth.states[0] ?? ''}`);
+    expect(refused.status).toBe(400);
+    expect(await refused.text()).toContain('Connexion impossible');
+    await request('/auth/login');
+    const declined = await request(
+      `/auth/callback?error=access_denied&state=${oauth.states[1] ?? ''}`,
+    );
+    expect(await declined.text()).toContain('Connexion annulée');
+  });
+
+  it('logs an outage without the code', async () => {
+    const { request, oauth, logger } = site();
+    oauth.userFor = () => Promise.reject(new Error('Discord answered 503 for a token'));
+    await request('/auth/login');
+    const failed = await request(`/auth/callback?code=secret-code&state=${oauth.states[0] ?? ''}`);
+    expect(failed.status).toBe(502);
+    expect(logger.error).toHaveBeenCalledOnce();
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain('secret-code');
+  });
+
+  it('only goes back to a path of this site', () => {
+    expect(safeNext('/c/lfr/saison-3')).toBe('/c/lfr/saison-3');
+    for (const next of ['//evil.example', 'https://evil.example', '/\\evil', 'me', '', undefined]) {
+      expect(safeNext(next)).toBe('/me');
+    }
+  });
+});
+
+describe('sessions', () => {
+  it('ignores a forged cookie and one older than 30 days', async () => {
+    const forged = site();
+    forged.jar.set('ligo_session', '1.1800000000000.forged-signature');
+    expect(await (await forged.request('/')).text()).not.toContain('href="/me"');
+
+    const old = site();
+    await old.logIn();
+    old.advance(SESSION_DAYS * DAY + 1);
+    expect(await (await old.request('/')).text()).not.toContain('href="/me"');
+  });
+
+  it('ends with logout, which needs the session’s token', async () => {
+    const { request, logIn, post, jar } = site();
+    await logIn();
+    expect(
+      (
+        await request('/auth/logout', {
+          method: 'POST',
+          headers: { Origin: ORIGIN, 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'x=1',
+        })
+      ).status,
+    ).toBe(403);
+    expect(jar.has('ligo_session')).toBe(true);
+    const out = await post('/auth/logout', {});
+    expect(out.status).toBe(303);
+    expect(jar.has('ligo_session')).toBe(false);
+  });
+
+  it('sends every address to PUBLIC_URL, so cookies and origins match', async () => {
+    const { request } = site();
+    const moved = await request('http://127.0.0.1:3000/c/lfr/saison-3?x=1');
+    expect(moved.status).toBe(308);
+    expect(moved.headers.get('location')).toBe(`${ORIGIN}/c/lfr/saison-3?x=1`);
+    const posted = await request('http://127.0.0.1:3000/me/consent', { method: 'POST' });
+    expect(posted.status).toBe(403);
+  });
+
+  it('sends a content security policy that allows this site’s scripts only', async () => {
+    const policy = (await site().request('/')).headers.get('content-security-policy');
+    expect(policy).toContain("script-src 'self'");
+    expect(policy).toContain("frame-ancestors 'none'");
+  });
+});
+
+describe('/me', () => {
+  it('asks a visitor to log in first', async () => {
+    const response = await site().request('/me');
+    expect(response.status).toBe(303);
+    expect(response.headers.get('location')).toBe('/auth/login?next=/me');
+  });
+
+  it('shows the account, and league staff from the Discord role', async () => {
+    const { request, logIn, setRoles } = site();
+    await logIn();
+    const page = await (await request('/me')).text();
+    expect(page).toContain('Connecté avec le compte Discord Ana.');
+    expect(page).not.toContain('Staff de la ligue');
+    setRoles([TEST_STAFF_ROLE]);
+    expect(await (await request('/me')).text()).toContain('Staff de la ligue : LFR');
+  });
+
+  it('stores the nationality and the stats consent', async () => {
+    const { db, request, logIn, post } = site();
+    await logIn();
+    const saved = await post('/me/nationality', { nationality: 'BE' });
+    expect(saved.status).toBe(303);
+    expect(saved.headers.get('location')).toBe('/me?saved=1');
+    expect(await (await request('/me?saved=1')).text()).toMatch(
+      /<option\s+value="BE"\s+selected\s*>/,
+    );
+    expect((await post('/me/nationality', { nationality: 'XX' })).headers.get('location')).toBe(
+      '/me?error=invalid_nationality',
+    );
+    await post('/me/consent', { consent: 'give' });
+    const player = () =>
+      db.select().from(schema.player).where(eq(schema.player.discordUserId, ANA.id)).get();
+    expect(player()?.statsConsentAt).toBe(NOW);
+    expect(await (await request('/me')).text()).toContain('Retirer mon accord');
+    await post('/me/consent', { consent: 'withdraw' });
+    expect(player()?.statsConsentAt).toBeNull();
+  });
+
+  it('refuses a form from another site, without an origin, or without the token', async () => {
+    const { db, request, logIn, post } = site();
+    await logIn();
+    const nationality = () =>
+      db.select().from(schema.player).where(eq(schema.player.discordUserId, ANA.id)).get()
+        ?.nationality;
+    expect(
+      (await post('/me/nationality', { nationality: 'BE' }, { Origin: 'https://evil.example' }))
+        .status,
+    ).toBe(403);
+    const form = { 'Content-Type': 'application/x-www-form-urlencoded' };
+    expect(
+      (await request('/me/nationality', { method: 'POST', headers: form, body: 'nationality=BE' }))
+        .status,
+    ).toBe(403);
+    expect(
+      (
+        await request('/me/nationality', {
+          method: 'POST',
+          headers: { ...form, Origin: ORIGIN },
+          body: 'nationality=BE&_csrf=guess',
+        })
+      ).status,
+    ).toBe(403);
+    expect(nationality()).toBeNull();
+  });
+
+  it('refuses a form from a visitor who is not logged in', async () => {
+    const { request } = site();
+    const response = await request('/me/consent', {
+      method: 'POST',
+      headers: { Origin: ORIGIN, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'consent=give',
+    });
+    expect(response.status).toBe(403);
+  });
+});
+
+describe('without login settings', () => {
+  it('shows no login link and answers 404 for the login pages', async () => {
+    const db = leagueDatabase();
+    const app = createWebApp({
+      db,
+      assets: fakeAssetStore(),
+      locale: 'fr',
+      files: { css: '', htmx: '' },
+      logger: { error: vi.fn() },
+      login: null,
+      roles: () => Promise.resolve([]),
+      now: () => NOW,
+    });
+    expect(await (await app.request('/')).text()).not.toContain('/auth/login');
+    for (const path of ['/auth/login', '/auth/callback', '/me']) {
+      expect((await app.request(path)).status).toBe(404);
+    }
+  });
+});

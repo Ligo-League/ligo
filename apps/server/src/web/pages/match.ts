@@ -1,12 +1,12 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
 import type { MatchPage } from '../../services/site.ts';
-import { formatWhen, layout, matchOutcome, type Html } from '../layout.ts';
+import { formatWhen, matchOutcome, pageOf, type Page } from '../layout.ts';
 
-type Page = Extract<MatchPage, { ok: true }>;
+type Data = Extract<MatchPage, { ok: true }>;
 
 /** `/matches/:id`: the teams, the time or the result, and each game's map and bans. */
-export function matchPageView(locale: Locale, page: Page): Html {
+export function matchPageView(locale: Locale, page: Data): Page {
   const { match, league } = page;
   const { timeZone } = league.competition;
   const title = t(locale, 'web.match.title', { a: match.a.name, b: match.b.name });
@@ -59,5 +59,5 @@ export function matchPageView(locale: Locale, page: Page): Html {
           )
         : html`<p class="muted">${t(locale, 'web.match.noGames')}</p>`
     }`;
-  return layout(locale, title, body);
+  return pageOf(title, body);
 }

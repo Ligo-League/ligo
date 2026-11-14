@@ -19,7 +19,12 @@ describe('loadConfig', () => {
         databasePath: './data/ligo.db',
         assetsDir: './data/assets/render',
         logLevel: 'info',
-        web: { host: '127.0.0.1', port: 3000 },
+        web: {
+          host: '127.0.0.1',
+          port: 3000,
+          publicUrl: 'http://localhost:3000',
+          login: null,
+        },
       },
     });
   });
@@ -74,6 +79,47 @@ describe('loadConfig', () => {
         'DISCORD_GUILD_ID is missing',
         'LOG_LEVEL is not valid',
       ],
+    });
+  });
+
+  it('turns login on with both secrets, and refuses one without the other', () => {
+    const CLIENT = 'client-secret-0123456789';
+    const SESSION = 's'.repeat(32);
+    expect(
+      loadConfig({
+        ...valid,
+        DISCORD_CLIENT_SECRET: CLIENT,
+        SESSION_SECRET: SESSION,
+        PUBLIC_URL: 'https://ligoleague.eu',
+      }),
+    ).toMatchObject({
+      ok: true,
+      config: {
+        web: {
+          publicUrl: 'https://ligoleague.eu',
+          login: { clientSecret: CLIENT, sessionSecret: SESSION },
+        },
+      },
+    });
+    // Left empty in .env: not set.
+    expect(loadConfig({ ...valid, DISCORD_CLIENT_SECRET: '', SESSION_SECRET: '' })).toMatchObject({
+      ok: true,
+      config: { web: { login: null } },
+    });
+    expect(loadConfig({ ...valid, DISCORD_CLIENT_SECRET: CLIENT })).toEqual({
+      ok: false,
+      errors: ['SESSION_SECRET is missing'],
+    });
+    expect(loadConfig({ ...valid, SESSION_SECRET: SESSION })).toEqual({
+      ok: false,
+      errors: ['DISCORD_CLIENT_SECRET is missing'],
+    });
+    const short = loadConfig({ ...valid, DISCORD_CLIENT_SECRET: CLIENT, SESSION_SECRET: 'short' });
+    expect(short).toEqual({ ok: false, errors: ['SESSION_SECRET is not valid'] });
+    expect(JSON.stringify(short)).not.toContain(CLIENT);
+    expect(loadConfig({ ...valid, PUBLIC_URL: 'ftp://example.com' })).toEqual({
+      ok: false,
+      errors: ['PUBLIC_URL is not valid'],
     });
   });
 

@@ -1,10 +1,10 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
 import type { LeagueLinks } from '../../services/site.ts';
-import { layout, type Html } from '../layout.ts';
+import { pageOf, type Page } from '../layout.ts';
 
 /** `/`: the group's leagues and their seasons. */
-export function homePage(locale: Locale, leagues: readonly LeagueLinks[]): Html {
+export function homePage(locale: Locale, leagues: readonly LeagueLinks[]): Page {
   const body =
     leagues.length === 0
       ? html`<p class="muted">${t(locale, 'web.home.empty')}</p>`
@@ -25,8 +25,7 @@ export function homePage(locale: Locale, leagues: readonly LeagueLinks[]): Html 
               </ul>
             </section>`,
         );
-  return layout(
-    locale,
+  return pageOf(
     t(locale, 'web.home.title'),
     html`<h1>${t(locale, 'web.home.title')}</h1>
       ${body}`,

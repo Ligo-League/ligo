@@ -544,6 +544,35 @@ export const fr = {
   'web.error.body':
     "Le site a rencontré un problème. Réessaie dans un instant ; s'il persiste, préviens le staff.",
   'web.nav.home': 'Accueil',
+  'web.auth.login': 'Se connecter avec Discord',
+  'web.auth.logout': 'Se déconnecter',
+  'web.auth.failed.title': 'Connexion impossible',
+  'web.auth.failed.body':
+    "La connexion avec Discord n'a pas abouti, ou elle a expiré. Réessaie depuis le lien « Se connecter ».",
+  'web.auth.unavailable.body':
+    'Discord ne répond pas pour le moment. Réessaie dans quelques minutes.',
+  'web.auth.cancelled.title': 'Connexion annulée',
+  'web.auth.cancelled.body': "Tu as refusé la connexion sur Discord. Rien n'a été enregistré.",
+  'web.forbidden.title': 'Action refusée',
+  'web.forbidden.body':
+    "Cette action vient d'une autre page, ou ta session a changé. Recharge la page et réessaie.",
+  'web.me.title': 'Mon compte',
+  'web.me.discord': 'Connecté avec le compte Discord {name}.',
+  'web.me.teams': 'Mes équipes',
+  'web.me.noTeams': "Tu n'es responsable d'aucune équipe.",
+  'web.me.staff': 'Staff de la ligue : {list}',
+  'web.me.nationality': 'Nationalité',
+  'web.me.nationality.none': 'Non renseignée',
+  'web.me.nationality.hint': "Demandée à l'inscription d'une équipe, comme dans le règlement.",
+  'web.me.save': 'Enregistrer',
+  'web.me.saved': 'Enregistré.',
+  'web.me.consent.title': 'Statistiques publiques',
+  'web.me.consent.given': 'Tu as accepté la publication de tes statistiques le {date}.',
+  'web.me.consent.none':
+    "Tu n'as pas accepté la publication de tes statistiques. Sans cet accord, tu apparais dans les effectifs et les résultats, mais pas sur les pages de statistiques ni dans les classements de joueurs.",
+  'web.me.consent.give': 'Accepter la publication',
+  'web.me.consent.withdraw': 'Retirer mon accord',
+  'web.me.error.invalid_nationality': 'Choisis un pays dans la liste.',
 } as const;
 
 export type MessageKey = keyof typeof fr;

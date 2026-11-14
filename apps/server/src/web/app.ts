@@ -1,17 +1,40 @@
 import { readFile } from 'node:fs/promises';
-import type { Db } from '@ligo/db';
-import { Hono } from 'hono';
+import { schema, type Db } from '@ligo/db';
+import { eq } from 'drizzle-orm';
+import { Hono, type Context } from 'hono';
 import type { AssetStore } from '../assets/store.ts';
-import type { Locale } from '../i18n/index.ts';
+import { t, type Locale } from '../i18n/index.ts';
+import {
+  countryChoices,
+  loginPlayer,
+  profileOf,
+  setNationality,
+  setStatsConsent,
+} from '../services/me.ts';
 import { listLeagues, matchPage, seasonPage, teamPage } from '../services/site.ts';
-import { errorPage, notFoundPage } from './pages/errors.ts';
+import { layout, type Page } from './layout.ts';
+import { errorPage, messagePage, notFoundPage } from './pages/errors.ts';
 import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
+import { mePage } from './pages/me.ts';
 import { seasonPageView } from './pages/season.ts';
 import { teamPageView } from './pages/team.ts';
+import { staffCompetitions, type RoleReader, type WebUser } from './roles.ts';
+import {
+  checkCsrfToken,
+  csrfToken,
+  endSession,
+  finishLogin,
+  readSession,
+  safeNext,
+  startLogin,
+  startSession,
+  type LoginSettings,
+  type Session,
+} from './session.ts';
 
 // The website (design doc section 7): server-rendered pages over the same services as the bot.
-// Routes are thin: they read the URL, call a service and render its answer.
+// Routes are thin: they read the request, call a service and render its answer.
 
 /** Files the pages load, read once when the server starts. */
 export interface StaticFiles {
@@ -25,6 +48,11 @@ export interface WebDeps {
   locale: Locale;
   files: StaticFiles;
   logger: { error: (details: object, message: string) => void };
+  /** Discord login; null leaves the site public only (no secrets in .env). */
+  login: LoginSettings | null;
+  /** League staff roles, asked of the bot. */
+  roles: RoleReader;
+  now: () => number;
 }
 
 /** The stylesheet next to this file, and htmx at the version pinned in package.json. */
@@ -36,22 +64,117 @@ export async function loadStaticFiles(): Promise<StaticFiles> {
   return { css, htmx };
 }
 
+interface Viewer extends WebUser {
+  session: Session;
+  csrf: string;
+}
+
+type Env = { Variables: { viewer: Viewer | null } };
+
 const LOGO_FILE = /^([a-z0-9][a-z0-9_-]{0,63})\.png$/;
 const MATCH_ID = /^[1-9]\d{0,9}$/;
 // Pages show live data; static files change only with a release.
 const STATIC_CACHE = 'public, max-age=3600';
+// Scripts and styles from this site only; inline style attributes carry team colours.
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'none'",
+  "object-src 'none'",
+].join('; ');
 
-export function createWebApp(deps: WebDeps): Hono {
-  const { db, locale } = deps;
-  const app = new Hono();
+export function createWebApp(deps: WebDeps): Hono<Env> {
+  const { db, locale, login } = deps;
+  const app = new Hono<Env>();
+
+  const render = (c: Context<Env>, page: Page, status: 200 | 400 | 403 | 404 | 500 | 502 = 200) => {
+    const viewer = c.get('viewer');
+    const nav = {
+      user: viewer && { name: viewer.name, csrf: viewer.csrf },
+      login: login !== null,
+      path: c.req.path,
+    };
+    return c.html(layout(locale, page, nav), status);
+  };
+  const notFound = (c: Context<Env>) => render(c, notFoundPage(locale), 404);
+  const message = (
+    c: Context<Env>,
+    status: 400 | 403 | 502,
+    title: Parameters<typeof t>[1],
+    text: Parameters<typeof t>[1],
+  ) => render(c, messagePage(locale, t(locale, title), t(locale, text)), status);
+  const forbidden = (c: Context<Env>) =>
+    message(c, 403, 'web.forbidden.title', 'web.forbidden.body');
 
   app.use(async (c, next) => {
     await next();
-    // The pages need nothing from other sites, and never belong in a frame.
     c.header('X-Content-Type-Options', 'nosniff');
     c.header('X-Frame-Options', 'DENY');
     c.header('Referrer-Policy', 'same-origin');
+    c.header('Content-Security-Policy', CONTENT_SECURITY_POLICY);
   });
+
+  // With login on, one address only: cookies and the origin check belong to PUBLIC_URL, so
+  // `127.0.0.1:3000` goes to `localhost:3000`.
+  app.use(async (c, next) => {
+    if (!login) return next();
+    const url = new URL(c.req.url);
+    if (url.origin === login.publicUrl.origin) return next();
+    if (c.req.method !== 'GET' && c.req.method !== 'HEAD') return forbidden(c);
+    return c.redirect(new URL(url.pathname + url.search, login.publicUrl).href, 308);
+  });
+
+  // Who is looking: re-read from the database on every request.
+  app.use(async (c, next) => {
+    c.set('viewer', null);
+    const session = login && (await readSession(c, login, deps.now()));
+    const found =
+      login && session
+        ? db
+            .select({
+              id: schema.player.id,
+              name: schema.player.displayName,
+              discordUserId: schema.player.discordUserId,
+            })
+            .from(schema.player)
+            .where(eq(schema.player.id, session.playerId))
+            .get()
+        : undefined;
+    if (login && session && found) {
+      c.set('viewer', {
+        playerId: found.id,
+        name: found.name,
+        discordUserId: found.discordUserId,
+        session,
+        csrf: csrfToken(login, session),
+      });
+    }
+    return next();
+  });
+
+  /**
+   * Every POST: from this site (its Origin, or Sec-Fetch-Site for browsers that send none),
+   * by a logged-in user, with the token of their session. Returns the form, or the refusal.
+   */
+  const guard = async (
+    c: Context<Env>,
+  ): Promise<{ viewer: Viewer; form: Record<string, unknown> } | Response> => {
+    const viewer = c.get('viewer');
+    if (!login) return notFound(c);
+    const origin = c.req.header('origin');
+    const sameSite =
+      origin === undefined
+        ? c.req.header('sec-fetch-site') === 'same-origin'
+        : origin === login.publicUrl.origin;
+    if (!sameSite || !viewer) return forbidden(c);
+    const form = await c.req.parseBody();
+    if (!checkCsrfToken(login, viewer.session, form._csrf)) return forbidden(c);
+    return { viewer, form };
+  };
 
   app.get('/static/site.css', (c) =>
     c.body(deps.files.css, 200, {
@@ -68,32 +191,117 @@ export function createWebApp(deps: WebDeps): Hono {
   app.get('/logos/:file', async (c) => {
     const name = LOGO_FILE.exec(c.req.param('file'))?.[1];
     const image = name ? await deps.assets.read(`logos/${name}.png`) : null;
-    if (!image) return c.html(notFoundPage(locale), 404);
+    if (!image) return notFound(c);
     return c.body(new Uint8Array(image.data), 200, {
       'Content-Type': image.type,
       'Cache-Control': STATIC_CACHE,
     });
   });
 
-  app.get('/', (c) => c.html(homePage(locale, listLeagues(db))));
+  // -------------------------------------------------------------------------------------------
+  // Public pages
+
+  app.get('/', (c) => render(c, homePage(locale, listLeagues(db))));
   app.get('/c/:competition/:season', (c) => {
     const page = seasonPage(db, c.req.param('competition'), c.req.param('season'));
-    return page.ok ? c.html(seasonPageView(locale, page)) : c.html(notFoundPage(locale), 404);
+    return page.ok ? render(c, seasonPageView(locale, page)) : notFound(c);
   });
   app.get('/teams/:slug', (c) => {
     const page = teamPage(db, c.req.param('slug'));
-    return page.ok ? c.html(teamPageView(locale, page)) : c.html(notFoundPage(locale), 404);
+    return page.ok ? render(c, teamPageView(locale, page)) : notFound(c);
   });
   app.get('/matches/:id', (c) => {
     const id = c.req.param('id');
     const page = MATCH_ID.test(id) ? matchPage(db, Number(id)) : null;
-    return page?.ok ? c.html(matchPageView(locale, page)) : c.html(notFoundPage(locale), 404);
+    return page?.ok ? render(c, matchPageView(locale, page)) : notFound(c);
   });
 
-  app.notFound((c) => c.html(notFoundPage(locale), 404));
+  // -------------------------------------------------------------------------------------------
+  // Discord login
+
+  app.get('/auth/login', async (c) => {
+    if (!login) return notFound(c);
+    const state = await startLogin(c, login, safeNext(c.req.query('next')));
+    return c.redirect(login.oauth.authorizeUrl(state), 302);
+  });
+
+  app.get('/auth/callback', async (c) => {
+    if (!login) return notFound(c);
+    const next = await finishLogin(c, login, c.req.query('state') ?? '');
+    if (c.req.query('error') !== undefined) {
+      return message(c, 400, 'web.auth.cancelled.title', 'web.auth.cancelled.body');
+    }
+    const code = c.req.query('code');
+    if (next === null || !code) {
+      return message(c, 400, 'web.auth.failed.title', 'web.auth.failed.body');
+    }
+    let user;
+    try {
+      user = await login.oauth.userFor(code);
+    } catch (error) {
+      // The error names the step only; the code and the token never reach the log.
+      deps.logger.error({ err: error }, 'Discord login failed');
+      return message(c, 502, 'web.auth.failed.title', 'web.auth.unavailable.body');
+    }
+    if (!user) return message(c, 400, 'web.auth.failed.title', 'web.auth.failed.body');
+    const player = loginPlayer(db, user, deps.now());
+    if (!player.ok) throw new Error(`Login refused: ${player.error}`);
+    await startSession(c, login, player.player.id, deps.now());
+    return c.redirect(next, 303);
+  });
+
+  app.post('/auth/logout', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    if (login) endSession(c, login);
+    return c.redirect('/', 303);
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // The player's own account
+
+  app.get('/me', async (c) => {
+    if (!login) return notFound(c);
+    const viewer = c.get('viewer');
+    if (!viewer) return c.redirect('/auth/login?next=/me', 303);
+    const profile = profileOf(db, viewer.playerId);
+    if (!profile) return c.redirect('/auth/login?next=/me', 303);
+    const staffOf = await staffCompetitions(db, deps.roles, viewer, deps.now());
+    const flash = c.req.query('saved') === '1' ? 'saved' : (c.req.query('error') ?? null);
+    return render(
+      c,
+      mePage(locale, {
+        profile,
+        staffOf: staffOf.map((competition) => competition.name),
+        countries: countryChoices(locale),
+        csrf: viewer.csrf,
+        flash: flash === 'saved' || flash === 'invalid_nationality' ? flash : null,
+      }),
+    );
+  });
+
+  app.post('/me/nationality', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const value = typeof form.nationality === 'string' ? form.nationality : '';
+    const reply = setNationality(db, viewer.playerId, value, deps.now());
+    return c.redirect(reply.ok ? '/me?saved=1' : `/me?error=${reply.error}`, 303);
+  });
+
+  app.post('/me/consent', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    if (form.consent !== 'give' && form.consent !== 'withdraw') return forbidden(c);
+    setStatsConsent(db, viewer.playerId, form.consent === 'give', deps.now());
+    return c.redirect('/me?saved=1', 303);
+  });
+
+  app.notFound(notFound);
   app.onError((error, c) => {
     deps.logger.error({ err: error, path: c.req.path }, 'Web page failed');
-    return c.html(errorPage(locale), 500);
+    return render(c, errorPage(locale), 500);
   });
   return app;
 }
