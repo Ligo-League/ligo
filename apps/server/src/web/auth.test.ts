@@ -2,80 +2,15 @@ import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeAssetStore } from '../assets/store.ts';
+import { fakeGateway } from '../discord/testing.ts';
 import { leagueDatabase, TEST_STAFF_ROLE } from '../testing.ts';
 import { createWebApp } from './app.ts';
-import { fakeDiscordOAuth } from './oauth.ts';
 import { safeNext, SESSION_DAYS } from './session.ts';
+import { ANA, TEST_NOW as NOW, TEST_ORIGIN as ORIGIN, testSite as site } from './testing.ts';
 
 // Discord login, sessions, CSRF and `/me` (design doc section 7), through HTTP.
 
-const ORIGIN = 'http://localhost:3000';
-const ANA = { id: '700000000000000001', displayName: 'Ana' };
-const NOW = 1_800_000_000_000;
 const DAY = 24 * 3600 * 1000;
-
-function site() {
-  const db = leagueDatabase();
-  const oauth = fakeDiscordOAuth({ 'code-ana': ANA });
-  const logger = { error: vi.fn() };
-  let now = NOW;
-  let roles: string[] = [];
-  const app = createWebApp({
-    db,
-    assets: fakeAssetStore(),
-    locale: 'fr',
-    files: { css: '', htmx: '' },
-    logger,
-    login: { oauth, secret: 'x'.repeat(40), publicUrl: new URL(ORIGIN) },
-    roles: () => Promise.resolve(roles),
-    now: () => now,
-  });
-  // A browser: keeps the cookies the site sets, sends them back.
-  const jar = new Map<string, string>();
-  const request = async (path: string, init: RequestInit = {}) => {
-    const headers = new Headers(init.headers);
-    if (jar.size > 0) {
-      headers.set('Cookie', [...jar].map(([name, value]) => `${name}=${value}`).join('; '));
-    }
-    const response = await app.request(path.startsWith('http') ? path : ORIGIN + path, {
-      ...init,
-      headers,
-    });
-    for (const cookie of response.headers.getSetCookie()) {
-      const [pair = ''] = cookie.split(';');
-      const [name = '', value = ''] = pair.split('=');
-      if (value === '' || /Max-Age=0/i.test(cookie)) jar.delete(name);
-      else jar.set(name, pair.slice(name.length + 1));
-    }
-    return response;
-  };
-  const logIn = async (next = '/me') => {
-    await request(`/auth/login?next=${encodeURIComponent(next)}`);
-    const state = oauth.states.at(-1) ?? '';
-    return request(`/auth/callback?code=code-ana&state=${encodeURIComponent(state)}`);
-  };
-  /** A form posted from a page of this site, with the session's token unless given another. */
-  const post = async (
-    path: string,
-    fields: Record<string, string>,
-    extra: Record<string, string> = {},
-  ) => {
-    const page = await (await request('/me')).text();
-    const token = /name="_csrf" value="([^"]+)"/.exec(page)?.[1] ?? '';
-    return request(path, {
-      method: 'POST',
-      headers: { Origin: ORIGIN, 'Content-Type': 'application/x-www-form-urlencoded', ...extra },
-      body: new URLSearchParams({ _csrf: token, ...fields }),
-    });
-  };
-  const advance = (ms: number) => {
-    now += ms;
-  };
-  const setRoles = (value: string[]) => {
-    roles = value;
-  };
-  return { db, oauth, logger, jar, request, logIn, post, advance, setRoles };
-}
 
 describe('logging in with Discord', () => {
   it('sends the browser to Discord with a state, and back where it was once logged in', async () => {
@@ -295,6 +230,7 @@ describe('without login settings', () => {
       logger: { error: vi.fn() },
       login: null,
       roles: () => Promise.resolve([]),
+      gateway: fakeGateway(),
       now: () => NOW,
     });
     expect(await (await app.request('/')).text()).not.toContain('/auth/login');

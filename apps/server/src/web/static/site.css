@@ -279,3 +279,71 @@ button {
 .flash.error {
   border-left-color: var(--zone-relegation);
 }
+
+/* The staff queue: one card per item, its decisions side by side. */
+ul.queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.queue-item p {
+  margin: 0 0 6px;
+}
+
+blockquote {
+  margin: 6px 0;
+  padding: 4px 12px;
+  border-left: 3px solid var(--line);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin-top: 8px;
+}
+
+.actions form {
+  margin: 0;
+}
+
+form.refuse {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px 8px;
+  flex: 1 1 280px;
+}
+
+form.refuse label {
+  flex-basis: 100%;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+textarea {
+  font: inherit;
+  flex: 1 1 200px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  max-width: 100%;
+}
+
+button.danger {
+  border-color: var(--zone-relegation);
+  color: var(--zone-relegation);
+}
+
+.overdue {
+  color: var(--zone-relegation);
+  font-weight: 600;
+}

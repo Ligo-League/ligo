@@ -1,9 +1,11 @@
 import { readFile } from 'node:fs/promises';
-import { schema, type Db } from '@ligo/db';
+import { findLeague, listLeagueMatches, schema, type Db } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
 import type { AssetStore } from '../assets/store.ts';
-import { t, type Locale } from '../i18n/index.ts';
+import type { DiscordGateway } from '../discord/gateway.ts';
+import { announceReportDecision, announceRequestDecision } from '../discord/staff-decisions.ts';
+import { t, type Locale, type MessageKey } from '../i18n/index.ts';
 import {
   countryChoices,
   loginPlayer,
@@ -11,15 +13,19 @@ import {
   setNationality,
   setStatsConsent,
 } from '../services/me.ts';
+import { rejectResult, validateResult } from '../services/reports.ts';
+import { answerRequest } from '../services/requests.ts';
 import { listLeagues, matchPage, seasonPage, teamPage } from '../services/site.ts';
+import { staffQueue } from '../services/staff-queue.ts';
 import { layout, type Page } from './layout.ts';
 import { errorPage, messagePage, notFoundPage } from './pages/errors.ts';
 import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
 import { mePage } from './pages/me.ts';
 import { seasonPageView } from './pages/season.ts';
+import { staffPage } from './pages/staff.ts';
 import { teamPageView } from './pages/team.ts';
-import { staffCompetitions, type RoleReader, type WebUser } from './roles.ts';
+import { staffCompetitions, webActor, type RoleReader, type WebUser } from './roles.ts';
 import {
   checkCsrfToken,
   csrfToken,
@@ -52,6 +58,8 @@ export interface WebDeps {
   login: LoginSettings | null;
   /** League staff roles, asked of the bot. */
   roles: RoleReader;
+  /** The bot's Discord: decisions taken here mark its posts in the staff queue. */
+  gateway: DiscordGateway;
   now: () => number;
 }
 
@@ -73,6 +81,25 @@ type Env = { Variables: { viewer: Viewer | null } };
 
 const LOGO_FILE = /^([a-z0-9][a-z0-9_-]{0,63})\.png$/;
 const MATCH_ID = /^[1-9]\d{0,9}$/;
+const ROW_ID = MATCH_ID;
+
+// What a staff decision sends back to `/staff` with, read back from the address: anything else
+// shows nothing.
+const STAFF_DONE = ['validated', 'rejected', 'approved', 'rejected_request'] as const;
+const STAFF_ERRORS = [
+  'match_not_found',
+  'stale',
+  'wrong_status',
+  'not_found',
+  'not_pending',
+  'reason_required',
+  'already_on_team',
+  'not_on_team',
+  'owner_cannot_leave',
+  'role_full',
+] as const;
+const oneOf = <T extends string>(values: readonly T[], value: string | undefined): T | null =>
+  values.find((candidate) => candidate === value) ?? null;
 // Pages show live data; static files change only with a release.
 const STATIC_CACHE = 'public, max-age=3600';
 // Scripts and styles from this site only; inline style attributes carry team colours.
@@ -296,6 +323,96 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     if (form.consent !== 'give' && form.consent !== 'withdraw') return forbidden(c);
     setStatsConsent(db, viewer.playerId, form.consent === 'give', deps.now());
     return c.redirect('/me?saved=1', 303);
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // League staff: the queue of what waits for them (design doc section 7)
+
+  // Discord as the bot's buttons see it, for what follows a decision taken here.
+  const discord = { db, gateway: deps.gateway, assets: deps.assets, locale };
+  const backToQueue = (c: Context<Env>, query: string) => c.redirect(`/staff?${query}`, 303);
+
+  app.get('/staff', async (c) => {
+    if (!login) return notFound(c);
+    const viewer = c.get('viewer');
+    if (!viewer) return c.redirect('/auth/login?next=/staff', 303);
+    const competitions = await staffCompetitions(db, deps.roles, viewer, deps.now());
+    if (competitions.length === 0) return forbidden(c);
+    const leagues = competitions.flatMap((competition) => {
+      const league = findLeague(db, competition.id);
+      if (!league) return [];
+      const timeZone = league.competition.schedulingJson.time_zone;
+      return [{ name: competition.name, timeZone, queue: staffQueue(db, league) }];
+    });
+    const done = oneOf(STAFF_DONE, c.req.query('done'));
+    const error = oneOf(STAFF_ERRORS, c.req.query('error'));
+    const flash: { error: boolean; key: MessageKey } | null = done
+      ? { error: false, key: `web.staff.done.${done}` }
+      : error
+        ? { error: true, key: `web.staff.error.${error}` }
+        : null;
+    // The queue is for this viewer only: no shared cache keeps it.
+    c.header('Cache-Control', 'no-store');
+    return render(c, staffPage(locale, { leagues, csrf: viewer.csrf, now: deps.now(), flash }));
+  });
+
+  app.post('/staff/matches/:id/:decision', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const decision = oneOf(['validate', 'reject'] as const, c.req.param('decision'));
+    const id = c.req.param('id');
+    if (!decision || !MATCH_ID.test(id)) return notFound(c);
+    const [found] = listLeagueMatches(db, { matchId: Number(id) });
+    if (!found) return backToQueue(c, 'error=match_not_found');
+    // Staff of the match's own league, asked of Discord now; the service checks it again.
+    const actor = await webActor(db, deps.roles, viewer, found.competitionId, deps.now());
+    if (!actor) return forbidden(c);
+    const evidence = typeof form.evidence === 'string' ? form.evidence : '';
+    const request = {
+      matchId: found.id,
+      evidenceId: ROW_ID.test(evidence) ? Number(evidence) : -1,
+    };
+    const reply =
+      decision === 'validate'
+        ? validateResult(db, actor, request, deps.now())
+        : rejectResult(db, actor, request, deps.now());
+    if (!reply.ok) {
+      const refused = reply.error === 'not_staff' || reply.error === 'not_linked';
+      return refused ? forbidden(c) : backToQueue(c, `error=${reply.error}`);
+    }
+    await announceReportDecision(discord, reply, actor.user.id);
+    return backToQueue(c, `done=${decision === 'validate' ? 'validated' : 'rejected'}`);
+  });
+
+  app.post('/staff/requests/:id/:decision', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const decision = oneOf(['approve', 'reject'] as const, c.req.param('decision'));
+    const id = c.req.param('id');
+    if (!decision || !ROW_ID.test(id)) return notFound(c);
+    const found = db
+      .select({ competitionId: schema.request.competitionId })
+      .from(schema.request)
+      .where(eq(schema.request.id, Number(id)))
+      .get();
+    if (!found) return backToQueue(c, 'error=not_found');
+    const actor = await webActor(db, deps.roles, viewer, found.competitionId, deps.now());
+    if (!actor) return forbidden(c);
+    const reason = typeof form.reason === 'string' ? form.reason : null;
+    const reply = answerRequest(
+      db,
+      actor,
+      { requestId: Number(id), decision, reason: decision === 'reject' ? reason : null },
+      deps.now(),
+    );
+    if (!reply.ok) {
+      const refused = reply.error === 'not_staff' || reply.error === 'not_linked';
+      return refused ? forbidden(c) : backToQueue(c, `error=${reply.error}`);
+    }
+    await announceRequestDecision(discord, reply);
+    return backToQueue(c, `done=${decision === 'approve' ? 'approved' : 'rejected_request'}`);
   });
 
   app.notFound(notFound);

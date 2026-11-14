@@ -60,6 +60,7 @@ const web = createWebApp({
   logger,
   login,
   roles: createRoleReader(gateway),
+  gateway,
   now: () => Date.now(),
 });
 const server = serve(

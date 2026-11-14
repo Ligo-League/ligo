@@ -37,7 +37,10 @@ export function mePage(locale: Locale, data: MeData): Page {
     <p>${t(locale, 'web.me.discord', { name: player.displayName })}</p>
     ${
       data.staffOf.length > 0
-        ? html`<p>${t(locale, 'web.me.staff', { list: data.staffOf.join(', ') })}</p>`
+        ? html`<p>
+            ${t(locale, 'web.me.staff', { list: data.staffOf.join(', ') })} ·
+            <a href="/staff">${t(locale, 'web.me.staffQueue')}</a>
+          </p>`
         : ''
     }
     <h2>${t(locale, 'web.me.teams')}</h2>

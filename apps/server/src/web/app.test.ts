@@ -2,6 +2,7 @@ import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeAssetStore, PNG_HEADER_FOR_TESTS } from '../assets/store.ts';
+import { fakeGateway } from '../discord/testing.ts';
 import { setTeamOwner } from '../services/team-staff.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { createWebApp, loadStaticFiles, type WebDeps } from './app.ts';
@@ -22,6 +23,7 @@ function site(overrides: Partial<WebDeps> = {}) {
     logger,
     login: null,
     roles: () => Promise.resolve([]),
+    gateway: fakeGateway(),
     now: () => 1_800_000_000_000,
     ...overrides,
   });

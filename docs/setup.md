@@ -385,6 +385,26 @@ section 13).
 `http://127.0.0.1:3000` now redirects to `http://localhost:3000`: the login cookie belongs to one
 address.
 
+## 16. Phase 3c: the staff queue on the website
+
+You need the staff role in the staging server, and a second account managing a team (as in
+section 10).
+
+1. With the team account, report a result with `/match report`, and file a request with `/team`
+   (section 13). Both appear in the staff queue channel, with their buttons.
+2. Log in on the website with your staff account. **Mon compte** now has a link **Ouvrir la file
+   du staff** (`http://localhost:3000/staff`). It lists the results to validate, the disputes, and
+   the team requests with their deadline.
+3. Click **Valider le résultat**. The page says it is validated, and in Discord the report's post
+   in the staff queue now reads "validé par" with your name, without buttons. The result is
+   announced in the results channel, as with the button.
+4. Refuse the request with a reason. Its post in the queue shows the refusal; the team gets the
+   reason in a direct message.
+5. Click **Approuver** on something already handled in Discord: the page says it was answered
+   already, and nothing changes.
+6. Remove your staff role in Discord: within a minute, `/staff` and its buttons answer "Action
+   refusée".
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                               |
