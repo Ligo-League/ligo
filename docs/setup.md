@@ -347,6 +347,23 @@ To see the reminder sooner, lower `requests.answer_within_hours` in the league's
 (for example to 1, with `remind_before_hours` 0): on the next tick after the deadline, the queue
 gets a message pinging the staff role with a link to the request.
 
+## 14. Phase 3a: the public website
+
+`pnpm dev` now also starts the website, on this computer only. Its terminal prints
+`Website ready` with the address, `http://127.0.0.1:3000` by default (`HOST` and `PORT` in
+`.env` change it).
+
+1. Open `http://127.0.0.1:3000`: the leagues and their seasons.
+2. Click **Saison 3**: the standings of each division, the latest validated results and the
+   fixtures by week. A result reported but not validated yet shows "En attente de validation",
+   never its score.
+3. Click a team name: its officials and matches. Click "contre" between two teams: the match,
+   with its map and bans once the veto is over.
+4. Validate a result in Discord, then reload the season page: the standings follow at once.
+
+Nobody else can open these pages yet: they are not on the internet until the VPS (design doc
+section 13). Login comes with phase 3b.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                               |

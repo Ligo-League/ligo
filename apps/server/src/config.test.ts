@@ -19,8 +19,22 @@ describe('loadConfig', () => {
         databasePath: './data/ligo.db',
         assetsDir: './data/assets/render',
         logLevel: 'info',
+        web: { host: '127.0.0.1', port: 3000 },
       },
     });
+  });
+
+  it('reads where the website listens, and refuses a port that is not one', () => {
+    expect(loadConfig({ ...valid, HOST: '0.0.0.0', PORT: '8080' })).toMatchObject({
+      ok: true,
+      config: { web: { host: '0.0.0.0', port: 8080 } },
+    });
+    for (const port of ['0', '70000', 'http']) {
+      expect(loadConfig({ ...valid, PORT: port })).toEqual({
+        ok: false,
+        errors: ['PORT is not valid'],
+      });
+    }
   });
 
   it('ignores unrelated environment variables', () => {

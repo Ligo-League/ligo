@@ -9,6 +9,9 @@ const envSchema = z.object({
   DATABASE_PATH: z.string().min(1).default('./data/ligo.db'),
   ASSETS_DIR: z.string().min(1).default('./data/assets/render'),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
+  // Localhost only until the VPS: a container sets 0.0.0.0 behind Caddy.
+  HOST: z.string().min(1).default('127.0.0.1'),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
 });
 
 export interface Config {
@@ -21,6 +24,8 @@ export interface Config {
   /** Prepared images such as team logos (`pnpm assets:logos`), until they move to R2. */
   assetsDir: string;
   logLevel: z.infer<typeof envSchema>['LOG_LEVEL'];
+  /** Where the website listens. */
+  web: { host: string; port: number };
 }
 
 export type ConfigResult = { ok: true; config: Config } | { ok: false; errors: string[] };
@@ -47,6 +52,7 @@ export function loadConfig(env: Record<string, string | undefined>): ConfigResul
       databasePath: parsed.data.DATABASE_PATH,
       assetsDir: parsed.data.ASSETS_DIR,
       logLevel: parsed.data.LOG_LEVEL,
+      web: { host: parsed.data.HOST, port: parsed.data.PORT },
     },
   };
 }

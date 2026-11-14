@@ -1,4 +1,5 @@
 import { mkdirSync } from 'node:fs';
+import { serve } from '@hono/node-server';
 import { dirname, resolve } from 'node:path';
 import { applyMigrations, openDatabase } from '@ligo/db';
 import { createLocalAssetStore } from './assets/store.ts';
@@ -13,8 +14,9 @@ import { createDiscordGateway } from './discord/gateway.ts';
 import { DEFAULT_LOCALE } from './i18n/index.ts';
 import { loginHint } from './discord/login-hint.ts';
 import { createLogger } from './logger.ts';
+import { createWebApp, loadStaticFiles } from './web/app.ts';
 
-// Server entry point (`pnpm dev`): the database and the Discord bot.
+// Server entry point (`pnpm dev`): the database, the Discord bot and the website.
 const loaded = loadConfig(process.env);
 if (!loaded.ok) {
   console.error(`Invalid configuration: ${loaded.errors.join('; ')}. See .env.example.`);
@@ -33,6 +35,20 @@ logger.info({ path: databasePath }, 'Database ready');
 
 const assets = createLocalAssetStore(resolve(config.assetsDir));
 const client = createDiscordClient({ commands, buttons, forms, logger, db, assets });
+
+const web = createWebApp({
+  db,
+  assets,
+  locale: DEFAULT_LOCALE,
+  files: await loadStaticFiles(),
+  logger,
+});
+const server = serve(
+  { fetch: web.fetch, hostname: config.web.host, port: config.web.port },
+  (info) => {
+    logger.info({ address: `http://${config.web.host}:${String(info.port)}` }, 'Website ready');
+  },
+);
 
 // Deadlines need the bot to post, so the clock starts once Discord is ready.
 const CLOCK_INTERVAL_MS = 60_000;
@@ -53,6 +69,7 @@ client.once(Events.ClientReady, () => {
 const shutdown = (signal: string) => {
   logger.info({ signal }, 'Shutting down');
   stopClock();
+  server.close();
   void client.destroy().finally(() => {
     db.$client.close();
     process.exit(0);
