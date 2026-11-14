@@ -64,3 +64,18 @@ export function leagueDatabase() {
   linkGuild(db, { guildId: TEST_GUILD, staffRoleId: TEST_STAFF_ROLE }, 3000);
   return db;
 }
+
+/**
+ * Who makes a result count in the test league: LFR's opponent (the default since 14 November
+ * 2026), or league staff, as another league may choose.
+ */
+export function setResultValidation(
+  db: ReturnType<typeof leagueDatabase>,
+  mode: 'staff' | 'opponent',
+): void {
+  const row = db.select().from(schema.competition).get();
+  if (!row) throw new Error('seedLfr created no competition');
+  db.update(schema.competition)
+    .set({ rulesetJson: { ...row.rulesetJson, result_validation: mode } })
+    .run();
+}

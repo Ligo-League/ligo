@@ -42,8 +42,10 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   // The veto follows the design doc's sequences until the owner answers O-11. Promotion: the
   // maintainer's rule of 13 November 2026, last 2 down and the one above in a barrage against
   // the lower division's 3rd.
+  // A result the opponent confirms counts at once; staff decide only disputes (maintainer,
+  // 14 November 2026: the two teams already agree the result is right).
   rulesetJson: {
-    result_validation: 'staff',
+    result_validation: 'opponent',
     game_score: R6_GAME_SCORE,
     team_roles: teamRolesSchema.parse({}),
     requests: requestsSchema.parse({}),

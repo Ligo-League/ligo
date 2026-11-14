@@ -2,7 +2,7 @@ import { findLeague, schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeGateway } from '../discord/testing.ts';
-import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import { leagueDatabase, setResultValidation, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import type { Actor } from './permissions.ts';
 import { answerReport, reportResult, validateResult } from './reports.ts';
 import { answerRequest, fileRequest } from './requests.ts';
@@ -62,6 +62,8 @@ describe('staffQueue', () => {
 
   it('lists a reported result with its screenshot and who reported it, until validated', async () => {
     const { db, queue, report } = league();
+    // A league where a confirmed result still waits for staff.
+    setResultValidation(db, 'staff');
     const evidenceId = await report();
     expect(queue().reports).toMatchObject([
       {

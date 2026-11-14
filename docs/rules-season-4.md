@@ -215,12 +215,17 @@ M-xx : mainteneur).
 
 ### 5.3 Validation
 
-- **Un résultat ne compte qu'après validation par le staff.** Le staff peut aussi rejeter le
-  signalement (le match revient « à jouer »), saisir ou corriger un résultat, ou annuler un
-  match. Un résultat n'est jamais effacé : une annulation le marque comme nul et non avenu.
+- **Un résultat confirmé par l'équipe adverse compte aussitôt** : les deux équipes sont d'accord,
+  le staff n'a pas à le valider (mainteneur, 14 novembre 2026). Un résultat contesté attend la
+  décision du staff, qui peut aussi valider un résultat signalé sans attendre la confirmation.
+- Le staff peut rejeter un signalement (le match revient « à jouer »), saisir ou corriger un
+  résultat, ou annuler un match. Un résultat n'est jamais effacé : une annulation le marque comme
+  nul et non avenu.
+- C'est un réglage de la compétition (`result_validation`) : une autre ligue peut exiger la
+  validation du staff pour chaque résultat.
 - Chaque résultat qui compte est annoncé dans le salon des résultats, y compris les forfaits et
   les corrections.
-- **Statut** : Règlement S3.
+- **Statut** : Décidée (mainteneur, 14 novembre 2026), à la place du règlement S3.
 - **Appliquée par** : file de validation du staff ; chaque action est enregistrée dans
   l'historique, avec son auteur et sa date.
 

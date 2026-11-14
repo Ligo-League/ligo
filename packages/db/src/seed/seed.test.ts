@@ -185,7 +185,8 @@ describe('seedLfr', () => {
         title: 'r6',
         participantMode: 'team',
         rulesetJson: {
-          result_validation: 'staff',
+          // The opponent's confirmation validates (maintainer, 14 November 2026).
+          result_validation: 'opponent',
           game_score: { win_at: 7, overtime_rounds: 3 },
         },
         pointsJson: {

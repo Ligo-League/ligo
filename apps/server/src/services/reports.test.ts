@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeGateway } from '../discord/testing.ts';
-import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import { leagueDatabase, setResultValidation, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import type { Actor } from './permissions.ts';
 import {
   answerReport,
@@ -24,7 +24,7 @@ import { recordResult } from './results.ts';
 import { getStandings } from './standings.ts';
 import { addTeamMember, setTeamOwner } from './team-staff.ts';
 
-const { auditLog, competition, dispute, evidence, game, leagueGuild, match } = schema;
+const { auditLog, dispute, evidence, game, leagueGuild, match } = schema;
 
 const QUEUE = '800000000000000001';
 const RESULTS = '800000000000000002';
@@ -265,15 +265,21 @@ describe('reportResult', () => {
 });
 
 describe('answerReport', () => {
-  it('lets the other team confirm, by its manager or its staff', async () => {
+  it('lets the other team confirm, by its manager or its staff, where staff validate', async () => {
     for (const actor of [CHARLIE_MANAGER, CHARLIE_STAFF]) {
       const { db, report, stored } = league();
+      setResultValidation(db, 'staff');
       const evidenceId = await evidenceIdOf(report);
       const reply = answerReport(db, actor, { matchId: 3, evidenceId, action: 'confirm' }, 9500);
-      expect(reply).toMatchObject({ ok: true, status: 'confirmed', queueChannelId: QUEUE });
+      expect(reply).toMatchObject({
+        ok: true,
+        status: 'confirmed',
+        queueChannelId: QUEUE,
+        posts: [],
+      });
       expect(stored()).toMatchObject({ status: 'confirmed', validatedAt: null });
       expect(stored()?.confirmedBy).not.toBeNull();
-      // Confirmed is not validated: the result still does not count in LFR.
+      // Confirmed is not validated: the result does not count until staff validate it.
       expect(pointsOf(db)).toEqual({ ALP: 6, CHA: 0, BRV: 0 });
     }
   });
@@ -398,18 +404,21 @@ describe('answerReport', () => {
     expect(row?.resolvedBy).not.toBe(row?.raisedBy);
   });
 
+  // LFR (maintainer, 14 November 2026): the two teams agree, so staff need not.
   it('validates on confirmation where the league lets the opponent validate', async () => {
-    const { db, report, stored } = league();
-    const [settings] = db.select().from(competition).all();
-    if (!settings) throw new Error('No competition');
-    db.update(competition)
-      .set({ rulesetJson: { ...settings.rulesetJson, result_validation: 'opponent' } })
-      .run();
+    const { db, gateway, report, stored } = league();
+    setResultValidation(db, 'opponent');
     const evidenceId = await evidenceIdOf(report);
 
     expect(
       answerReport(db, CHARLIE_MANAGER, { matchId: 3, evidenceId, action: 'confirm' }, 9500),
-    ).toMatchObject({ ok: true, status: 'validated', resultsChannelId: RESULTS });
+    ).toMatchObject({
+      ok: true,
+      status: 'validated',
+      resultsChannelId: RESULTS,
+      // The report's post in the staff queue, to be marked as needing nothing more.
+      posts: [{ channelId: QUEUE, messageId: gateway.posted[0]?.messageId }],
+    });
     expect(stored()).toMatchObject({ status: 'validated', validatedAt: 9500, validatedBy: null });
     expect(db.select().from(game).all().at(-1)?.status).toBe('final');
     expect(pointsOf(db)).toEqual({ ALP: 6, BRV: 3, CHA: 0 });
@@ -464,6 +473,8 @@ describe('validateResult and rejectResult', () => {
     'lets staff validate a %s result, which then counts',
     async (state) => {
       const { db, report, stored } = league();
+      // Where staff validate: a confirmed result waits for them.
+      setResultValidation(db, 'staff');
       const evidenceId = await evidenceIdOf(report);
       if (state !== 'reported') {
         const answer = state === 'confirmed' ? ({ action: 'confirm' } as const) : DISPUTE;

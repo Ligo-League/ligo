@@ -1,7 +1,7 @@
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
 import { setTeamOwner } from '../../services/team-staff.ts';
-import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../../testing.ts';
+import { leagueDatabase, setResultValidation, TEST_GUILD, TEST_STAFF_ROLE } from '../../testing.ts';
 import { buttons } from '../buttons/index.ts';
 import { forms } from '../forms.ts';
 import { routeButton, routeForm } from '../router.ts';
@@ -226,8 +226,41 @@ describe('/match report', () => {
 });
 
 describe('report buttons', () => {
-  it('lets the other team confirm: the buttons go and staff are told', async () => {
+  // LFR (maintainer, 14 November 2026): the two teams agree, so the result counts at once.
+  it('lets the other team confirm, which validates the result: it is announced at once', async () => {
     const { run, click, gateway, status } = session();
+    await run(report(BRAVO));
+    const interaction = await click('report-confirm:3:1', CHARLIE);
+
+    expect(interaction.updates).toEqual([
+      {
+        content:
+          '**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — confirmé par <@700000000000000002>. Résultat validé.',
+      },
+    ]);
+    expect(status()).toBe('validated');
+    // The report's post in the staff queue says there is nothing to do, and loses its buttons.
+    const [queuePost, announcement] = gateway.posted;
+    expect(queuePost).toMatchObject({
+      channelId: QUEUE,
+      edits: 1,
+      message: {
+        content:
+          "**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — confirmé par l'équipe adverse (<@700000000000000002>) : résultat validé, rien à faire.",
+      },
+    });
+    expect(queuePost?.message.buttons ?? []).toEqual([]);
+    // Announced with its card in the results channel.
+    expect(announcement).toMatchObject({
+      channelId: RESULTS,
+      message: { content: 'Résultat validé — Ligue 1, semaine 3 : Bravo 7–5 Charlie.' },
+    });
+    expect(gateway.posted).toHaveLength(2);
+  });
+
+  it('in a league where staff validate, lets the other team confirm and tells staff', async () => {
+    const { db, run, click, gateway, status } = session();
+    setResultValidation(db, 'staff');
     await run(report(BRAVO));
     const interaction = await click('report-confirm:3:1', CHARLIE);
 

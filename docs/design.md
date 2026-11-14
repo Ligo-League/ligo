@@ -15,8 +15,8 @@ Ligo is the operating system of a league, and a tool that helps teams get the da
 | The tool that runs a league's season, end to end, with its own rules as settings                | A hub of open tournaments for anyone, with entry fees                             |
 | Discord-native: the bot works inside each league's own server                                   | A pro-scene database (schedules, world rankings, pro leaderboards)                |
 | Several titles for one group of leagues (R6, Valorant, Rocket League, mixed-team FRFL)          | A copy of a feature that a free tool already does well for one title              |
-| Team improvement measured against the team's own division, from scrims and official matches   | A replacement for the desktop clients and live trackers of other platforms        |
-| Free, non-profit, French first                                                                  | A business that takes a cut of what teams pay                                     |
+| Team improvement measured against the team's own division, from scrims and official matches   | A desktop live tracker, for now (a companion app is a long-term idea, see below)   |
+| Free, non-profit, readable by anyone in their own language: French and English today, then Dutch, German and Luxembourgish for the Benelux leagues, and in the long run every European language | A business that takes a cut of what teams pay                                     |
 
 **Before adding a feature,** check that it helps run a league or helps a team learn from its own data. A feature that mostly serves open tournaments, the pro scene or players outside any league is out of scope, unless a partnered league needs it to run its season.
 
@@ -38,7 +38,7 @@ Ligo is the operating system of a league, and a tool that helps teams get the da
 6. Team development tools, R6 first: a private practice book for scrims and friendlies, a playbook, team reports, scouting, a recruitment board, external results, a team level and awards (section 17).
 7. Other organisations, much later.
 
-**Out of scope for v1:** public self-service signup for other leagues, live in-match tracking (a desktop companion app is a long-term idea if the league grows), mobile apps, fantasy or betting features, and the Valorant API before Riot grants a production key. A paid tier for organisers is an idea for later (section 18).
+**Out of scope for v1:** public self-service signup for other leagues, live in-match tracking (a long-term idea: if the leagues grow, possibly beyond grassroots level, a desktop companion app, perhaps built on Overwolf for safer access to the running game, could validate games as they are played; only if the project becomes big enough), mobile apps, fantasy or betting features, and the Valorant API before Riot grants a production key. A paid tier for organisers is an idea for later (section 18).
 
 **Glossary**
 
@@ -86,6 +86,9 @@ Five facts drive most decisions: replays are far too large for Discord, team nam
 | Valorant replays        | Added in patch 11.06; they expire when the game updates ([Riot](https://support.riotgames.com/ms-my/valorant/gameplay/replays-faq-pro-tips)); custom-game coverage is reported as missing as of November 2026 ([source](https://insights.gg/blog/valorant-replay-system-how-to-watch-save-replays)) | Valorant stats stay manual for league matches                                                                            |
 | Valorant API            | Personal and development keys get no VALORANT access; a production key is required ([source](https://www.riotgames.com/en/DevRel/valorant-api-launch))                                                                                                                                              | Apply later with a tournament use case                                                                                   |
 | Rocket League replays   | PC only; consoles give no access to replay files ([source](https://ballchasing.com/doc/faq))                                                                                                                                                                                                        | Browser parsing for PC players, manual entry otherwise                                                                   |
+| Overwolf game events (R6) | Match start and end, map, `match_id`, score per round, round and match outcome, and a 10-player roster with a `player_id` UUID, team and operator; `CUSTOM` is a playlist value, but nothing says the events fire in custom games ([source](https://dev.overwolf.com/ow-native/live-game-data-gep/supported-games/rainbow-six-siege)) | Enough for a companion app to report a result: teams resolved from `player_id` against lineups, as with replays. To test in a real custom game first; the `player_id` may be the Ubisoft `profileID`, unverified |
+| Overwolf game events (Valorant, Rocket League) | Valorant: score, outcome, roster and scoreboard, but "match_end does not work on custom matches" ([source](https://dev.overwolf.com/ow-native/live-game-data-gep/supported-games/valorant)). Rocket League: score, goals, saves, shots, MVP per player, a `Private` match type ([source](https://dev.overwolf.com/ow-native/live-game-data-gep/supported-games/rocket-league)) | Valorant also needs Riot's approval, a production key and player opt-in, so it waits like the Riot API; Rocket League looks usable, custom games untested |
+| Overwolf rules          | Windows only. Apps are listed only in Overwolf's app store, after Overwolf approves the idea. Native apps need no code-signing certificate of their own. Since 1 November 2026 every app must carry Overwolf ads or Tebex subscriptions (Overwolf keeps 30% of ads, 15% of subscriptions) ([source](https://dev.overwolf.com/ow-native/monetization/overview)). Ubisoft's rules limit what an app shows about a player's profile ([source](https://dev.overwolf.com/ow-native/guides/game-compliance/rainbow-6-siege)) | A companion app (section 1, out of scope) cannot be free of ads or subscriptions; that clashes with "free, non-profit" and needs a decision before it is built. Client data can be forged, so a result from the app is still confirmed by the opponent and validated by staff |
 
 ## 3. Architecture
 
@@ -286,7 +289,7 @@ image_cache    key PK, object_key, created_at
 
 - Standings are never stored. They are computed from `validated` and `forfeit` matches plus `sanction` point deltas, then cached by a version counter.
 - `game.score_a` and `score_b` are the official score. For replay games they equal the count of `game_round` winners per side.
-- In LFR a match counts only once staff have validated it (rulebook: screenshot proof, both teams check, administration validates). `ruleset_json.result_validation` can be `'opponent'` for leagues that don't need the staff step.
+- In LFR a result counts as soon as the opponent confirms it: both teams agree it is right, so staff are not needed (maintainer, 14 November 2026; the Season 3 rulebook had the administration validate). A disputed result waits for staff. `ruleset_json.result_validation` is `'opponent'` in LFR; a league that wants staff to validate every result sets `'staff'`. When the confirmation validates, the report's post in the staff queue is marked as needing nothing.
 - Only staff can record a forfeit. A team can never claim a forfeit win itself.
 - A player can be on one roster per competition at a time, and staff members cannot be on any roster in a competition they staff.
 - Every staff mutation writes `audit_log` in the same transaction.
@@ -406,7 +409,7 @@ Which scores one game (a map) can end on is a competition setting, so an impossi
 
 ```json
 {
-    "result_validation": "staff",
+    "result_validation": "opponent",
     "game_score": { "win_at": 7, "overtime_rounds": 3 }
 }
 ```
@@ -561,7 +564,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
     - buttons: Propose time, Map veto, Report result, Upload replays and MOSS, Enter stats.
     - Once match channels exist, `/match propose-time` and `/match veto` work only in the match's own channel, so the two teams negotiate where only they and staff can read, and have a place to discuss the match (maintainer, 13 November 2026). Until then they work in any channel.
 4. **Deadlines.** At the end of the planned week with no agreed time, the bot posts the one-week extension. At the end of the extension it posts the automatic Sunday 21:00 slot.
-5. **Result.** After staff validation, the bot posts the result card in the channel and in the results channel.
+5. **Result.** Once validated (by the opponent's confirmation in LFR, or by staff), the bot posts the result card in the channel and in the results channel.
 6. **Archive.** A configurable number of days after validation, the team roles lose Send Messages and the channel moves to an archive category.
 7. **Season end.** The transcript is exported as JSON to R2, then the channel is deleted.
 
@@ -1286,7 +1289,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Map veto              | Official competitive pool; alternate bans down to one map (BO1); standard R6 sequences for BO3 and BO5                                    | You           |
 | Coupe de France       | All teams, single elimination; BO1 before the round of 16, BO3 for the round of 16 and quarter-finals, BO5 for semi-finals and final      | Rulebook, you |
 | Cup sides and host    | Staff designate the starting-side team; the other picks the overtime side; teams agree on the host                                        | You           |
-| Results               | Screenshot proof, both teams check, administration validates                                                                              | Rulebook      |
+| Results               | Screenshot proof; the opponent's confirmation validates, staff decide disputes (`result_validation` setting)                              | Rulebook, you |
 | Map score             | A map is won at 7 rounds out of 12; at 6–6 a best-of-3 overtime ends it 8–6 or 8–7. Stored as the `game_score` setting                    | You           |
 | Re-host | Score kept; one per team per map; staff may allow more at their discretion for a real problem | Rulebook, you |
 | Forfeits              | Staff only; warning at the 2nd; automatic exclusion at the 3rd, with appeal and per-team exemption; the 50% rule counts only played matches | Rulebook, you |
@@ -1304,6 +1307,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Team obligations      | None: no team is required to upload scrims or enter external events; external results are shown on team pages and never worth points      | You           |
 | Match volume          | FRFL and the cup provide the extra matches; the league stays at one BO1 per week                                                          | You           |
 | Team level scale      | The 0–10 rubric of section 17                                                                                                             | You           |
+| Languages             | Every page, bot reply and image is readable in the reader's language, separate from the league's working language. A Benelux league works in English, but everything is translated into Dutch, French, German, Luxembourgish and English; in the long run, every European language. The message catalog and every `{ fr, en }` label become a map keyed by locale before a Benelux league joins | You |
 | Positioning           | League first, tournaments second: the operating system of a league and a data tool for its teams, never a copy of Strave (section 1)   | You           |
 | Paid tier             | An idea for later: premium adds features and never makes a free one worse; league running and team improvement stay free (section 18)   | You           |
 | Social images         | One design rendered in every frame (square, portrait, landscape, preview); a posting mode per network: `manual` by default with a free share button, `approve` or `auto`; X only with the league's own developer app and a monthly cap, €0 by default (section 11) | You |

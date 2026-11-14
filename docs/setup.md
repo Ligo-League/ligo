@@ -434,6 +434,10 @@ section 10).
    updated. `/standings` then gives each team that showed up 7 rounds won for each forfeit.
 3. `/staff match forfeit`, `team`: both teams, on a match to play: each team gets a forfeit loss
    and its forfeit count goes up; the results channel says neither team showed up.
+4. The same `pnpm seed` lets the opponent validate (it prints `competitions: 1` updated). Report a
+   result with `/match report`, then confirm it as the other team: it counts at once, is
+   announced in the results channel, and its post in the staff queue says there is nothing to
+   do. A result already confirmed before this change still waits for staff on `/staff`.
 
 ## 19. Phase 3d-3: the rulebook page
 

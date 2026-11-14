@@ -81,6 +81,8 @@ export const fr = {
   'queue.confirmed': "{line} — confirmé par l'équipe adverse ({member}).",
   'queue.disputed': '{line} — contesté par {member}. Une décision du staff est attendue.',
   'queue.validated': '**{line}** — validé par {member}.',
+  'queue.validatedByOpponent':
+    "**{line}** — confirmé par l'équipe adverse ({member}) : résultat validé, rien à faire.",
   'queue.rejected': '**{line}** — refusé par {member}. Le match est à signaler de nouveau.',
   'queue.outcome.validated': '✅ Résultat validé par {member}.',
   'queue.outcome.rejected':

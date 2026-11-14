@@ -103,9 +103,11 @@ These are summaries; the design doc (sections 4, 5, 8, 9) has the details.
 - **Standings are computed, never stored or hand-edited.** From matches with status `validated` or
   `forfeit`, plus `sanction` point deltas. LFR: points per win are a setting (3 in Season 3), no draws, F = rounds won,
   C = rounds lost, D = F − C, ranking by points then D, then the `unresolved_tie` setting.
-- **Results count only after staff validation** in LFR (`result_validation: 'staff'`). A result
-  needs a screenshot `evidence` row.
-- **Only staff can record a forfeit.** Forfeit score is a season setting (0–0 or 7–0).
+- **Results count once validated.** In LFR the opponent's confirmation validates
+  (`result_validation: 'opponent'`, since 14 November 2026); a disputed result waits for staff.
+  Other leagues may need staff for every result (`'staff'`). A result needs a screenshot
+  `evidence` row.
+- **Only staff can record a forfeit.** Forfeit score is a season setting (7–0 in LFR).
   Exclusion applies the 50% rule (design doc section 5).
 - **Every staff mutation writes `audit_log` in the same transaction.**
 - **Results are never hard-deleted**; use status `void`.

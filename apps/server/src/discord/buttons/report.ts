@@ -61,6 +61,16 @@ async function announceAnswer(
   // The public message names no reason: a reason can accuse a player, and staff decide.
   await interaction.update({ content: t(locale, `report.${reply.status}`, { line, member }) });
   if (reply.status === 'validated') {
+    // The report's post in the staff queue no longer waits for staff: it says so, without buttons.
+    for (const post of reply.posts) {
+      try {
+        await context.gateway.editMessage(post.channelId, post.messageId, {
+          content: t(locale, 'queue.validatedByOpponent', { line, member }),
+        });
+      } catch {
+        // A post deleted or out of reach only looks out of date: the result is stored.
+      }
+    }
     await announceWithCard(
       context,
       reply.resultsChannelId,

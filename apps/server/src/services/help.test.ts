@@ -15,7 +15,7 @@ describe('helpFacts', () => {
     expect(helpFacts(leagueDatabase(), MEMBER)).toEqual({
       staff: false,
       rules: {
-        validation: 'staff',
+        validation: 'opponent',
         teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
         requestHours: 24,
         forfeits: { warning_at: 2, exclusion_at: 3 },

@@ -359,6 +359,11 @@ export type AnswerReply =
       status: 'confirmed' | 'disputed' | 'validated';
       /** The dispute stored, with its row's ID for its post in the staff queue. */
       dispute: (DisputeDetails & { id: number }) | null;
+      /**
+       * When the confirmation validated the result: the report's posts in the staff queue, which
+       * no longer wait for anyone. Empty otherwise.
+       */
+      posts: PostRef[];
       queueChannelId: string | null;
       resultsChannelId: string | null;
     }
@@ -521,6 +526,14 @@ export function answerReport(
       match: found,
       status,
       dispute: dispute && disputeId !== null ? { ...dispute, id: disputeId } : null,
+      posts:
+        status === 'validated'
+          ? queuePostsOf(
+              tx,
+              { entity: 'match', entityId: found.id },
+              latestScoreEvidence(tx, found.id)?.at ?? 0,
+            )
+          : [],
       queueChannelId: league.guild.alertsChannelId,
       resultsChannelId: resultsChannelFor(league, found),
     };
