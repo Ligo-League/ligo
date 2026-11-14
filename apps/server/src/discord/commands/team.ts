@@ -19,8 +19,9 @@ import { appliedNotice, requestLine, requestQueueMessage, requestWhat } from '..
 import { described, english, MAX_CHOICE_LENGTH, MAX_CHOICES } from './describe.ts';
 import type { Command, CommandContext, CommandInteraction, MessageButton } from './types.ts';
 
-// `/team`: who acts for each team (design doc section 5, "Team requests"). League staff change a
-// team directly; its owner and managers file requests, approved by staff or applied at once.
+// `/team`: who acts for each team (design doc section 5, "Team requests"), the club's officials
+// with the roster's own. League staff change a team directly; its officials file requests,
+// approved by staff or applied at once.
 
 const teamOption = {
   type: ApplicationCommandOptionType.Integer as const,
@@ -58,7 +59,7 @@ const noteOption = {
 const nameOf = (member: TeamMember) =>
   member.discordUserId ? `<@${member.discordUserId}>` : member.displayName;
 
-/** "Alpha Esport (ALP) : propriétaire X ; managers Y, Z ; coach W." */
+/** "Alpha Esport (ALP) : propriétaire du club X ; managers du club V ; managers Y, Z ; coach W." */
 export function teamSummary(locale: Locale, team: SeasonTeam, members: TeamMember[]): string {
   const none = t(locale, 'team.none');
   const names = (role: TeamMember['role']) => {
@@ -69,6 +70,7 @@ export function teamSummary(locale: Locale, team: SeasonTeam, members: TeamMembe
     team: team.name,
     tag: team.tag,
     owner: names('owner'),
+    clubManagers: names('club_manager'),
     managers: names('manager'),
     coach: names('coach'),
   });

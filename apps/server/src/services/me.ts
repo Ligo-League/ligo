@@ -1,13 +1,14 @@
 import type { TeamRole } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import type { Locale } from '../i18n/index.ts';
+import { highestRole, teamsOfPlayer } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 
 // A player's own account on the website (design doc section 7, `/me`): who they are, the teams
 // they act for, their nationality and their stats consent. Each change is audited.
 
-const { auditLog, org, player, team, teamStaff } = schema;
+const { auditLog, org, player, team } = schema;
 
 type Player = typeof player.$inferSelect;
 
@@ -46,13 +47,22 @@ export interface Profile {
 export function profileOf(db: Pick<Db, 'select'>, playerId: number): Profile | null {
   const found = db.select().from(player).where(eq(player.id, playerId)).get();
   if (!found) return null;
-  const teams = db
-    .select({ name: team.name, slug: team.slug, role: teamStaff.role })
-    .from(teamStaff)
-    .innerJoin(team, eq(teamStaff.teamId, team.id))
-    .where(and(eq(teamStaff.playerId, playerId), isNull(teamStaff.until)))
-    .orderBy(asc(team.name))
-    .all();
+  // Each roster once, with the highest role held for it: a club role counts for all its rosters.
+  const held = teamsOfPlayer(db, playerId);
+  const ids = [...new Set(held.map((entry) => entry.teamId))];
+  const teams =
+    ids.length === 0
+      ? []
+      : db
+          .select({ id: team.id, name: team.name, slug: team.slug })
+          .from(team)
+          .where(inArray(team.id, ids))
+          .orderBy(asc(team.name))
+          .all()
+          .flatMap((row) => {
+            const role = highestRole(held, row.id);
+            return role ? [{ name: row.name, slug: row.slug, role }] : [];
+          });
   return { player: found, teams };
 }
 

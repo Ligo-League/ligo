@@ -1,4 +1,5 @@
 import { schema } from '@ligo/db';
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeGateway } from '../discord/testing.ts';
@@ -84,6 +85,16 @@ const pointsOf = (db: ReturnType<typeof leagueDatabase>) => {
 };
 
 describe('reportResult', () => {
+  it('lets club officials report for neither of two rosters of their club', async () => {
+    const { db, report } = league();
+    // Charlie joins Bravo's club, whose owner is Bravo's manager: match 3 is within one club.
+    db.update(schema.team).set({ clubId: 2 }).where(eq(schema.team.id, 3)).run();
+    expect(await report()).toEqual({ ok: false, error: 'not_your_match' });
+    // A roster's own official still acts for it.
+    addTeamMember(db, STAFF, { teamId: 2, member: member(6).user, role: 'manager' }, 100);
+    expect(await report(member(6))).toMatchObject({ ok: true, side: 'a' });
+  });
+
   it('keeps the server’s own copy of the screenshot, for the website', async () => {
     const { db, evidence, report } = league();
     const reply = await report();

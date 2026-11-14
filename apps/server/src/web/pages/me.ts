@@ -14,6 +14,7 @@ export interface MeData {
 
 const ROLE_KEYS = {
   owner: 'team.role.owner',
+  club_manager: 'team.role.club_manager',
   manager: 'team.role.manager',
   coach: 'team.role.coach',
 } as const;

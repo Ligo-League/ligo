@@ -1,6 +1,12 @@
-import type { ForfeitThresholds, RulesetSettings, SchedulingSettings } from '@ligo/core';
+import type {
+  ForfeitThresholds,
+  RoleLimits,
+  RulesetSettings,
+  SchedulingSettings,
+} from '@ligo/core';
 import { findGuildLeague, type Db } from '@ligo/db';
 import { requireStaff, type Actor } from './permissions.ts';
+import { roleLimits } from './team-staff.ts';
 
 /** What `/help` needs to explain the commands as this league runs them. */
 export interface HelpFacts {
@@ -9,7 +15,7 @@ export interface HelpFacts {
   /** Null on a server linked to no league: the explanations then name no league rule. */
   rules: {
     validation: RulesetSettings['result_validation'];
-    teamRoles: RulesetSettings['team_roles'];
+    teamRoles: RoleLimits;
     /** How long league staff have to answer a team's request. */
     requestHours: number;
     /** Null before a season starts: thresholds are a season setting. */
@@ -31,7 +37,7 @@ export function helpFacts(
     staff: requireStaff(db, actor).ok,
     rules: {
       validation: rulesetJson.result_validation,
-      teamRoles: rulesetJson.team_roles,
+      teamRoles: roleLimits(league),
       requestHours: rulesetJson.requests.answer_within_hours,
       forfeits: league.season?.settingsJson.forfeits ?? null,
       extensionWeeks: league.competition.schedulingJson.extension_weeks,

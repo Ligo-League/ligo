@@ -6,7 +6,16 @@ import { SIDES } from './schema/enums.ts';
 // Rule settings (points, tie-breaks, ruleset, scheduling, season, stage) live in @ligo/core.
 
 /** `org.settings_json`. The design doc names no org setting yet. */
-export const orgSettingsSchema = z.strictObject({});
+/**
+ * `org.settings_json`: settings of the whole group. `club_roles`: how many managers a club may
+ * have besides its owner (maintainer, 14 November 2026: a setting; 3 like a roster's managers
+ * until the league says otherwise).
+ */
+export const orgSettingsSchema = z.strictObject({
+  club_roles: z
+    .strictObject({ managers_max: z.int().min(0).default(3) })
+    .default({ managers_max: 3 }),
+});
 export type OrgSettings = z.infer<typeof orgSettingsSchema>;
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/);

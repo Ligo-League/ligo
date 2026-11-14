@@ -87,6 +87,7 @@ export function helpPage(locale: Locale, topic: HelpTopic, facts: HelpFacts): st
     const page = t(locale, PAGES.team);
     return rules
       ? `${page}\n${t(locale, 'help.team.max', {
+          clubManagers: rules.teamRoles.club_managers_max,
           managers: rules.teamRoles.managers_max,
           coaches: rules.teamRoles.coaches_max,
           hours: rules.requestHours,

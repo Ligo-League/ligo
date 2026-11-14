@@ -31,7 +31,7 @@ const FACTS: HelpFacts[] = [
     staff: true,
     rules: {
       validation: 'staff',
-      teamRoles: { managers_max: 3, coaches_max: 1 },
+      teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
       requestHours: 24,
       forfeits: { warning_at: 2, exclusion_at: 3 },
       extensionWeeks: 1,
@@ -42,7 +42,7 @@ const FACTS: HelpFacts[] = [
     staff: true,
     rules: {
       validation: 'opponent',
-      teamRoles: { managers_max: 10, coaches_max: 1 },
+      teamRoles: { managers_max: 10, coaches_max: 1, club_managers_max: 3 },
       requestHours: 24,
       forfeits: { warning_at: null, exclusion_at: null },
       extensionWeeks: 2,
@@ -53,7 +53,7 @@ const FACTS: HelpFacts[] = [
     staff: true,
     rules: {
       validation: 'staff',
-      teamRoles: { managers_max: 0, coaches_max: 1 },
+      teamRoles: { managers_max: 0, coaches_max: 1, club_managers_max: 3 },
       requestHours: 24,
       forfeits: null,
       extensionWeeks: 1,
@@ -95,7 +95,7 @@ describe('/help', () => {
       staff: false,
       rules: {
         validation,
-        teamRoles: { managers_max: 3, coaches_max: 1 },
+        teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
         requestHours: 24,
         forfeits: null,
         extensionWeeks: 1,
@@ -112,7 +112,7 @@ describe('/help', () => {
         staff: false,
         rules: {
           validation: 'staff',
-          teamRoles: { managers_max: 3, coaches_max: 1 },
+          teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
           requestHours: 24,
           forfeits: null,
           extensionWeeks: 1,
@@ -130,7 +130,7 @@ describe('/help', () => {
       helpPage('fr', 'staff-match', { staff: true, rules });
     const both = page({
       validation: 'staff',
-      teamRoles: { managers_max: 3, coaches_max: 1 },
+      teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
       requestHours: 24,
       forfeits: { warning_at: 2, exclusion_at: 3 },
       extensionWeeks: 1,
@@ -140,7 +140,7 @@ describe('/help', () => {
     expect(both).toContain('À 3 forfaits');
     const none = page({
       validation: 'staff',
-      teamRoles: { managers_max: 3, coaches_max: 1 },
+      teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
       requestHours: 24,
       forfeits: { warning_at: null, exclusion_at: null },
       extensionWeeks: 1,

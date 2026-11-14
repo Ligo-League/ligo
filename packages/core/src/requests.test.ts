@@ -14,6 +14,18 @@ describe('mayFile', () => {
     expect(mayFile('team_member_add', 'coach', false)).toEqual({ ok: false, error: 'not_allowed' });
   });
 
+  it('lets only the club’s owner and managers ask for a club manager', () => {
+    expect(mayFile('team_member_add', 'owner', false, 'club_manager')).toEqual({ ok: true });
+    expect(mayFile('team_member_add', 'club_manager', false, 'club_manager')).toEqual({
+      ok: true,
+    });
+    expect(mayFile('team_member_add', 'manager', false, 'club_manager')).toEqual({
+      ok: false,
+      error: 'not_allowed',
+    });
+    expect(mayFile('team_member_add', 'club_manager', false, 'coach')).toEqual({ ok: true });
+  });
+
   it('lets only the owner hand the team over', () => {
     expect(mayFile('team_owner', 'owner', false)).toEqual({ ok: true });
     expect(mayFile('team_owner', 'manager', false)).toEqual({ ok: false, error: 'owner_only' });
@@ -27,6 +39,11 @@ describe('mayFile', () => {
     });
     expect(mayFile('team_member_remove', 'manager', true)).toEqual({ ok: true });
     expect(mayFile('team_member_remove', 'coach', true)).toEqual({ ok: true });
+    expect(mayFile('team_member_remove', 'club_manager', true)).toEqual({ ok: true });
+    expect(mayFile('team_member_remove', 'club_manager', false)).toEqual({
+      ok: false,
+      error: 'owner_only',
+    });
     // A team always has someone answerable to the league: the owner hands it over first.
     expect(mayFile('team_member_remove', 'owner', true)).toEqual({
       ok: false,

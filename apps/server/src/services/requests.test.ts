@@ -45,7 +45,7 @@ function league() {
 }
 const rolesOf = (db: ReturnType<typeof leagueDatabase>, teamId = ALPHA) =>
   listTeamStaff(db, teamId).map((member) => [member.displayName, member.role]);
-const add = (n: number, role: 'manager' | 'coach' = 'coach'): RequestInput => ({
+const add = (n: number, role: 'club_manager' | 'manager' | 'coach' = 'coach'): RequestInput => ({
   kind: 'team_member_add',
   member: person(n),
   role,
@@ -60,6 +60,28 @@ const remove = (n: number | null): RequestInput => ({
 });
 
 describe('fileRequest', () => {
+  it('lets only the club’s officials ask for a club manager', () => {
+    const db = league();
+    expect(fileRequest(db, as(MANAGER), add(5, 'club_manager'), 1000)).toEqual({
+      ok: false,
+      error: 'not_allowed',
+    });
+    const reply = fileRequest(db, as(OWNER), add(5, 'club_manager'), 1000);
+    expect(reply).toMatchObject({
+      ok: true,
+      applied: false,
+      request: { kind: 'team_member_add', role: 'club_manager', status: 'pending' },
+    });
+    if (!reply.ok) return;
+    answerRequest(
+      db,
+      STAFF,
+      { requestId: reply.request.id, decision: 'approve', reason: null },
+      2000,
+    );
+    expect(rolesOf(db)).toContainEqual(['Member 5', 'club_manager']);
+  });
+
   it('lets a manager ask to add a coach: it waits for staff, and the team is unchanged', () => {
     const db = league();
     db.update(schema.competition)

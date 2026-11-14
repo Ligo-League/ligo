@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+import { orgSettingsSchema } from './json.ts';
 import { auditLog, club, gameAccount, org, player } from './schema/index.ts';
 import { openTestDatabase } from './testing.ts';
 
@@ -7,7 +8,7 @@ function seededDatabase() {
   const db = openTestDatabase();
   const lfr = db
     .insert(org)
-    .values({ name: 'LFR', slug: 'lfr', settingsJson: {} })
+    .values({ name: 'LFR', slug: 'lfr', settingsJson: orgSettingsSchema.parse({}) })
     .returning()
     .get();
   const alice = db

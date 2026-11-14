@@ -1,22 +1,24 @@
 import {
   checkTeamChange,
+  roleLevel,
   TEAM_ROLES,
   type AddableTeamRole,
   type RoleCounts,
+  type RoleLimits,
   type SubjectError,
   type TeamRole,
-  type TeamRolesSettings,
 } from '@ligo/core';
-import { listSeasonTeams, schema, type Db, type SeasonTeam, type Tx } from '@ligo/db';
-import { and, eq, isNull } from 'drizzle-orm';
+import { listSeasonTeams, schema, type Db, type League, type SeasonTeam, type Tx } from '@ligo/db';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { requireStaff, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 
-// Who acts for a team: one owner, and the managers and coaches the league allows (maintainer,
-// 13 November 2026). League staff change it directly here; teams ask through requests, which
-// apply the same change once approved (services/requests.ts).
+// Who acts for a team, at two levels (maintainer, 13 and 14 November 2026): the club's owner and
+// managers, for every roster of the club, and each roster's managers and coaches. Everything here
+// takes a roster: its club's officials come with it. League staff change it directly here; teams
+// ask through requests, which apply the same change once approved (services/requests.ts).
 
-const { auditLog, player, teamStaff } = schema;
+const { auditLog, clubStaff, player, team: teamTable, teamStaff } = schema;
 
 export type { TeamRole };
 
@@ -49,20 +51,51 @@ export type TeamStaffReply =
 
 const roleOrder = (role: TeamRole) => TEAM_ROLES.indexOf(role);
 
-/** The people currently acting for a team: its owner, then managers, then coaches, by seniority. */
+/** The club a roster belongs to. */
+function clubOf(db: Pick<Db, 'select'>, teamId: number): number {
+  const row = db
+    .select({ clubId: teamTable.clubId })
+    .from(teamTable)
+    .where(eq(teamTable.id, teamId))
+    .get();
+  // Every roster has a club; callers pass a roster they have just read.
+  if (!row) throw new Error(`Team ${String(teamId)} not found`);
+  return row.clubId;
+}
+
+/**
+ * The people currently acting for a roster: its club's owner and managers, then its own managers
+ * and coaches, each by seniority.
+ */
 export function listTeamStaff(db: Pick<Db, 'select'>, teamId: number): TeamMember[] {
-  return db
-    .select({
-      playerId: player.id,
-      discordUserId: player.discordUserId,
-      displayName: player.displayName,
-      role: teamStaff.role,
-      since: teamStaff.since,
-    })
+  const person = {
+    playerId: player.id,
+    discordUserId: player.discordUserId,
+    displayName: player.displayName,
+  };
+  const club = db
+    .select({ ...person, role: clubStaff.role, since: clubStaff.since })
+    .from(clubStaff)
+    .innerJoin(player, eq(clubStaff.playerId, player.id))
+    .innerJoin(teamTable, eq(teamTable.clubId, clubStaff.clubId))
+    .where(and(eq(teamTable.id, teamId), isNull(clubStaff.until)))
+    .all()
+    .map((row) => ({ ...row, role: row.role === 'owner' ? ('owner' as const) : 'club_manager' }));
+  const roster = db
+    .select({ ...person, role: teamStaff.role, since: teamStaff.since })
     .from(teamStaff)
     .innerJoin(player, eq(teamStaff.playerId, player.id))
-    .where(and(eq(teamStaff.teamId, teamId), isNull(teamStaff.until)))
-    .all()
+    // 'owner' rows are history from before clubs: the owner is the club's now.
+    .where(
+      and(
+        eq(teamStaff.teamId, teamId),
+        isNull(teamStaff.until),
+        inArray(teamStaff.role, ['manager', 'coach']),
+      ),
+    )
+    .all();
+  return [...club, ...roster]
+    .map((row) => ({ ...row, role: row.role as TeamRole }))
     .sort((x, y) => roleOrder(x.role) - roleOrder(y.role) || x.since - y.since)
     .map((row) => ({
       playerId: row.playerId,
@@ -73,9 +106,17 @@ export function listTeamStaff(db: Pick<Db, 'select'>, teamId: number): TeamMembe
 }
 
 export function roleCounts(members: readonly TeamMember[]): RoleCounts {
-  const counts: RoleCounts = { owner: 0, manager: 0, coach: 0 };
+  const counts: RoleCounts = { owner: 0, club_manager: 0, manager: 0, coach: 0 };
   for (const member of members) counts[member.role] += 1;
   return counts;
+}
+
+/** The league's limits for a roster's officials, and the group's for a club's managers. */
+export function roleLimits(league: Pick<League, 'org' | 'competition'>): RoleLimits {
+  return {
+    ...league.competition.rulesetJson.team_roles,
+    club_managers_max: league.org.settingsJson.club_roles.managers_max,
+  };
 }
 
 /** A change to who acts for a team, about one player. */
@@ -92,7 +133,7 @@ export function checkStaffChange(
   db: Pick<Db, 'select'>,
   teamId: number,
   change: TeamStaffChange,
-  limits: TeamRolesSettings,
+  limits: RoleLimits,
   byStaff = false,
 ): { ok: true; members: TeamMember[] } | SubjectError {
   const members = listTeamStaff(db, teamId);
@@ -104,14 +145,54 @@ export function checkStaffChange(
   return checked.ok ? { ok: true, members } : checked;
 }
 
-const endRole = (tx: Tx, teamId: number, playerId: number, now: number) =>
-  tx
-    .update(teamStaff)
+/** Ends every role the player holds in the club, or on the roster only. */
+function endRoles(
+  tx: Tx,
+  where: { clubId: number } | { teamId: number },
+  playerId: number,
+  now: number,
+): void {
+  if ('clubId' in where) {
+    tx.update(clubStaff)
+      .set({ until: now })
+      .where(
+        and(
+          eq(clubStaff.clubId, where.clubId),
+          eq(clubStaff.playerId, playerId),
+          isNull(clubStaff.until),
+        ),
+      )
+      .run();
+    const rosters = tx
+      .select({ id: teamTable.id })
+      .from(teamTable)
+      .where(eq(teamTable.clubId, where.clubId))
+      .all()
+      .map((row) => row.id);
+    if (rosters.length === 0) return;
+    tx.update(teamStaff)
+      .set({ until: now })
+      .where(
+        and(
+          inArray(teamStaff.teamId, rosters),
+          eq(teamStaff.playerId, playerId),
+          isNull(teamStaff.until),
+        ),
+      )
+      .run();
+    return;
+  }
+  tx.update(teamStaff)
     .set({ until: now })
     .where(
-      and(eq(teamStaff.teamId, teamId), eq(teamStaff.playerId, playerId), isNull(teamStaff.until)),
+      and(
+        eq(teamStaff.teamId, where.teamId),
+        eq(teamStaff.playerId, playerId),
+        isNull(teamStaff.until),
+      ),
     )
     .run();
+}
 
 const AUDIT_ACTIONS = {
   team_owner: 'team.owner.set',
@@ -119,10 +200,17 @@ const AUDIT_ACTIONS = {
   team_member_remove: 'team.member.remove',
 } as const;
 
+/** Whether the change is the club's: its owner, or one of its managers. */
+function atClub(change: TeamStaffChange, subjectRole: TeamRole | null): boolean {
+  if (change.kind === 'team_owner') return true;
+  if (change.kind === 'team_member_add') return roleLevel(change.role) === 'club';
+  return subjectRole !== null && roleLevel(subjectRole) === 'club';
+}
+
 /**
  * Applies a change already checked with `checkStaffChange`, with its audit entry, in the
- * caller's transaction. A new owner replaces the previous one, who leaves the team's staff, and
- * leaves any other role they held on the team.
+ * caller's transaction. A new owner replaces the club's previous one, who leaves the club, and
+ * leaves any other role they held in the club. A change to the club is audited on the club.
  */
 export function applyStaffChange(
   tx: Tx,
@@ -131,19 +219,28 @@ export function applyStaffChange(
   by: { playerId: number | null; kind: 'user' | 'system'; requestId?: number },
   now: number,
 ): TeamMember[] {
+  const clubId = clubOf(tx, teamId);
   const before = listTeamStaff(tx, teamId);
+  const subjectRole = before.find((member) => member.playerId === change.playerId)?.role ?? null;
+  const club = atClub(change, subjectRole);
   if (change.kind === 'team_owner') {
-    for (const member of before) {
-      if (member.role === 'owner' || member.playerId === change.playerId) {
-        endRole(tx, teamId, member.playerId, now);
-      }
+    const previous = before.filter((member) => member.role === 'owner');
+    for (const playerId of new Set([...previous.map((m) => m.playerId), change.playerId])) {
+      endRoles(tx, { clubId }, playerId, now);
     }
+    tx.insert(clubStaff)
+      .values({ clubId, playerId: change.playerId, role: 'owner', since: now })
+      .run();
   } else if (change.kind === 'team_member_remove') {
-    endRole(tx, teamId, change.playerId, now);
-  }
-  if (change.kind !== 'team_member_remove') {
-    const role = change.kind === 'team_owner' ? 'owner' : change.role;
-    tx.insert(teamStaff).values({ teamId, playerId: change.playerId, role, since: now }).run();
+    endRoles(tx, club ? { clubId } : { teamId }, change.playerId, now);
+  } else if (change.role === 'club_manager') {
+    tx.insert(clubStaff)
+      .values({ clubId, playerId: change.playerId, role: 'manager', since: now })
+      .run();
+  } else {
+    tx.insert(teamStaff)
+      .values({ teamId, playerId: change.playerId, role: change.role, since: now })
+      .run();
   }
   const after = listTeamStaff(tx, teamId);
   const names = (members: TeamMember[]) =>
@@ -153,11 +250,12 @@ export function applyStaffChange(
       actorPlayerId: by.playerId,
       actorKind: by.kind,
       action: AUDIT_ACTIONS[change.kind],
-      entity: 'team',
-      entityId: String(teamId),
+      entity: club ? 'club' : 'team',
+      entityId: String(club ? clubId : teamId),
       beforeJson: { staff: names(before) },
       afterJson: {
         staff: names(after),
+        ...(club ? { teamId } : {}),
         ...(by.requestId === undefined ? {} : { requestId: by.requestId }),
       },
       at: now,
@@ -221,8 +319,7 @@ export function changeTeamStaff(
       change.kind === 'team_member_add'
         ? { kind: change.kind, playerId, role: change.role }
         : { kind: change.kind, playerId };
-    const limits = league.competition.rulesetJson.team_roles;
-    const checked = checkStaffChange(tx, team.teamId, staffChange, limits, true);
+    const checked = checkStaffChange(tx, team.teamId, staffChange, roleLimits(league), true);
     if (!checked.ok) return checked;
     const by = ensurePlayer(
       tx,

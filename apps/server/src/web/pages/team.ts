@@ -6,6 +6,7 @@ import { matchList, safeColor, pageOf, type Html, type Page } from '../layout.ts
 type Data = Extract<TeamPage, { ok: true }>;
 const ROLE_KEYS = {
   owner: 'team.role.owner',
+  club_manager: 'team.role.club_manager',
   manager: 'team.role.manager',
   coach: 'team.role.coach',
 } as const;

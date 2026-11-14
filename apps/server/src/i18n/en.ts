@@ -146,13 +146,14 @@ export const en: Record<MessageKey, string> = {
   'match.error.invalid_screenshot':
     'The screenshot must be a PNG, JPEG or WebP image under 20 MB, attached to the command.',
   'command.team.description': "Teams' officials: change them, or ask for a change.",
-  'command.team.owner.description': 'Hand a team over to a new owner.',
-  'command.team.member.description': "A team's managers and coach.",
-  'command.team.member.add.description': 'Add a manager or a coach to a team.',
+  'command.team.owner.description': "Hand a team's club over to a new owner.",
+  'command.team.member.description': "A team's managers and coach, its club's managers.",
+  'command.team.member.add.description': 'Add a club manager, a manager or a coach to a team.',
   'command.team.member.remove.description': 'Remove an official from a team.',
   'command.team.list.description': "Show a team's officials.",
   'command.team.option.role': 'The role on the team.',
-  'team.role.owner': 'Owner',
+  'team.role.owner': 'Club owner',
+  'team.role.club_manager': 'Club manager',
   'team.role.manager': 'Manager',
   'team.role.coach': 'Coach',
   'command.team.option.team': 'The team: type its name or tag, then pick from the list.',
@@ -212,7 +213,8 @@ export const en: Record<MessageKey, string> = {
   'request.list.overdue': '· ⚠️ overdue ({deadline})',
   'request.reminder':
     '⏰ {role} Request #{id} ({team}) is waiting for an answer, due {deadline}. {link}',
-  'team.summary': '{team} ({tag}): owner {owner}; managers {managers}; coach {coach}.',
+  'team.summary':
+    '{team} ({tag}): club owner {owner}; club managers {clubManagers}; managers {managers}; coach {coach}.',
   'team.none': 'none',
   'team.error.not_linked': 'This server is not linked to a league.',
   'team.error.not_staff': 'This command is for league staff only.',
@@ -336,7 +338,7 @@ export const en: Record<MessageKey, string> = {
   'help.page.team':
     "**`/team`** — who acts for each team\nA team's officials (its owner, managers and coach) report its results, propose its match times and run its veto.\n\n**For teams** — the owner and managers ask, league staff approve or refuse with a reason:\n• `/team member add` — add a manager or a coach (`member`, `role`).\n• `/team owner` — hand the team over; the owner only, who then leaves the team.\n• `/team member remove` — remove an official; the owner only, no approval needed.\n• `/team leave` — leave the team, no approval needed; the owner hands it over first.\n• `/team requests` — your requests still waiting, to withdraw them.\n• `/team list` — your team's officials.\n`team` is needed only if you are an official of several teams; `note` is a word for staff. The answer comes by direct message.\n\n**For league staff** — the same commands change the team directly, without a request (`team` required). Requests arrive in the validation queue with **Approve** and **Refuse**; `/team requests` lists them all.",
   'help.team.max':
-    'A team has one owner, at most {managers} managers and {coaches} coach. Staff answer requests within {hours} hours.',
+    "A team's club has one owner and at most {clubManagers} managers, who act for all its teams; each team has at most {managers} managers and {coaches} coach. Staff answer requests within {hours} hours.",
   'help.page.league':
     "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Match schedule: extensions and agreed times, until each match has its own channel.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
   'command.match.veto.description': "Start the map veto of one of your team's matches.",

@@ -71,6 +71,20 @@
       "when": 1794676934562,
       "tag": "0009_clubs",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794685208654,
+      "tag": "0010_club_staff",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1794685769096,
+      "tag": "0011_club_owners",
+      "breakpoints": true
     }
   ]
 }

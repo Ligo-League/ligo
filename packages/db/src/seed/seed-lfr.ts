@@ -9,13 +9,29 @@ import { slugify } from '@ligo/core';
 import { R6_GAME_SCORE } from '@ligo/titles';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client.ts';
-import { auditLog, club, competition, division, org, season, slot, team } from '../schema/index.ts';
+import { orgSettingsSchema } from '../json.ts';
+import {
+  auditLog,
+  club,
+  clubStaff,
+  competition,
+  division,
+  org,
+  season,
+  slot,
+  team,
+} from '../schema/index.ts';
 import type { TeamRow } from './parse-teams-csv.ts';
 
 // LFR Season 3 as described in the design doc (sections 5 and 16). Data, not rules: every value
 // below is an ordinary row or setting that staff will be able to change.
 const LFR_TIME_ZONE_SETTING = 'Europe/Paris';
-const ORG: typeof org.$inferInsert = { name: 'LFR', slug: 'lfr', locale: 'fr', settingsJson: {} };
+const ORG: typeof org.$inferInsert = {
+  name: 'LFR',
+  slug: 'lfr',
+  locale: 'fr',
+  settingsJson: orgSettingsSchema.parse({}),
+};
 const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   title: 'r6',
   name: 'LFR',
@@ -309,8 +325,14 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
     // A club the file moved every roster away from holds nothing more: the file grouped it into
     // another (the clubs 0009 made, one per team, before the file named Season 3's clubs).
     for (const clubId of vacated) {
+      // A club with officials is somebody's: it stays, for staff to sort out.
       const left = tx.select({ id: team.id }).from(team).where(eq(team.clubId, clubId)).get();
-      if (left) continue;
+      const staffed = tx
+        .select({ id: clubStaff.playerId })
+        .from(clubStaff)
+        .where(eq(clubStaff.clubId, clubId))
+        .get();
+      if (left || staffed) continue;
       tx.delete(club).where(eq(club.id, clubId)).run();
       summary.removed.clubs += 1;
     }

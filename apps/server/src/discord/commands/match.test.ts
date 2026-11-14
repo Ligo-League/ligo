@@ -128,7 +128,9 @@ describe('/match report', () => {
 
   it('says so when the other team has nobody to confirm, or staff could not be notified', async () => {
     const first = session();
+    // Every official leaves: since 3d-2 the owners are the clubs'.
     first.db.update(schema.teamStaff).set({ until: 200 }).run();
+    first.db.update(schema.clubStaff).set({ until: 200 }).run();
     setTeamOwner(first.db, STAFF, { teamId: 2, member: BRAVO.user }, 300);
     expect((await first.run(report(BRAVO))).replies[0]).toMatchObject({
       content:

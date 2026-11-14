@@ -21,7 +21,7 @@ import {
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { hasExcludedTeam } from './exclusions.ts';
 import { matchQuery } from './match-search.ts';
-import { requireStaff, teamsActedFor, type Actor, type TeamRoleHeld } from './permissions.ts';
+import { actsFor, requireStaff, sideOf, teamsActedFor, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { leagueMatch } from './reports.ts';
 import { listTeamStaff, type TeamMember } from './team-staff.ts';
@@ -33,11 +33,6 @@ const { auditLog, leagueGuild, match, matchProposal } = schema;
 
 type Side = 'a' | 'b';
 const other = (side: Side): Side => (side === 'a' ? 'b' : 'a');
-const actsFor = (teams: readonly TeamRoleHeld[], found: LeagueMatch, side: Side) =>
-  teams.some((held) => held.teamId === found[side].teamId);
-/** The side someone acts for; someone on both teams counts for side A. */
-const sideOf = (teams: readonly TeamRoleHeld[], found: LeagueMatch): Side | null =>
-  actsFor(teams, found, 'a') ? 'a' : actsFor(teams, found, 'b') ? 'b' : null;
 
 /** The week of a match and its extension, by the league's scheduling settings. */
 export const periodOf = (league: GuildLeague, found: LeagueMatch): PlayPeriod =>

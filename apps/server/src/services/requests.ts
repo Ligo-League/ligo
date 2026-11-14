@@ -23,7 +23,7 @@ import {
   type Tx,
 } from '@ligo/db';
 import { and, asc, eq, isNull } from 'drizzle-orm';
-import { requireStaff, teamsActedFor, type Actor } from './permissions.ts';
+import { highestRole, requireStaff, teamsActedFor, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { queuePostsOf, type PostRef } from './queue-posts.ts';
 import {
@@ -32,6 +32,7 @@ import {
   checkStaffChange,
   filterTeams,
   listTeamStaff,
+  roleLimits,
   searchTeams,
   showTeamStaff,
   type MemberRef,
@@ -188,9 +189,10 @@ function officialOf(
   if (!league.season) return { ok: false, error: 'no_season' };
   const acting = teamsActedFor(db, actor);
   const seasonTeams = listSeasonTeams(db, league.season.id);
-  const mine = acting.teams.flatMap((held) => {
-    const found = seasonTeams.find((candidate) => candidate.teamId === held.teamId);
-    return found ? [{ team: found, role: held.role }] : [];
+  // One entry per team, with the highest role held for it: the club's before the roster's.
+  const mine = seasonTeams.flatMap((found) => {
+    const role = highestRole(acting.teams, found.teamId);
+    return role ? [{ team: found, role }] : [];
   });
   if (acting.playerId === null || mine.length === 0) return { ok: false, error: 'not_official' };
   const chosen =
@@ -305,14 +307,19 @@ export function fileRequest(db: Db, actor: Actor, input: RequestInput, now: numb
       ).id;
     }
     const self = subject === filer;
-    const allowed = mayFile(input.kind, filerRole, self);
+    const allowed = mayFile(
+      input.kind,
+      filerRole,
+      self,
+      input.kind === 'team_member_add' ? input.role : null,
+    );
     if (!allowed.ok) return allowed;
 
     const change: TeamStaffChange =
       input.kind === 'team_member_add'
         ? { kind: input.kind, playerId: subject, role: input.role }
         : { kind: input.kind, playerId: subject };
-    const checked = checkStaffChange(tx, chosen.teamId, change, rulesetJson.team_roles);
+    const checked = checkStaffChange(tx, chosen.teamId, change, roleLimits(league));
     if (!checked.ok) return checked;
 
     const approval = approvalFor(input.kind, rulesetJson.requests, self);
@@ -482,12 +489,7 @@ export function answerRequest(
     if (input.decision === 'approve') {
       // The team may have changed since it asked: the change must still make sense.
       const change = changeOf(row);
-      const checked = checkStaffChange(
-        tx,
-        row.teamId,
-        change,
-        league.competition.rulesetJson.team_roles,
-      );
+      const checked = checkStaffChange(tx, row.teamId, change, roleLimits(league));
       if (!checked.ok) return checked;
       members = applyStaffChange(
         tx,

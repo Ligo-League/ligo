@@ -24,11 +24,12 @@ import type { DiscordGateway } from '../discord/gateway.ts';
 import { imageTypeOf, keepEvidence } from './evidence.ts';
 import { matchQuery } from './match-search.ts';
 import {
+  actsFor,
   requireStaff,
+  sideOf,
   teamsActedFor,
   teamsOfPlayer,
   type Actor,
-  type TeamRoleHeld,
 } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { settleDisputes, type DisputeResolution } from './disputes.ts';
@@ -43,17 +44,8 @@ const { auditLog, dispute: disputeTable, evidence, game, match, player } = schem
 type Side = 'a' | 'b';
 const other = (side: Side): Side => (side === 'a' ? 'b' : 'a');
 
-/**
- * The side of a match someone acts for, from the teams they manage or staff. Someone on both
- * teams counts for side A; the other side is then theirs too, so they can still confirm.
- */
-function sideOf(teams: readonly TeamRoleHeld[], found: LeagueMatch): Side | null {
-  if (teams.some((held) => held.teamId === found.a.teamId)) return 'a';
-  if (teams.some((held) => held.teamId === found.b.teamId)) return 'b';
-  return null;
-}
-const actsFor = (teams: readonly TeamRoleHeld[], found: LeagueMatch, side: Side) =>
-  teams.some((held) => held.teamId === found[side].teamId);
+// `sideOf`: someone acting for both teams counts for side A; the other side is then theirs too,
+// so they can still confirm. A club official acts for neither of two rosters of their club.
 
 /** The side whose official reported the match's current result; null with no report. */
 export function reportingSide(db: Pick<Db, 'select'>, found: LeagueMatch): Side | null {

@@ -1,5 +1,6 @@
 import { promotionSchema, requestsSchema, vetoSchema } from '@ligo/core';
 import { schema } from '@ligo/db';
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { teamsActedFor, type Actor } from './permissions.ts';
@@ -26,6 +27,69 @@ const BRAVO = 2;
 const roles = (db: ReturnType<typeof leagueDatabase>, teamId: number) =>
   listTeamStaff(db, teamId).map((entry) => [entry.displayName, entry.role]);
 
+/** Bravo joins Alpha's club: two rosters of club 1. */
+function oneClub() {
+  const db = leagueDatabase();
+  db.update(schema.team).set({ clubId: 1 }).where(eq(schema.team.id, BRAVO)).run();
+  return db;
+}
+
+describe('two levels: the club, and each roster', () => {
+  it('lets the club’s owner and managers act for every roster, the roster’s only for it', () => {
+    const db = oneClub();
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
+    addTeamMember(db, STAFF, { teamId: BRAVO, member: member(2), role: 'club_manager' }, 5000);
+    addTeamMember(db, STAFF, { teamId: BRAVO, member: member(3), role: 'coach' }, 5000);
+    expect(roles(db, ALPHA)).toEqual([
+      ['Member 1', 'owner'],
+      ['Member 2', 'club_manager'],
+    ]);
+    expect(roles(db, BRAVO)).toEqual([
+      ['Member 1', 'owner'],
+      ['Member 2', 'club_manager'],
+      ['Member 3', 'coach'],
+    ]);
+    expect(teamsActedFor(db, asUser(2)).teams).toEqual([
+      { teamId: ALPHA, clubId: 1, role: 'club_manager' },
+      { teamId: BRAVO, clubId: 1, role: 'club_manager' },
+    ]);
+    expect(teamsActedFor(db, asUser(3)).teams).toEqual([
+      { teamId: BRAVO, clubId: 1, role: 'coach' },
+    ]);
+  });
+
+  it('keeps club managers within the group’s limit', () => {
+    const db = oneClub();
+    db.update(schema.org)
+      .set({ settingsJson: { club_roles: { managers_max: 1 } } })
+      .run();
+    addTeamMember(db, STAFF, { teamId: ALPHA, member: member(1), role: 'club_manager' }, 5000);
+    expect(
+      addTeamMember(db, STAFF, { teamId: BRAVO, member: member(2), role: 'club_manager' }, 5000),
+    ).toEqual({ ok: false, error: 'role_full', max: 1 });
+  });
+
+  it('ends a new owner’s other roles in the club, on every roster', () => {
+    const db = oneClub();
+    addTeamMember(db, STAFF, { teamId: BRAVO, member: member(1), role: 'coach' }, 5000);
+    setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 6000);
+    expect(roles(db, BRAVO)).toEqual([['Member 1', 'owner']]);
+    expect(db.select().from(schema.teamStaff).get()).toMatchObject({ until: 6000 });
+  });
+
+  it('removes a club manager from the whole club, a coach from their roster only', () => {
+    const db = oneClub();
+    addTeamMember(db, STAFF, { teamId: ALPHA, member: member(2), role: 'club_manager' }, 5000);
+    addTeamMember(db, STAFF, { teamId: ALPHA, member: member(3), role: 'coach' }, 5000);
+    removeTeamMember(db, STAFF, { teamId: BRAVO, member: member(2) }, 6000);
+    expect(roles(db, ALPHA)).toEqual([['Member 3', 'coach']]);
+    expect(removeTeamMember(db, STAFF, { teamId: BRAVO, member: member(3) }, 6000)).toEqual({
+      ok: false,
+      error: 'not_on_team',
+    });
+  });
+});
+
 describe('setTeamOwner', () => {
   it('makes the member owner and creates their player row', () => {
     const db = leagueDatabase();
@@ -35,7 +99,10 @@ describe('setTeamOwner', () => {
       team: { teamId: ALPHA, tag: 'ALP', name: 'Alpha Esport' },
       members: [{ displayName: 'Member 1', role: 'owner', discordUserId: member(1).id }],
     });
-    expect(teamsActedFor(db, asUser(1)).teams).toEqual([{ teamId: ALPHA, role: 'owner' }]);
+    // In leagueDatabase(), each team is the only roster of a club of its own: Alpha's is club 1.
+    expect(teamsActedFor(db, asUser(1)).teams).toEqual([
+      { teamId: ALPHA, clubId: 1, role: 'owner' },
+    ]);
   });
 
   it('replaces the previous owner, whose row keeps its end date', () => {
@@ -45,10 +112,12 @@ describe('setTeamOwner', () => {
 
     expect(roles(db, ALPHA)).toEqual([['Member 2', 'owner']]);
     expect(teamsActedFor(db, asUser(1)).teams).toEqual([]);
-    expect(db.select().from(schema.teamStaff).all()).toMatchObject([
-      { role: 'owner', since: 5000, until: 6000 },
-      { role: 'owner', since: 6000, until: null },
+    // The owner is the club's.
+    expect(db.select().from(schema.clubStaff).all()).toMatchObject([
+      { clubId: 1, role: 'owner', since: 5000, until: 6000 },
+      { clubId: 1, role: 'owner', since: 6000, until: null },
     ]);
+    expect(db.select().from(schema.teamStaff).all()).toEqual([]);
   });
 
   it('promotes a manager, who then leaves the managers', () => {
@@ -63,8 +132,8 @@ describe('setTeamOwner', () => {
     setTeamOwner(db, STAFF, { teamId: ALPHA, member: member(1) }, 5000);
     setTeamOwner(db, STAFF, { teamId: BRAVO, member: member(1) }, 5000);
     expect(teamsActedFor(db, asUser(1)).teams).toEqual([
-      { teamId: ALPHA, role: 'owner' },
-      { teamId: BRAVO, role: 'owner' },
+      { teamId: ALPHA, clubId: 1, role: 'owner' },
+      { teamId: BRAVO, clubId: 2, role: 'owner' },
     ]);
   });
 
@@ -214,12 +283,21 @@ describe('every change to team staff', () => {
       .select()
       .from(schema.auditLog)
       .all()
-      .filter((row) => row.entity === 'team');
+      .filter((row) => row.entity === 'team' || row.entity === 'club');
+    // The owner is the club's: setting or removing them is audited on the club.
     expect(entries).toMatchObject([
-      { action: 'team.owner.set', entityId: '1', at: 5000, beforeJson: { staff: [] } },
-      { action: 'team.member.add', at: 6000 },
+      {
+        action: 'team.owner.set',
+        entity: 'club',
+        entityId: '1',
+        at: 5000,
+        beforeJson: { staff: [] },
+        afterJson: { teamId: ALPHA },
+      },
+      { action: 'team.member.add', entity: 'team', entityId: '1', at: 6000 },
       {
         action: 'team.member.remove',
+        entity: 'club',
         at: 7000,
         actorKind: 'user',
         actorPlayerId: staffPlayer?.id,

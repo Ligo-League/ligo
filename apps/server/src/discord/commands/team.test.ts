@@ -57,19 +57,19 @@ describe('/team, by league staff', () => {
     expect(await run('owner', { team: 1, member: user(1) })).toEqual([
       {
         content:
-          'Alpha Esport (ALP) : propriétaire <@700000000000000001> ; managers aucun ; coach aucun.',
+          'Alpha Esport (ALP) : propriétaire du club <@700000000000000001> ; managers du club aucun ; managers aucun ; coach aucun.',
         ephemeral: true,
       },
     ]);
     await run('member add', { team: 1, member: user(2), role: 'manager' });
     expect((await run('member add', { team: 1, member: user(3), role: 'coach' }))[0]?.content).toBe(
-      'Alpha Esport (ALP) : propriétaire <@700000000000000001> ; managers <@700000000000000002> ; coach <@700000000000000003>.',
+      'Alpha Esport (ALP) : propriétaire du club <@700000000000000001> ; managers du club aucun ; managers <@700000000000000002> ; coach <@700000000000000003>.',
     );
     expect((await run('member remove', { team: 1, member: user(1) }))[0]?.content).toBe(
-      'Alpha Esport (ALP) : propriétaire aucun ; managers <@700000000000000002> ; coach <@700000000000000003>.',
+      'Alpha Esport (ALP) : propriétaire du club aucun ; managers du club aucun ; managers <@700000000000000002> ; coach <@700000000000000003>.',
     );
     expect((await run('list', { team: 1 }))[0]?.content).toBe(
-      'Alpha Esport (ALP) : propriétaire aucun ; managers <@700000000000000002> ; coach <@700000000000000003>.',
+      'Alpha Esport (ALP) : propriétaire du club aucun ; managers du club aucun ; managers <@700000000000000002> ; coach <@700000000000000003>.',
     );
     // A direct change is no request: nothing goes to the queue.
     expect(gateway.posted).toEqual([]);
@@ -141,7 +141,7 @@ describe('/team, by a team', () => {
     const { gateway, run } = await alpha();
     const replies = await run('member remove', { member: user(2) }, member(1));
     expect(replies[0]?.content).toBe(
-      'Fait : Retirer <@700000000000000002> des responsables.\nAlpha Esport (ALP) : propriétaire <@700000000000000001> ; managers aucun ; coach aucun.',
+      'Fait : Retirer <@700000000000000002> des responsables.\nAlpha Esport (ALP) : propriétaire du club <@700000000000000001> ; managers du club aucun ; managers aucun ; coach aucun.',
     );
     expect(gateway.posted[0]?.message).toEqual({
       content:

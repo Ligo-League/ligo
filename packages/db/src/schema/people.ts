@@ -2,7 +2,7 @@ import { TITLES } from '@ligo/titles';
 import { check, integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 import { jsonText, oneOf } from '../columns.ts';
 import { orgSettingsSchema, teamColorsSchema, teamSocialsSchema } from '../json.ts';
-import { LEGAL_STATUSES, LOCALES, TEAM_STAFF_ROLES } from './enums.ts';
+import { CLUB_STAFF_ROLES, LEGAL_STATUSES, LOCALES, TEAM_STAFF_ROLES } from './enums.ts';
 
 // Tenancy, people and teams. Discord IDs are TEXT: snowflakes exceed JavaScript's safe integers.
 
@@ -108,8 +108,30 @@ export const team = sqliteTable(
   ],
 );
 
-// "1 owner", and the managers and coaches the league allows, are checked by the service that
-// edits team staff, not here.
+// Who acts for a club, and so for every one of its rosters: its owner, answerable to the league,
+// and its managers (maintainer, 14 November 2026). "1 owner" and the number of managers the
+// group allows are checked by the service that edits officials, not here.
+export const clubStaff = sqliteTable(
+  'club_staff',
+  {
+    clubId: integer('club_id')
+      .notNull()
+      .references(() => club.id),
+    playerId: integer('player_id')
+      .notNull()
+      .references(() => player.id),
+    role: text('role', { enum: CLUB_STAFF_ROLES }).notNull(),
+    since: integer('since').notNull(),
+    until: integer('until'),
+  },
+  (t) => [
+    primaryKey({ columns: [t.clubId, t.playerId, t.since] }),
+    check('club_staff_role_check', oneOf(t.role, CLUB_STAFF_ROLES)),
+  ],
+);
+
+// A roster's own officials: managers and coaches, within the league's limits, checked by the
+// service that edits them.
 export const teamStaff = sqliteTable(
   'team_staff',
   {

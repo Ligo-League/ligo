@@ -21,7 +21,7 @@ import {
 } from '@ligo/db';
 import { and, asc, eq, isNotNull } from 'drizzle-orm';
 import { hasExcludedTeam } from './exclusions.ts';
-import { teamsActedFor, type Actor, type TeamRoleHeld } from './permissions.ts';
+import { actsFor, teamsActedFor, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { leagueMatch } from './reports.ts';
 import { listTeamStaff } from './team-staff.ts';
@@ -34,8 +34,6 @@ const { auditLog, game, match, vetoStep } = schema;
 
 type Side = 'a' | 'b';
 const other = (side: Side): Side => (side === 'a' ? 'b' : 'a');
-const actsFor = (teams: readonly TeamRoleHeld[], found: LeagueMatch, side: Side) =>
-  teams.some((held) => held.teamId === found[side].teamId);
 
 /** Everything a veto message shows. */
 export interface VetoView {

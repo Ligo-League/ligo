@@ -12,10 +12,11 @@ import { openTestDatabase } from './testing.ts';
 
 // Schema v1, the tables phase 0 was allowed to create (design doc section 15, "Start here
 // today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`,
-// 0004 `veto_step`, 0007 `request` and `queue_post`, 0009 `club`.
+// 0004 `veto_step`, 0007 `request` and `queue_post`, 0009 `club`, 0010 `club_staff`.
 const SCHEMA_TABLES = [
   'audit_log',
   'club',
+  'club_staff',
   'competition',
   'dispute',
   'division',
@@ -143,7 +144,8 @@ describe('0006: team roles', () => {
     run(`insert into team_staff (team_id, player_id, role, since, until)
          values (1, 1, 'manager', 10, null), (1, 2, 'staff', 10, null), (1, 3, 'manager', 1, 10)`);
 
-    applyMigrations(db);
+    // Up to 0006 only: 0010 later moves owners to their club.
+    migrateUpTo(db, '0006_team_roles');
 
     expect(
       db.$client.prepare('select player_id, role, until from team_staff order by player_id').all(),
@@ -216,7 +218,7 @@ describe('0009: clubs', () => {
          values (7, 1, 'r6', 'Greed Esport', 'GREED1', 'greed-esport', 'Lyon', 'association',
                  '["#800080","#000000"]', 'logos/greed.png', '[]', 'https://discord.gg/x', 1)`);
     // A row pointing at the team: dropping the old table must not break it.
-    run(`insert into team_staff (team_id, player_id, role, since) values (7, 1, 'owner', 0)`);
+    run(`insert into team_staff (team_id, player_id, role, since) values (7, 1, 'coach', 0)`);
 
     applyMigrations(db);
 
@@ -266,9 +268,49 @@ describe('applyMigrations', () => {
     migrateUpTo(db, '0008_veto_coin_toss');
     db.$client.pragma('foreign_keys = OFF');
     db.$client.exec(`insert into team_staff (team_id, player_id, role, since)
-                     values (99, 99, 'owner', 0)`);
+                     values (99, 99, 'coach', 0)`);
     expect(() => {
       applyMigrations(db);
     }).toThrow('Migrations left 2 rows pointing at nothing');
+  });
+});
+
+describe('0010 and 0011: club officials', () => {
+  it('makes each team owner the owner of its club; a second owner of a club becomes a manager', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0009_clubs');
+    const run = (sql: string) => db.$client.exec(sql);
+    run(`insert into org (id, name, slug, settings_json) values (1, 'LFR', 'lfr', '{}')`);
+    for (const id of [1, 2, 3, 4]) {
+      run(`insert into player (id, org_id, slug, display_name, created_at)
+           values (${String(id)}, 1, 'p${String(id)}', 'P${String(id)}', 0)`);
+    }
+    run(`insert into club (id, org_id, name, slug, colors_json, socials_json)
+         values (1, 1, 'Greed', 'greed', '[]', '[]')`);
+    // Greed's two rosters had owners 1 (first) and 2; player 1 also owned the second, earlier.
+    run(`insert into team (id, org_id, club_id, title, name, tag, slug)
+         values (1, 1, 1, 'r6', 'Greed Esport', 'GREED1', 'greed-esport'),
+                (2, 1, 1, 'r6', 'GREED Academy', 'GREED2', 'greed-academy')`);
+    run(`insert into team_staff (team_id, player_id, role, since, until) values
+           (1, 1, 'owner', 10, null),
+           (2, 2, 'owner', 20, null),
+           (2, 4, 'owner', 1, 5),
+           (2, 3, 'coach', 30, null)`);
+
+    applyMigrations(db);
+
+    expect(
+      db.$client
+        .prepare('select club_id, player_id, role, since, until from club_staff order by since')
+        .all(),
+    ).toEqual([
+      { club_id: 1, player_id: 4, role: 'owner', since: 1, until: 5 },
+      { club_id: 1, player_id: 1, role: 'owner', since: 10, until: null },
+      { club_id: 1, player_id: 2, role: 'manager', since: 20, until: null },
+    ]);
+    expect(db.$client.prepare('select team_id, player_id, role from team_staff').all()).toEqual([
+      { team_id: 2, player_id: 3, role: 'coach' },
+    ]);
+    expect(db.$client.pragma('foreign_key_check')).toEqual([]);
   });
 });

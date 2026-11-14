@@ -4,7 +4,10 @@
 export const LOCALES = ['fr', 'en'] as const;
 export const LEGAL_STATUSES = ['association', 'association_1901', 'company', 'amateur'] as const;
 // The owner, managers and coaches who act for a team (maintainer, 13 November 2026).
+// A roster's own officials. 'owner' is kept for rows from before 0010, when each team had its
+// owner; the owner is now the club's (CLUB_STAFF_ROLES).
 export const TEAM_STAFF_ROLES = ['owner', 'manager', 'coach'] as const;
+export const CLUB_STAFF_ROLES = ['owner', 'manager'] as const;
 
 export const PARTICIPANT_MODES = ['team', 'mixed'] as const;
 export const SEASON_STATUSES = ['registration', 'active', 'cup', 'closed'] as const;

@@ -1,5 +1,5 @@
 import type { ApprovalMode, RequestKind, RequestsSettings } from './settings.ts';
-import type { TeamRole } from './team-roles.ts';
+import type { AddableTeamRole, TeamRole } from './team-roles.ts';
 
 // Team requests (design doc section 5, "Team requests"; maintainer, 13 November 2026). A team's
 // owner and managers ask for changes to the team; the league approves what its rules restrict
@@ -14,15 +14,19 @@ export type RequestDecision = (typeof REQUEST_DECISIONS)[number];
 export type FilingError = 'not_allowed' | 'owner_only' | 'owner_cannot_leave';
 
 /**
- * Whether a member of the team may file this kind of request. `self` is true when the request is
- * about the filer: leaving the team.
+ * Whether a member of the team may file this kind of request. `filerRole` is their highest role
+ * for the roster; `self` is true when the request is about the filer: leaving the team. `role`
+ * is the role an addition asks for: only the club's own officials ask for a club manager.
  */
 export function mayFile(
   kind: RequestKind,
   filerRole: TeamRole,
   self: boolean,
+  role: AddableTeamRole | null = null,
 ): { ok: true } | { ok: false; error: FilingError } {
   if (kind === 'team_member_add') {
+    const club = filerRole === 'owner' || filerRole === 'club_manager';
+    if (role === 'club_manager') return club ? { ok: true } : { ok: false, error: 'not_allowed' };
     return filerRole === 'coach' ? { ok: false, error: 'not_allowed' } : { ok: true };
   }
   if (kind === 'team_owner') {
