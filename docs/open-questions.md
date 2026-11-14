@@ -324,15 +324,6 @@ section 16.
   are wanted; roster moves go to a `#mercato` channel per league without mentions. Still open for
   the owner: other formats, and which images post on their own.
 
-#### M-19 · What the captain may do
-
-- **Question:** from phase 3, each team has one captain, who must be a player. May the captain
-  act for the team in matches (propose a time, run the veto, report and confirm a result) like
-  its officials, or is the captain only a title on the roster?
-- **Why it matters:** the permission check on match commands, and the roster form (phase 3).
-- **Until answered:** rosters are not in Ligo yet; only the owner, managers and coach act.
-- **Answer:**
-
 #### M-20 · Who opens the admin panel
 
 - **Question:** who may open each level of the admin panel (design doc section 7)? A
@@ -347,20 +338,6 @@ section 16.
   everything. Teams likewise: roster officials their roster, club officials the club and every
   roster. Still open: who holds group staff first, so that someone can set the other roles.
 
-#### M-21 · Clubs and rosters: what belongs where
-
-- **Question:** a team is a club with one or more rosters (design doc section 4). Which details
-  belong to the club and which to each roster: name, tag, logo, colours, city, legal status,
-  socials, team Discord, streaming? How is a roster shown in standings: its own name ("GREED
-  Academy"), or the club's name and the roster's ("Not Scam Katsuki")? Can one club have rosters
-  in several titles (an R6 roster in LFR, a Valorant one in LFV)?
-- **Why it matters:** the `club` table and the registration form (phase 3d).
-- **Until answered:** the club holds the city, legal status, socials, team Discord, and the
-  default logo and colours; each roster has its own name and tag, and may have its own logo and
-  colours. A roster is shown by its own name. A club belongs to the group and may have rosters in
-  any of its competitions.
-- **Answer:**
-
 #### M-22 · Rosters of one club in the same league
 
 - **Question:** in Season 3, Greed has two rosters in Ligue 1 and Nova two in Ligue 2. Is there a
@@ -372,7 +349,13 @@ section 16.
 - **Until answered:** no limit per division (a setting, empty by default). A move between rosters
   of one club is an ordinary mercato move. In a match between two rosters of one club, club
   officials may act for neither side: each roster's own officials report and confirm.
-- **Answer:**
+- **Answer (partial, maintainer, 14 November 2026):** several rosters of one club in a division
+  must be possible (Greed Academy won Ligue 2 in Season 3 and was promoted next to Greed), with
+  the limit as a setting. Moves between rosters of one club must be settings too, to cover the
+  possible cases: a move like any other mercato move, a player of the academy standing in for some
+  matches of the main roster, or a promotion from the academy to the main roster. A season of
+  almost three months is long for a grassroots team to keep the same five. Still open: those
+  settings' exact values, designed with the mercato (phase 3f). The intra-club match rule is kept.
 
 #### M-23 · The Ubisoft account at registration
 
@@ -386,9 +369,48 @@ section 16.
   break without notice. (c) The player uploads one of their own replays to prove the account.
 - **Until answered:** (a): the Ubisoft name is stored as declared, unverified, with no
   `profileID`.
-- **Answer:**
+- **Answer (partial, maintainer, 14 November 2026):** option (a) as the base: it takes a while to
+  run, then works on its own. Names change, often to add a team tag (Nivalem → Nivalem.RCK), so a
+  player may also give their `profileID` directly: Ubisoft Connect shows it. Option (c) is a
+  fallback, too tedious to require. Still open: how other Discord bots and tracker sites find a
+  `profileID`, to look at before phase 5. Until then the form asks for the Ubisoft name, and the
+  `profileID` when the player has it; neither is verified before a replay confirms it.
 
 ## Answered
+
+#### O-26 · Where a new roster starts
+
+- **Answer (maintainer, 14 November 2026):** a newly registered roster usually starts in Ligue 2.
+  When too many teams leave Ligue 1, staff may place new rosters directly in Ligue 1. A roster
+  that does not come back loses its division's place: returning, it registers again like a new
+  roster. It is a grassroots league: strong teams leave for higher levels and others split up, so
+  the rules must expect places to free up between seasons.
+
+#### M-19 · What the captain may do
+
+- **Question:** from phase 3, each team has one captain, who must be a player. May the captain
+  act for the team in matches (propose a time, run the veto, report and confirm a result) like
+  its officials, or is the captain only a title on the roster?
+- **Why it matters:** the permission check on match commands, and the roster form (phase 3).
+- **Until answered:** rosters are not in Ligo yet; only the owner, managers and coach act.
+- **Answer (maintainer, 14 November 2026):** the captain acts for the roster in matches like its
+  officials: proposes and accepts a time, runs the veto, reports and confirms a result. By default
+  it is the captain's job, but an official can always do it too.
+
+#### M-21 · Clubs and rosters: what belongs where
+
+- **Question:** a team is a club with one or more rosters (design doc section 4). Which details
+  belong to the club and which to each roster: name, tag, logo, colours, city, legal status,
+  socials, team Discord, streaming? How is a roster shown in standings: its own name ("GREED
+  Academy"), or the club's name and the roster's ("Not Scam Katsuki")? Can one club have rosters
+  in several titles (an R6 roster in LFR, a Valorant one in LFV)?
+- **Why it matters:** the `club` table and the registration form (phase 3d).
+- **Until answered:** the club holds the city, legal status, socials, team Discord, and the
+  default logo and colours; each roster has its own name and tag, and may have its own logo and
+  colours. A roster is shown by its own name. A club belongs to the group and may have rosters in
+  any of its competitions.
+- **Answer (maintainer, 14 November 2026):** the defaults, as they are. A club usually has a main
+  roster and an academy roster per game, so a club has rosters in several titles.
 
 #### O-11 · Ban order
 

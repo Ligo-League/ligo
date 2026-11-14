@@ -147,7 +147,7 @@ Everything hangs off org → competition → season → division → stage → m
 
 **Clubs and rosters** (maintainer, 14 November 2026)
 
-A team is a club, the team's organisation, with one or more rosters: Not Scam has Katsuki and Valkyr, W Mates has W Mates and Spectrum. A roster is what plays: it holds a slot in a division, plays the matches and has a line in the standings. Season 3 already has clubs with two rosters: Greed in Ligue 1 (Greed Esport and GREED Academy), Nova in Ligue 2 (Nova 1 and Nova 2), and W Mates in both leagues. Each roster has its own name and tag; the club's logo and colours are the default, and a roster may have its own (Nova 2's colours differ). In Ligo "organisation" (`org`) already names the group that runs the leagues, such as MBL Group, so a team's organisation is called a **club** in the code and these documents. What belongs to the club and what to the roster, and how rosters of one club meet, are open (M-21, M-22).
+A team is a club, the team's organisation, with one or more rosters: Not Scam has Katsuki and Valkyr, W Mates has W Mates and Spectrum. A roster is what plays: it holds a slot in a division, plays the matches and has a line in the standings. Season 3 already has clubs with two rosters: Greed in Ligue 1 (Greed Esport and GREED Academy), Nova in Ligue 2 (Nova 1 and Nova 2), and W Mates in both leagues. Each roster has its own name and tag; the club's logo and colours are the default, and a roster may have its own (Nova 2's colours differ). In Ligo "organisation" (`org`) already names the group that runs the leagues, such as MBL Group, so a team's organisation is called a **club** in the code and these documents. The club holds the city, legal status, socials, team Discord and the default logo and colours; a roster has its own name and tag, may have its own logo and colours, and is shown under its own name. A club belongs to the group and may have rosters in several titles: a main roster and an academy per game is common (M-21). Several rosters of one club may play in the same division, with a limit as a setting; moves of players between a club's rosters are settings too, designed with the mercato (M-22). In a match between two rosters of one club, club officials act for neither side: each roster's own officials and captain do.
 
 **Who acts, by level** (maintainer, 14 November 2026)
 
@@ -459,7 +459,7 @@ Who acts for a team (maintainer, 13 November 2026), in `team_staff`:
 - **Owner:** one, answerable to the league. Hands the team over, removes its officials.
 - **Managers:** up to `ruleset.team_roles.managers_max` (3, the rulebook's three staff).
 - **Coach:** up to `coaches_max` (1, as R6 lobbies have one coach slot per team).
-- **Captain and players** come with rosters in phase 3: one captain, who must be a player.
+- **Captain and players** come with rosters in phase 3: one captain, who must be a player. The captain acts in matches like the officials (propose and accept a time, run the veto, report and confirm a result); it is the captain's job by default, and the officials can always do it too (M-19).
 
 Owner, managers and coach all act in matches (propose a time, run the veto, report and confirm a result). One person may be an official of several teams.
 
@@ -615,6 +615,7 @@ Each phase adds its own settings to the panel as it adds them to the bot. Who ma
 - **Players:** 5 players and up to 2 substitutes, each with Ubisoft ID, Discord account (by login or invitation link), competitive rank and nationality.
 - **Rules acceptance:** the manager accepts the current rulebook version ("lu et approuvé"), stored with `rules_version_id` and a timestamp, replacing the signed page.
 - **Stats consent:** each player gives it from their invitation link; it can be made mandatory by competition setting, and is mandatory in LFR from Season 4 (O-20).
+- **Division:** a new roster usually starts in Ligue 2; when places are free in Ligue 1, because teams left, staff may place it there. A roster that does not come back loses its place and registers again like a new one (O-26). Staff choose the division when they approve.
 - **Status:** a registration is a `registration` request. Incomplete submissions are frozen until fixed, as the rulebook says; staff approve, which creates the team, its slot and roster entries, or refuse with a reason.
 
 **Mercato**

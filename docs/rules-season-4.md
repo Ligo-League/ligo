@@ -29,10 +29,14 @@ M-xx : mainteneur).
   France.
 - La saison régulière est un championnat aller simple : chaque équipe affronte chaque autre une
   fois, **un match par semaine**.
+- Une équipe nouvellement inscrite commence en général en **Ligue 2**. Quand des places se
+  libèrent en Ligue 1, parce que des équipes sont parties, le staff peut y placer directement une
+  nouvelle équipe. Une équipe qui ne se réinscrit pas perd sa place : si elle revient, elle
+  s'inscrit comme une nouvelle équipe.
 - **Statut** : Décidée.
-- **Appliquée par** : une inscription qui ferait dépasser 12 équipes dans une division est
-  refusée à la validation (phase 3), et le calendrier n'est généré que pour une division dans la
-  limite (phase 4).
+- **Appliquée par** : le staff choisit la division en validant l'inscription ; une inscription qui
+  ferait dépasser 12 équipes dans une division est refusée (phase 3), et le calendrier n'est
+  généré que pour une division dans la limite (phase 4).
 
 ### 1.2 Format des matchs
 
@@ -53,30 +57,48 @@ M-xx : mainteneur).
 
 ## 2. Équipes
 
-### 2.1 Responsables d'équipe
+### 2.1 Clubs et équipes
 
-- Chaque équipe a **un propriétaire**, **au plus 3 managers** et **au plus 1 coach** : ce sont ses
-  responsables. Eux seuls agissent pour l'équipe dans ses matchs : proposer un horaire, faire le
-  veto, signaler et confirmer un résultat.
+- Un **club** (la structure : Not Scam, W Mates, Greed) peut inscrire **plusieurs équipes**, par
+  exemple une équipe principale et une académie. C'est l'équipe qui joue : elle a sa place dans
+  une division, ses matchs et sa ligne au classement, sous son propre nom.
+- Plusieurs équipes d'un même club peuvent jouer dans la même division (Greed et GREED Academy en
+  Ligue 1). La limite par division est un réglage, sans limite en Saison 4.
+- Les mouvements de joueurs entre équipes d'un même club (mouvement de mercato, remplacement sur
+  quelques matchs, promotion de l'académie) seront des réglages, fixés avec le mercato.
+- **Statut** : Décidée ; les mouvements entre équipes d'un club sont Provisoires (M-22).
+- **Appliquée par** : les clubs arrivent avec l'inscription sur le site (phase 3).
+
+### 2.2 Responsables
+
+- Deux niveaux : les responsables du **club** (le propriétaire et ses managers) agissent pour
+  toutes ses équipes ; ceux d'une **équipe** (managers, coach) pour cette équipe seulement.
+- Chaque équipe a **au plus 3 managers** et **au plus 1 coach**. Avec le **capitaine**, ce sont
+  eux qui agissent pour l'équipe dans ses matchs : proposer et accepter un horaire, faire le veto,
+  signaler et confirmer un résultat. C'est d'abord le rôle du capitaine, mais un responsable peut
+  toujours le faire.
+- Dans un match entre deux équipes d'un même club, les responsables du club n'agissent pour
+  aucun des deux côtés : chaque équipe agit par ses propres responsables et son capitaine.
 - Le propriétaire répond de l'équipe devant la ligue. Il ne peut pas la quitter sans l'avoir
   confiée à quelqu'un d'autre.
 - Une même personne peut être responsable de plusieurs équipes.
 - **Statut** : Décidée (remplace « un manager et 3 membres de staff » du formulaire S3).
 - **Appliquée par** : chaque commande vérifie, au moment du clic, que la personne est responsable
-  de l'équipe concernée. Les rôles Discord ne suffisent pas. Les limites sont des réglages.
+  de l'équipe concernée. Les rôles Discord ne suffisent pas. Les limites sont des réglages. Les deux
+  niveaux et le capitaine arrivent en phase 3 ; d'ici là, chaque équipe a un propriétaire et ses
+  responsables.
 
-### 2.2 Effectifs
+### 2.3 Effectifs
 
 - 5 joueurs et jusqu'à 2 remplaçants, dont **un capitaine**, qui est forcément un joueur.
   Mercato uniquement pendant les fenêtres annoncées, 3 mouvements par équipe, un joueur transféré
   est bloqué un jour.
 - À l'inscription, chaque joueur **accepte la publication de ses statistiques**. Sans cet
   accord, il ne peut pas figurer dans un effectif.
-- **Statut** : Règlement S3 ; capitaine et accord sur les statistiques décidés. Ce que le
-  capitaine peut faire reste à fixer (M-19). Pas encore appliquée par l'outil (inscriptions et
-  mercato sur le site, phase 3).
+- **Statut** : Règlement S3 ; capitaine (article 2.2) et accord sur les statistiques décidés. Pas
+  encore appliquée par l'outil (inscriptions et mercato sur le site, phase 3).
 
-### 2.3 Demandes des équipes
+### 2.4 Demandes des équipes
 
 - Les équipes gèrent elles-mêmes leurs responsables, par **demande** au staff de la ligue :
   - le propriétaire et les managers demandent d'**ajouter** un manager ou un coach ;
