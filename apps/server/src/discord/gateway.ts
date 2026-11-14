@@ -1,4 +1,4 @@
-import type { Client } from 'discord.js';
+import { DiscordAPIError, type Client } from 'discord.js';
 import { isDiscordAttachmentUrl } from '../services/attachments.ts';
 import type { OutgoingMessage } from './commands/types.ts';
 import { toDiscordMessage } from './outgoing.ts';
@@ -18,7 +18,16 @@ export interface DiscordGateway {
   sendDirectMessage(userId: string, message: OutgoingMessage): Promise<void>;
   /** Downloads a file attached to a command. Rejects other hosts and files over `maxBytes`. */
   downloadAttachment(url: string, maxBytes: number): Promise<Uint8Array>;
+  /**
+   * The role IDs a user holds in a server, read from Discord; null when they are not a member.
+   * The website checks the staff role with it (design doc section 7). Rejects when Discord is
+   * unreachable or the bot is not connected yet.
+   */
+  memberRoleIds(guildId: string, userId: string): Promise<string[] | null>;
 }
+
+// Discord's error code for a user who is not a member of the server.
+const UNKNOWN_MEMBER = 10007;
 
 const DOWNLOAD_TIMEOUT_MS = 10_000;
 
@@ -84,6 +93,17 @@ export function createDiscordGateway(client: Client): DiscordGateway {
         throw new Error(`Discord answered ${response.status} for an attachment`);
       }
       return readCapped(response.body, maxBytes);
+    },
+
+    async memberRoleIds(guildId, userId) {
+      const guild = await client.guilds.fetch(guildId);
+      try {
+        const member = await guild.members.fetch(userId);
+        return [...member.roles.cache.keys()];
+      } catch (error) {
+        if (error instanceof DiscordAPIError && error.code === UNKNOWN_MEMBER) return null;
+        throw error;
+      }
     },
   };
 }

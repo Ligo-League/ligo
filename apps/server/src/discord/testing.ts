@@ -247,6 +247,10 @@ export interface FakeGateway extends DiscordGateway {
   direct: { userId: string; message: OutgoingMessage }[];
   /** Set to make the next calls fail, as when Discord is unreachable or a channel is gone. */
   failing: boolean;
+  /** Each member's roles, by `guildId:userId`; anyone else is not a member. */
+  members: Map<string, string[]>;
+  /** How many times the roles were read, to check caching. */
+  roleReads: number;
 }
 
 /** An in-memory Discord: messages are kept in a list, downloads return a few fixed bytes. */
@@ -256,6 +260,8 @@ export function fakeGateway(): FakeGateway {
     downloads: [],
     direct: [],
     failing: false,
+    members: new Map(),
+    roleReads: 0,
     postMessage(channelId, message) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       const messageId = String(900_000_000_000_000_000n + BigInt(gateway.posted.length + 1));
@@ -287,6 +293,11 @@ export function fakeGateway(): FakeGateway {
       return data.byteLength > maxBytes
         ? Promise.reject(new Error('Attachment is too large'))
         : Promise.resolve(data);
+    },
+    memberRoleIds(guildId, userId) {
+      if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
+      gateway.roleReads += 1;
+      return Promise.resolve(gateway.members.get(`${guildId}:${userId}`) ?? null);
     },
   };
   return gateway;
