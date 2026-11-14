@@ -407,6 +407,19 @@ section 10).
 6. Remove your staff role in Discord: within a minute, `/staff` and its buttons answer "Action
    refusée".
 
+## 17. Phase 3d-1: clubs and their rosters
+
+1. Restart `pnpm dev`: migration 0009 runs at start-up and gives each team a club of its own.
+2. Run `pnpm seed`. It reads the `club` column of `fixtures/lfr-s3-teams.csv` and groups Greed
+   (GREED1, GREED2), Nova (NOVA1, NOVA2) and W Mates (WMATES, SPECTRUM), and moves NTS to Not
+   Scam. It prints `clubs: 3` created and `clubs: 6` removed: the clubs the migration made for
+   those rosters, now empty.
+3. Open a team page, for example `http://localhost:3000/teams/greed-esport`: it names its club
+   and the club's other team. The club's page, `http://localhost:3000/clubs/greed`, lists both
+   rosters and their division.
+4. Standings and images look the same: a roster without colours or a logo of its own wears its
+   club's.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                               |
