@@ -1,6 +1,7 @@
 import {
   DEFAULT_DISPUTE_REASONS,
   promotionSchema,
+  registrationSchema,
   requestsSchema,
   teamRolesSchema,
   vetoSchema,
@@ -52,6 +53,9 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
     dispute_reasons: [...DEFAULT_DISPUTE_REASONS],
     veto: vetoSchema.parse({}),
     promotion: promotionSchema.parse({}),
+    // 5 players and up to 2 substitutes; public stats accepted at registration from Season 4
+    // (maintainer, 14 November 2026, O-20).
+    registration: registrationSchema.parse({ stats_consent_required: true }),
   },
   // 3 points per win in Season 3, as the league's score7 tables are configured.
   pointsJson: {
@@ -368,3 +372,46 @@ export function hasChanges(summary: SeedSummary): boolean {
     ...Object.values(summary.removed),
   ].some((n) => n > 0);
 }
+
+/**
+ * Season 4, open for registration: created with its two divisions when missing, never changed
+ * afterwards. Its dates are placeholders until the league sets them (maintainer, 14 November
+ * 2026); the admin panel (phase 3h) will let staff change them. Returns whether it was created.
+ */
+export function openLfrRegistration(db: Db, now: number): boolean {
+  return db.transaction((tx) => {
+    const current = findLfrSeason(tx);
+    if (!current) throw new Error('Seed LFR before opening registration: Season 3 is missing');
+    const competitionId = current.competition.id;
+    const where = and(eq(season.competitionId, competitionId), eq(season.name, NEXT_SEASON.name));
+    if (tx.select({ id: season.id }).from(season).where(where).get()) return false;
+    const created = tx
+      .insert(season)
+      .values({ ...NEXT_SEASON, competitionId, settingsJson: current.season.settingsJson })
+      .returning()
+      .get();
+    for (const entry of DIVISIONS) {
+      tx.insert(division)
+        .values({ ...entry, seasonId: created.id })
+        .run();
+    }
+    tx.insert(auditLog)
+      .values({
+        actorKind: 'system',
+        action: 'seed.lfr.registration',
+        entity: 'season',
+        entityId: String(created.id),
+        afterJson: { name: created.name, status: created.status },
+        at: now,
+      })
+      .run();
+    return true;
+  });
+}
+
+const NEXT_SEASON = {
+  name: 'Saison 4',
+  startsOn: '2027-01-04',
+  endsOn: '2027-03-14',
+  status: 'registration',
+} as const;

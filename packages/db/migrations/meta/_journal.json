@@ -99,6 +99,13 @@
       "when": 1794691657506,
       "tag": "0013_rules_version",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1794694202451,
+      "tag": "0014_registration",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import type { ApprovalMode, RequestKind, RequestsSettings } from './settings.ts';
+import type { ApprovalMode, RequestsSettings, TeamRequestKind } from './settings.ts';
 import type { AddableTeamRole, TeamRole } from './team-roles.ts';
 
 // Team requests (design doc section 5, "Team requests"; maintainer, 13 November 2026). A team's
@@ -19,7 +19,7 @@ export type FilingError = 'not_allowed' | 'owner_only' | 'owner_cannot_leave';
  * is the role an addition asks for: only the club's own officials ask for a club manager.
  */
 export function mayFile(
-  kind: RequestKind,
+  kind: TeamRequestKind,
   filerRole: TeamRole,
   self: boolean,
   role: AddableTeamRole | null = null,
@@ -41,7 +41,7 @@ export function mayFile(
 
 /** Who answers the request: nobody (it applies at once) or league staff. */
 export function approvalFor(
-  kind: RequestKind,
+  kind: TeamRequestKind,
   settings: RequestsSettings,
   self: boolean,
 ): ApprovalMode {

@@ -1,6 +1,12 @@
-import { ADDABLE_TEAM_ROLES, VETO_OPENINGS, vetoFormatSchema } from '@ligo/core';
+import {
+  ADDABLE_TEAM_ROLES,
+  ROSTER_COLORS_MAX,
+  ROSTER_COLORS_MIN,
+  VETO_OPENINGS,
+  vetoFormatSchema,
+} from '@ligo/core';
 import { z } from 'zod';
-import { SIDES } from './schema/enums.ts';
+import { LEGAL_STATUSES, SIDES } from './schema/enums.ts';
 
 // zod schemas for the `*_json` columns that are not league rule settings.
 // Rule settings (points, tie-breaks, ruleset, scheduling, season, stage) live in @ligo/core.
@@ -70,6 +76,39 @@ export const matchVetoSchema = z.strictObject({
 });
 export type MatchVeto = z.infer<typeof matchVetoSchema>;
 
+/**
+ * A `registration` request (design doc section 7, "Registration"): a new club, or one the filer
+ * already runs, the roster's details, and the rulebook version the filer accepted. The players
+ * join apart, each from the invitation (`registration_player`).
+ */
+export const registrationPayloadSchema = z.strictObject({
+  club: z.discriminatedUnion('kind', [
+    z.strictObject({
+      kind: z.literal('new'),
+      name: z.string().min(2).max(40),
+      city: z.string().min(1).max(60).nullable(),
+      legalStatus: z.enum(LEGAL_STATUSES).nullable(),
+      socials: teamSocialsSchema.max(5),
+      // A Discord invitation, shown on the club's page: https only.
+      discordUrl: z.url({ protocol: /^https$/ }).nullable(),
+    }),
+    z.strictObject({ kind: z.literal('existing'), clubId: z.int().positive() }),
+  ]),
+  roster: z.strictObject({
+    name: z.string().min(2).max(40),
+    tag: z.string().regex(/^[A-Z0-9]{2,12}$/),
+    colors: teamColorsSchema.min(ROSTER_COLORS_MIN).max(ROSTER_COLORS_MAX),
+    /** The uploaded logo, by its key in the asset store; none yet is allowed. */
+    logoKey: z
+      .string()
+      .regex(/^uploads\/[0-9a-f]{64}\.png$/)
+      .nullable(),
+    canStream: z.boolean(),
+  }),
+  rules: z.strictObject({ versionId: z.int().positive(), acceptedAt: z.int().nonnegative() }),
+});
+export type RegistrationPayload = z.infer<typeof registrationPayloadSchema>;
+
 /** `audit_log.before_json` / `after_json`: a snapshot of the changed entity. */
 export const auditSnapshotSchema = z.record(z.string(), z.unknown());
 export type AuditSnapshot = z.infer<typeof auditSnapshotSchema>;
@@ -81,5 +120,7 @@ export type AuditSnapshot = z.infer<typeof auditSnapshotSchema>;
 export const requestPayloadSchema = z.union([
   z.strictObject({ playerId: z.int().positive(), role: z.enum(ADDABLE_TEAM_ROLES) }),
   z.strictObject({ playerId: z.int().positive() }),
+  // `registration`: filed before the team exists, so it carries the roster and its club.
+  z.lazy(() => registrationPayloadSchema),
 ]);
 export type RequestPayload = z.infer<typeof requestPayloadSchema>;

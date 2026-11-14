@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { auditLog, club, competition, division, org, season, slot, team } from '../schema/index.ts';
 import { openTestDatabase } from '../testing.ts';
 import { parseTeamsCsv, type TeamRow } from './parse-teams-csv.ts';
-import { LFR_DIVISION_NAMES, seedLfr } from './seed-lfr.ts';
+import { LFR_DIVISION_NAMES, openLfrRegistration, seedLfr } from './seed-lfr.ts';
 
 const HEADER = 'division,name,tag,city,color_1,color_2,color_3';
 const parse = (...lines: string[]) =>
@@ -418,5 +418,34 @@ describe('seedLfr', () => {
     expect(() => seedLfr(db, broken, 1000)).toThrow(/UNIQUE/);
     expect(db.select().from(org).all()).toEqual([]);
     expect(db.select().from(team).all()).toEqual([]);
+  });
+});
+
+describe('openLfrRegistration', () => {
+  it('opens Season 4 for registration once, with its divisions and Season 3’s settings', () => {
+    const db = openTestDatabase();
+    expect(() => openLfrRegistration(db, 1)).toThrow(/Season 3 is missing/);
+    seedLfr(db, TEAMS, 1000);
+    expect(openLfrRegistration(db, 2000)).toBe(true);
+    expect(openLfrRegistration(db, 3000)).toBe(false);
+
+    const seasons = db.select().from(season).all();
+    expect(seasons.map((row) => [row.name, row.status, row.startsOn])).toEqual([
+      ['Saison 3', 'active', '2026-10-19'],
+      ['Saison 4', 'registration', '2027-01-04'],
+    ]);
+    expect(seasons[1]?.settingsJson).toEqual(seasons[0]?.settingsJson);
+    expect(
+      db
+        .select()
+        .from(division)
+        .all()
+        .filter((row) => row.seasonId === seasons[1]?.id)
+        .map((row) => row.name),
+    ).toEqual(['Ligue 1', 'Ligue 2']);
+    expect(db.select().from(auditLog).all().at(-1)).toMatchObject({
+      action: 'seed.lfr.registration',
+      at: 2000,
+    });
   });
 });

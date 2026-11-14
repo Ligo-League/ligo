@@ -5,11 +5,12 @@ import { applyMigrations } from '../migrate.ts';
 import { linkGuild } from '../seed/link-guild.ts';
 import { parseMatchesCsv } from '../seed/matches-csv.ts';
 import { parseTeamsCsv } from '../seed/parse-teams-csv.ts';
-import { hasChanges, LFR_DIVISION_NAMES, seedLfr } from '../seed/seed-lfr.ts';
+import { hasChanges, LFR_DIVISION_NAMES, openLfrRegistration, seedLfr } from '../seed/seed-lfr.ts';
 import { matchSeedHasChanges, seedMatches } from '../seed/seed-matches.ts';
 
 // `pnpm seed`: loads LFR, Season 3, its two divisions, the teams and the fixtures and results of
-// the CSV files below. `pnpm fixtures:score7` refreshes the matches file from score7.
+// the CSV files below, and opens Season 4 for registration. `pnpm fixtures:score7` refreshes the
+// matches file from score7.
 // With DISCORD_GUILD_ID and DISCORD_STAFF_ROLE_ID set, it also links that server to LFR.
 const TEAMS_FILE = 'fixtures/lfr-s3-teams.csv';
 const MATCHES_FILE = 'fixtures/lfr-s3-matches.csv';
@@ -58,6 +59,12 @@ try {
     );
   } else {
     console.log(`No changes: ${path} already matches ${TEAMS_FILE}.`);
+  }
+
+  if (openLfrRegistration(db, now)) {
+    console.log(
+      'Opened Saison 4 for registration (placeholder dates: 4 January to 14 March 2027).',
+    );
   }
 
   const matchSummary = seedMatches(db, matches.matches, now);

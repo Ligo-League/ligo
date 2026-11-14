@@ -13,7 +13,7 @@ import { openTestDatabase } from './testing.ts';
 // Schema v1, the tables phase 0 was allowed to create (design doc section 15, "Start here
 // today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`,
 // 0004 `veto_step`, 0007 `request` and `queue_post`, 0009 `club`, 0010 `club_staff`, 0013
-// `rules_version`.
+// `rules_version`, 0014 `registration_invite` and `registration_player`.
 const SCHEMA_TABLES = [
   'audit_log',
   'club',
@@ -33,6 +33,8 @@ const SCHEMA_TABLES = [
   'org',
   'player',
   'queue_post',
+  'registration_invite',
+  'registration_player',
   'request',
   'roster_entry',
   'rules_version',
@@ -337,5 +339,48 @@ describe('0012: a forfeit by both teams', () => {
         .run(matchId, side);
     expect(() => insert(2, 'both')).not.toThrow();
     expect(() => insert(3, 'neither')).toThrow(/CHECK/);
+  });
+});
+
+describe('0014: registration', () => {
+  it('keeps requests and game accounts, and accepts a registration and a name without an ID', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0013_rules_version');
+    const run = (sql: string) => db.$client.exec(sql);
+    // Rows on their own: what they point at does not matter to the table rebuilds.
+    db.$client.pragma('foreign_keys = OFF');
+    run(`insert into request (competition_id, team_id, kind, payload_json, approval, requested_by,
+           requested_at) values (1, 2, 'team_owner', '{"playerId":3}', 'staff', 3, 10)`);
+    run(`insert into game_account (player_id, title, external_id, display_name, verified)
+         values (3, 'r6', 'a1b2c3d4-0000-4000-8000-00000000000f', 'Nivalem', 1)`);
+
+    migrateUpTo(db, '0014_registration');
+
+    expect(db.$client.prepare('select kind, status, team_id from request').all()).toEqual([
+      { kind: 'team_owner', status: 'pending', team_id: 2 },
+    ]);
+    expect(
+      db.$client
+        .prepare('select display_name, external_id, rank, verified from game_account')
+        .all(),
+    ).toEqual([
+      {
+        display_name: 'Nivalem',
+        external_id: 'a1b2c3d4-0000-4000-8000-00000000000f',
+        rank: null,
+        verified: 1,
+      },
+    ]);
+    expect(() =>
+      run(`insert into request (competition_id, kind, payload_json, approval, requested_by,
+             requested_at) values (1, 'registration', '{}', 'staff', 4, 20)`),
+    ).not.toThrow();
+    // A name without its profileID yet; one account per player and title.
+    expect(() =>
+      run(`insert into game_account (player_id, title, display_name) values (4, 'r6', 'Leik')`),
+    ).not.toThrow();
+    expect(() =>
+      run(`insert into game_account (player_id, title, display_name) values (4, 'r6', 'Other')`),
+    ).toThrow(/UNIQUE/);
   });
 });

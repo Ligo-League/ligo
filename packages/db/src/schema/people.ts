@@ -43,14 +43,22 @@ export const gameAccount = sqliteTable(
       .notNull()
       .references(() => player.id),
     title: text('title', { enum: TITLES }).notNull(),
-    // r6: Ubisoft profileID (UUID); valorant: Riot ID; rocket_league: platform:id.
-    externalId: text('external_id').notNull(),
+    // r6: Ubisoft profileID (UUID); valorant: Riot ID; rocket_league: platform:id. Null while
+    // the player has given only their name: a replay pins it later (M-23).
+    externalId: text('external_id'),
+    // The in-game name, as the player declares it on their profile.
     displayName: text('display_name').notNull(),
     rankAtRegistration: text('rank_at_registration'),
+    // The player's rank as they declare it, kept up to date by them (maintainer, 14 November
+    // 2026: Ligo looks no rank up elsewhere), and when they last changed it.
+    rank: text('rank'),
+    rankUpdatedAt: integer('rank_updated_at'),
     verified: integer('verified', { mode: 'boolean' }).notNull().default(false),
   },
   (t) => [
     unique('game_account_title_external_unique').on(t.title, t.externalId),
+    // One account per player and title: the one the player plays league matches with.
+    unique('game_account_player_title_unique').on(t.playerId, t.title),
     check('game_account_title_check', oneOf(t.title, TITLES)),
   ],
 );

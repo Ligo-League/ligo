@@ -4,12 +4,13 @@ import {
   mayFile,
   reminderAt,
   requestDeadline,
+  TEAM_REQUEST_KINDS,
   type AddableTeamRole,
   type ApprovalMode,
   type FilingError,
-  type RequestKind,
   type RequestStatus,
   type RequestsSettings,
+  type TeamRequestKind,
 } from '@ligo/core';
 import {
   findGuildLeague,
@@ -18,11 +19,10 @@ import {
   type Db,
   type GuildLeague,
   type League,
-  type RequestPayload,
   type SeasonTeam,
   type Tx,
 } from '@ligo/db';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { highestRole, requireStaff, teamsActedFor, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { queuePostsOf, type PostRef } from './queue-posts.ts';
@@ -60,7 +60,7 @@ export interface PersonRef {
 /** A request as messages and pages show it. */
 export interface RequestView {
   id: number;
-  kind: RequestKind;
+  kind: TeamRequestKind;
   /** The role asked for, for an addition. */
   role: AddableTeamRole | null;
   status: RequestStatus;
@@ -93,8 +93,31 @@ function personOf(db: Pick<Db, 'select'>, playerId: number): PersonRef {
   };
 }
 
+/**
+ * What a team request is about. A registration is no team request: it is filed before the team
+ * exists and handled apart, so reaching here with one is a bug.
+ */
+function teamPayloadOf(row: Pick<RequestRow, 'id' | 'kind' | 'payloadJson'>): {
+  kind: TeamRequestKind;
+  playerId: number;
+  role: AddableTeamRole | null;
+} {
+  const payload = row.payloadJson;
+  if (row.kind === 'registration' || !('playerId' in payload)) {
+    throw new Error(`Request ${String(row.id)} is not a team request`);
+  }
+  return {
+    kind: row.kind,
+    playerId: payload.playerId,
+    role: 'role' in payload ? payload.role : null,
+  };
+}
+
+/** Only the team requests: a registration waits in its own list (phase 3d-4b). */
+const teamKinds = inArray(request.kind, [...TEAM_REQUEST_KINDS]);
+
 function viewOf(db: Pick<Db, 'select'>, row: RequestRow, settings: RequestsSettings): RequestView {
-  const payload: RequestPayload = row.payloadJson;
+  const payload = teamPayloadOf(row);
   const teamRow = db
     .select({ name: team.name, tag: team.tag })
     .from(team)
@@ -102,8 +125,8 @@ function viewOf(db: Pick<Db, 'select'>, row: RequestRow, settings: RequestsSetti
     .get();
   return {
     id: row.id,
-    kind: row.kind,
-    role: 'role' in payload ? payload.role : null,
+    kind: payload.kind,
+    role: payload.role,
     status: row.status,
     approval: row.approval,
     team: { teamId: row.teamId ?? -1, name: teamRow?.name ?? '?', tag: teamRow?.tag ?? '?' },
@@ -117,14 +140,14 @@ function viewOf(db: Pick<Db, 'select'>, row: RequestRow, settings: RequestsSetti
   };
 }
 
-const changeOf = (row: Pick<RequestRow, 'kind' | 'payloadJson'>): TeamStaffChange => {
-  const payload = row.payloadJson;
-  if (row.kind === 'team_member_add') {
+const changeOf = (row: Pick<RequestRow, 'id' | 'kind' | 'payloadJson'>): TeamStaffChange => {
+  const payload = teamPayloadOf(row);
+  if (payload.kind === 'team_member_add') {
     // The payload was built from the same kind when the request was filed.
-    if (!('role' in payload)) throw new Error('An addition request without a role');
-    return { kind: row.kind, playerId: payload.playerId, role: payload.role };
+    if (payload.role === null) throw new Error('An addition request without a role');
+    return { kind: payload.kind, playerId: payload.playerId, role: payload.role };
   }
-  return { kind: row.kind, playerId: payload.playerId };
+  return { kind: payload.kind, playerId: payload.playerId };
 };
 
 function audit(
@@ -336,12 +359,12 @@ export function fileRequest(db: Db, actor: Actor, input: RequestInput, now: numb
           ),
         )
         .all();
-      if (waiting.some((row) => row.payloadJson.playerId === subject)) {
+      if (waiting.some((row) => teamPayloadOf(row).playerId === subject)) {
         return { ok: false, error: 'already_requested' };
       }
     }
 
-    const payloadJson: RequestPayload =
+    const payloadJson: { playerId: number; role?: AddableTeamRole } =
       change.kind === 'team_member_add'
         ? { playerId: subject, role: change.role }
         : { playerId: subject };
@@ -452,7 +475,9 @@ export function checkAnswer(
   const staff = requireStaff(db, actor);
   if (!staff.ok) return staff;
   const row = db.select().from(request).where(eq(request.id, requestId)).get();
-  if (row?.competitionId !== staff.league.competition.id) return { ok: false, error: 'not_found' };
+  if (row?.competitionId !== staff.league.competition.id || row.teamId === null) {
+    return { ok: false, error: 'not_found' };
+  }
   return row.status === 'pending' ? { ok: true } : { ok: false, error: 'not_pending' };
 }
 
@@ -604,6 +629,7 @@ export function pendingRequests(
       and(
         eq(request.competitionId, league.competition.id),
         eq(request.status, 'pending'),
+        teamKinds,
         teamId === null ? undefined : eq(request.teamId, teamId),
       ),
     )
@@ -638,6 +664,7 @@ export function runRequestTick(db: Db, now: number): RequestReminder[] {
         and(
           eq(request.status, 'pending'),
           eq(request.approval, 'staff'),
+          teamKinds,
           isNull(request.remindedAt),
         ),
       )

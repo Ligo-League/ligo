@@ -14,6 +14,8 @@ export const SEASON_STATUSES = ['registration', 'active', 'cup', 'closed'] as co
 export const DIVISION_KINDS = ['league', 'regional'] as const;
 export const SLOT_STATUSES = ['active', 'frozen', 'withdrawn', 'excluded'] as const;
 export const ROSTER_ROLES = ['player', 'sub', 'coach'] as const;
+/** A player's place in a registration: a starter or a substitute. */
+export const REGISTRATION_ROLES = ['player', 'sub'] as const;
 export const STAGE_KINDS = [
   'round_robin',
   'single_elim',

@@ -189,8 +189,24 @@ export const teamRolesSchema = z.strictObject({
 export type TeamRolesSettings = z.infer<typeof teamRolesSchema>;
 
 /** What a team can ask of the league (design doc section 5, "Team requests"). */
-export const REQUEST_KINDS = ['team_owner', 'team_member_add', 'team_member_remove'] as const;
+export const TEAM_REQUEST_KINDS = ['team_owner', 'team_member_add', 'team_member_remove'] as const;
+export type TeamRequestKind = (typeof TEAM_REQUEST_KINDS)[number];
+/** Every kind of request: a team's, and a roster's registration, filed before the team exists. */
+export const REQUEST_KINDS = [...TEAM_REQUEST_KINDS, 'registration'] as const;
 export type RequestKind = (typeof REQUEST_KINDS)[number];
+
+/**
+ * Registering a roster (design doc section 7, "Registration"): how many starters it names, how
+ * many substitutes it may add, whether each player must accept public stats (O-20), and how long
+ * a player's invitation link lasts.
+ */
+export const registrationSchema = z.strictObject({
+  starters: z.int().min(1).max(20).default(5),
+  subs_max: z.int().min(0).max(20).default(2),
+  stats_consent_required: z.boolean().default(false),
+  invite_days: z.int().min(1).max(60).default(7),
+});
+export type RegistrationSettings = z.infer<typeof registrationSchema>;
 
 /** `auto`: applied at once and recorded; `staff`: waits for league staff to approve or refuse. */
 export const APPROVAL_MODES = ['auto', 'staff'] as const;
@@ -238,6 +254,7 @@ export const rulesetSchema = z.strictObject({
     .default(() => DEFAULT_DISPUTE_REASONS.map((reason) => ({ ...reason }))),
   veto: vetoSchema.default(() => vetoSchema.parse({})),
   promotion: promotionSchema.default(() => promotionSchema.parse({})),
+  registration: registrationSchema.default(() => registrationSchema.parse({})),
 });
 export type RulesetSettings = z.infer<typeof rulesetSchema>;
 

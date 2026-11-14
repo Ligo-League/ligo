@@ -1,8 +1,14 @@
 import { sql } from 'drizzle-orm';
-import { check, index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { check, index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { jsonText, oneOf } from '../columns.ts';
 import { requestPayloadSchema } from '../json.ts';
-import { APPROVAL_MODES, QUEUE_POST_ENTITIES, REQUEST_KINDS, REQUEST_STATUSES } from './enums.ts';
+import {
+  APPROVAL_MODES,
+  QUEUE_POST_ENTITIES,
+  REGISTRATION_ROLES,
+  REQUEST_KINDS,
+  REQUEST_STATUSES,
+} from './enums.ts';
 import { player, team } from './people.ts';
 import { competition, season } from './structure.ts';
 
@@ -66,4 +72,43 @@ export const queuePost = sqliteTable(
     index('queue_post_entity_idx').on(t.entity, t.entityId),
     check('queue_post_entity_check', oneOf(t.entity, QUEUE_POST_ENTITIES)),
   ],
+);
+
+// The players of a registration, each joined from the invitation with their own account
+// (maintainer, 14 November 2026). The filer sets each one's place and the captain.
+export const registrationPlayer = sqliteTable(
+  'registration_player',
+  {
+    requestId: integer('request_id')
+      .notNull()
+      .references(() => request.id),
+    playerId: integer('player_id')
+      .notNull()
+      .references(() => player.id),
+    role: text('role', { enum: REGISTRATION_ROLES }).notNull(),
+    captain: integer('captain', { mode: 'boolean' }).notNull().default(false),
+    joinedAt: integer('joined_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.requestId, t.playerId] }),
+    check('registration_player_role_check', oneOf(t.role, REGISTRATION_ROLES)),
+  ],
+);
+
+// A registration's invitation link. The link's secret is computed from `nonce` with the server's
+// secret, never stored: the filer can see the link again, and the database alone does not hold
+// it. A new link revokes the one before.
+export const registrationInvite = sqliteTable(
+  'registration_invite',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    requestId: integer('request_id')
+      .notNull()
+      .references(() => request.id),
+    nonce: text('nonce').notNull(),
+    createdAt: integer('created_at').notNull(),
+    expiresAt: integer('expires_at').notNull(),
+    revokedAt: integer('revoked_at'),
+  },
+  (t) => [index('registration_invite_request_idx').on(t.requestId)],
 );
