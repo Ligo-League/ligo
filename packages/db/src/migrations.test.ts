@@ -161,3 +161,42 @@ describe('0006: team roles', () => {
     expect(db.$client.pragma('foreign_key_check')).toEqual([]);
   });
 });
+
+describe('0008: the veto coin toss', () => {
+  it('keeps the steps already taken, and accepts the coin toss steps', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0007_requests');
+    // A step on its own: the match it belongs to does not matter to the table rebuild.
+    db.$client.pragma('foreign_keys = OFF');
+    db.$client.exec(`insert into veto_step (match_id, seq, side, action, map, at, timed_out)
+                     values (1, 0, 'a', 'ban', 'Bank', 5, 0)`);
+
+    applyMigrations(db);
+
+    expect(db.$client.prepare('select * from veto_step').all()).toEqual([
+      {
+        match_id: 1,
+        seq: 0,
+        side: 'a',
+        action: 'ban',
+        map: 'Bank',
+        start_side: null,
+        choice: null,
+        game_n: null,
+        at: 5,
+        by_player_id: null,
+        timed_out: 0,
+      },
+    ]);
+    const insert = (seq: number, action: string, choice: string | null) =>
+      db.$client
+        .prepare(
+          `insert into veto_step (match_id, seq, side, action, choice, at) values (1, ?, 'b', ?, ?, 6)`,
+        )
+        .run(seq, action, choice);
+    expect(() => insert(1, 'toss_choice', 'first_ban')).not.toThrow();
+    expect(() => insert(2, 'first_ban', 'a')).not.toThrow();
+    expect(() => insert(3, 'toss', null)).not.toThrow();
+    expect(() => insert(4, 'coin', null)).toThrow(/CHECK/);
+  });
+});

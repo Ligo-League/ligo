@@ -341,7 +341,15 @@ export const en: Record<MessageKey, string> = {
   'veto.title': '**Veto — {fixture}** (BO{bestOf})',
   'veto.roles':
     '{chooser} picks the starting side and starts the veto; {other} picks the overtime side. Host: {host}.',
-  'veto.coin': 'Equal rank: the bot drew {chooser} at random.',
+  'veto.coin': 'Equal rank: coin toss, won by **{winner}**. Host: for the teams to agree.',
+  'veto.tossChoice.side_selection': '{team} takes side selection.',
+  'veto.tossChoice.first_ban': '{team} decides who bans first.',
+  'veto.firstBan': '{team} bans first.',
+  'veto.timedOut': ' (time ran out)',
+  'veto.deciderToss': 'coin toss won by {team}',
+  'veto.choice.side_selection': 'Side selection',
+  'veto.choice.first_ban': 'Who bans first',
+  'veto.choice.bansFirst': '{team} bans first',
   'veto.bans': 'Banned: {list}',
   'veto.ban': '{map} ({team})',
   'veto.ban.timedOut': '{map} ({team}, time ran out)',
@@ -358,6 +366,9 @@ export const en: Record<MessageKey, string> = {
   'veto.turn.side': "**{team}**'s turn: pick the starting side on {map}. Time runs out {deadline}.",
   'veto.turn.ot_side':
     "**{team}**'s turn: pick the overtime side on {map}. Time runs out {deadline}.",
+  'veto.turn.toss_choice':
+    "**{team}**'s turn: take side selection, or decide who bans first. Time runs out {deadline}.",
+  'veto.turn.first_ban': "**{team}**'s turn: decide who bans first. Time runs out {deadline}.",
   'veto.timeoutRule': 'Without a choice in time, the bot picks at random.',
   'veto.done': 'Veto over. Have a good match!',
   'veto.started': 'Veto started: its message is just below.',
@@ -385,7 +396,7 @@ export const en: Record<MessageKey, string> = {
   'veto.hint.noMatch': 'None of your matches to play matches "{query}".',
   'help.choice.match-veto': '/match veto',
   'help.page.matchVeto':
-    '**`/match veto`** — the map veto\nFor the officials of both teams; league staff can start it too.\n\n• `match`: pick it from the list.\n\nWhen it starts, the bot freezes who picks what from the current standings: the lower-ranked team picks the starting side and starts the veto, the other picks the overtime side, the higher-ranked team hosts. On equal rank, the bot draws at random.\n\nThe bot posts a message with one button per map: each team clicks in turn to ban or pick, then Attack or Defense. The message updates after each choice. Each turn has a time limit; without a choice in time, the bot picks at random and says so.\nAt the end, the map is stored with the match: `/match report` uses it.',
+    '**`/match veto`** — the map veto\nFor the officials of both teams; league staff can start it too.\n\n• `match`: pick it from the list.\n\nWhen it starts, the bot freezes who picks what from the current standings: the lower-ranked team picks the starting side and starts the veto, the other picks the overtime side, the higher-ranked team hosts. On equal rank, the bot tosses a coin, as on the BLAST circuit: in a BO1 the winner takes side selection or decides who bans first, and the other team makes the other decision; the teams then agree on the host.\n\nThe bot posts a message with one button per map: each team clicks in turn to ban or pick, then Attack or Defense. The message updates after each choice. Each turn has a time limit; without a choice in time, the bot picks at random and says so.\nAt the end, the map is stored with the match: `/match report` uses it.',
   'card.eyebrow': '{competition} · {season}',
   'card.title': '{division} · Week {week}',
   'card.label.time': 'Match scheduled',

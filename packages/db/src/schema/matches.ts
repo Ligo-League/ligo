@@ -277,11 +277,13 @@ export const vetoStep = sqliteTable(
       .notNull()
       .references(() => match.id),
     seq: integer('seq').notNull(),
-    // The match side that chose; null for the decider, which nobody picks.
+    // The match side that chose, or won a toss; null for the decider, which nobody picks.
     side: text('side', { enum: SIDES }),
     action: text('action', { enum: VETO_ACTIONS }).notNull(),
     map: text('map'),
     startSide: text('start_side', { enum: START_SIDES }),
+    // A coin toss decision: `side_selection` or `first_ban`, or the match side sent to ban first.
+    choice: text('choice'),
     gameN: integer('game_n'),
     at: integer('at').notNull(),
     // Null when the clock chose for a team that ran out of time, and for the decider.

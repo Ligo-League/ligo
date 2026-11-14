@@ -172,6 +172,51 @@ describe('veto buttons', () => {
   });
 });
 
+describe('the coin toss between teams of equal rank', () => {
+  it('names the winner and no host, then offers its choice and the other decision', async () => {
+    const { db, gateway, start, click } = session();
+    // Without results, both teams share first place.
+    db.update(schema.match).set({ status: 'void' }).where(eq(schema.match.id, 1)).run();
+    db.update(schema.match).set({ status: 'void' }).where(eq(schema.match.id, 2)).run();
+    await start();
+    const row = db.select().from(schema.match).where(eq(schema.match.id, 3)).get();
+    // The coin comes from the system's random source: either team may win it.
+    const bravoWon = row?.vetoJson?.team_a === 'a';
+    const [winner, loser] = bravoWon ? [BRAVO, CHARLIE] : [CHARLIE, BRAVO];
+    const [winnerName, loserName] = bravoWon ? ['Bravo', 'Charlie'] : ['Charlie', 'Bravo'];
+    expect(row).toMatchObject({ hostSide: null, sideChooser: null });
+
+    const posted = gateway.posted[0]?.message;
+    expect(posted?.content).toContain(
+      `Égalité au classement : pile ou face, gagné par **${winnerName}**. Hôte : à convenir entre les équipes.`,
+    );
+    expect(posted?.content).toContain(
+      `Au tour de **${winnerName}** : prendre le choix du côté, ou décider qui bannit en premier.`,
+    );
+    expect(posted?.buttons?.map((button) => button.label)).toEqual([
+      'Choix du côté',
+      'Qui bannit en premier',
+    ]);
+
+    const chosen = await click(posted?.buttons?.[0]?.customId ?? '', winner);
+    const update = chosen.updates[0];
+    expect(update?.content).toContain(`${winnerName} prend le choix du côté.`);
+    expect(update?.content).toContain(
+      `Au tour de **${loserName}** : décider qui bannit en premier.`,
+    );
+    expect(update?.buttons?.map((button) => button.label)).toEqual([
+      `${loserName} bannit en premier`,
+      `${winnerName} bannit en premier`,
+    ]);
+
+    const decided = await click(update?.buttons?.[1]?.customId ?? '', loser);
+    expect(decided.updates[0]?.content).toContain(`${winnerName} bannit en premier.`);
+    expect(decided.updates[0]?.content).toContain(
+      `Au tour de **${winnerName}** : bannir une carte.`,
+    );
+  });
+});
+
 describe('the clock and the veto', () => {
   it('plays a random ban for a team out of time and edits the message', async () => {
     const { db, gateway, start } = session();

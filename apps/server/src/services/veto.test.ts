@@ -47,7 +47,7 @@ function league() {
   const start = (actor: Actor = BRAVO, coin: 'a' | 'b' = 'b') =>
     startVeto(db, actor, { matchId: 3 }, NOW, () => coin);
   const choose = (actor: Actor, step: number, choice: string, now = NOW) =>
-    chooseVetoStep(db, actor, { matchId: 3, step, choice }, now);
+    chooseVetoStep(db, actor, { matchId: 3, step, choice }, now, () => 'a');
   const stored = () => db.select().from(match).where(eq(match.id, 3)).get();
   const steps = () => db.select().from(vetoStep).where(eq(vetoStep.matchId, 3)).all();
   return { db, start, choose, stored, steps };
@@ -70,22 +70,40 @@ describe('startVeto', () => {
       otSideChooser: 'b',
       hostSide: 'b',
       vetoStartedAt: NOW,
-      vetoJson: { pool: POOL, step_seconds: 240 },
+      vetoJson: { pool: POOL, step_seconds: 240, opening: 'ranked', team_a: 'a' },
     });
     expect(
       db.select().from(auditLog).where(eq(auditLog.action, 'match.veto_start')).get(),
     ).toMatchObject({ entityId: '3', afterJson: { byCoin: false, ranks: { a: 3, b: 2 } } });
   });
 
-  it('flips a coin when both teams share a rank, and says so after every step', () => {
-    const { db, start, choose } = league();
+  it('tosses a coin when both teams share a rank: its winner chooses, and nobody is named host', () => {
+    const { db, start, choose, stored, steps } = league();
     // Without results, everyone shares first place.
     db.update(match)
       .set({ status: 'void' })
       .where(inArray(match.id, [1, 2]))
       .run();
-    expect(viewOf(start(BRAVO, 'b'))).toMatchObject({ teamA: 'b', host: 'a', byCoin: true });
-    expect(viewOf(choose(CHARLIE, 0, 'Bank'))).toMatchObject({ byCoin: true });
+    const started = viewOf(start(BRAVO, 'b'));
+    expect(started).toMatchObject({ teamA: 'b', host: null, byCoin: true });
+    expect(started.state).toMatchObject({ team: 'A', action: 'toss_choice' });
+    expect(stored()).toMatchObject({ sideChooser: null, otSideChooser: null, hostSide: null });
+    expect(stored()?.vetoJson).toMatchObject({ opening: 'coin', team_a: 'b' });
+
+    // Charlie takes side selection; Bravo then decides who bans first, and takes it.
+    expect(choose(BRAVO, 0, 'side_selection')).toEqual({ ok: false, error: 'not_your_turn' });
+    const chosen = viewOf(choose(CHARLIE, 0, 'side_selection'));
+    expect(chosen.state).toMatchObject({ team: 'B', action: 'first_ban', choices: ['B', 'A'] });
+    expect(chosen.roles).toEqual({ firstBan: null, sideSelection: 'b' });
+    expect(stored()).toMatchObject({ sideChooser: 'b', otSideChooser: 'a', hostSide: null });
+    const decided = viewOf(choose(BRAVO, 1, 'B'));
+    expect(decided.roles).toEqual({ firstBan: 'a', sideSelection: 'b' });
+    expect(decided.state).toMatchObject({ team: 'B', action: 'ban' });
+    expect(steps()).toMatchObject([
+      { seq: 0, side: 'b', action: 'toss_choice', choice: 'side_selection' },
+      { seq: 1, side: 'a', action: 'first_ban', choice: 'a' },
+    ]);
+    expect(viewOf(choose(BRAVO, 2, 'Bank')).byCoin).toBe(true);
   });
 
   it('pings both teams', () => {

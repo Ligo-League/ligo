@@ -1,4 +1,4 @@
-import { ADDABLE_TEAM_ROLES, vetoFormatSchema } from '@ligo/core';
+import { ADDABLE_TEAM_ROLES, VETO_OPENINGS, vetoFormatSchema } from '@ligo/core';
 import { z } from 'zod';
 import { SIDES } from './schema/enums.ts';
 
@@ -51,6 +51,13 @@ export const matchVetoSchema = z.strictObject({
   format: vetoFormatSchema,
   pool: z.array(z.string().min(1)),
   step_seconds: z.int().min(1),
+  /** How team A was found; vetoes started before the coin toss existed were all ranked. */
+  opening: z.enum(VETO_OPENINGS).default('ranked'),
+  /**
+   * The match side of the veto's team A. Missing on vetoes started before the coin toss, whose
+   * team A was always `match.side_chooser`.
+   */
+  team_a: z.enum(SIDES).optional(),
 });
 export type MatchVeto = z.infer<typeof matchVetoSchema>;
 

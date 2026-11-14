@@ -4,6 +4,7 @@ import {
   computeStandings,
   timeoutChoice,
   vetoState,
+  type VetoConfig,
   type VetoRecord,
   type VetoState,
   type VetoTeam,
@@ -18,15 +19,16 @@ import {
   type LeagueMatch,
   type MatchVeto,
 } from '@ligo/db';
-import { and, asc, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, asc, eq, isNotNull } from 'drizzle-orm';
 import { hasExcludedTeam } from './exclusions.ts';
 import { teamsActedFor, type Actor, type TeamRoleHeld } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { leagueMatch } from './reports.ts';
 import { listTeamStaff } from './team-staff.ts';
 
-// The map veto (design doc section 5): who picks sides and hosts is frozen when it starts, from
-// live standings; each step is a `veto_step` row, replayed through packages/core on every click.
+// The map veto (design doc section 5): who leads it is frozen when it starts, from live
+// standings or a coin toss between equal ranks (O-12); each step is a `veto_step` row, replayed
+// through packages/core on every click.
 
 const { auditLog, game, match, vetoStep } = schema;
 
@@ -38,11 +40,14 @@ const actsFor = (teams: readonly TeamRoleHeld[], found: LeagueMatch, side: Side)
 /** Everything a veto message shows. */
 export interface VetoView {
   match: LeagueMatch;
-  /** The match side of the veto's team A, which picks the starting side and starts. */
+  /** The match side of the veto's team A: the lower-ranked team, or the coin toss winner. */
   teamA: Side;
-  host: Side;
-  /** True when equal ranks were settled by a coin flip. */
+  /** Null after a coin toss: the teams agree on the host (O-12). */
+  host: Side | null;
+  /** True when equal ranks were settled by a coin toss. */
   byCoin: boolean;
+  /** The match sides that ban first and have side selection, once known. */
+  roles: { firstBan: Side | null; sideSelection: Side | null };
   state: VetoState;
   /** The steps taken, in order, with the match side that took each. */
   steps: (VetoRecord & { matchSide: Side | null })[];
@@ -55,8 +60,8 @@ export interface VetoView {
 interface StoredVeto {
   found: LeagueMatch;
   row: typeof match.$inferSelect;
-  byCoin: boolean;
   veto: MatchVeto;
+  config: VetoConfig;
   teamA: Side;
   records: VetoRecord[];
   lastAt: number;
@@ -64,12 +69,17 @@ interface StoredVeto {
 
 const teamOf = (side: Side, teamA: Side): VetoTeam => (side === teamA ? 'A' : 'B');
 const sideOfTeam = (team: VetoTeam, teamA: Side): Side => (team === 'A' ? teamA : other(teamA));
+const isSide = (value: string | null): value is Side => value === 'a' || value === 'b';
+const isVetoTeam = (value: string | null): value is VetoTeam => value === 'A' || value === 'B';
 
 /** The match's veto as stored, or null when it has not started. */
 function loadVeto(db: Pick<Db, 'select'>, found: LeagueMatch): StoredVeto | null {
   const row = db.select().from(match).where(eq(match.id, found.id)).get();
-  if (!row?.vetoJson || !row.sideChooser || row.vetoStartedAt === null) return null;
-  const teamA = row.sideChooser;
+  if (!row?.vetoJson || row.vetoStartedAt === null) return null;
+  const veto = row.vetoJson;
+  // Before the coin toss, team A was always the side chooser.
+  const teamA = veto.team_a ?? row.sideChooser;
+  if (!teamA) return null;
   const rows = db
     .select()
     .from(vetoStep)
@@ -81,34 +91,26 @@ function loadVeto(db: Pick<Db, 'select'>, found: LeagueMatch): StoredVeto | null
     action: step.action,
     map: step.map,
     side: step.startSide,
+    // The team sent to ban first is stored as its match side, like every other team.
+    choice:
+      step.action === 'first_ban' && isSide(step.choice) ? teamOf(step.choice, teamA) : step.choice,
     game: step.gameN,
     timedOut: step.timedOut,
   }));
   const lastAt = rows.at(-1)?.at ?? row.vetoStartedAt;
-  // The coin is told in every edit of the message; the start's audit entry is its record.
-  const start = db
-    .select({ after: auditLog.afterJson })
-    .from(auditLog)
-    .where(
-      and(
-        eq(auditLog.entity, 'match'),
-        eq(auditLog.entityId, String(found.id)),
-        eq(auditLog.action, 'match.veto_start'),
-      ),
-    )
-    .orderBy(desc(auditLog.id))
-    .get();
-  const byCoin = start?.after?.byCoin === true;
-  return { found, row, byCoin, veto: row.vetoJson, teamA, records, lastAt };
+  const config = { format: veto.format, pool: veto.pool, opening: veto.opening };
+  return { found, row, veto, config, teamA, records, lastAt };
 }
 
 function viewOf(stored: StoredVeto, state: VetoState): VetoView {
-  const { found, row, byCoin, veto, teamA, records, lastAt } = stored;
+  const { found, row, veto, teamA, records, lastAt } = stored;
+  const sideOf = (team: VetoTeam | null) => (team === null ? null : sideOfTeam(team, teamA));
   return {
     match: found,
     teamA,
-    host: row.hostSide ?? other(teamA),
-    byCoin,
+    host: row.hostSide,
+    byCoin: veto.opening === 'coin',
+    roles: { firstBan: sideOf(state.firstBan), sideSelection: sideOf(state.sideSelection) },
     state,
     steps: records.map((record) => ({
       ...record,
@@ -122,7 +124,7 @@ function viewOf(stored: StoredVeto, state: VetoState): VetoView {
 
 /** Where a stored veto stands; a veto its own frozen settings refuse is corrupt data. */
 function stateOf(stored: StoredVeto): VetoState {
-  const view = vetoState(stored.veto.format, stored.veto.pool, stored.records);
+  const view = vetoState(stored.config, stored.records);
   if (!view.ok) throw new Error(`Veto of match ${stored.found.id} is ${view.error}`);
   return view.state;
 }
@@ -145,12 +147,24 @@ function storeSteps(
         action: record.action,
         map: record.map,
         startSide: record.side,
+        choice:
+          record.action === 'first_ban' && isVetoTeam(record.choice)
+            ? sideOfTeam(record.choice, stored.teamA)
+            : record.choice,
         gameN: record.game,
         at: now,
-        // The decider and a timed-out step are nobody's choice.
-        byPlayerId: record.team === null || record.timedOut ? null : by,
+        // The decider, a toss and a timed-out step are nobody's choice.
+        byPlayerId: record.team === null || record.action === 'toss' || record.timedOut ? null : by,
         timedOut: record.timedOut,
       })
+      .run();
+  }
+  // After a coin toss, side selection is known once its winner has chosen.
+  if (stored.row.sideChooser === null && state.sideSelection !== null) {
+    const chooser = sideOfTeam(state.sideSelection, stored.teamA);
+    tx.update(match)
+      .set({ sideChooser: chooser, otSideChooser: other(chooser) })
+      .where(eq(match.id, stored.found.id))
       .run();
   }
   if (state.status !== 'done') return;
@@ -222,8 +236,10 @@ function ranksOf(db: Pick<Db, 'select'>, found: LeagueMatch): { a: number; b: nu
 }
 
 /**
- * A manager or staff member of either team, or league staff, starts the veto. Sides and host are frozen from live
- * standings, a coin settling equal ranks (O-12); the format, pool and timer are frozen too.
+ * An official of either team, or league staff, starts the veto. Who leads it, picks sides and
+ * hosts is frozen from live standings; between equal ranks a coin toss names team A, which then
+ * makes BLAST's choice, and nobody is named host (O-11, O-12). The format, pool and timer are
+ * frozen too.
  */
 export function startVeto(
   db: Db,
@@ -254,13 +270,18 @@ export function startVeto(
     const ranks = ranksOf(tx, found);
     if (!ranks) return { ok: false, error: 'no_ranks' };
     const sides = assignSides(ranks.a, ranks.b, ranks.a === ranks.b ? flipCoin() : 'a');
+    const veto: MatchVeto = {
+      ...frozen.veto,
+      opening: sides.byCoin ? 'coin' : 'ranked',
+      team_a: sides.lead,
+    };
 
     tx.update(match)
       .set({
         sideChooser: sides.sideChooser,
         otSideChooser: sides.otSideChooser,
         hostSide: sides.host,
-        vetoJson: frozen.veto,
+        vetoJson: veto,
         vetoStartedAt: now,
       })
       .where(eq(match.id, found.id))
@@ -278,7 +299,7 @@ export function startVeto(
         entity: 'match',
         entityId: String(found.id),
         beforeJson: {},
-        afterJson: { ...sides, ranks, ...frozen.veto },
+        afterJson: { ...sides, ranks, ...veto },
         at: now,
       })
       .run();
@@ -287,7 +308,7 @@ export function startVeto(
     // Just written in this transaction.
     if (!stored) throw new Error(`Veto of match ${found.id} was not stored`);
     // An empty sequence has its decider due at once.
-    const view = vetoState(stored.veto.format, stored.veto.pool, stored.records);
+    const view = vetoState(stored.config, stored.records);
     if (!view.ok) return { ok: false, error: 'pool_size' };
     const mentionUserIds = [found.a.teamId, found.b.teamId]
       .flatMap((teamId) => listTeamStaff(tx, teamId))
@@ -316,8 +337,13 @@ function vetoSettings(
     .where(eq(schema.season.id, found.seasonId))
     .get();
   const pool = seasonRow?.settings.map_pool ?? [];
-  if (!vetoState(format, pool, []).ok) return { ok: false, error: 'pool_size' };
-  return { ok: true, veto: { format, pool, step_seconds: settings.step_seconds } };
+  if (!vetoState({ format, pool, opening: 'ranked' }, []).ok) {
+    return { ok: false, error: 'pool_size' };
+  }
+  return {
+    ok: true,
+    veto: { format, pool, step_seconds: settings.step_seconds, opening: 'ranked' },
+  };
 }
 
 /** Remembers the message that shows the veto, so later steps and the clock can edit it. */
@@ -350,8 +376,10 @@ export type VetoChoiceError =
 export type VetoChoiceReply = { ok: true; view: VetoView } | { ok: false; error: VetoChoiceError };
 
 /**
- * The team whose turn it is bans, picks or chooses a side. `step` is the number of steps the
- * clicked message showed: a click on an older message is stale and changes nothing.
+ * The team whose turn it is makes its choice: a ban, a pick, a side, or a decision after the
+ * coin toss. `step` is the number of steps the clicked message showed: a click on an older
+ * message is stale and changes nothing. `tossCoin` settles the decider's toss if this step
+ * makes it due.
  */
 export function chooseVetoStep(
   db: Db,
@@ -359,6 +387,7 @@ export function chooseVetoStep(
   /** A choice by name (the website), or by its place among the choices offered (a button). */
   request: { matchId: number; step: number; choice: string | number },
   now: number,
+  tossCoin: () => Side,
 ): VetoChoiceReply {
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
   if (!league) return { ok: false, error: 'not_linked' };
@@ -384,9 +413,10 @@ export function chooseVetoStep(
 
     const choice =
       typeof request.choice === 'number' ? (state.choices[request.choice] ?? '') : request.choice;
-    const result = applyVetoStep(stored.veto.format, stored.veto.pool, stored.records, {
+    const result = applyVetoStep(stored.config, stored.records, {
       team: state.team,
       choice,
+      coin: teamOf(tossCoin(), stored.teamA),
     });
     if (!result.ok) {
       return {
@@ -429,10 +459,11 @@ export function runVetoTick(db: Db, now: number, random: (below: number) => numb
       const state = stateOf(stored);
       if (state.status === 'done') return null;
       if (now < stored.lastAt + stored.veto.step_seconds * 1000) return null;
-      const result = applyVetoStep(stored.veto.format, stored.veto.pool, stored.records, {
+      const result = applyVetoStep(stored.config, stored.records, {
         team: state.team,
         choice: timeoutChoice(state, random(state.choices.length)),
         timedOut: true,
+        coin: random(2) === 0 ? 'A' : 'B',
       });
       // The choice comes from the state's own list, for the team whose turn it is.
       if (!result.ok) throw new Error(`Timed-out veto step refused: ${result.error}`);

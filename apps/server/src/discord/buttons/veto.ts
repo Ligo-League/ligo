@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import { t } from '../../i18n/index.ts';
 import { chooseVetoStep } from '../../services/veto.ts';
 import type { ButtonHandler } from '../commands/types.ts';
@@ -16,6 +17,8 @@ export const vetoButtonHandler: ButtonHandler = {
           interaction,
           { matchId: target.entityId, step: nonce.step, choice: nonce.index },
           context.now(),
+          // The decider's coin toss in a BO3 or BO5, from the system's random source (O-11).
+          () => (randomInt(2) === 0 ? 'a' : 'b'),
         )
       : ({ ok: false, error: 'stale' } as const);
     if (!reply.ok) {

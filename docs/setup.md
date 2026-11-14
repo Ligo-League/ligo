@@ -289,8 +289,10 @@ Run `pnpm seed` once more: it writes the veto sequences into the league's settin
 
 1. As manager of one team, `/match veto` and pick the match. The bot answers privately "Veto
    lancé" and posts the veto below, pinging both teams. It says who picks the starting side and
-   starts (the lower-ranked team), who picks the overtime side and who hosts. On equal ranks it
-   says it drew at random.
+   starts (the lower-ranked team), who picks the overtime side and who hosts. On equal ranks (for
+   example before any result) it tosses a coin instead: the winner clicks **Choix du côté** or
+   **Qui bannit en premier**, the other team makes the other decision, and the message says the
+   teams agree on the host.
 2. Click a map to ban it, as the team whose turn it is. Clicking out of turn, or on an old button,
    gets a private refusal. The message updates after each click.
 3. After the last ban, the remaining map is shown; the side chooser clicks Attaque or Défense,

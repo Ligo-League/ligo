@@ -93,15 +93,17 @@ export const DEFAULT_DISPUTE_REASONS: readonly DisputeReason[] = [
   },
 ];
 
-/** One step of a veto sequence: which team (A starts, section 5) bans or picks a map. */
+/** One step of a veto sequence: which team (A bans first, section 5) bans or picks a map. */
 export const VETO_SEQUENCE_STEPS = ['A_ban', 'B_ban', 'A_pick', 'B_pick'] as const;
 export type VetoSequenceStep = (typeof VETO_SEQUENCE_STEPS)[number];
 
 /**
- * Who picks the decider's sides: team A, as in a BO1, or the team with the better round
- * difference on the earlier maps, decided after they are played (BO3, BO5).
+ * Who picks the decider's sides: the team with side selection, as in a BO1 (`team_a`, the name
+ * kept from when that was always team A); the winner of a new coin toss once the decider is known,
+ * as BLAST does in a BO3 or BO5 (O-11); or the team with the better round difference on the
+ * earlier maps, decided after they are played.
  */
-export const DECIDER_SIDE_RULES = ['team_a', 'round_difference'] as const;
+export const DECIDER_SIDE_RULES = ['team_a', 'coin', 'round_difference'] as const;
 
 export const vetoFormatSchema = z.strictObject({
   /** Bans and picks in order; the map left after the last one is the decider. */
@@ -114,19 +116,19 @@ const alternateBans = (count: number): VetoSequenceStep[] =>
   Array.from({ length: count }, (_step, index) => (index % 2 === 0 ? 'A_ban' : 'B_ban'));
 
 /**
- * The sequences of design doc section 5 for a 9-map pool (O-11 asks whether LFR follows BLAST's
- * 2026 order instead), and the Six Invitational's 4 minutes per step.
+ * The sequences of the BLAST R6 global rulebook 2025, section 5.1.3.2, for a 9-map pool (O-11),
+ * and the Six Invitational's 4 minutes per step.
  */
 export const DEFAULT_VETO = {
   formats: {
     bo1: { sequence: alternateBans(8), decider_side: 'team_a' },
     bo3: {
       sequence: [...alternateBans(4), 'A_pick', 'B_pick', ...alternateBans(2)],
-      decider_side: 'round_difference',
+      decider_side: 'coin',
     },
     bo5: {
       sequence: [...alternateBans(2), 'A_pick', 'B_pick', ...alternateBans(2), 'A_pick', 'B_pick'],
-      decider_side: 'round_difference',
+      decider_side: 'coin',
     },
   } as Record<string, VetoFormat>,
   step_seconds: 240,

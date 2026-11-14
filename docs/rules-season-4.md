@@ -144,9 +144,8 @@ M-xx : mainteneur).
   Après un pile ou face, **les équipes conviennent de l'hôte** entre elles.
 - **Statut** : Décidée.
 - **Appliquée par** : le bot calcule le classement en direct et fige ces rôles au lancement du
-  veto. Le pile ou face est tiré par le bot, annoncé dans le message et gardé dans l'historique.
-  Le choix qui suit le pile ou face, et l'hôte laissé aux équipes, arrivent avec la prochaine
-  mise à jour du veto (en cours).
+  veto. Le pile ou face est tiré par le bot, annoncé dans le message et gardé dans l'historique ;
+  les décisions qui suivent se prennent avec des boutons, et le message laisse l'hôte aux équipes.
 
 ### 4.2 Veto
 

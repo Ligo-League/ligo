@@ -29,13 +29,30 @@ export function vetoMessage(locale: Locale, view: VetoView): OutgoingMessage {
   };
   const lines = [
     t(locale, 'veto.title', { fixture: matchFixture(locale, match), bestOf: match.bestOf }),
-    t(locale, 'veto.roles', {
-      chooser: teamName('A'),
-      other: teamName('B'),
-      host: match[view.host].name,
-    }),
   ];
-  if (view.byCoin) lines.push(t(locale, 'veto.coin', { chooser: teamName('A') }));
+  if (view.byCoin || view.host === null) {
+    lines.push(t(locale, 'veto.coin', { winner: teamName('A') }));
+  } else {
+    lines.push(
+      t(locale, 'veto.roles', {
+        chooser: teamName('A'),
+        other: teamName('B'),
+        host: match[view.host].name,
+      }),
+    );
+  }
+  // The decisions after the coin toss (BLAST 5.1.3.2, O-11).
+  for (const step of view.steps) {
+    const late = step.timedOut ? t(locale, 'veto.timedOut') : '';
+    if (
+      step.action === 'toss_choice' &&
+      (step.choice === 'side_selection' || step.choice === 'first_ban')
+    ) {
+      lines.push(t(locale, `veto.tossChoice.${step.choice}`, { team: teamName(step.team) }) + late);
+    } else if (step.action === 'first_ban' && (step.choice === 'A' || step.choice === 'B')) {
+      lines.push(t(locale, 'veto.firstBan', { team: teamName(step.choice) }) + late);
+    }
+  }
 
   const bans = view.steps
     .filter((step) => step.action === 'ban')
@@ -52,6 +69,8 @@ export function vetoMessage(locale: Locale, view: VetoView): OutgoingMessage {
     const game = { n: step.game ?? 1, map: step.map ?? '?', team: teamName(step.team) };
     const key = step.action === 'decider' ? 'veto.game.decider' : 'veto.game.picked';
     const line = [match.bestOf === 1 ? t(locale, 'veto.game', game) : t(locale, key, game)];
+    const toss = view.steps.find((s) => s.action === 'toss' && s.game === step.game);
+    if (toss) line.push(t(locale, 'veto.deciderToss', { team: teamName(toss.team) }));
     const side = view.steps.find((s) => s.action === 'side' && s.game === step.game);
     const otSide = view.steps.find((s) => s.action === 'ot_side' && s.game === step.game);
     if (side?.side && otSide?.side) {
@@ -89,14 +108,22 @@ export function vetoMessage(locale: Locale, view: VetoView): OutgoingMessage {
     t(locale, 'veto.timeoutRule'),
   );
   const isSide = state.action === 'side' || state.action === 'ot_side';
-  const style: MessageButton['style'] = isSide
-    ? 'primary'
-    : state.action === 'ban'
-      ? 'danger'
-      : 'success';
+  const isDecision = state.action === 'toss_choice' || state.action === 'first_ban';
+  const style: MessageButton['style'] =
+    isSide || isDecision ? 'primary' : state.action === 'ban' ? 'danger' : 'success';
+  const label = (choice: string): string => {
+    if (isSide) return sideLabel(locale, choice);
+    if (choice === 'side_selection' || choice === 'first_ban') {
+      return t(locale, `veto.choice.${choice}`);
+    }
+    if (state.action === 'first_ban' && (choice === 'A' || choice === 'B')) {
+      return t(locale, 'veto.choice.bansFirst', { team: teamName(choice) });
+    }
+    return choice;
+  };
   const buttons = state.choices.map((choice, index): MessageButton => ({
     customId: vetoButtonId(match.id, state.step, index),
-    label: isSide ? sideLabel(locale, choice) : choice,
+    label: label(choice),
     style,
   }));
   return { content: lines.join('\n'), buttons };

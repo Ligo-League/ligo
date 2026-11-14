@@ -362,7 +362,16 @@ export const fr = {
   'veto.title': '**Veto — {fixture}** (BO{bestOf})',
   'veto.roles':
     '{chooser} choisit le côté de départ et commence le veto ; {other} choisit le côté en prolongation. Hôte : {host}.',
-  'veto.coin': 'Égalité au classement : le bot a tiré au sort {chooser}.',
+  'veto.coin':
+    'Égalité au classement : pile ou face, gagné par **{winner}**. Hôte : à convenir entre les équipes.',
+  'veto.tossChoice.side_selection': '{team} prend le choix du côté.',
+  'veto.tossChoice.first_ban': '{team} décide qui bannit en premier.',
+  'veto.firstBan': '{team} bannit en premier.',
+  'veto.timedOut': ' (temps écoulé)',
+  'veto.deciderToss': 'pile ou face gagné par {team}',
+  'veto.choice.side_selection': 'Choix du côté',
+  'veto.choice.first_ban': 'Qui bannit en premier',
+  'veto.choice.bansFirst': '{team} bannit en premier',
   'veto.bans': 'Bannies : {list}',
   'veto.ban': '{map} ({team})',
   'veto.ban.timedOut': '{map} ({team}, temps écoulé)',
@@ -381,6 +390,10 @@ export const fr = {
     'Au tour de **{team}** : choisir le côté de départ sur {map}. Fin du temps {deadline}.',
   'veto.turn.ot_side':
     'Au tour de **{team}** : choisir le côté en prolongation sur {map}. Fin du temps {deadline}.',
+  'veto.turn.toss_choice':
+    'Au tour de **{team}** : prendre le choix du côté, ou décider qui bannit en premier. Fin du temps {deadline}.',
+  'veto.turn.first_ban':
+    'Au tour de **{team}** : décider qui bannit en premier. Fin du temps {deadline}.',
   'veto.timeoutRule': 'Sans choix à temps, le bot choisit au hasard.',
   'veto.done': 'Veto terminé. Bon match !',
   'veto.started': 'Veto lancé : le message est juste en dessous.',
@@ -408,7 +421,7 @@ export const fr = {
   'veto.hint.noMatch': 'Aucun de tes matchs à jouer ne correspond à « {query} ».',
   'help.choice.match-veto': '/match veto',
   'help.page.matchVeto':
-    "**`/match veto`** — le veto des cartes\nPour les responsables des deux équipes ; le staff de la ligue peut aussi le lancer.\n\n• `match` : choisis-le dans la liste.\n\nAu lancement, le bot fige qui choisit quoi d'après le classement du moment : l'équipe la moins bien classée choisit le côté de départ et commence le veto, l'autre choisit le côté en prolongation, la mieux classée héberge. À égalité de classement, le bot tire au sort.\n\nLe bot poste un message avec un bouton par carte : chaque équipe clique à son tour pour bannir ou choisir, puis Attaque ou Défense. Le message se met à jour à chaque choix. Chaque tour a un temps limité ; sans choix à temps, le bot choisit au hasard et le note.\nÀ la fin, la carte est enregistrée avec le match : `/match report` la reprend.",
+    "**`/match veto`** — le veto des cartes\nPour les responsables des deux équipes ; le staff de la ligue peut aussi le lancer.\n\n• `match` : choisis-le dans la liste.\n\nAu lancement, le bot fige qui choisit quoi d'après le classement du moment : l'équipe la moins bien classée choisit le côté de départ et commence le veto, l'autre choisit le côté en prolongation, la mieux classée héberge. À égalité de classement, le bot tire à pile ou face, comme sur le circuit BLAST : en BO1, le gagnant prend le choix du côté ou décide qui bannit en premier, et l'autre équipe prend l'autre décision ; l'hôte est alors à convenir entre les équipes.\n\nLe bot poste un message avec un bouton par carte : chaque équipe clique à son tour pour bannir ou choisir, puis Attaque ou Défense. Le message se met à jour à chaque choix. Chaque tour a un temps limité ; sans choix à temps, le bot choisit au hasard et le note.\nÀ la fin, la carte est enregistrée avec le match : `/match report` la reprend.",
   'card.eyebrow': '{competition} · {season}',
   'card.title': '{division} · Semaine {week}',
   'card.label.time': 'Match programmé',
