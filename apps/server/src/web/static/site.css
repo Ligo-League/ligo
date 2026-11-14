@@ -347,3 +347,17 @@ button.danger {
   color: var(--zone-relegation);
   font-weight: 600;
 }
+
+/* A score screenshot in the staff queue: as wide as the card, opens full size. */
+a.shot {
+  display: block;
+  margin: 8px 0;
+}
+
+a.shot img {
+  display: block;
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}

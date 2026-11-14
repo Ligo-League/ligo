@@ -2,10 +2,12 @@ import { readFile } from 'node:fs/promises';
 import { findLeague, listLeagueMatches, schema, type Db } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
+import type { EvidenceStore } from '../assets/evidence-store.ts';
 import type { AssetStore } from '../assets/store.ts';
 import type { DiscordGateway } from '../discord/gateway.ts';
 import { announceReportDecision, announceRequestDecision } from '../discord/staff-decisions.ts';
 import { t, type Locale, type MessageKey } from '../i18n/index.ts';
+import { evidenceCompetition, openEvidence } from '../services/evidence.ts';
 import {
   countryChoices,
   loginPlayer,
@@ -51,6 +53,8 @@ export interface StaticFiles {
 export interface WebDeps {
   db: Db;
   assets: AssetStore;
+  /** The server's copies of match evidence: shown to staff, never public. */
+  evidence: EvidenceStore;
   locale: Locale;
   files: StaticFiles;
   logger: { error: (details: object, message: string) => void };
@@ -354,6 +358,26 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     // The queue is for this viewer only: no shared cache keeps it.
     c.header('Cache-Control', 'no-store');
     return render(c, staffPage(locale, { leagues, csrf: viewer.csrf, now: deps.now(), flash }));
+  });
+
+  // A score screenshot, for staff of the match's league; to anyone else it does not exist.
+  app.get('/evidence/:id', async (c) => {
+    if (!login) return notFound(c);
+    const viewer = c.get('viewer');
+    const id = c.req.param('id');
+    if (!viewer) return forbidden(c);
+    const competitionId = ROW_ID.test(id) ? evidenceCompetition(db, Number(id)) : null;
+    if (competitionId === null) return notFound(c);
+    const actor = await webActor(db, deps.roles, viewer, competitionId, deps.now());
+    if (!actor) return forbidden(c);
+    const shown = await openEvidence(db, deps.evidence, actor, Number(id));
+    if (!shown.ok) return shown.error === 'not_found' ? notFound(c) : forbidden(c);
+    return c.body(new Uint8Array(shown.data), 200, {
+      'Content-Type': shown.type,
+      'Content-Disposition': 'inline',
+      // Staff only: no shared cache, and the browser does not keep it either.
+      'Cache-Control': 'private, no-store',
+    });
   });
 
   app.post('/staff/matches/:id/:decision', async (c) => {

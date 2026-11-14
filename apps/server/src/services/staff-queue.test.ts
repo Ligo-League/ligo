@@ -1,5 +1,6 @@
 import { findLeague, schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
+import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeGateway } from '../discord/testing.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import type { Actor } from './permissions.ts';
@@ -37,10 +38,12 @@ function league() {
     if (!found) throw new Error('No league');
     return staffQueue(db, found);
   };
+  const evidence = fakeEvidenceStore();
   const report = async () => {
     const reply = await reportResult(
       db,
       fakeGateway(),
+      evidence,
       BRAVO,
       { matchId: 3, scoreA: 7, scoreB: 5, screenshot: SCREENSHOT },
       () => ({ content: 'queue' }),

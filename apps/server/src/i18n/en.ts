@@ -556,6 +556,7 @@ export const en: Record<MessageKey, string> = {
   'web.staff.awaitingOpponent': 'The other team has not answered yet.',
   'web.staff.disputedBy': 'Disputed by {name}, {when}. Reason: {reason}.',
   'web.staff.screenshot': 'See the screenshot',
+  'web.staff.screenshotAlt': 'Score screenshot: {line}',
   'web.staff.matchPage': 'Match page',
   'web.staff.validate': 'Validate the result',
   'web.staff.reject': 'Reject the report',

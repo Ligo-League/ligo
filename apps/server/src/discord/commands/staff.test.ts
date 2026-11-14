@@ -141,10 +141,15 @@ describe('/staff match result', () => {
       contentType: 'image/png',
       size: 1000,
     };
-    const { db } = await run(result({ match: 3, score_a: 7, score_b: 5, screenshot }));
+    const context = fakeContext({ db: leagueDatabase() });
+    const { db } = await run(result({ match: 3, score_a: 7, score_b: 5, screenshot }), context);
     expect(db.select().from(schema.evidence).all()).toMatchObject([
       { matchId: 3, kind: 'score_screenshot', url: screenshot.url },
     ]);
+    // Discord's address expires: the server keeps its own copy, after replying.
+    expect(db.select().from(schema.evidence).get()?.objectKey).toMatch(
+      /^evidence\/3\/[0-9a-f]{64}\.png$/,
+    );
   });
 
   it.each([

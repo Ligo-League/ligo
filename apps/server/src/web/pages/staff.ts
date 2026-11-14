@@ -61,7 +61,9 @@ function reportItem(
         teamA: match.a.name,
         teamB: match.b.name,
       });
-  const screenshot = safeLink(report.evidence?.url ?? null);
+  const { evidence } = report;
+  // Reports from before the server kept copies only have the bot's post in Discord.
+  const screenshot = evidence?.kept ? null : safeLink(evidence?.url ?? null);
   // The decision applies to the report shown: a newer one makes it stale.
   const decide = (decision: 'validate' | 'reject', label: MessageKey, danger: boolean) =>
     html`<form method="post" action="/staff/matches/${match.id}/${decision}">
@@ -85,6 +87,17 @@ function reportItem(
             : ''
       }
     </p>
+    ${
+      evidence?.kept
+        ? html`<a class="shot" href="/evidence/${evidence.id}" target="_blank" rel="noreferrer">
+            <img
+              src="/evidence/${evidence.id}"
+              alt="${t(locale, 'web.staff.screenshotAlt', { line })}"
+              loading="lazy"
+            />
+          </a>`
+        : ''
+    }
     ${report.disputes.map((dispute) => disputeBlock(locale, dispute, timeZone))}
     <p>
       ${

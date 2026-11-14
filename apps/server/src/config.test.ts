@@ -18,6 +18,7 @@ describe('loadConfig', () => {
         discordGuildId: '876543210987654321',
         databasePath: './data/ligo.db',
         assetsDir: './data/assets/render',
+        storageDir: './data/storage',
         logLevel: 'info',
         web: {
           host: '127.0.0.1',

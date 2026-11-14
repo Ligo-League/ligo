@@ -19,7 +19,9 @@ import {
 } from '@ligo/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { CommandFile, OutgoingMessage } from '../discord/commands/types.ts';
+import type { EvidenceStore } from '../assets/evidence-store.ts';
 import type { DiscordGateway } from '../discord/gateway.ts';
+import { imageTypeOf, keepEvidence } from './evidence.ts';
 import { matchQuery } from './match-search.ts';
 import {
   requireStaff,
@@ -175,23 +177,23 @@ export interface ReportDetails {
 export type ReportReply =
   | ReportRefusal
   | { ok: false; error: 'screenshot_unreadable' }
-  /** `queued` is false when the report is stored but could not be posted to the staff queue. */
-  | ({ ok: true; queued: boolean } & ReportDetails);
+  /**
+   * `queued` is false when the report is stored but could not be posted to the staff queue;
+   * `kept` is false when the server could not keep its own copy of the screenshot.
+   */
+  | ({ ok: true; queued: boolean; kept: boolean } & ReportDetails);
 
-const EXTENSIONS: Record<string, string> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/webp': 'webp',
-};
+const EXTENSIONS = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' } as const;
 
 /**
- * A team's manager or staff reports the result of its match. The screenshot is downloaded and
- * posted again in the staff queue, where it stays readable: the link Discord gave for the
- * upload expires. `queueMessage` formats that post; the service knows no user-facing text.
+ * A team's manager or staff reports the result of its match. The screenshot is downloaded, kept
+ * by the server for the website, and posted again in the staff queue: the link Discord gave for
+ * the upload expires. `queueMessage` formats that post; the service knows no user-facing text.
  */
 export async function reportResult(
   db: Db,
   gateway: DiscordGateway,
+  store: EvidenceStore,
   actor: Actor,
   request: ReportRequest,
   queueMessage: (report: ReportDetails) => OutgoingMessage,
@@ -206,8 +208,10 @@ export async function reportResult(
   } catch {
     return { ok: false, error: 'screenshot_unreadable' };
   }
-  const extension = EXTENSIONS[first.screenshot.contentType ?? ''] ?? 'png';
-  const screenshot: CommandFile = { name: `score-${request.matchId}.${extension}`, data };
+  // The type Discord declares is the uploader's word; the file's own bytes decide.
+  const type = imageTypeOf(data);
+  if (!type) return { ok: false, error: 'invalid_screenshot' };
+  const screenshot: CommandFile = { name: `score-${request.matchId}.${EXTENSIONS[type]}`, data };
 
   const stored = db.transaction((tx): ReportRefusal | ({ ok: true } & ReportDetails) => {
     // The download took time: the match may have been reported or changed meanwhile.
@@ -269,6 +273,12 @@ export async function reportResult(
     return { ok: true, match: found, scoreA, scoreB, side, evidenceId, opponents, screenshot };
   });
   if (!stored.ok) return stored;
+  const kept = await keepEvidence(
+    db,
+    store,
+    { evidenceId: stored.evidenceId, matchId: stored.match.id },
+    data,
+  );
 
   let queued = true;
   try {
@@ -288,7 +298,7 @@ export async function reportResult(
     // post is missing.
     queued = false;
   }
-  return { ...stored, queued };
+  return { ...stored, queued, kept };
 }
 
 export type ReportableSearch =

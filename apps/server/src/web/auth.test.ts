@@ -1,6 +1,7 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
+import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeAssetStore } from '../assets/store.ts';
 import { fakeGateway } from '../discord/testing.ts';
 import { leagueDatabase, TEST_STAFF_ROLE } from '../testing.ts';
@@ -225,6 +226,7 @@ describe('without login settings', () => {
     const app = createWebApp({
       db,
       assets: fakeAssetStore(),
+      evidence: fakeEvidenceStore(),
       locale: 'fr',
       files: { css: '', htmx: '' },
       logger: { error: vi.fn() },

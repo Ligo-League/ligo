@@ -1,5 +1,6 @@
 import type { Db } from '@ligo/db';
 import type { RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js';
+import type { EvidenceStore } from '../../assets/evidence-store.ts';
 import type { AssetStore } from '../../assets/store.ts';
 import type { Locale } from '../../i18n/index.ts';
 import type { Actor } from '../../services/permissions.ts';
@@ -150,6 +151,8 @@ export interface CommandContext {
   gateway: DiscordGateway;
   /** Images such as team logos. */
   assets: AssetStore;
+  /** The server's copies of match evidence, such as score screenshots. */
+  evidence: EvidenceStore;
   /** The current time in Unix milliseconds; services take it as a parameter. */
   now(): number;
 }

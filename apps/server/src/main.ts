@@ -2,7 +2,9 @@ import { mkdirSync } from 'node:fs';
 import { serve } from '@hono/node-server';
 import { dirname, resolve } from 'node:path';
 import { applyMigrations, openDatabase } from '@ligo/db';
+import { createLocalEvidenceStore } from './assets/evidence-store.ts';
 import { createLocalAssetStore } from './assets/store.ts';
+import { SCREENSHOT_MAX_BYTES } from './services/results.ts';
 import { loadConfig } from './config.ts';
 import { Events } from 'discord.js';
 import { buttons } from './discord/buttons/index.ts';
@@ -36,7 +38,8 @@ applyMigrations(db);
 logger.info({ path: databasePath }, 'Database ready');
 
 const assets = createLocalAssetStore(resolve(config.assetsDir));
-const client = createDiscordClient({ commands, buttons, forms, logger, db, assets });
+const evidence = createLocalEvidenceStore(resolve(config.storageDir), SCREENSHOT_MAX_BYTES, logger);
+const client = createDiscordClient({ commands, buttons, forms, logger, db, assets, evidence });
 // Calls through the gateway fail until the bot is connected; the website then sees no roles.
 const gateway = createDiscordGateway(client);
 
@@ -55,6 +58,7 @@ if (!login)
 const web = createWebApp({
   db,
   assets,
+  evidence,
   locale: DEFAULT_LOCALE,
   files: await loadStaticFiles(),
   logger,

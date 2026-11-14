@@ -393,8 +393,10 @@ section 10).
 1. With the team account, report a result with `/match report`, and file a request with `/team`
    (section 13). Both appear in the staff queue channel, with their buttons.
 2. Log in on the website with your staff account. **Mon compte** now has a link **Ouvrir la file
-   du staff** (`http://localhost:3000/staff`). It lists the results to validate, the disputes, and
-   the team requests with their deadline.
+   du staff** (`http://localhost:3000/staff`). It lists the results to validate, with the
+   screenshot shown on the page, the disputes, and the team requests with their deadline. The
+   server keeps its copy of each screenshot under `data/storage/evidence/` (`STORAGE_DIR`);
+   results reported before this change only link to the Discord post.
 3. Click **Valider le résultat**. The page says it is validated, and in Discord the report's post
    in the staff queue now reads "validé par" with your name, without buttons. The result is
    announced in the results channel, as with the button.

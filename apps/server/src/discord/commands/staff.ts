@@ -3,6 +3,7 @@ import { announceWithCard } from '../match-card.ts';
 import { catalogs, t, type Locale } from '../../i18n/index.ts';
 import { recordForfeit, searchForfeitableMatches } from '../../services/forfeits.ts';
 import { searchMatchesForStaff, validateResult, voidMatch } from '../../services/reports.ts';
+import { fetchAndKeepEvidence } from '../../services/evidence.ts';
 import { recordResult, searchMatches } from '../../services/results.ts';
 import {
   readMatchTime,
@@ -432,10 +433,11 @@ export const staffCommand: Command = {
       await privately(t(locale, 'error.unknownCommand'));
       return;
     }
+    const screenshot = interaction.options.getAttachment('screenshot');
     const reply = recordResult(
       db,
       interaction,
-      { matchId, scoreA, scoreB, screenshot: interaction.options.getAttachment('screenshot') },
+      { matchId, scoreA, scoreB, screenshot },
       context.now(),
     );
     if (!reply.ok) {
@@ -480,6 +482,16 @@ export const staffCommand: Command = {
           })
         : t(locale, 'match.result.recorded', details),
     );
+    // After the reply: downloading a large screenshot must not keep staff waiting.
+    if (screenshot && reply.evidenceId !== null) {
+      await fetchAndKeepEvidence(
+        db,
+        context.gateway,
+        context.evidence,
+        { evidenceId: reply.evidenceId, matchId: reply.match.id },
+        screenshot.url,
+      );
+    }
   },
 
   async autocomplete(interaction, context) {

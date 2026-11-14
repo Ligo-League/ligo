@@ -1,5 +1,6 @@
 import type { Db } from '@ligo/db';
 import { vi } from 'vitest';
+import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeAssetStore } from '../assets/store.ts';
 import { fakeGateway } from '../discord/testing.ts';
 import { leagueDatabase } from '../testing.ts';
@@ -20,12 +21,14 @@ export function testSite(options: { db?: Db; users?: Record<string, DiscordUser>
   const db = options.db ?? leagueDatabase();
   const oauth = fakeDiscordOAuth({ 'code-ana': ANA, ...options.users });
   const gateway = fakeGateway();
+  const evidence = fakeEvidenceStore();
   const logger = { error: vi.fn() };
   let now = TEST_NOW;
   const roles = new Map<string, string[]>();
   const app = createWebApp({
     db,
     assets: fakeAssetStore(),
+    evidence,
     locale: 'fr',
     files: { css: '', htmx: '' },
     logger,
@@ -82,5 +85,5 @@ export function testSite(options: { db?: Db; users?: Record<string, DiscordUser>
   const setRoles = (value: string[], userId = ANA.id) => {
     roles.set(userId, value);
   };
-  return { db, oauth, gateway, logger, jar, request, logIn, post, advance, setRoles };
+  return { db, oauth, gateway, evidence, logger, jar, request, logIn, post, advance, setRoles };
 }

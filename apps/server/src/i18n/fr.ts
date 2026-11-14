@@ -587,6 +587,7 @@ export const fr = {
   'web.staff.awaitingOpponent': "L'équipe adverse n'a pas encore répondu.",
   'web.staff.disputedBy': 'Contesté par {name}, {when}. Motif : {reason}.',
   'web.staff.screenshot': 'Voir la capture',
+  'web.staff.screenshotAlt': 'Capture du score : {line}',
   'web.staff.matchPage': 'Page du match',
   'web.staff.validate': 'Valider le résultat',
   'web.staff.reject': 'Refuser le signalement',

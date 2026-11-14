@@ -1,5 +1,6 @@
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
+import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeGateway } from '../discord/testing.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import type { Actor } from './permissions.ts';
@@ -62,11 +63,12 @@ function league() {
   setTeamOwner(db, STAFF, { teamId: 4, member: XRAY_MANAGER.user }, 100);
   db.update(leagueGuild).set({ alertsChannelId: QUEUE, resultsChannelId: RESULTS }).run();
   const gateway = fakeGateway();
+  const evidence = fakeEvidenceStore();
   const report = (actor: Actor = BRAVO_MANAGER, request: ReportRequest = REQUEST, now = 9000) =>
-    reportResult(db, gateway, actor, request, queueMessage, now);
+    reportResult(db, gateway, evidence, actor, request, queueMessage, now);
   const stored = () => db.select().from(match).all()[2];
   const dump = () => db.$client.serialize().toString('base64');
-  return { db, gateway, report, stored, dump };
+  return { db, gateway, evidence, report, stored, dump };
 }
 const evidenceIdOf = async (report: ReturnType<typeof league>['report']) => {
   const reply = await report();
@@ -82,6 +84,31 @@ const pointsOf = (db: ReturnType<typeof leagueDatabase>) => {
 };
 
 describe('reportResult', () => {
+  it('keeps the server’s own copy of the screenshot, for the website', async () => {
+    const { db, evidence, report } = league();
+    const reply = await report();
+    expect(reply).toMatchObject({ ok: true, kept: true });
+    const row = db.select().from(schema.evidence).get();
+    expect(row?.objectKey).toMatch(/^evidence\/3\/[0-9a-f]{64}\.png$/);
+    expect(evidence.files.has(row?.objectKey ?? '')).toBe(true);
+  });
+
+  it('refuses a file that is not an image, whatever type Discord declared', async () => {
+    const { db, gateway, evidence, report, dump } = league();
+    const before = dump();
+    gateway.downloadData = new Uint8Array(Buffer.from('<!doctype html><script></script>'));
+    expect(await report()).toEqual({ ok: false, error: 'invalid_screenshot' });
+    expect(dump()).toBe(before);
+    expect(evidence.files.size).toBe(0);
+    expect(db.select().from(schema.evidence).all()).toEqual([]);
+  });
+
+  it('stores the report when the server cannot keep its copy: Discord still has it', async () => {
+    const { db, evidence, report } = league();
+    evidence.failing = true;
+    expect(await report()).toMatchObject({ ok: true, kept: false, queued: true });
+    expect(db.select().from(schema.evidence).get()?.objectKey).toBeNull();
+  });
   it('stores the report without making it count', async () => {
     const { db, report, stored } = league();
     const reply = await report();

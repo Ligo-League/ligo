@@ -357,7 +357,7 @@ These are the sequences of the [BLAST R6 global rulebook 2025](https://staticctf
 
 - The steps, and who may take each, are one table in `packages/core` (`match-lifecycle.ts`). With `result_validation: 'opponent'`, the opponent's confirmation validates.
 - Staff may validate before the opponent answers; whether they should is an open question (O-06).
-- Until R2 (phase 5), the lasting copy of the screenshot is the bot's post in the staff queue, and `evidence.url` is the link to that message: the address Discord gives for an upload expires.
+- The server keeps its own copy of each score screenshot (maintainer, 14 November 2026), from `/match report` and `/staff match result`, so the website can show it: the address Discord gives for an upload expires within a day. Its key is `evidence/<match_id>/<sha256>.<ext>` in `evidence.object_key`, on disk under `STORAGE_DIR` until R2 (phase 5) with the same keys. Only PNG, JPEG and WebP are kept, recognised by the file's own bytes, not the type Discord declares. `GET /evidence/:id` serves it to league staff (the two teams in phase 3e), never publicly or from a cache. The bot's post in the staff queue stays the Discord-side copy, and `evidence.url` links to it; a report whose copy could not be stored still stands on that post.
 - A button belongs to one report: its ID carries the `evidence` row of that report, so a button under an older report is refused.
 
 **Game score**
@@ -578,8 +578,10 @@ The website is the main tool of the platform (section 3): the public face of eve
 | `/matches/:id/games/:n/stitch` | team staff and staff    | Re-host review                                                                                                                 |
 | `/me`                          | logged-in player        | Linked accounts, nationality, stats consent                                                                                    |
 | `/staff/*`                     | staff                   | Validation queue, requests waiting (registrations, mercato, team officials), sanctions, forfeits, accreditations, unknown players, jobs, rules versions |
+| `/evidence/:id`                | staff (teams in 3e)     | A score screenshot the server kept; never public                                                                               |
 
 The team workspace, recruitment and awards pages are listed in section 17.
+
 
 **Registration** (replaces the rulebook's form posted in the registration channel)
 
@@ -1028,7 +1030,7 @@ Volume `/data` holds the SQLite database and the image cache.
 
 **Configuration** (`.env` on the server only, never committed)
 
-`DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`, `PUBLIC_URL`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `DATABASE_PATH`.
+`DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`, `PUBLIC_URL`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `DATABASE_PATH`, `STORAGE_DIR` (files the server keeps until R2, such as score screenshots).
 
 **R2 bucket layout:** `replays/<match_id>/<sha256>.rec` (raw files, kept one season), `evidence/<match_id>/` (screenshots, MOSS; staff-only access through the server), `backups/db/`, `transcripts/<season_id>/`, `logos/`. The bucket is private; CORS allows only `PUT` from `PUBLIC_URL`.
 
@@ -1041,6 +1043,7 @@ Volume `/data` holds the SQLite database and the image cache.
 **Backups and restore**
 
 - Litestream replicates continuously. A nightly job also uploads a full snapshot.
+- Until R2 (phase 5), the files under `STORAGE_DIR` (score screenshots) are on the VPS disk only: the nightly job copies that folder too. Litestream covers the database alone.
 - `deploy/restore.sh` provisions a fresh VPS: installs Docker, pulls images, restores the database from R2, starts Compose.
 - Rehearse the restore once per season.
 

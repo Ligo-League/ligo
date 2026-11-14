@@ -25,10 +25,11 @@ export interface QueuedDispute extends DisputeDetails {
 export interface QueuedReport {
   match: LeagueMatch;
   /**
-   * The screenshot the result rests on: its address, normally the bot's post in the staff queue.
-   * The buttons name its ID, so a decision applies to this report and not a newer one.
+   * The screenshot the result rests on: `kept` when the server has its own copy, shown on the
+   * page; `url` is the bot's post in the staff queue. The buttons name its ID, so a decision
+   * applies to this report and not a newer one.
    */
-  evidence: { id: number; url: string | null; at: number } | null;
+  evidence: { id: number; url: string | null; at: number; kept: boolean } | null;
   /** Who reported, and for which team. */
   reportedBy: string | null;
   reportingTeam: string | null;
@@ -66,7 +67,9 @@ function queuedReport(
     .all();
   return {
     match: found,
-    evidence: shot ? { id: shot.id, url: shot.url, at: shot.at } : null,
+    evidence: shot
+      ? { id: shot.id, url: shot.url, at: shot.at, kept: shot.objectKey !== null }
+      : null,
     reportedBy: nameOf(db, found.reportedBy),
     reportingTeam: side === null ? null : found[side].name,
     disputes: open.map(({ row, raisedBy }) => ({

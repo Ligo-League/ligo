@@ -281,6 +281,7 @@ export const matchCommand: Command = {
     const reply = await reportResult(
       context.db,
       context.gateway,
+      context.evidence,
       interaction,
       request,
       (report) => ({

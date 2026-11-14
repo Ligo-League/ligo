@@ -42,6 +42,7 @@ async function queueSite() {
   const reported = await reportResult(
     db,
     site.gateway,
+    site.evidence,
     BRAVO,
     { matchId: 3, scoreA: 7, scoreB: 5, screenshot: SCREENSHOT },
     () => ({ content: 'Résultat à valider', buttons: [] }),
@@ -119,7 +120,8 @@ describe('/staff', () => {
     // The team's words are shown as text, never run.
     expect(page).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(page).not.toContain('<script>alert');
-    expect(page).toMatch(/href="https:\/\/discord\.com\/channels\/[^"]+"/);
+    // The server's copy of the screenshot is shown on the page itself.
+    expect(page).toContain(`src="/evidence/${String(evidenceId)}"`);
     expect(page).toContain('action="/staff/matches/3/validate"');
     expect(page).toMatch(new RegExp(`name="evidence" value="${String(evidenceId)}"`));
     expect(page).toContain('Demandes des équipes (1)');
@@ -241,5 +243,40 @@ describe('/staff', () => {
     expect((await post('/staff/matches/3/validate', form)).status).toBe(403);
     expect((await request('/staff')).status).toBe(403);
     expect(status()).toBe('reported');
+  });
+});
+
+describe('/evidence/:id', () => {
+  it('shows staff the screenshot, never cached', async () => {
+    const { request, logIn, evidenceId } = await queueSite();
+    await logIn('/staff', 'code-lea');
+    const response = await request(`/evidence/${String(evidenceId)}`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('image/png');
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(new Uint8Array(await response.arrayBuffer()).slice(0, 4)).toEqual(
+      new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+    );
+  });
+
+  it('shows it to nobody else: a visitor, a team, staff who lost the role', async () => {
+    const { request, logIn, setRoles, evidenceId } = await queueSite();
+    const path = `/evidence/${String(evidenceId)}`;
+    expect((await request(path)).status).toBe(403);
+    await logIn('/me');
+    expect((await request(path)).status).toBe(403);
+    await logIn('/staff', 'code-lea');
+    expect((await request(path)).status).toBe(200);
+    setRoles([], LEA.id);
+    expect((await request(path)).status).toBe(403);
+  });
+
+  it('finds no evidence for an unknown or malformed ID', async () => {
+    const { request, logIn, evidenceId } = await queueSite();
+    await logIn('/staff', 'code-lea');
+    for (const id of [String(evidenceId + 1), '0', 'abc', '1.png']) {
+      expect((await request(`/evidence/${id}`)).status).toBe(404);
+    }
   });
 });

@@ -13,6 +13,7 @@ const envSchema = z
     DISCORD_GUILD_ID: snowflake,
     DATABASE_PATH: z.string().min(1).default('./data/ligo.db'),
     ASSETS_DIR: z.string().min(1).default('./data/assets/render'),
+    STORAGE_DIR: z.string().min(1).default('./data/storage'),
     LOG_LEVEL: z
       .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'])
       .default('info'),
@@ -41,6 +42,8 @@ export interface Config {
   databasePath: string;
   /** Prepared images such as team logos (`pnpm assets:logos`), until they move to R2. */
   assetsDir: string;
+  /** Files the server keeps, such as score screenshots, until they move to R2. */
+  storageDir: string;
   logLevel: z.infer<typeof envSchema>['LOG_LEVEL'];
   /** Where the website listens, and its login when both secrets are set. */
   web: {
@@ -74,6 +77,7 @@ export function loadConfig(env: Record<string, string | undefined>): ConfigResul
       discordGuildId: parsed.data.DISCORD_GUILD_ID,
       databasePath: parsed.data.DATABASE_PATH,
       assetsDir: parsed.data.ASSETS_DIR,
+      storageDir: parsed.data.STORAGE_DIR,
       logLevel: parsed.data.LOG_LEVEL,
       web: {
         host: parsed.data.HOST,

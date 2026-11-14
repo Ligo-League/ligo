@@ -11,7 +11,8 @@ import type {
   OutgoingMessage,
   ReplyMessage,
 } from './commands/types.ts';
-import { fakeAssetStore } from '../assets/store.ts';
+import { fakeEvidenceStore } from '../assets/evidence-store.ts';
+import { fakeAssetStore, PNG_HEADER_FOR_TESTS } from '../assets/store.ts';
 import type { DiscordGateway } from './gateway.ts';
 
 type OptionValue =
@@ -251,9 +252,11 @@ export interface FakeGateway extends DiscordGateway {
   members: Map<string, string[]>;
   /** How many times the roles were read, to check caching. */
   roleReads: number;
+  /** What a download returns: a PNG header unless a test sets other bytes. */
+  downloadData: Uint8Array;
 }
 
-/** An in-memory Discord: messages are kept in a list, downloads return a few fixed bytes. */
+/** An in-memory Discord: messages are kept in a list, downloads return `downloadData`. */
 export function fakeGateway(): FakeGateway {
   const gateway: FakeGateway = {
     posted: [],
@@ -262,6 +265,7 @@ export function fakeGateway(): FakeGateway {
     failing: false,
     members: new Map(),
     roleReads: 0,
+    downloadData: PNG_HEADER_FOR_TESTS,
     postMessage(channelId, message) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       const messageId = String(900_000_000_000_000_000n + BigInt(gateway.posted.length + 1));
@@ -289,7 +293,7 @@ export function fakeGateway(): FakeGateway {
     downloadAttachment(url, maxBytes) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       gateway.downloads.push(url);
-      const data = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+      const data = gateway.downloadData;
       return data.byteLength > maxBytes
         ? Promise.reject(new Error('Attachment is too large'))
         : Promise.resolve(data);
@@ -311,6 +315,7 @@ export function fakeContext(overrides: Partial<CommandContext> = {}): CommandCon
     db: openTestDatabase(),
     gateway: fakeGateway(),
     assets: fakeAssetStore(),
+    evidence: fakeEvidenceStore(),
     now: () => 1_800_000_000_000,
     ...overrides,
   };

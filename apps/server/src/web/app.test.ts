@@ -1,6 +1,7 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
+import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeAssetStore, PNG_HEADER_FOR_TESTS } from '../assets/store.ts';
 import { fakeGateway } from '../discord/testing.ts';
 import { setTeamOwner } from '../services/team-staff.ts';
@@ -18,6 +19,7 @@ function site(overrides: Partial<WebDeps> = {}) {
   const app = createWebApp({
     db,
     assets: fakeAssetStore(),
+    evidence: fakeEvidenceStore(),
     locale: 'fr',
     files: FILES,
     logger,

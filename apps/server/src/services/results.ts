@@ -43,6 +43,8 @@ export type RecordResultReply =
       previous: { scoreA: number; scoreB: number } | null;
       /** Where results are announced, when the league has set it. */
       resultsChannelId: string | null;
+      /** The screenshot's evidence row, for the server to keep its copy once downloaded. */
+      evidenceId: number | null;
     }
   | { ok: false; error: RecordResultError }
   // The rule is returned so that the refusal can say which scores are possible.
@@ -175,6 +177,7 @@ export function recordResult(
       scoreB,
       previous,
       resultsChannelId: resultsChannelFor(league, found),
+      evidenceId,
     };
   });
 }
