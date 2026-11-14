@@ -185,10 +185,15 @@ Then type `/standings` in any channel of `Ligo Staging`: after a second the bot 
 per division, visible to everyone. `/standings division:L2` posts one division, and
 `/standings format:Texte` posts the tables as text.
 
-The matches come from `fixtures/lfr-s3-matches.csv`, a copy of score7 taken with
-`pnpm fixtures:score7`. To follow score7 during the shadow run, run that command and then
-`pnpm seed` again: new results are added, and a result already stored is never rewritten. If a
-stored result differs from score7, `pnpm seed` lists it and changes nothing.
+The matches come from `fixtures/lfr-s3-matches.csv`, Ligo's own record of Season 3: score7's
+results, corrected by staff in Ligo (14 November 2026). `pnpm seed` adds the results it holds
+to matches that have none; a result already stored is never rewritten, and one that differs from
+the file is listed and left alone. Exclusions are not in the file: on a new database, staff
+exclude the teams again with `/staff exclusion exclude`.
+
+`pnpm fixtures:score7` copies score7 into `fixtures/lfr-s3-matches.score7.csv` and
+`fixtures/lfr-s3-standings.score7.csv`. They are a snapshot that the Season 3 test compares
+Ligo's tables with; the seed does not read them.
 
 To enter a result yourself as staff, type `/staff match result`. In the `match` option, type a team, a division
 or a week (`rck`, `l2`, `s5`) and pick the match from the list; then give the rounds won by the

@@ -312,7 +312,7 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 
 - Each win is worth 3 points in Season 3, as score7 is set (Season 2 gave 1). There are no draws in R6 competitive settings, so score7's N column is not shown.
 - **A forfeit in the table** follows `forfeit.counts_as_played` (default true): a match played for both teams, a win for the opponent and a loss for the team that forfeited. score7 shows its walkovers (W.O.) this way, and they are imported as forfeits.
-- score7 shows one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). It is an entry error: a draw never happens. Ligo leaves the match without result until it is corrected on score7, and the next export brings the correction in (section 16).
+- score7 shows one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). Both teams had been excluded, and score7 cannot record a forfeit by both sides, so staff typed a draw. Ligo leaves the match without result: under the 50% rule, a match between two excluded teams counts for neither (O-01). A forfeit by two teams that are not excluded is open (O-28).
 - F counts rounds won, C rounds lost, and D = F − C. Columns: J, V, D, F, C, D, PTS.
 - Ranking: points, then D. Season 2 shows it: Vaevictis and Origin's Esport both have 8 points; D 23 beats D 21.
 - **Forfeit score** is a season setting, `forfeit_score`: `[0, 0]` (Season 3) or `[7, 0]` (Season 2). It feeds F and C, so it changes D.

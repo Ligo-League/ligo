@@ -20,17 +20,6 @@ section 16.
 
 ### Season 3, right now
 
-#### O-01 · Nightwolves against Outsouki, week 5
-
-- **Question:** score7 shows this match as a 0–0 draw with one point each. A draw cannot happen,
-  so this is an entry error. Which team forfeits? If neither team played, what should be
-  recorded: a loss for both, no result at all, something else?
-- **Why it matters:** it is the only difference left between Ligo's tables and score7's. Giving
-  either team the win awards 3 points to a team that seems to have left.
-- **Until answered:** the match has no result in Ligo. Both teams show one match and one point
-  fewer than on score7.
-- **Answer:**
-
 #### O-02 · Teams that stopped playing
 
 - **Question:** Nightwolves (8 forfeits, no match played), Outsouki (6 forfeits) and Nova 1 Esport
@@ -41,6 +30,35 @@ section 16.
   the matches the team already played (see O-04).
 - **Until answered:** each of those matches is an ordinary forfeit: 3 points for the opponent, no
   rounds.
+- **Answer (partial, maintainer, 14 November 2026):** staff excluded Nightwolves by hand, and
+  Ligo excluded Outsouki (Ligue 1) and Starly (Ligue 2) automatically when their next forfeit was
+  recorded. The 50% rule (O-04) now decides their matches. Still open: Nova 1 Esport has 7
+  forfeits, including weeks not played yet, and is not excluded. Has it left the league, and
+  should staff exclude it?
+
+#### O-27 · The score of a forfeit
+
+- **Question:** a forfeit by a team that does not show up seems to be 7–0 in rounds, not 0–0
+  (maintainer, 14 November 2026; on 13 November, a walkover was "no rounds"). Is it 7–0, and from
+  when: Season 3 as it is played now, or from Season 4? And what score does a forfeit that the
+  50% rule creates for an excluded team get: 7–0 as well, or 0–0?
+- **Why it matters:** the forfeit score feeds rounds won and lost, so the difference that breaks
+  ties. Changing it in Season 3 changes the current tables (score7 counts 0–0), and the Season 3
+  test then compares with score7 at 0–0.
+- **Proposal:** two season settings: `forfeit_score` for a forfeit recorded by staff, and
+  `exclusion_forfeit_score` for one the 50% rule creates, each `[0, 0]` or `[7, 0]`.
+- **Until answered:** 0–0 for both, as score7 counts them.
+- **Answer:**
+
+#### O-28 · Both teams forfeit
+
+- **Question:** two teams that are not excluded both fail to show up. What is recorded: a forfeit
+  loss for both (0 points each, counted as played and as a forfeit for each, towards the warning
+  and the exclusion), the match cancelled, or something else?
+- **Why it matters:** Ligo records one team per forfeit. score7 has the same limit, which is why
+  staff typed a 0–0 draw for two excluded teams (O-01).
+- **Until answered:** staff can record a forfeit for one team only, or leave the match without
+  result.
 - **Answer:**
 
 #### O-03 · Ligue 2 calendar
@@ -441,6 +459,20 @@ section 16.
 - **Answer:**
 
 ## Answered
+
+#### O-01 · Nightwolves against Outsouki, week 5
+
+- **Question:** score7 shows this match as a 0–0 draw with one point each. A draw cannot happen,
+  so this is an entry error. Which team forfeits? If neither team played, what should be
+  recorded: a loss for both, no result at all, something else?
+- **Why it matters:** it is the only difference left between Ligo's tables and score7's. Giving
+  either team the win awards 3 points to a team that seems to have left.
+- **Until answered:** the match has no result in Ligo. Both teams show one match and one point
+  fewer than on score7.
+- **Answer (maintainer, 14 November 2026):** both teams had been excluded, and score7 cannot
+  record a forfeit by both sides, so staff typed a 0–0 draw. The match has no result in Ligo:
+  under the 50% rule, a match between two excluded teams counts for neither. What to record when
+  two teams that are not excluded both forfeit is O-28.
 
 #### O-26 · Where a new roster starts
 
