@@ -42,7 +42,8 @@ interface CsvRecord {
 const WHOLE_NUMBER = /^\d+$/;
 
 /**
- * Reads the fixtures and results file (`fixtures/lfr-s3-matches.csv`). Every problem is reported
+ * Reads a fixtures and results file: `fixtures/lfr-s3-matches.csv` (Ligo's record, which the seed
+ * loads) or `fixtures/lfr-s3-matches.score7.csv` (score7's snapshot). Every problem is reported
  * with its line number; nothing is seeded from a file with errors.
  */
 export function parseMatchesCsv(

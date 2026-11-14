@@ -16,7 +16,9 @@ import {
 import { LFR_DIVISION_NAMES } from '../seed/seed-lfr.ts';
 
 // `pnpm fixtures:score7`: copies LFR Season 3's fixtures, results and standings from score7 into
-// the two CSV files below, for the seed and for the shadow run that compares Ligo with score7.
+// the two CSV files below, a snapshot the Season 3 test compares Ligo's tables with. The seed
+// reads `fixtures/lfr-s3-matches.csv` instead: Ligo's own record, which staff have corrected
+// since (maintainer, 14 November 2026).
 // score7 has no documented API: this reads the same public addresses its own pages read, a few
 // dozen requests one after the other. Run it by hand; nothing else in the project calls score7.
 const API = 'https://api.score7.io/v2';
@@ -25,7 +27,7 @@ const TOURNAMENTS = [
   { division: 'Ligue 2', slug: 'lfrligue2officiel' },
 ];
 const TEAMS_FILE = 'fixtures/lfr-s3-teams.csv';
-const MATCHES_FILE = 'fixtures/lfr-s3-matches.csv';
+const MATCHES_FILE = 'fixtures/lfr-s3-matches.score7.csv';
 const STANDINGS_FILE = 'fixtures/lfr-s3-standings.score7.csv';
 
 async function get<S extends z.ZodType>(path: string, schema: S): Promise<z.output<S>> {

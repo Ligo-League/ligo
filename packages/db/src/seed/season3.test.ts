@@ -14,15 +14,18 @@ import { LFR_DIVISION_NAMES, seedLfr } from './seed-lfr.ts';
 import { seedMatches } from './seed-matches.ts';
 
 // The acceptance test of phase 1 (design doc section 15): from the real Season 3 fixtures and
-// results, Ligo computes the tables score7 shows. The three files are one snapshot, written
-// together by `pnpm fixtures:score7`.
+// results, Ligo computes the tables score7 shows. The score7 files are one snapshot, written
+// together by `pnpm fixtures:score7`. `lfr-s3-matches.csv`, which the seed loads, is Ligo's own
+// record, corrected by staff since (maintainer, 14 November 2026): it is checked on its own.
 const fixtureFile = (name: string) =>
   readFileSync(fileURLToPath(new URL(`../../../../fixtures/${name}`, import.meta.url)), 'utf8');
 
 const teams = parseTeamsCsv(fixtureFile('lfr-s3-teams.csv'), LFR_DIVISION_NAMES);
 if (!teams.ok) throw new Error(teams.errors.join('\n'));
-const matches = parseMatchesCsv(fixtureFile('lfr-s3-matches.csv'), teams.teams);
+const matches = parseMatchesCsv(fixtureFile('lfr-s3-matches.score7.csv'), teams.teams);
 if (!matches.ok) throw new Error(matches.errors.join('\n'));
+const record = parseMatchesCsv(fixtureFile('lfr-s3-matches.csv'), teams.teams);
+if (!record.ok) throw new Error(record.errors.join('\n'));
 
 interface Score7Row {
   division: string;
@@ -118,5 +121,34 @@ describe('LFR Season 3 from the committed fixtures', () => {
 
     expect(expected.length).toBeGreaterThan(0);
     expect(computed).toEqual(expected);
+  });
+});
+
+describe('LFR Season 3 as Ligo records it', () => {
+  const recordDb = openTestDatabase();
+  seedLfr(recordDb, teams.teams, 1000);
+  const summary = seedMatches(recordDb, record.matches, 2000);
+
+  it('holds the same fixtures as score7, in the same order', () => {
+    const fixture = ({ division, week, teamA, teamB }: (typeof record.matches)[number]) =>
+      [division, week, teamA, teamB].join(' ');
+    expect(record.matches.map(fixture)).toEqual(matches.matches.map(fixture));
+  });
+
+  it('seeds every fixture without conflict, and holds no draw', () => {
+    expect(summary.conflicts).toEqual([]);
+    expect(summary.created.matches).toBe(record.matches.length);
+    // The 0–0 score7 shows for Nightwolves against Outsouki was two excluded teams, not a draw:
+    // their match stays without result and counts for neither (rules draft, 7.3).
+    expect(summary.draws).toEqual([]);
+  });
+
+  it('holds only scores a map of R6 can end on', () => {
+    const impossible = record.matches.filter(
+      ({ result }) =>
+        result.kind === 'played' &&
+        !isPossibleGameScore(R6_GAME_SCORE, result.scoreA, result.scoreB),
+    );
+    expect(impossible).toEqual([]);
   });
 });
