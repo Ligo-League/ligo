@@ -81,9 +81,11 @@ const teamLink = (team: MatchLine['a']) =>
 
 function resultText(locale: Locale, line: MatchLine, result: NonNullable<MatchResult>): Html {
   if (result.kind === 'forfeit') {
-    return html`<span class="score"
-      >${t(locale, 'web.match.forfeit', { team: line[result.by].name })}</span
-    >`;
+    const text =
+      result.by === 'both'
+        ? t(locale, 'web.match.forfeitBoth')
+        : t(locale, 'web.match.forfeit', { team: line[result.by].name });
+    return html`<span class="score">${text}</span>`;
   }
   return html`<span class="score">${result.a} – ${result.b}</span>`;
 }

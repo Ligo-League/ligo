@@ -57,6 +57,15 @@ export function matchCardInput(
   }
   const game = match.game;
   const forfeitSide = match.status === 'forfeit' ? (game?.forfeitSide ?? null) : null;
+  if (forfeitSide === 'both') {
+    return {
+      ...base,
+      label: t(locale, 'card.label.result'),
+      center: t(locale, 'card.forfeit'),
+      winner: null,
+      lines: [t(locale, 'card.forfeitBoth')],
+    };
+  }
   if (forfeitSide) {
     return {
       ...base,

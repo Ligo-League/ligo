@@ -24,7 +24,7 @@ const exclusionReason = (count: number) => `excluded after ${count} forfeits`;
 const forfeit = (
   db: ReturnType<typeof leagueDatabase>,
   matchId: number,
-  side: 'a' | 'b',
+  side: 'a' | 'b' | 'both',
   actor: Actor = STAFF,
   now = 9000,
 ) => recordForfeit(db, actor, { matchId, side, warningReason, exclusionReason }, now);
@@ -43,7 +43,11 @@ describe('recordForfeit', () => {
 
     const reply = forfeit(db, 3, 'a');
 
-    expect(reply).toMatchObject({ ok: true, side: 'a', count: 1, consequence: 'none' });
+    expect(reply).toMatchObject({
+      ok: true,
+      side: 'a',
+      teams: [{ side: 'a', count: 1, consequence: 'none' }],
+    });
     expect(db.select().from(match).all()[2]).toMatchObject({
       status: 'forfeit',
       validatedAt: 9000,
@@ -63,7 +67,7 @@ describe('recordForfeit', () => {
     // Charlie already forfeited match 2: this is its second forfeit.
     const reply = forfeit(db, 3, 'b');
 
-    expect(reply).toMatchObject({ ok: true, count: 2, consequence: 'warning' });
+    expect(reply).toMatchObject({ ok: true, teams: [{ count: 2, consequence: 'warning' }] });
     const staffPlayer = db.select().from(schema.player).get();
     expect(db.select().from(sanction).all()).toMatchObject([
       {
@@ -102,11 +106,15 @@ describe('recordForfeit', () => {
     // Charlie's second forfeit. It played 0 of its 2 matches: every one becomes a forfeit win.
     expect(forfeit(db, 3, 'b')).toMatchObject({
       ok: true,
-      count: 2,
-      consequence: 'exclusion',
       queueChannelId: QUEUE,
-      excluded: { teamId: 3, summary: { played: 0, total: 2, resultsStand: false } },
-      autoExclusionOffReason: null,
+      teams: [
+        {
+          count: 2,
+          consequence: 'exclusion',
+          excluded: { teamId: 3, summary: { played: 0, total: 2, resultsStand: false } },
+          autoExclusionOffReason: null,
+        },
+      ],
     });
     expect(charlieSlot(db)).toMatchObject({ status: 'excluded', excludedAt: 9000 });
     expect(db.select().from(sanction).all()).toMatchObject([
@@ -119,9 +127,9 @@ describe('recordForfeit', () => {
     exclusionAtTwo(db);
     setAutoExclusion(db, STAFF, { teamId: 3, enabled: false, reason: 'Accord du staff' }, 100);
     expect(forfeit(db, 3, 'b')).toMatchObject({
-      consequence: 'exclusion',
-      excluded: null,
-      autoExclusionOffReason: 'Accord du staff',
+      teams: [
+        { consequence: 'exclusion', excluded: null, autoExclusionOffReason: 'Accord du staff' },
+      ],
     });
     expect(charlieSlot(db)?.status).toBe('active');
     expect(db.select().from(sanction).all()).toEqual([]);
@@ -130,7 +138,7 @@ describe('recordForfeit', () => {
   it('turns a validated result into a forfeit, and counts again after an annulment', () => {
     const db = leagueDatabase();
     // Alpha beat Bravo 7-4 in match 1; staff rule that Alpha forfeits it.
-    expect(forfeit(db, 1, 'a')).toMatchObject({ ok: true, count: 1 });
+    expect(forfeit(db, 1, 'a')).toMatchObject({ ok: true, teams: [{ count: 1 }] });
     expect(db.select().from(game).all()[0]).toMatchObject({
       scoreA: 0,
       scoreB: 0,
@@ -140,7 +148,36 @@ describe('recordForfeit', () => {
 
     // Annulling Charlie's earlier forfeit takes it out of the count.
     voidMatch(db, STAFF, { matchId: 2, reason: 'erreur' }, 9100);
-    expect(forfeit(db, 3, 'b')).toMatchObject({ ok: true, count: 1, consequence: 'none' });
+    expect(forfeit(db, 3, 'b')).toMatchObject({
+      ok: true,
+      teams: [{ count: 1, consequence: 'none' }],
+    });
+  });
+
+  // O-28: neither team showed up. Each loses by forfeit, and each forfeit counts for its team.
+  it('records a forfeit by both teams: a loss and a forfeit for each, a win for nobody', () => {
+    const db = leagueDatabase();
+    const reply = forfeit(db, 3, 'both');
+    expect(reply).toMatchObject({
+      ok: true,
+      side: 'both',
+      teams: [
+        { side: 'a', count: 1, consequence: 'none' },
+        // Charlie's second forfeit: the warning, as for any other forfeit.
+        { side: 'b', count: 2, consequence: 'warning' },
+      ],
+    });
+    expect(db.select().from(game).all().at(-1)).toMatchObject({ matchId: 3, forfeitSide: 'both' });
+    expect(table(db)).toEqual({ ALP: [2, 6], CHA: [2, 0], BRV: [2, 0] });
+    expect(db.select().from(sanction).all()).toMatchObject([{ kind: 'warning', targetId: 3 }]);
+    expect(db.select().from(auditLog).all().at(-1)?.afterJson).toEqual({
+      status: 'forfeit',
+      side: 'both',
+      teams: [
+        { teamId: 2, forfeits: 1, consequence: 'none' },
+        { teamId: 3, forfeits: 2, consequence: 'warning' },
+      ],
+    });
   });
 
   it('audits the forfeit with the count and what it called for', () => {
@@ -152,7 +189,11 @@ describe('recordForfeit', () => {
       entity: 'match',
       entityId: '3',
       beforeJson: { status: 'scheduled' },
-      afterJson: { status: 'forfeit', forfeitedBy: 3, forfeits: 2, consequence: 'warning' },
+      afterJson: {
+        status: 'forfeit',
+        side: 'b',
+        teams: [{ teamId: 3, forfeits: 2, consequence: 'warning' }],
+      },
       at: 9000,
     });
   });

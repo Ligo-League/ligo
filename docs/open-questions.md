@@ -47,17 +47,6 @@ section 16.
   Season 3 and probably in Season 4: the team that showed up must not lose on difference. It is a
   setting (`forfeit_score`). The maintainer was wrong on 13 November ("no rounds").
 
-#### O-28 · Both teams forfeit
-
-- **Question:** two teams that are not excluded both fail to show up. What is recorded: a forfeit
-  loss for both (0 points each, counted as played and as a forfeit for each, towards the warning
-  and the exclusion), the match cancelled, or something else?
-- **Why it matters:** Ligo records one team per forfeit. score7 has the same limit, which is why
-  staff typed a 0–0 draw for two excluded teams (O-01).
-- **Until answered:** staff can record a forfeit for one team only, or leave the match without
-  result.
-- **Answer:**
-
 #### O-03 · Ligue 2 calendar
 
 - **Question:** Ligue 2 has 12 teams, so score7 schedules 11 rounds, two more than the season's
@@ -457,6 +446,22 @@ section 16.
 
 ## Answered
 
+#### O-28 · Both teams forfeit
+
+- **Question:** two teams that are not excluded both fail to show up. What is recorded: a forfeit
+  loss for both (0 points each, counted as played and as a forfeit for each, towards the warning
+  and the exclusion), the match cancelled, or something else?
+- **Why it matters:** Ligo records one team per forfeit. score7 has the same limit, which is why
+  staff typed a 0–0 draw for two excluded teams (O-01).
+- **Until answered:** staff can record a forfeit for one team only, or leave the match without
+  result.
+- **Answer (maintainer, 14 November 2026, leaving the choice to Ligo "as long as it is fair"):**
+  each team gets a forfeit loss, exactly what it would get had it forfeited alone: 0 points, the
+  losing side of the forfeit score (0–7 in LFR), a match played, and a forfeit that counts
+  towards its warning and exclusion. Nobody wins the match. Both teams failed in the same way, so
+  each is treated like any team that does not show up, and no other team gains or loses from it.
+  Staff record it with `/staff match forfeit`, `team` set to both teams.
+
 #### O-01 · Nightwolves against Outsouki, week 5
 
 - **Question:** score7 shows this match as a 0–0 draw with one point each. A draw cannot happen,
@@ -468,8 +473,8 @@ section 16.
   fewer than on score7.
 - **Answer (maintainer, 14 November 2026):** both teams had been excluded, and score7 cannot
   record a forfeit by both sides, so staff typed a 0–0 draw. The match has no result in Ligo:
-  under the 50% rule, a match between two excluded teams counts for neither. What to record when
-  two teams that are not excluded both forfeit is O-28.
+  under the 50% rule, a match between two excluded teams counts for neither. Two teams that are
+  not excluded and both forfeit each get a forfeit loss (O-28).
 
 #### O-26 · Where a new roster starts
 

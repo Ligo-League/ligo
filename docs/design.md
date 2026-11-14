@@ -215,7 +215,7 @@ lineup         id, match_id, side ('a'|'b'), team_id NULL
 lineup_member  lineup_id, player_id, role ('starter'|'sub')
 veto_step      match_id, seq, side NULL ('a'|'b'; NULL for the decider), action ('ban'|'pick'|'decider'|'side'|'ot_side'),
                map NULL, start_side NULL, game_n NULL, at, by_player_id NULL, timed_out
-game           id, match_id, n, map NULL, bans_json, score_a, score_b, overtime, forfeit_side NULL,
+game           id, match_id, n, map NULL, bans_json, score_a, score_b, overtime, forfeit_side NULL ('a'|'b'|'both'),
                rehosts_a, rehosts_b, status ('pending'|'final'|'void'),
                stats_source ('none'|'manual'|'replay'|'api')
 evidence       id, match_id, game_id NULL, kind ('score_screenshot'|'moss'|'vod_link'|'other'),
@@ -312,7 +312,7 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 
 - Each win is worth 3 points in Season 3, as score7 is set (Season 2 gave 1). There are no draws in R6 competitive settings, so score7's N column is not shown.
 - **A forfeit in the table** follows `forfeit.counts_as_played` (default true): a match played for both teams, a win for the opponent and a loss for the team that forfeited. score7 shows its walkovers (W.O.) this way, and they are imported as forfeits.
-- score7 shows one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). Both teams had been excluded, and score7 cannot record a forfeit by both sides, so staff typed a draw. Ligo leaves the match without result: under the 50% rule, a match between two excluded teams counts for neither (O-01). A forfeit by two teams that are not excluded is open (O-28).
+- score7 shows one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). Both teams had been excluded, and score7 cannot record a forfeit by both sides, so staff typed a draw. Ligo leaves the match without result: under the 50% rule, a match between two excluded teams counts for neither (O-01). When two teams that are not excluded both fail to show up, staff record a forfeit by both: each gets a forfeit loss (no points, the losing side of the forfeit score, a match played, a forfeit towards its own warning and exclusion), and nobody wins (O-28).
 - F counts rounds won, C rounds lost, and D = F − C. Columns: J, V, D, F, C, D, PTS.
 - Ranking: points, then D. Season 2 shows it: Vaevictis and Origin's Esport both have 8 points; D 23 beats D 21.
 - **Forfeit score** is a season setting, `forfeit_score`: `[7, 0]` in LFR (Seasons 2 and 3; maintainer, 14 November 2026), so a team that showed up loses nothing on D. score7 counted Season 3's forfeits 0–0, and the Season 3 test compares with score7 at 0–0. It feeds F and C, so it changes D.

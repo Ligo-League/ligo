@@ -56,8 +56,10 @@ export function applyExclusions(
       result.push(match);
       continue;
     }
+    // A forfeit by both teams stays as it is too: the opponent did not show up either.
     const opponentForfeited =
-      match.result.kind === 'forfeit' && match.result.forfeitedBy === other(side);
+      match.result.kind === 'forfeit' &&
+      (match.result.forfeitedBy === other(side) || match.result.forfeitedBy === 'both');
     result.push(
       opponentForfeited
         ? match

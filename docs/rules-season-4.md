@@ -267,11 +267,13 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 - Seul le staff enregistre un forfait. Une équipe ne peut pas se déclarer vainqueur par forfait.
 - **2e forfait** : avertissement automatique.
 - **3e forfait** : **exclusion automatique** de la saison (voir 7.2).
-- Si les deux équipes ne se présentent pas : à trancher (O-28). En attendant, le staff enregistre
-  le forfait d'une seule équipe ou laisse le match sans résultat.
-- **Statut** : Décidée, sauf le forfait des deux équipes (O-28).
-- **Appliquée par** : `/staff match forfeit` ; le bot compte les forfaits de l'équipe dans la
-  saison à chaque fois, ajoute l'avertissement puis prononce l'exclusion dans la même opération.
+- **Aucune des deux équipes ne se présente** : chacune reçoit une défaite par forfait, comme si
+  elle seule avait déclaré forfait (0 point, score de forfait perdu, match joué), et le forfait
+  compte pour chacune (avertissement, exclusion). Personne ne gagne le match.
+- **Statut** : Décidée.
+- **Appliquée par** : `/staff match forfeit` (`team` : la première, la seconde ou les deux
+  équipes) ; le bot compte les forfaits de chaque équipe concernée dans la saison à chaque fois,
+  ajoute l'avertissement puis prononce l'exclusion dans la même opération.
 
 ### 7.2 Exclusion
 
@@ -355,9 +357,8 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 
 ## À trancher avant la Saison 4
 
-| Question | Sujet                                         | En attendant                         |
-| -------- | --------------------------------------------- | ------------------------------------ |
-| O-17     | Coupe de France : forme du tableau, côtés     | Non appliqué                         |
-| O-22     | Qui peut se déclarer disponible (recrutement) | Joueurs sans équipe, mercato ouvert  |
-| O-27     | Score d'un forfait créé par la règle des 50 % | 7–0, comme une absence               |
-| O-28     | Forfait des deux équipes                      | Forfait d'une seule, ou pas de score |
+| Question | Sujet                                         | En attendant                        |
+| -------- | --------------------------------------------- | ----------------------------------- |
+| O-17     | Coupe de France : forme du tableau, côtés     | Non appliqué                        |
+| O-22     | Qui peut se déclarer disponible (recrutement) | Joueurs sans équipe, mercato ouvert |
+| O-27     | Score d'un forfait créé par la règle des 50 % | 7–0, comme une absence              |

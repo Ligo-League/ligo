@@ -384,6 +384,30 @@ describe('/staff match forfeit', () => {
     ]);
   });
 
+  // O-28: neither team showed up.
+  it('records a forfeit by both teams, with each team’s count, and announces it', async () => {
+    const { context, db, gateway } = league();
+    db.update(schema.leagueGuild).set({ resultsChannelId: '800000000000000002' }).run();
+    const { replies } = await run(staffMatch('forfeit', { match: 3, team: 'both' }), context);
+    expect(replies[0]?.content).toBe(
+      [
+        'Forfait des deux équipes enregistré : Ligue 1, semaine 3 : Bravo – Charlie.',
+        'Bravo déclare forfait (1 cette saison).',
+        'Charlie déclare forfait (2 cette saison).',
+        'Un avertissement a été ajouté automatiquement à Charlie.',
+      ].join('\n'),
+    );
+    expect(gateway.posted).toMatchObject([
+      {
+        channelId: '800000000000000002',
+        message: {
+          content:
+            'Forfait — Ligue 1, semaine 3 : Bravo – Charlie. Aucune des deux équipes ne s’est présentée : défaite par forfait pour Bravo et pour Charlie.',
+        },
+      },
+    ]);
+  });
+
   it('says when the automatic warning was added, and stores its reason in French', async () => {
     const { context, db, gateway } = league();
     // Charlie already forfeited match 2: its second forfeit reaches the warning threshold.

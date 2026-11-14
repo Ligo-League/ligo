@@ -8,6 +8,8 @@ import type { StandingsMatch } from './standings.ts';
 export function countForfeits(matches: readonly StandingsMatch[], entry: number): number {
   return matches.filter(({ a, b, result }) => {
     if (result.kind !== 'forfeit') return false;
+    // A forfeit by both teams counts for each (O-28).
+    if (result.forfeitedBy === 'both') return a === entry || b === entry;
     return (result.forfeitedBy === 'a' ? a : b) === entry;
   }).length;
 }

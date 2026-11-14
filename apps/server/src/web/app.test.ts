@@ -72,6 +72,14 @@ describe('a season page', () => {
     expect(text).toContain('<a class="muted" href="/matches/3">contre</a>');
   });
 
+  it('shows a forfeit by both teams without a winner', async () => {
+    const db = leagueDatabase();
+    db.update(schema.game).set({ forfeitSide: 'both' }).where(eq(schema.game.matchId, 2)).run();
+    const { text } = await site({ db }).get('/c/lfr/saison-3');
+    expect(text).toContain('<span class="score">Forfait des deux équipes</span>');
+    expect(text).not.toContain('Forfait de Charlie');
+  });
+
   it('answers 404 for an unknown competition or season', async () => {
     const { get } = site();
     for (const path of ['/c/lfv/saison-3', '/c/lfr/saison-9']) {

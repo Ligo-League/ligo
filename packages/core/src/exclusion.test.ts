@@ -17,7 +17,7 @@ const played = (a: number, b: number, scoreA: number, scoreB: number): Standings
   b,
   result: { kind: 'played', games: [{ a: scoreA, b: scoreB }] },
 });
-const forfeit = (a: number, b: number, forfeitedBy: 'a' | 'b'): StandingsMatch => ({
+const forfeit = (a: number, b: number, forfeitedBy: 'a' | 'b' | 'both'): StandingsMatch => ({
   id: nextId++,
   a,
   b,
@@ -77,6 +77,17 @@ describe('applyExclusions', () => {
       [X],
     );
     expect(outcome.matches).toContainEqual(opponentForfeit);
+  });
+
+  it('leaves a forfeit by both teams as it is: the opponent did not show up either', () => {
+    const both = forfeit(7, X, 'both');
+    const outcome = applyExclusions(
+      [played(X, 1, 7, 3), both],
+      [pending(X, 2), pending(X, 3)],
+      [X],
+    );
+    expect(outcome.exclusions[0]?.resultsStand).toBe(false);
+    expect(outcome.matches).toContainEqual(both);
   });
 
   it('drops a match between two excluded teams: nobody earns anything from it', () => {

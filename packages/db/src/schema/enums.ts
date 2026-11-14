@@ -24,6 +24,8 @@ export const STAGE_KINDS = [
 export const STAGE_STATUSES = ['draft', 'published', 'closed'] as const;
 
 export const SIDES = ['a', 'b'] as const;
+/** Who forfeited a game: one side, or both when neither team showed up (O-28). */
+export const FORFEIT_SIDES = ['a', 'b', 'both'] as const;
 export const MATCH_STATUSES = [
   'scheduled',
   'reported',

@@ -219,7 +219,7 @@ export const staffCommand: Command = {
                 name: 'team',
                 ...described('command.staff.match.forfeit.option.team'),
                 required: true,
-                choices: (['a', 'b'] as const).map((side) => ({
+                choices: (['a', 'b', 'both'] as const).map((side) => ({
                   name: catalogs.fr[`command.staff.match.forfeit.side.${side}`],
                   name_localizations: english(`command.staff.match.forfeit.side.${side}`),
                   value: side,
@@ -357,7 +357,7 @@ export const staffCommand: Command = {
     }
 
     if (action === 'forfeit') {
-      const side = (['a', 'b'] as const).find(
+      const side = (['a', 'b', 'both'] as const).find(
         (known) => known === interaction.options.getString('team'),
       );
       if (!side) {
@@ -379,50 +379,71 @@ export const staffCommand: Command = {
         await privately(t(locale, `match.error.${reply.error}`));
         return;
       }
-      const details = {
-        fixture: matchFixture(locale, reply.match),
-        team: reply.match[reply.side].name,
-        count: reply.count,
-      };
-      const lines = [t(locale, 'staff.match.forfeit', details)];
-      if (reply.excluded) {
-        lines.push(t(locale, 'staff.match.forfeit.excluded', details));
-      } else if (reply.consequence === 'exclusion' && reply.autoExclusionOffReason !== null) {
-        lines.push(t(locale, 'staff.match.forfeit.exclusionOff', details));
-      } else if (reply.consequence !== 'none') {
-        lines.push(t(locale, `staff.match.forfeit.${reply.consequence}`, details));
+      const fixture = matchFixture(locale, reply.match);
+      const detailsOf = (outcome: (typeof reply.teams)[number]) => ({
+        fixture,
+        team: reply.match[outcome.side].name,
+        count: outcome.count,
+      });
+      const both = reply.side === 'both';
+      const lines = both ? [t(locale, 'staff.match.forfeitBoth', { fixture })] : [];
+      for (const outcome of reply.teams) {
+        const details = detailsOf(outcome);
+        lines.push(
+          t(locale, both ? 'staff.match.forfeitBoth.count' : 'staff.match.forfeit', details),
+        );
+        if (outcome.excluded) {
+          lines.push(t(locale, 'staff.match.forfeit.excluded', details));
+        } else if (outcome.consequence === 'exclusion' && outcome.autoExclusionOffReason !== null) {
+          lines.push(t(locale, 'staff.match.forfeit.exclusionOff', details));
+        } else if (outcome.consequence !== 'none') {
+          lines.push(t(locale, `staff.match.forfeit.${outcome.consequence}`, details));
+        }
       }
       // The private answer first: the picture and the messages to the team take a moment.
       await privately(lines.join('\n'));
+      const [only] = reply.teams;
       await announceWithCard(
         context,
         reply.resultsChannelId,
-        { content: t(locale, 'result.announceForfeit', details) },
+        {
+          content:
+            both || !only
+              ? t(locale, 'result.announceForfeitBoth', {
+                  fixture,
+                  teamA: reply.match.a.name,
+                  teamB: reply.match.b.name,
+                })
+              : t(locale, 'result.announceForfeit', detailsOf(only)),
+        },
         reply.match.id,
         'result',
       );
-      if (reply.excluded) {
-        await announceExclusion(context, {
-          team: details.team,
-          reason: t(locale, 'sanction.reason.exclusion', { count: reply.count }),
-          excluded: reply.excluded,
-          resultsChannelId: reply.resultsChannelId,
-          queueChannelId: reply.queueChannelId,
-          queueContent: t(locale, 'exclusion.queue.auto', {
-            ...details,
-            rule: exclusionRule(locale, reply.excluded.summary),
-          }),
-        });
-      } else if (reply.consequence === 'exclusion') {
-        await notify(context, reply.queueChannelId, {
-          content:
-            reply.autoExclusionOffReason === null
-              ? t(locale, 'queue.exclusion', details)
-              : t(locale, 'exclusion.queue.off', {
-                  ...details,
-                  reason: reply.autoExclusionOffReason,
-                }),
-        });
+      for (const outcome of reply.teams) {
+        const details = detailsOf(outcome);
+        if (outcome.excluded) {
+          await announceExclusion(context, {
+            team: details.team,
+            reason: t(locale, 'sanction.reason.exclusion', { count: outcome.count }),
+            excluded: outcome.excluded,
+            resultsChannelId: reply.resultsChannelId,
+            queueChannelId: reply.queueChannelId,
+            queueContent: t(locale, 'exclusion.queue.auto', {
+              ...details,
+              rule: exclusionRule(locale, outcome.excluded.summary),
+            }),
+          });
+        } else if (outcome.consequence === 'exclusion') {
+          await notify(context, reply.queueChannelId, {
+            content:
+              outcome.autoExclusionOffReason === null
+                ? t(locale, 'queue.exclusion', details)
+                : t(locale, 'exclusion.queue.off', {
+                    ...details,
+                    reason: outcome.autoExclusionOffReason,
+                  }),
+          });
+        }
       }
       return;
     }

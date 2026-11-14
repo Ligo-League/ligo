@@ -41,6 +41,7 @@ export const en: Record<MessageKey, string> = {
   'command.staff.match.forfeit.option.team': 'The team that forfeits.',
   'command.staff.match.forfeit.side.a': 'The first team named',
   'command.staff.match.forfeit.side.b': 'The second team named',
+  'command.staff.match.forfeit.side.both': 'Both teams (neither showed up)',
   'command.staff.sanction.description': 'Sanctions.',
   'command.staff.sanction.add.description': 'Give a team a sanction.',
   'command.staff.sanction.list.description': "Show a team's sanctions this season.",
@@ -85,9 +86,13 @@ export const en: Record<MessageKey, string> = {
   'result.announce': 'Result validated — {line}.',
   'result.announceCorrected': 'Result corrected — {line} (was {previousA}–{previousB}).',
   'result.announceForfeit': 'Forfeit — {fixture}. {team} forfeits.',
+  'result.announceForfeitBoth':
+    'Forfeit — {fixture}. Neither team showed up: a forfeit loss for {teamA} and for {teamB}.',
   'staff.match.validated': 'Result validated: {line}.',
   'staff.match.voided': 'Match annulled: {fixture}.',
   'staff.match.forfeit': 'Forfeit recorded: {fixture}. {team} forfeits ({count} this season).',
+  'staff.match.forfeitBoth': 'Forfeit by both teams recorded: {fixture}.',
+  'staff.match.forfeitBoth.count': '{team} forfeits ({count} this season).',
   'staff.match.forfeit.warning': 'A warning was added automatically to {team}.',
   'staff.match.forfeit.exclusion': '{team} has {count} forfeits and stays excluded.',
   'queue.exclusion': '{team} has {count} forfeits ({fixture}) and stays excluded.',
@@ -327,7 +332,7 @@ export const en: Record<MessageKey, string> = {
   'help.matchTime.noAutoSlot':
     'With no time agreed by the end of the week, the bot grants {weeks} week(s) of extension; after that, league staff set the time.',
   'help.page.staffMatch':
-    '**`/staff match`** — results, for league staff only\n`match`: type a team, a division (L1) or a week (s3), then pick from the list.\n\n• `result` — enters or corrects a score (`score_a`, `score_b`, optional `screenshot`). It counts at once, without validation, and is announced in the results channel, a correction too.\n• `schedule` — sets a match time (`date`, `time`), even outside its week. Announced in the schedule channel.\n• `validate` — validates a result reported by a team, like the **Valider** button. The list offers only matches waiting for staff.\n• `void` — annuls a match, with a reason (`reason`) kept in the log. Nothing is deleted; the match stops counting.\n• `forfeit` — records a forfeit by the first or the second team named (`team`). It is announced in the results channel.',
+    '**`/staff match`** — results, for league staff only\n`match`: type a team, a division (L1) or a week (s3), then pick from the list.\n\n• `result` — enters or corrects a score (`score_a`, `score_b`, optional `screenshot`). It counts at once, without validation, and is announced in the results channel, a correction too.\n• `schedule` — sets a match time (`date`, `time`), even outside its week. Announced in the schedule channel.\n• `validate` — validates a result reported by a team, like the **Valider** button. The list offers only matches waiting for staff.\n• `void` — annuls a match, with a reason (`reason`) kept in the log. Nothing is deleted; the match stops counting.\n• `forfeit` — records a forfeit by the first or the second team named, or by both when neither showed up (`team`): each then has a forfeit loss, which counts in its forfeits. It is announced in the results channel.',
   'help.staffMatch.footer':
     'A forfeit or an annulled match is not corrected with `result`. Every action is logged with its author.',
   'help.forfeit.warning': 'At {count} forfeits, a warning is added to the team automatically.',
@@ -410,6 +415,7 @@ export const en: Record<MessageKey, string> = {
   'card.when': '{date} · {time} {zone}',
   'card.winner': '{team} wins',
   'card.forfeitBy': 'Forfeit by {team}',
+  'card.forfeitBoth': 'Both teams forfeit',
   'standings.zone.champion': 'Champion',
   'standings.zone.promotion': 'Promotion',
   'standings.zone.barrage_promotion': 'Promotion barrage',
@@ -492,6 +498,7 @@ export const en: Record<MessageKey, string> = {
   'web.match.noTime': 'Time to be set',
   'web.match.autoTime': '{when} (set automatically)',
   'web.match.forfeit': 'Forfeit by {team}',
+  'web.match.forfeitBoth': 'Both teams forfeit',
   'web.match.status.scheduled': 'To play',
   'web.match.status.reported': 'Awaiting validation',
   'web.match.status.confirmed': 'Awaiting validation',

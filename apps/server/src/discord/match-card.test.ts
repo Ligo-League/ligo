@@ -56,6 +56,16 @@ describe('matchCardInput', () => {
       lines: ['Forfait de Charlie'],
     });
   });
+
+  it('names no winner when both teams forfeited', () => {
+    const db = leagueDatabase();
+    db.update(schema.game).set({ forfeitSide: 'both' }).where(eq(schema.game.matchId, 2)).run();
+    expect(matchCardInput('fr', facts(db, 2), 'result')).toMatchObject({
+      center: 'Forfait',
+      winner: null,
+      lines: ['Forfait des deux équipes'],
+    });
+  });
 });
 
 describe('matchCardFile', () => {

@@ -5,6 +5,8 @@ import type { PointsSettings, TiebreakCriterion, TiebreakSettings } from './sett
 // (design doc sections 4 and 5).
 
 export type MatchSide = 'a' | 'b';
+/** Who forfeited a match: one side, or both when neither team showed up (O-28). */
+export type ForfeitSide = MatchSide | 'both';
 
 /** One match that counts. `a` and `b` are stage entries; the caller filters out the rest. */
 export interface StandingsMatch {
@@ -17,7 +19,7 @@ export interface StandingsMatch {
     | { kind: 'played'; games: readonly { a: number; b: number }[] }
     | {
         kind: 'forfeit';
-        forfeitedBy: MatchSide;
+        forfeitedBy: ForfeitSide;
         /** Set when the 50% rule made this forfeit, rather than a team failing to show up. */
         byExclusion?: true;
       };
@@ -120,11 +122,22 @@ export function computeStandings(input: StandingsInput): StandingsResult {
     if (a === b) return fail({ kind: 'same_entry', matchId: match.id });
 
     if (match.result.kind === 'forfeit') {
-      const [winner, loser] = match.result.forfeitedBy === 'a' ? [b, a] : [a, b];
       const { forfeit } = input.points;
       const score = match.result.byExclusion
         ? (input.exclusionForfeitScore ?? input.forfeitScore)
         : input.forfeitScore;
+      if (match.result.forfeitedBy === 'both') {
+        // Neither team showed up: each gets what a team that forfeits gets, and nobody wins.
+        for (const tally of [a, b]) {
+          creditLoss(tally, score, forfeit.loser);
+          if (forfeit.counts_as_played) {
+            tally.played += 1;
+            tally.losses += 1;
+          }
+        }
+        continue;
+      }
+      const [winner, loser] = match.result.forfeitedBy === 'a' ? [b, a] : [a, b];
       credit(winner, loser, score, forfeit.winner, forfeit.loser);
       if (forfeit.counts_as_played) countMatch(winner, loser);
     } else {
@@ -212,6 +225,15 @@ function credit(
   loser.points += loserPoints;
 }
 
+/** One team's side of a forfeit it lost: the loser's rounds and points, with no winner. */
+function creditLoss(loser: Tally, score: readonly [number, number], points: number): void {
+  const [winnerScore, loserScore] = score;
+  loser.scoreFor += loserScore;
+  loser.scoreAgainst += winnerScore;
+  loser.diff = loser.scoreFor - loser.scoreAgainst;
+  loser.points += points;
+}
+
 function countMatch(winner: Tally, loser: Tally): void {
   winner.played += 1;
   winner.wins += 1;
@@ -259,7 +281,8 @@ export function recentForm(
     if (match.a !== entry && match.b !== entry) continue;
     const side: MatchSide = match.a === entry ? 'a' : 'b';
     if (match.result.kind === 'forfeit') {
-      results.push(match.result.forfeitedBy === side ? 'L' : 'W');
+      const { forfeitedBy } = match.result;
+      results.push(forfeitedBy === side || forfeitedBy === 'both' ? 'L' : 'W');
       continue;
     }
     let won = 0;

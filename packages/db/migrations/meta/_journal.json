@@ -85,6 +85,13 @@
       "when": 1794685769096,
       "tag": "0011_club_owners",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1794691109702,
+      "tag": "0012_forfeit_by_both",
+      "breakpoints": true
     }
   ]
 }

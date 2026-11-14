@@ -314,3 +314,26 @@ describe('0010 and 0011: club officials', () => {
     expect(db.$client.pragma('foreign_key_check')).toEqual([]);
   });
 });
+
+describe('0012: a forfeit by both teams', () => {
+  it('keeps the games already stored, and accepts a forfeit by both teams', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0011_club_owners');
+    // A game on its own: the match it belongs to does not matter to the table rebuild.
+    db.$client.pragma('foreign_keys = OFF');
+    db.$client.exec(`insert into game (match_id, n, bans_json, forfeit_side, status)
+                     values (1, 1, '[]', 'a', 'final')`);
+
+    migrateUpTo(db, '0012_forfeit_by_both');
+
+    expect(db.$client.prepare('select match_id, n, forfeit_side, status from game').all()).toEqual([
+      { match_id: 1, n: 1, forfeit_side: 'a', status: 'final' },
+    ]);
+    const insert = (matchId: number, side: string) =>
+      db.$client
+        .prepare(`insert into game (match_id, n, bans_json, forfeit_side) values (?, 1, '[]', ?)`)
+        .run(matchId, side);
+    expect(() => insert(2, 'both')).not.toThrow();
+    expect(() => insert(3, 'neither')).toThrow(/CHECK/);
+  });
+});

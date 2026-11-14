@@ -1,4 +1,4 @@
-import { slugify } from '@ligo/core';
+import { slugify, type ForfeitSide } from '@ligo/core';
 import {
   findClub,
   findLeague,
@@ -67,7 +67,7 @@ export interface TeamLink {
 
 /** What a match's public line shows. A score appears only once the result counts. */
 export type MatchResult =
-  { kind: 'score'; a: number; b: number } | { kind: 'forfeit'; by: Side } | null;
+  { kind: 'score'; a: number; b: number } | { kind: 'forfeit'; by: ForfeitSide } | null;
 
 export interface MatchLine {
   id: number;

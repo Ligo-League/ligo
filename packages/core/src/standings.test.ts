@@ -35,7 +35,7 @@ const played = (a: number, b: number, scoreA: number, scoreB: number): Standings
   b,
   result: { kind: 'played', games: [{ a: scoreA, b: scoreB }] },
 });
-const forfeit = (a: number, b: number, forfeitedBy: 'a' | 'b'): StandingsMatch => ({
+const forfeit = (a: number, b: number, forfeitedBy: 'a' | 'b' | 'both'): StandingsMatch => ({
   id: nextMatchId++,
   a,
   b,
@@ -181,6 +181,32 @@ describe('computeStandings: forfeits', () => {
     const rows = rowsOf({ forfeitScore: [7, 0], matches: [forfeit(1, 2, 'a')] });
     expect(rowOf(rows, 2)).toMatchObject({ wins: 1, scoreFor: 7, scoreAgainst: 0, diff: 7 });
     expect(rowOf(rows, 1)).toMatchObject({ losses: 1, scoreFor: 0, scoreAgainst: 7, diff: -7 });
+  });
+
+  // O-28: when neither team shows up, each gets what a team that forfeits gets, and nobody wins.
+  it('gives each team a forfeit loss when both forfeit', () => {
+    const rows = rowsOf({ forfeitScore: [7, 0], matches: [forfeit(1, 2, 'both')] });
+    for (const entry of [1, 2]) {
+      expect(rowOf(rows, entry)).toMatchObject({
+        played: 1,
+        wins: 0,
+        losses: 1,
+        points: 0,
+        scoreFor: 0,
+        scoreAgainst: 7,
+        diff: -7,
+      });
+    }
+  });
+
+  it('gives both teams the forfeit loser points, and no played match when forfeits do not count', () => {
+    const points: PointsSettings = {
+      outcomes: { win: 3, loss: 0 },
+      forfeit: { winner: 3, loser: -1, counts_as_played: false },
+    };
+    const rows = rowsOf({ points, matches: [forfeit(1, 2, 'both')] });
+    expect(rowOf(rows, 1)).toMatchObject({ played: 0, losses: 0, points: -1 });
+    expect(rowOf(rows, 2)).toMatchObject({ played: 0, losses: 0, points: -1 });
   });
 
   it('uses the forfeit points, not the win points', () => {
@@ -430,6 +456,11 @@ describe('recentForm', () => {
   it('lists the results of an entry, oldest first, counting forfeits', () => {
     expect(recentForm(season, 1, 5)).toEqual(['W', 'L', 'W', 'L', 'W']);
     expect(recentForm(season, 4, 5)).toEqual(['L', 'L']);
+  });
+
+  it('counts a forfeit by both teams as a loss for each', () => {
+    expect(recentForm([forfeit(1, 2, 'both')], 1, 5)).toEqual(['L']);
+    expect(recentForm([forfeit(1, 2, 'both')], 2, 5)).toEqual(['L']);
   });
 
   it('keeps only the latest results asked for', () => {

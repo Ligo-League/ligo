@@ -10,7 +10,7 @@ const played = (a: number, b: number): StandingsMatch => ({
   b,
   result: { kind: 'played', games: [{ a: 7, b: 4 }] },
 });
-const forfeit = (a: number, b: number, forfeitedBy: 'a' | 'b'): StandingsMatch => ({
+const forfeit = (a: number, b: number, forfeitedBy: 'a' | 'b' | 'both'): StandingsMatch => ({
   id: nextId++,
   a,
   b,
@@ -36,6 +36,15 @@ describe('countForfeits', () => {
     expect(countForfeits(season, 4)).toBe(1);
     expect(countForfeits(season, 5)).toBe(0);
     expect(countForfeits([], 1)).toBe(0);
+  });
+
+  // Both teams missing (O-28, settled by the maintainer's delegation on 14 November 2026): a
+  // forfeit for each, towards each team's warning and exclusion.
+  it('counts a forfeit by both teams for each of them', () => {
+    const both = [forfeit(1, 2, 'both'), forfeit(1, 3, 'a')];
+    expect(countForfeits(both, 1)).toBe(2);
+    expect(countForfeits(both, 2)).toBe(1);
+    expect(countForfeits(both, 3)).toBe(0);
   });
 });
 

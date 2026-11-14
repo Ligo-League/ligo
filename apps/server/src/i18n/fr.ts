@@ -42,6 +42,7 @@ export const fr = {
   'command.staff.match.forfeit.option.team': "L'équipe qui déclare forfait.",
   'command.staff.match.forfeit.side.a': 'La première équipe citée',
   'command.staff.match.forfeit.side.b': 'La seconde équipe citée',
+  'command.staff.match.forfeit.side.both': 'Les deux équipes (aucune ne s’est présentée)',
   'command.staff.sanction.description': 'Sanctions.',
   'command.staff.sanction.add.description': 'Donne une sanction à une équipe.',
   'command.staff.sanction.list.description': "Affiche les sanctions d'une équipe cette saison.",
@@ -87,10 +88,14 @@ export const fr = {
   'result.announce': 'Résultat validé — {line}.',
   'result.announceCorrected': 'Résultat corrigé — {line} (au lieu de {previousA}–{previousB}).',
   'result.announceForfeit': 'Forfait — {fixture}. {team} déclare forfait.',
+  'result.announceForfeitBoth':
+    'Forfait — {fixture}. Aucune des deux équipes ne s’est présentée : défaite par forfait pour {teamA} et pour {teamB}.',
   'staff.match.validated': 'Résultat validé : {line}.',
   'staff.match.voided': 'Match annulé : {fixture}.',
   'staff.match.forfeit':
     'Forfait enregistré : {fixture}. {team} déclare forfait ({count} cette saison).',
+  'staff.match.forfeitBoth': 'Forfait des deux équipes enregistré : {fixture}.',
+  'staff.match.forfeitBoth.count': '{team} déclare forfait ({count} cette saison).',
   'staff.match.forfeit.warning': 'Un avertissement a été ajouté automatiquement à {team}.',
   'staff.match.forfeit.exclusion': '{team} a {count} forfaits et reste exclue.',
   'queue.exclusion': '{team} a {count} forfaits ({fixture}) et reste exclue.',
@@ -349,7 +354,7 @@ export const fr = {
   'help.matchTime.noAutoSlot':
     "Sans horaire convenu à la fin de la semaine, le bot accorde {weeks} semaine(s) de prolongation ; ensuite, le staff de la ligue fixe l'horaire.",
   'help.page.staffMatch':
-    "**`/staff match`** — les résultats, réservé au staff de la ligue\n`match` : tape une équipe, une division (L1) ou une semaine (s3), puis choisis dans la liste.\n\n• `result` — saisit ou corrige un score (`score_a`, `score_b`, `screenshot` facultatif). Il compte aussitôt, sans validation, et il est annoncé dans le salon des résultats, une correction aussi.\n• `schedule` — fixe l'horaire d'un match (`date`, `time`), même hors de sa semaine. Annoncé dans le salon du planning.\n• `validate` — valide un résultat signalé par une équipe, comme le bouton **Valider**. La liste ne propose que les matchs en attente.\n• `void` — annule un match, avec un motif (`reason`) gardé dans le journal. Rien n'est supprimé ; le match ne compte plus.\n• `forfeit` — enregistre le forfait de la première ou de la seconde équipe citée (`team`). Il est annoncé dans le salon des résultats.",
+    "**`/staff match`** — les résultats, réservé au staff de la ligue\n`match` : tape une équipe, une division (L1) ou une semaine (s3), puis choisis dans la liste.\n\n• `result` — saisit ou corrige un score (`score_a`, `score_b`, `screenshot` facultatif). Il compte aussitôt, sans validation, et il est annoncé dans le salon des résultats, une correction aussi.\n• `schedule` — fixe l'horaire d'un match (`date`, `time`), même hors de sa semaine. Annoncé dans le salon du planning.\n• `validate` — valide un résultat signalé par une équipe, comme le bouton **Valider**. La liste ne propose que les matchs en attente.\n• `void` — annule un match, avec un motif (`reason`) gardé dans le journal. Rien n'est supprimé ; le match ne compte plus.\n• `forfeit` — enregistre le forfait de la première ou de la seconde équipe citée, ou des deux si aucune ne s'est présentée (`team`) : chacune a alors une défaite par forfait, qui compte dans ses forfaits. Il est annoncé dans le salon des résultats.",
   'help.staffMatch.footer':
     'Un forfait ou un match annulé ne se corrige pas avec `result`. Chaque action est inscrite au journal avec son auteur.',
   'help.forfeit.warning':
@@ -437,6 +442,7 @@ export const fr = {
   'card.when': '{date} · {time} {zone}',
   'card.winner': 'Victoire de {team}',
   'card.forfeitBy': 'Forfait de {team}',
+  'card.forfeitBoth': 'Forfait des deux équipes',
   'standings.zone.champion': 'Champion',
   'standings.zone.promotion': 'Montée',
   'standings.zone.barrage_promotion': 'Barrage de montée',
@@ -523,6 +529,7 @@ export const fr = {
   'web.match.noTime': 'Horaire à fixer',
   'web.match.autoTime': '{when} (fixé automatiquement)',
   'web.match.forfeit': 'Forfait de {team}',
+  'web.match.forfeitBoth': 'Forfait des deux équipes',
   'web.match.status.scheduled': 'À jouer',
   'web.match.status.reported': 'En attente de validation',
   'web.match.status.confirmed': 'En attente de validation',
