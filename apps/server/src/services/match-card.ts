@@ -1,10 +1,17 @@
-import { listLeagueMatches, schema, type Db, type LeagueMatch, type Theme } from '@ligo/db';
+import {
+  findRoster,
+  listLeagueMatches,
+  schema,
+  type Db,
+  type LeagueMatch,
+  type Theme,
+} from '@ligo/db';
 import { and, eq } from 'drizzle-orm';
 
 // What the social image of one match shows (design doc section 11), read from the database so
 // that the picture always matches the stored state.
 
-const { competition, game, season, team } = schema;
+const { competition, game, season } = schema;
 
 export interface MatchCardTeam {
   name: string;
@@ -38,14 +45,10 @@ export function matchCardFacts(
     .get();
   if (!context) return undefined;
   const teamOf = (teamId: number): MatchCardTeam => {
-    const row = db
-      .select({ name: team.name, colors: team.colorsJson, logoKey: team.logoKey })
-      .from(team)
-      .where(eq(team.id, teamId))
-      .get();
+    const row = findRoster(db, { teamId });
     // The match's teams come from the same database read: a missing one is corrupt data.
     if (!row) throw new Error(`Team ${teamId} of match ${found.id} not found`);
-    return row;
+    return { name: row.name, colors: row.colors, logoKey: row.logoKey };
   };
   const first = db
     .select({ map: game.map })

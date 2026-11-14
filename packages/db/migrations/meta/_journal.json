@@ -64,6 +64,13 @@
       "when": 1794616670405,
       "tag": "0008_veto_coin_toss",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1794676934562,
+      "tag": "0009_clubs",
+      "breakpoints": true
     }
   ]
 }

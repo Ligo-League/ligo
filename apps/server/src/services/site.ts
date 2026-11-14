@@ -1,5 +1,14 @@
 import { slugify } from '@ligo/core';
-import { findLeague, listLeagueMatches, schema, type Db, type LeagueMatch } from '@ligo/db';
+import {
+  findClub,
+  findLeague,
+  findRoster,
+  listClubRosters,
+  listLeagueMatches,
+  schema,
+  type Db,
+  type LeagueMatch,
+} from '@ligo/db';
 import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
 import { leagueStandings, type StandingsTable } from './standings.ts';
 import { listTeamStaff } from './team-staff.ts';
@@ -198,65 +207,124 @@ export function seasonPage(
   };
 }
 
-export type TeamPage =
-  | {
-      ok: true;
-      team: TeamLink & { logoKey: string | null; colors: string[] };
-      officials: { name: string; role: string }[];
-      /** The latest season the team plays in, if any. */
-      season: {
-        competition: { name: string; slug: string; timeZone: string };
-        season: SeasonLink;
-        division: string;
-      } | null;
-      matches: MatchLine[];
-    }
-  | { ok: false; error: 'not_found' };
+/** Where a roster plays: the latest season it has a place in, if any. */
+interface Place {
+  competition: { name: string; slug: string; timeZone: string };
+  season: SeasonLink;
+  division: string;
+  seasonId: number;
+}
 
-/** A team's page: its officials, and its matches of the latest season it plays in. */
-export function teamPage(db: Pick<Db, 'select'>, slug: string): TeamPage {
-  const row = db.select().from(team).where(eq(team.slug, slug)).orderBy(asc(team.id)).get();
-  if (!row) return { ok: false, error: 'not_found' };
-  const officials = listTeamStaff(db, row.id).map((member) => ({
-    name: member.displayName,
-    role: member.role,
-  }));
+function latestPlace(db: Pick<Db, 'select'>, teamId: number): Place | null {
   const latest = db
     .select({ season, competition, division: division.name })
     .from(slot)
     .innerJoin(division, eq(slot.divisionId, division.id))
     .innerJoin(season, eq(division.seasonId, season.id))
     .innerJoin(competition, eq(season.competitionId, competition.id))
-    .where(and(eq(slot.teamId, row.id), ne(season.status, 'registration')))
+    .where(and(eq(slot.teamId, teamId), ne(season.status, 'registration')))
     .orderBy(desc(season.startsOn), desc(season.id))
     .get();
-  const matches = latest
-    ? listLeagueMatches(db, { seasonId: latest.season.id }).filter(
-        (found) => found.a.teamId === row.id || found.b.teamId === row.id,
+  if (!latest) return null;
+  return {
+    competition: {
+      name: latest.competition.name,
+      slug: latest.competition.slug,
+      timeZone: latest.competition.schedulingJson.time_zone,
+    },
+    season: seasonLink(latest.season),
+    division: latest.division,
+    seasonId: latest.season.id,
+  };
+}
+
+export type TeamPage =
+  | {
+      ok: true;
+      team: TeamLink & { logoKey: string | null; colors: string[] };
+      club: { name: string; slug: string };
+      /** The club's other rosters. */
+      siblings: TeamLink[];
+      officials: { name: string; role: string }[];
+      /** The latest season the team plays in, if any. */
+      season: Omit<Place, 'seasonId'> | null;
+      matches: MatchLine[];
+    }
+  | { ok: false; error: 'not_found' };
+
+/** A team's page: its club, its officials, and its matches of the latest season it plays in. */
+export function teamPage(db: Pick<Db, 'select'>, slug: string): TeamPage {
+  const roster = findRoster(db, { slug });
+  if (!roster) return { ok: false, error: 'not_found' };
+  const officials = listTeamStaff(db, roster.teamId).map((member) => ({
+    name: member.displayName,
+    role: member.role,
+  }));
+  const place = latestPlace(db, roster.teamId);
+  const matches = place
+    ? listLeagueMatches(db, { seasonId: place.seasonId }).filter(
+        (found) => found.a.teamId === roster.teamId || found.b.teamId === roster.teamId,
       )
     : [];
+  const siblings = listClubRosters(db, roster.club.id)
+    .filter((other) => other.teamId !== roster.teamId)
+    .map((other) => ({ name: other.name, tag: other.tag, slug: other.slug }));
   return {
     ok: true,
     team: {
-      name: row.name,
-      tag: row.tag,
-      slug: row.slug,
-      logoKey: row.logoKey,
-      colors: row.colorsJson,
+      name: roster.name,
+      tag: roster.tag,
+      slug: roster.slug,
+      logoKey: roster.logoKey,
+      colors: roster.colors,
     },
+    club: { name: roster.club.name, slug: roster.club.slug },
+    siblings,
     officials,
-    season: latest
-      ? {
-          competition: {
-            name: latest.competition.name,
-            slug: latest.competition.slug,
-            timeZone: latest.competition.schedulingJson.time_zone,
-          },
-          season: seasonLink(latest.season),
-          division: latest.division,
-        }
-      : null,
+    season: place && {
+      competition: place.competition,
+      season: place.season,
+      division: place.division,
+    },
     matches: linesOf(db, matches),
+  };
+}
+
+export type ClubPage =
+  | {
+      ok: true;
+      club: { name: string; city: string | null; colors: string[]; logoKey: string | null };
+      /** Each roster, with where it plays now. */
+      rosters: (TeamLink & { place: Omit<Place, 'seasonId'> | null })[];
+    }
+  | { ok: false; error: 'not_found' };
+
+/** A club's page: its rosters and where each plays. */
+export function clubPage(db: Pick<Db, 'select'>, slug: string): ClubPage {
+  const found = findClub(db, slug);
+  if (!found) return { ok: false, error: 'not_found' };
+  const rosters = listClubRosters(db, found.id).map((roster) => {
+    const place = latestPlace(db, roster.teamId);
+    return {
+      name: roster.name,
+      tag: roster.tag,
+      slug: roster.slug,
+      place: place && {
+        competition: place.competition,
+        season: place.season,
+        division: place.division,
+      },
+    };
+  });
+  return {
+    ok: true,
+    club: {
+      name: found.name,
+      city: found.city,
+      colors: found.colorsJson,
+      logoKey: found.logoKey,
+    },
+    rosters,
   };
 }
 

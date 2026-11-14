@@ -12,9 +12,10 @@ import { openTestDatabase } from './testing.ts';
 
 // Schema v1, the tables phase 0 was allowed to create (design doc section 15, "Start here
 // today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`,
-// 0004 `veto_step`, 0007 `request` and `queue_post`.
+// 0004 `veto_step`, 0007 `request` and `queue_post`, 0009 `club`.
 const SCHEMA_TABLES = [
   'audit_log',
+  'club',
   'competition',
   'dispute',
   'division',
@@ -171,7 +172,8 @@ describe('0008: the veto coin toss', () => {
     db.$client.exec(`insert into veto_step (match_id, seq, side, action, map, at, timed_out)
                      values (1, 0, 'a', 'ban', 'Bank', 5, 0)`);
 
-    applyMigrations(db);
+    // Up to 0008 only: applyMigrations would refuse the step's missing match.
+    migrateUpTo(db, '0008_veto_coin_toss');
 
     expect(db.$client.prepare('select * from veto_step').all()).toEqual([
       {
@@ -198,5 +200,75 @@ describe('0008: the veto coin toss', () => {
     expect(() => insert(2, 'first_ban', 'a')).not.toThrow();
     expect(() => insert(3, 'toss', null)).not.toThrow();
     expect(() => insert(4, 'coin', null)).toThrow(/CHECK/);
+  });
+});
+
+describe('0009: clubs', () => {
+  it('gives every team a club of its own, with foreign keys enforced throughout', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0008_veto_coin_toss');
+    const run = (sql: string) => db.$client.exec(sql);
+    run(`insert into org (id, name, slug, settings_json) values (1, 'LFR', 'lfr', '{}')`);
+    run(`insert into player (id, org_id, slug, display_name, created_at)
+         values (1, 1, 'ana', 'Ana', 0)`);
+    run(`insert into team (id, org_id, title, name, tag, slug, city, legal_status, colors_json,
+                           logo_key, socials_json, discord_url, can_stream)
+         values (7, 1, 'r6', 'Greed Esport', 'GREED1', 'greed-esport', 'Lyon', 'association',
+                 '["#800080","#000000"]', 'logos/greed.png', '[]', 'https://discord.gg/x', 1)`);
+    // A row pointing at the team: dropping the old table must not break it.
+    run(`insert into team_staff (team_id, player_id, role, since) values (7, 1, 'owner', 0)`);
+
+    applyMigrations(db);
+
+    expect(db.$client.prepare('select * from club').all()).toEqual([
+      {
+        id: 1,
+        org_id: 1,
+        name: 'Greed Esport',
+        slug: 'greed-esport',
+        city: 'Lyon',
+        legal_status: 'association',
+        colors_json: '["#800080","#000000"]',
+        logo_key: 'logos/greed.png',
+        socials_json: '[]',
+        discord_url: 'https://discord.gg/x',
+      },
+    ]);
+    expect(db.$client.prepare('select * from team').all()).toEqual([
+      {
+        id: 7,
+        org_id: 1,
+        club_id: 1,
+        title: 'r6',
+        name: 'Greed Esport',
+        tag: 'GREED1',
+        slug: 'greed-esport',
+        colors_json: null,
+        logo_key: null,
+        can_stream: 1,
+        discord_role_id: null,
+      },
+    ]);
+    expect(db.$client.prepare('select team_id from team_staff').all()).toEqual([{ team_id: 7 }]);
+    expect(db.$client.pragma('foreign_key_check')).toEqual([]);
+    // Enforcement is back on once migrations are done.
+    expect(db.$client.pragma('foreign_keys', { simple: true })).toBe(1);
+    expect(() =>
+      run(`insert into team_staff (team_id, player_id, role, since)
+                      values (99, 1, 'owner', 0)`),
+    ).toThrow(/FOREIGN KEY/);
+  });
+});
+
+describe('applyMigrations', () => {
+  it('refuses to finish with rows pointing at nothing', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0008_veto_coin_toss');
+    db.$client.pragma('foreign_keys = OFF');
+    db.$client.exec(`insert into team_staff (team_id, player_id, role, since)
+                     values (99, 99, 'owner', 0)`);
+    expect(() => {
+      applyMigrations(db);
+    }).toThrow('Migrations left 2 rows pointing at nothing');
   });
 });

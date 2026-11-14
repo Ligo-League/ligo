@@ -55,16 +55,17 @@ export const gameAccount = sqliteTable(
   ],
 );
 
-export const team = sqliteTable(
-  'team',
+// A club is a team's organisation (Not Scam, W Mates, Greed): what stays when its rosters change
+// (design doc section 4, "Clubs and rosters"; maintainer, 14 November 2026). It holds the
+// default logo and colours of its rosters.
+export const club = sqliteTable(
+  'club',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     orgId: integer('org_id')
       .notNull()
       .references(() => org.id),
-    title: text('title', { enum: TITLES }).notNull(),
     name: text('name').notNull(),
-    tag: text('tag').notNull(),
     slug: text('slug').notNull(),
     city: text('city'),
     legalStatus: text('legal_status', { enum: LEGAL_STATUSES }),
@@ -72,6 +73,31 @@ export const team = sqliteTable(
     logoKey: text('logo_key'),
     socialsJson: jsonText(teamSocialsSchema)('socials_json').notNull(),
     discordUrl: text('discord_url'),
+  },
+  (t) => [
+    unique('club_org_slug_unique').on(t.orgId, t.slug),
+    check('club_legal_status_check', oneOf(t.legalStatus, LEGAL_STATUSES)),
+  ],
+);
+
+// A team is a roster of a club: what holds a slot, plays matches and has a standings line, under
+// its own name and tag. Its colours and logo, when null, are its club's.
+export const team = sqliteTable(
+  'team',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    orgId: integer('org_id')
+      .notNull()
+      .references(() => org.id),
+    clubId: integer('club_id')
+      .notNull()
+      .references(() => club.id),
+    title: text('title', { enum: TITLES }).notNull(),
+    name: text('name').notNull(),
+    tag: text('tag').notNull(),
+    slug: text('slug').notNull(),
+    colorsJson: jsonText(teamColorsSchema)('colors_json'),
+    logoKey: text('logo_key'),
     canStream: integer('can_stream', { mode: 'boolean' }).notNull().default(false),
     discordRoleId: text('discord_role_id'),
   },
@@ -79,7 +105,6 @@ export const team = sqliteTable(
     unique('team_org_title_tag_unique').on(t.orgId, t.title, t.tag),
     unique('team_org_slug_unique').on(t.orgId, t.slug),
     check('team_title_check', oneOf(t.title, TITLES)),
-    check('team_legal_status_check', oneOf(t.legalStatus, LEGAL_STATUSES)),
   ],
 );
 

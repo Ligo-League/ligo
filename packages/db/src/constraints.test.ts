@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { auditLog, gameAccount, org, player, team } from './schema/index.ts';
+import { auditLog, club, gameAccount, org, player } from './schema/index.ts';
 import { openTestDatabase } from './testing.ts';
 
 function seededDatabase() {
@@ -23,18 +23,16 @@ describe('*_json columns', () => {
     const { db, lfr } = seededDatabase();
     const colors = ['#112233', '#AABBCC'];
     const socials = [{ label: 'X', url: 'https://x.com/example' }];
-    db.insert(team)
+    db.insert(club)
       .values({
         orgId: lfr.id,
-        title: 'r6',
         name: 'Example',
-        tag: 'EX',
         slug: 'example',
         colorsJson: colors,
         socialsJson: socials,
       })
       .run();
-    const stored = db.select().from(team).get();
+    const stored = db.select().from(club).get();
     expect(stored?.colorsJson).toEqual(colors);
     expect(stored?.socialsJson).toEqual(socials);
   });
@@ -51,20 +49,14 @@ describe('*_json columns', () => {
     ],
   ])('refuse to write %s', (_label, json) => {
     const { db, lfr } = seededDatabase();
-    const row = {
-      orgId: lfr.id,
-      title: 'r6' as const,
-      name: 'Example',
-      tag: 'EX',
-      slug: 'example',
-    };
+    const row = { orgId: lfr.id, name: 'Example', slug: 'example' };
     expect(() =>
       db
-        .insert(team)
+        .insert(club)
         .values({ ...row, ...json })
         .run(),
     ).toThrow();
-    expect(db.select().from(team).all()).toEqual([]);
+    expect(db.select().from(club).all()).toEqual([]);
   });
 
   it.each([
@@ -74,11 +66,11 @@ describe('*_json columns', () => {
     const { db, lfr } = seededDatabase();
     db.$client
       .prepare(
-        `insert into team (org_id, title, name, tag, slug, colors_json, socials_json)
-         values (?, 'r6', 'Example', 'EX', 'example', ?, '[]')`,
+        `insert into club (org_id, name, slug, colors_json, socials_json)
+         values (?, 'Example', 'example', ?, '[]')`,
       )
       .run(lfr.id, raw);
-    expect(() => db.select().from(team).all()).toThrow();
+    expect(() => db.select().from(club).all()).toThrow();
   });
 
   it('keep NULL as NULL when the column is optional', () => {

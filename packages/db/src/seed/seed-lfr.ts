@@ -5,10 +5,11 @@ import {
   teamRolesSchema,
   vetoSchema,
 } from '@ligo/core';
+import { slugify } from '@ligo/core';
 import { R6_GAME_SCORE } from '@ligo/titles';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client.ts';
-import { auditLog, competition, division, org, season, slot, team } from '../schema/index.ts';
+import { auditLog, club, competition, division, org, season, slot, team } from '../schema/index.ts';
 import type { TeamRow } from './parse-teams-csv.ts';
 
 // LFR Season 3 as described in the design doc (sections 5 and 16). Data, not rules: every value
@@ -106,10 +107,13 @@ export interface SeedSummary {
     competitions: number;
     seasons: number;
     divisions: number;
+    clubs: number;
     teams: number;
     slots: number;
   };
-  updated: { competitions: number; seasons: number; teams: number; slots: number };
+  updated: { competitions: number; seasons: number; clubs: number; teams: number; slots: number };
+  /** Clubs left without a roster because the file moved theirs to another club. */
+  removed: { clubs: number };
 }
 
 /**
@@ -121,8 +125,17 @@ export interface SeedSummary {
 export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSummary {
   return db.transaction((tx) => {
     const summary: SeedSummary = {
-      created: { orgs: 0, competitions: 0, seasons: 0, divisions: 0, teams: 0, slots: 0 },
-      updated: { competitions: 0, seasons: 0, teams: 0, slots: 0 },
+      created: {
+        orgs: 0,
+        competitions: 0,
+        seasons: 0,
+        divisions: 0,
+        clubs: 0,
+        teams: 0,
+        slots: 0,
+      },
+      updated: { competitions: 0, seasons: 0, clubs: 0, teams: 0, slots: 0 },
+      removed: { clubs: 0 },
     };
 
     let orgRow = tx.select().from(org).where(eq(org.slug, ORG.slug)).get();
@@ -185,36 +198,98 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
     }
     const seasonDivisionIds = [...divisionIds.values()];
 
+    // The same key will name the logo in R2 (design doc section 13, `logos/`).
+    const logoKeyOf = (entry: TeamRow) => (entry.logo ? `logos/${entry.logo}.png` : null);
+    // A club takes its look from its first roster in the file; a roster keeps its own colours
+    // and logo only where they differ from the club's. A row naming no club keeps the club its
+    // roster already has, so renaming a roster does not leave its club behind.
+    const teamWhere = (tag: string) =>
+      and(eq(team.orgId, orgId), eq(team.title, 'r6'), eq(team.tag, tag));
+    type ClubLook = { id: number; colors: string[]; logoKey: string | null };
+    // By club ID: two rows reach the same club by its name or by their roster's current club.
+    const clubs = new Map<number, ClubLook>();
+    const clubOf = new Map<TeamRow, ClubLook>();
+    for (const entry of teams) {
+      const name = entry.club ?? entry.name;
+      const made = slugify(name);
+      if (!made.ok) throw new Error(`Club "${name}" has no letter or digit for its URL`);
+      const current = entry.club
+        ? undefined
+        : tx.select({ clubId: team.clubId }).from(team).where(teamWhere(entry.tag)).get();
+      let clubRow = tx
+        .select()
+        .from(club)
+        .where(
+          current
+            ? eq(club.id, current.clubId)
+            : and(eq(club.orgId, orgId), eq(club.slug, made.slug)),
+        )
+        .get();
+      const known = clubRow && clubs.get(clubRow.id);
+      if (known) {
+        clubOf.set(entry, known);
+        continue;
+      }
+      const wanted = {
+        name,
+        city: entry.city,
+        colorsJson: entry.colors,
+        logoKey: logoKeyOf(entry),
+      };
+      if (!clubRow) {
+        clubRow = tx
+          .insert(club)
+          .values({ ...wanted, orgId, slug: made.slug, socialsJson: [] })
+          .returning()
+          .get();
+        summary.created.clubs += 1;
+      } else if (
+        clubRow.name !== wanted.name ||
+        clubRow.city !== wanted.city ||
+        clubRow.logoKey !== wanted.logoKey ||
+        !sameJson(clubRow.colorsJson, wanted.colorsJson)
+      ) {
+        tx.update(club).set(wanted).where(eq(club.id, clubRow.id)).run();
+        summary.updated.clubs += 1;
+      }
+      const look = { id: clubRow.id, colors: entry.colors, logoKey: logoKeyOf(entry) };
+      clubs.set(clubRow.id, look);
+      clubOf.set(entry, look);
+    }
+
+    const vacated = new Set<number>();
     for (const entry of teams) {
       const divisionId = divisionIds.get(entry.division);
       if (divisionId === undefined) throw new Error(`Unknown division "${entry.division}"`);
+      const owner = clubOf.get(entry);
+      if (!owner) throw new Error(`No club for "${entry.name}"`);
 
+      const logoKey = logoKeyOf(entry);
       const wanted = {
         name: entry.name,
         slug: entry.slug,
-        city: entry.city,
-        colorsJson: entry.colors,
-        // The same key will name the logo in R2 (design doc section 13, `logos/`).
-        logoKey: entry.logo ? `logos/${entry.logo}.png` : null,
+        clubId: owner.id,
+        colorsJson: sameJson(entry.colors, owner.colors) ? null : entry.colors,
+        logoKey: logoKey === owner.logoKey ? null : logoKey,
       };
-      const teamWhere = and(eq(team.orgId, orgId), eq(team.title, 'r6'), eq(team.tag, entry.tag));
-      let teamRow = tx.select().from(team).where(teamWhere).get();
+      let teamRow = tx.select().from(team).where(teamWhere(entry.tag)).get();
       if (!teamRow) {
         teamRow = tx
           .insert(team)
-          .values({ ...wanted, orgId, title: 'r6', tag: entry.tag, socialsJson: [] })
+          .values({ ...wanted, orgId, title: 'r6', tag: entry.tag })
           .returning()
           .get();
         summary.created.teams += 1;
       } else if (
         teamRow.name !== wanted.name ||
         teamRow.slug !== wanted.slug ||
-        teamRow.city !== wanted.city ||
+        teamRow.clubId !== wanted.clubId ||
         teamRow.logoKey !== wanted.logoKey ||
-        JSON.stringify(teamRow.colorsJson) !== JSON.stringify(wanted.colorsJson)
+        !sameJson(teamRow.colorsJson, wanted.colorsJson)
       ) {
         tx.update(team).set(wanted).where(eq(team.id, teamRow.id)).run();
         summary.updated.teams += 1;
+        if (teamRow.clubId !== wanted.clubId) vacated.add(teamRow.clubId);
       }
 
       const slotWhere = and(
@@ -229,6 +304,15 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
         tx.update(slot).set({ divisionId }).where(eq(slot.id, slotRow.id)).run();
         summary.updated.slots += 1;
       }
+    }
+
+    // A club the file moved every roster away from holds nothing more: the file grouped it into
+    // another (the clubs 0009 made, one per team, before the file named Season 3's clubs).
+    for (const clubId of vacated) {
+      const left = tx.select({ id: team.id }).from(team).where(eq(team.clubId, clubId)).get();
+      if (left) continue;
+      tx.delete(club).where(eq(club.id, clubId)).run();
+      summary.removed.clubs += 1;
     }
 
     if (hasChanges(summary)) {
@@ -251,5 +335,9 @@ const RULE_SETTINGS = ['rulesetJson', 'pointsJson', 'tiebreakJson', 'schedulingJ
 const sameJson = (x: unknown, y: unknown) => JSON.stringify(x) === JSON.stringify(y);
 
 export function hasChanges(summary: SeedSummary): boolean {
-  return [...Object.values(summary.created), ...Object.values(summary.updated)].some((n) => n > 0);
+  return [
+    ...Object.values(summary.created),
+    ...Object.values(summary.updated),
+    ...Object.values(summary.removed),
+  ].some((n) => n > 0);
 }

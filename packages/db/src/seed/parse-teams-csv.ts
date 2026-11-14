@@ -11,6 +11,7 @@ export const TEAM_CSV_COLUMNS = [
   'color_2',
   'color_3',
   'logo',
+  'club',
 ] as const;
 const COLOR_COLUMNS = ['color_1', 'color_2', 'color_3'] as const;
 
@@ -45,6 +46,11 @@ export interface TeamRow {
   colors: string[];
   /** The logo's file name without extension, as in `data/assets/logos/`; null when none. */
   logo?: string | null;
+  /**
+   * The club the roster belongs to, by name; rows naming the same club are its rosters. Null or
+   * absent: a club of its own, named like the roster.
+   */
+  club?: string | null;
 }
 
 export type TeamsCsvResult = { ok: true; teams: TeamRow[] } | { ok: false; errors: string[] };
@@ -140,6 +146,11 @@ export function parseTeamsCsv(text: string, divisionNames: readonly string[]): T
       );
     }
 
+    const club = value('club');
+    if (club !== '' && !slugify(club).ok) {
+      fail(`club "${club}" has no letter or digit to build a URL from`);
+    }
+
     if (errors.length === before && slug.ok && colors.success) {
       teams.push({
         division,
@@ -149,6 +160,7 @@ export function parseTeamsCsv(text: string, divisionNames: readonly string[]): T
         city: city || null,
         colors: colors.data,
         logo: logo || null,
+        club: club || null,
       });
     }
   }

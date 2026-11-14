@@ -2,6 +2,7 @@ import type { PendingMatch, StandingsInput, StandingsMatch } from '@ligo/core';
 import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { Db } from '../client.ts';
 import {
+  club,
   competition,
   game,
   match,
@@ -64,15 +65,24 @@ export function loadStandingsInput(
       slug: team.slug,
       colors: team.colorsJson,
       logoKey: team.logoKey,
+      clubColors: club.colorsJson,
+      clubLogoKey: club.logoKey,
       slotStatus: slot.status,
     })
     .from(stageEntry)
     .innerJoin(slot, eq(stageEntry.slotId, slot.id))
     .innerJoin(team, eq(slot.teamId, team.id))
+    .innerJoin(club, eq(team.clubId, club.id))
     .where(eq(stageEntry.stageId, stageId))
     .orderBy(asc(team.name), asc(stageEntry.id))
     .all()
-    .map(({ slotStatus, ...row }) => ({ ...row, excluded: slotStatus === 'excluded' }));
+    .map(({ slotStatus, clubColors, clubLogoKey, ...row }) => ({
+      ...row,
+      // A roster without its own look wears its club's.
+      colors: row.colors ?? clubColors,
+      logoKey: row.logoKey ?? clubLogoKey,
+      excluded: slotStatus === 'excluded',
+    }));
 
   const counted = db
     .select({ id: match.id, status: match.status, week: match.week })

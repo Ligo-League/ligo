@@ -2,6 +2,7 @@
 export * from './client.ts';
 export * from './json.ts';
 export * from './migrate.ts';
+export * from './queries/clubs.ts';
 export * from './queries/league.ts';
 export * from './queries/matches.ts';
 export * from './queries/standings.ts';

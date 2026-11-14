@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { auditLog, competition, division, org, season, slot, team } from '../schema/index.ts';
+import { auditLog, club, competition, division, org, season, slot, team } from '../schema/index.ts';
 import { openTestDatabase } from '../testing.ts';
 import { parseTeamsCsv, type TeamRow } from './parse-teams-csv.ts';
 import { LFR_DIVISION_NAMES, seedLfr } from './seed-lfr.ts';
@@ -31,6 +31,7 @@ describe('parseTeamsCsv', () => {
           city: 'Paris',
           colors: ['#112233', '#FFFFFF'],
           logo: null,
+          club: null,
         },
         {
           division: 'Ligue 2',
@@ -40,6 +41,7 @@ describe('parseTeamsCsv', () => {
           city: null,
           colors: [],
           logo: null,
+          club: null,
         },
       ],
     });
@@ -104,6 +106,7 @@ describe('parseTeamsCsv', () => {
           city: null,
           colors: ['#FF0000', '#0000FF', '#000000'],
           logo: null,
+          club: null,
         },
         {
           division: 'Ligue 2',
@@ -113,6 +116,7 @@ describe('parseTeamsCsv', () => {
           city: 'Lyon',
           colors: ['#F7BE50', '#000000'],
           logo: null,
+          club: null,
         },
       ],
     });
@@ -163,8 +167,17 @@ describe('seedLfr', () => {
     const summary = seedLfr(db, TEAMS, 1000);
 
     expect(summary).toEqual({
-      created: { orgs: 1, competitions: 1, seasons: 1, divisions: 2, teams: 2, slots: 2 },
-      updated: { competitions: 0, seasons: 0, teams: 0, slots: 0 },
+      created: {
+        orgs: 1,
+        competitions: 1,
+        seasons: 1,
+        divisions: 2,
+        clubs: 2,
+        teams: 2,
+        slots: 2,
+      },
+      updated: { competitions: 0, seasons: 0, clubs: 0, teams: 0, slots: 0 },
+      removed: { clubs: 0 },
     });
     expect(db.select().from(org).all()).toMatchObject([{ name: 'LFR', slug: 'lfr', locale: 'fr' }]);
     expect(db.select().from(competition).all()).toMatchObject([
@@ -198,16 +211,14 @@ describe('seedLfr', () => {
       { name: 'Ligue 1', kind: 'league', level: 1 },
       { name: 'Ligue 2', kind: 'league', level: 2 },
     ]);
+    // Each roster of the file is a club of its own, which holds the look and the city.
+    expect(db.select().from(club).all()).toMatchObject([
+      { id: 1, name: 'Alpha', slug: 'alpha', city: 'Lyon', colorsJson: ['#112233'] },
+      { id: 2, name: 'Bravo', slug: 'bravo', city: null, colorsJson: [] },
+    ]);
     expect(db.select().from(team).all()).toMatchObject([
-      {
-        name: 'Alpha',
-        tag: 'ALP',
-        slug: 'alpha',
-        city: 'Lyon',
-        colorsJson: ['#112233'],
-        title: 'r6',
-      },
-      { name: 'Bravo', tag: 'BRV', slug: 'bravo', city: null, colorsJson: [] },
+      { name: 'Alpha', tag: 'ALP', slug: 'alpha', clubId: 1, colorsJson: null, title: 'r6' },
+      { name: 'Bravo', tag: 'BRV', slug: 'bravo', clubId: 2, colorsJson: null },
     ]);
     expect(db.select().from(slot).all()).toMatchObject([
       { divisionId: 1, teamId: 1, status: 'active', forfeits: 0 },
@@ -239,8 +250,17 @@ describe('seedLfr', () => {
     const summary = seedLfr(db, TEAMS, 2000);
 
     expect(summary).toEqual({
-      created: { orgs: 0, competitions: 0, seasons: 0, divisions: 0, teams: 0, slots: 0 },
-      updated: { competitions: 0, seasons: 0, teams: 0, slots: 0 },
+      created: {
+        orgs: 0,
+        competitions: 0,
+        seasons: 0,
+        divisions: 0,
+        clubs: 0,
+        teams: 0,
+        slots: 0,
+      },
+      updated: { competitions: 0, seasons: 0, clubs: 0, teams: 0, slots: 0 },
+      removed: { clubs: 0 },
     });
     expect(dump()).toBe(before);
   });
@@ -262,10 +282,22 @@ describe('seedLfr', () => {
     const summary = seedLfr(db, edited, 2000);
 
     expect(summary.created.teams).toBe(0);
-    expect(summary.updated).toEqual({ competitions: 0, seasons: 0, teams: 1, slots: 1 });
+    // The roster keeps its club, which follows the new name and look.
+    expect(summary.created.clubs).toBe(0);
+    expect(summary.updated).toEqual({
+      competitions: 0,
+      seasons: 0,
+      clubs: 1,
+      teams: 1,
+      slots: 1,
+    });
     expect(db.select().from(team).all()).toMatchObject([
-      { tag: 'ALP', name: 'Alpha Esport', slug: 'alpha-esport', colorsJson: [] },
-      { tag: 'BRV', name: 'Bravo' },
+      { tag: 'ALP', name: 'Alpha Esport', slug: 'alpha-esport', clubId: 1, colorsJson: null },
+      { tag: 'BRV', name: 'Bravo', clubId: 2 },
+    ]);
+    expect(db.select().from(club).all()).toMatchObject([
+      { name: 'Alpha Esport', slug: 'alpha', colorsJson: [] },
+      { name: 'Bravo', slug: 'bravo' },
     ]);
     expect(db.select().from(slot).all()).toMatchObject([
       { teamId: 1, divisionId: 2 },
@@ -282,21 +314,71 @@ describe('seedLfr', () => {
 
     const summary = seedLfr(db, TEAMS, 2000);
 
-    expect(summary.updated).toEqual({ competitions: 1, seasons: 0, teams: 0, slots: 0 });
+    expect(summary.updated).toEqual({
+      competitions: 1,
+      seasons: 0,
+      clubs: 0,
+      teams: 0,
+      slots: 0,
+    });
     expect(db.select().from(competition).get()?.pointsJson.outcomes.win).toBe(3);
     expect(seedLfr(db, TEAMS, 3000).updated.competitions).toBe(0);
   });
 
-  it('points each team at its logo in the asset store, or at none', () => {
+  it('points each club at its logo in the asset store, or at none', () => {
     const db = openTestDatabase();
     seedLfr(db, TEAMS, 1000);
-    const logos = () => db.select({ tag: team.tag, logoKey: team.logoKey }).from(team).all();
+    const logos = () => db.select({ slug: club.slug, logoKey: club.logoKey }).from(club).all();
     expect(logos()).toEqual([
-      { tag: 'ALP', logoKey: 'logos/alpha.png' },
-      { tag: 'BRV', logoKey: null },
+      { slug: 'alpha', logoKey: 'logos/alpha.png' },
+      { slug: 'bravo', logoKey: null },
     ]);
-    expect(seedLfr(db, [ALPHA, { ...BRAVO, logo: 'bravo' }], 2000).updated.teams).toBe(1);
-    expect(logos()[1]).toEqual({ tag: 'BRV', logoKey: 'logos/bravo.png' });
+    expect(seedLfr(db, [ALPHA, { ...BRAVO, logo: 'bravo' }], 2000).updated.clubs).toBe(1);
+    expect(logos()[1]).toEqual({ slug: 'bravo', logoKey: 'logos/bravo.png' });
+    // A roster without a look of its own wears its club's.
+    expect(db.select({ logoKey: team.logoKey }).from(team).all()).toEqual([
+      { logoKey: null },
+      { logoKey: null },
+    ]);
+  });
+
+  it('removes a club the file moved every roster away from', () => {
+    const db = openTestDatabase();
+    seedLfr(db, TEAMS, 1000);
+    // Alpha now names Bravo's club: Alpha's own club is left empty.
+    const summary = seedLfr(db, [{ ...ALPHA, club: 'Bravo' }, BRAVO], 2000);
+    expect(summary.removed.clubs).toBe(1);
+    // Reached by name, then through Bravo's roster: one club, updated once, in its first look.
+    expect(summary.updated.clubs).toBe(1);
+    expect(db.select().from(club).get()?.colorsJson).toEqual(ALPHA.colors);
+    expect(db.select({ name: club.name }).from(club).all()).toEqual([{ name: 'Bravo' }]);
+    expect(db.select({ clubId: team.clubId }).from(team).all()).toEqual([
+      { clubId: 2 },
+      { clubId: 2 },
+    ]);
+  });
+
+  it('gathers the rosters naming the same club; each keeps only the look that differs', () => {
+    const db = openTestDatabase();
+    const academy: TeamRow = {
+      ...ALPHA,
+      name: 'Alpha Academy',
+      tag: 'ALP2',
+      slug: 'alpha-academy',
+      colors: ['#FFFFFF'],
+      club: 'Alpha',
+    };
+    const summary = seedLfr(db, [{ ...ALPHA, club: 'Alpha' }, academy, BRAVO], 1000);
+    expect(summary.created).toMatchObject({ clubs: 2, teams: 3 });
+    expect(db.select().from(club).all()).toMatchObject([
+      { id: 1, name: 'Alpha', colorsJson: ['#112233'], logoKey: 'logos/alpha.png' },
+      { id: 2, name: 'Bravo' },
+    ]);
+    expect(db.select().from(team).all()).toMatchObject([
+      { tag: 'ALP', clubId: 1, colorsJson: null, logoKey: null },
+      { tag: 'ALP2', clubId: 1, colorsJson: ['#FFFFFF'], logoKey: null },
+      { tag: 'BRV', clubId: 2 },
+    ]);
   });
 
   it("holds the season's map pool, and brings an earlier season's settings up to date", () => {
@@ -320,6 +402,7 @@ describe('seedLfr', () => {
     expect(seedLfr(db, TEAMS, 2000).updated).toEqual({
       competitions: 0,
       seasons: 1,
+      clubs: 0,
       teams: 0,
       slots: 0,
     });
