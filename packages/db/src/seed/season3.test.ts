@@ -91,7 +91,12 @@ describe('LFR Season 3 from the committed fixtures', () => {
       .get();
     const data = loadStandingsInput(db, stageRow?.id ?? -1);
     if (!data) throw new Error(`No stage for ${divisionName}`);
-    const result = computeStandings(data.input);
+    // score7 counts a forfeit 0-0, where LFR's setting is 7-0 since 14 November 2026.
+    const result = computeStandings({
+      ...data.input,
+      forfeitScore: [0, 0],
+      exclusionForfeitScore: [0, 0],
+    });
     if (!result.ok) throw new Error(JSON.stringify(result.error));
 
     const computed = result.rows.map((row) => ({

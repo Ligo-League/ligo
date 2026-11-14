@@ -230,10 +230,11 @@ M-xx : mainteneur).
 
 - **3 points par victoire**, 0 par défaite. Un forfait compte comme un match joué : 3 points à
   l'adversaire, 0 à l'équipe forfait.
-- Score d'un forfait en manches : **7–0** pour une équipe qui ne se présente pas, selon le
-  mainteneur (14 novembre 2026) ; la Saison 3 compte **0–0**, comme score7. Le score d'un forfait
-  créé par la règle des 50 % (voir 7.3) reste à fixer. Chacun est un réglage de la saison.
-- **Statut** : Points décidés ; score d'un forfait à confirmer (O-27).
+- Score d'un forfait en manches : **7–0** pour une équipe qui ne se présente pas : l'équipe
+  présente ne perd rien à la différence de manches. C'est un réglage de la saison.
+- Un forfait créé par la règle des 50 % (voir 7.3) a son propre réglage ; en attendant O-27, il
+  vaut aussi 7–0.
+- **Statut** : Décidée, sauf le score d'un forfait créé par la règle des 50 % (O-27).
 
 ### 6.2 Colonnes
 
@@ -358,5 +359,5 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 | -------- | --------------------------------------------- | ------------------------------------ |
 | O-17     | Coupe de France : forme du tableau, côtés     | Non appliqué                         |
 | O-22     | Qui peut se déclarer disponible (recrutement) | Joueurs sans équipe, mercato ouvert  |
-| O-27     | Score d'un forfait : absence, exclusion       | 0–0 pour les deux                    |
+| O-27     | Score d'un forfait créé par la règle des 50 % | 7–0, comme une absence               |
 | O-28     | Forfait des deux équipes                      | Forfait d'une seule, ou pas de score |

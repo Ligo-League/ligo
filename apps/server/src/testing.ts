@@ -6,6 +6,7 @@ import {
   type MatchRow,
   type TeamRow,
 } from '@ligo/db/testing';
+import { schema } from '@ligo/db';
 
 export const TEST_GUILD = '876543210987654321';
 export const TEST_STAFF_ROLE = '111111111111111111';
@@ -35,8 +36,9 @@ const fixture = (
 ): MatchRow => ({ division, week, teamA, teamB, result });
 
 /**
- * A small league in an in-memory database, linked to `TEST_GUILD`: LFR Season 3 rules, three
- * teams in Ligue 1 (matches 1 to 3) and two in Ligue 2 (match 4).
+ * A small league in an in-memory database, linked to `TEST_GUILD`: LFR Season 3 rules, except
+ * that a forfeit scores 0-0, so CHA's forfeit leaves it ahead of BRV on difference (the veto
+ * tests rely on it); three teams in Ligue 1 (matches 1 to 3) and two in Ligue 2 (match 4).
  *
  * Ligue 1: ALP beat BRV 7-4, CHA forfeited against ALP, BRV v CHA is still to play.
  * Ligue 2: XRA beat YAN 8-6.
@@ -44,6 +46,11 @@ const fixture = (
 export function leagueDatabase() {
   const db = openTestDatabase();
   seedLfr(db, TEAMS, 1000);
+  const seasonRow = db.select().from(schema.season).get();
+  if (!seasonRow) throw new Error('seedLfr created no season');
+  db.update(schema.season)
+    .set({ settingsJson: { ...seasonRow.settingsJson, forfeit_score: [0, 0] } })
+    .run();
   seedMatches(
     db,
     [

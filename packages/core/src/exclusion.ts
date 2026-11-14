@@ -59,14 +59,16 @@ export function applyExclusions(
     const opponentForfeited =
       match.result.kind === 'forfeit' && match.result.forfeitedBy === other(side);
     result.push(
-      opponentForfeited ? match : { ...match, result: { kind: 'forfeit', forfeitedBy: side } },
+      opponentForfeited
+        ? match
+        : { ...match, result: { kind: 'forfeit', forfeitedBy: side, byExclusion: true } },
     );
   }
   for (const match of pending) {
     const excludedSides = (['a', 'b'] as const).filter((side) => isExcluded(match[side]));
     const [side] = excludedSides;
     if (side === undefined || excludedSides.length === 2) continue;
-    result.push({ ...match, result: { kind: 'forfeit', forfeitedBy: side } });
+    result.push({ ...match, result: { kind: 'forfeit', forfeitedBy: side, byExclusion: true } });
   }
   return { matches: result, exclusions };
 }

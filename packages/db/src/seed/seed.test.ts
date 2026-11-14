@@ -202,7 +202,8 @@ describe('seedLfr', () => {
         startsOn: '2026-10-19',
         endsOn: '2026-12-20',
         status: 'active',
-        settingsJson: { forfeit_score: [0, 0] },
+        // A no-show is 7-0 (maintainer, 14 November 2026).
+        settingsJson: { forfeit_score: [7, 0], exclusion_forfeit_score: null },
       },
     ]);
     // The pool itself is checked in its own test below.

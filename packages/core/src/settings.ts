@@ -283,8 +283,17 @@ export type ForfeitThresholds = z.infer<typeof forfeitThresholdsSchema>;
 
 /** `season.settings_json`. */
 export const seasonSettingsSchema = z.strictObject({
-  /** Rounds credited to the winner and to the loser of a forfeit; feeds F, C and D. */
+  /**
+   * Rounds credited to the winner and to the loser of a forfeit recorded by staff (a team that
+   * did not show up); feeds F, C and D. LFR: 7-0, so the team that showed up loses nothing on
+   * difference (maintainer, 14 November 2026).
+   */
   forfeit_score: z.tuple([z.int().min(0), z.int().min(0)]),
+  /** The same for a forfeit the 50% rule creates for an excluded team; null: `forfeit_score`. */
+  exclusion_forfeit_score: z
+    .tuple([z.int().min(0), z.int().min(0)])
+    .nullable()
+    .default(null),
   map_pool: z
     .array(z.string().min(1))
     .refine(hasNoDuplicates, { error: 'A map can appear only once.' }),

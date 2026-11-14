@@ -307,7 +307,7 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 `season.settings_json`:
 
 ```json
-{ "forfeit_score": [0, 0], "map_pool": [] }
+{ "forfeit_score": [7, 0], "exclusion_forfeit_score": null, "map_pool": [] }
 ```
 
 - Each win is worth 3 points in Season 3, as score7 is set (Season 2 gave 1). There are no draws in R6 competitive settings, so score7's N column is not shown.
@@ -315,7 +315,8 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 - score7 shows one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). Both teams had been excluded, and score7 cannot record a forfeit by both sides, so staff typed a draw. Ligo leaves the match without result: under the 50% rule, a match between two excluded teams counts for neither (O-01). A forfeit by two teams that are not excluded is open (O-28).
 - F counts rounds won, C rounds lost, and D = F − C. Columns: J, V, D, F, C, D, PTS.
 - Ranking: points, then D. Season 2 shows it: Vaevictis and Origin's Esport both have 8 points; D 23 beats D 21.
-- **Forfeit score** is a season setting, `forfeit_score`: `[0, 0]` (Season 3) or `[7, 0]` (Season 2). It feeds F and C, so it changes D.
+- **Forfeit score** is a season setting, `forfeit_score`: `[7, 0]` in LFR (Seasons 2 and 3; maintainer, 14 November 2026), so a team that showed up loses nothing on D. score7 counted Season 3's forfeits 0–0, and the Season 3 test compares with score7 at 0–0. It feeds F and C, so it changes D.
+- A forfeit the 50% rule creates for an excluded team scores `exclusion_forfeit_score`; `null` (the default) means the same as `forfeit_score`. Whether LFR wants a different score there is O-27.
 - **Unresolved ties** (same points and same D) follow `unresolved_tie`:
     - `shared`: both teams show the same rank (default);
     - `tiebreak_match`: when the tie touches a place that matters (title, promotion, barrage, relegation, cup seeding), the engine creates a BO1 tie-break match after the last week;
@@ -1255,7 +1256,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Division size | A division has as many teams as it has slots (10 in Ligue 1, 12 in Ligue 2 in Season 3), at most 12 so the regular season fits inside an R6 season with the cup after it; the maximum is a setting | You |
 | Points                | 3 points per win in Season 3, as score7 is set (1 in Season 2); F rounds won, C rounds lost, D = F − C; no draws                          | score7, you   |
 | Tie-break             | D; then a setting: shared rank (default), a BO1 tie-break match, or staff decision                                                        | Rulebook, you |
-| Forfeit score         | Season setting: 0–0 (Season 3) or 7–0 (Season 2)                                                                                          | You           |
+| Forfeit score         | Season setting: 7–0 for a no-show (Seasons 2 and 3); a forfeit made by the 50% rule has its own setting, the same by default (O-27)     | You           |
 | L1/L2 matches         | BO1, one map after bans; teams pick date and time                                                                                         | Rulebook, you |
 | Scheduling | One extra week if no agreement; as soon as it starts, the match is set to Sunday 21:00 Paris time, which the teams can still change. Outside the week and its extension, only staff set a time, when both teams agree | Rulebook, you |
 | League sides and host | Lower-ranked team has side selection and bans first; the other picks the overtime side; higher-ranked team hosts. Equal ranks: BLAST coin toss, and the teams agree on the host | Rulebook, you |

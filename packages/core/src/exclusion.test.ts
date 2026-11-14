@@ -28,7 +28,7 @@ const forfeitBy = (match: { id: number; a: number; b: number }, entry: number) =
   id: match.id,
   a: match.a,
   b: match.b,
-  result: { kind: 'forfeit', forfeitedBy: match.a === entry ? 'a' : 'b' },
+  result: { kind: 'forfeit', forfeitedBy: match.a === entry ? 'a' : 'b', byExclusion: true },
 });
 
 describe('applyExclusions', () => {
@@ -119,10 +119,11 @@ describe('applyExclusions', () => {
             const opponentForfeited =
               original?.result.kind === 'forfeit' && original.result.forfeitedBy !== xSide;
             // Every opponent gets the same forfeit win, unless it forfeited itself.
-            expect(match.result).toEqual({
-              kind: 'forfeit',
-              forfeitedBy: opponentForfeited ? (xSide === 'a' ? 'b' : 'a') : xSide,
-            });
+            expect(match.result).toEqual(
+              opponentForfeited
+                ? original.result
+                : { kind: 'forfeit', forfeitedBy: xSide, byExclusion: true },
+            );
           }
           expect(outcome.matches).toHaveLength(results.length + pendingMatches.length);
         },
@@ -165,6 +166,28 @@ describe('computeStandings with an excluded team', () => {
       [X, 4, true],
     ]);
     expect(result.rows.find((row) => row.entry === 1)).toMatchObject({ played: 3, points: 6 });
+  });
+
+  // A no-show is 7-0 in Season 3 (maintainer, 14 November 2026); a forfeit the rule creates has
+  // its own setting, the no-show score when unset (O-27).
+  it('scores a forfeit the rule creates with the exclusion setting, a no-show with its own', () => {
+    const matches = [forfeit(X, 1, 'a'), forfeit(2, X, 'a'), played(X, 3, 7, 5)];
+    const rowsWith = (exclusionForfeitScore?: [number, number]) => {
+      const result = computeStandings(
+        input({ matches, excluded: [X], forfeitScore: [7, 0], exclusionForfeitScore }),
+      );
+      if (!result.ok) throw new Error(JSON.stringify(result.error));
+      return (entry: number) => result.rows.find((row) => row.entry === entry);
+    };
+    // 1 of 3 played: X's no-show against 1 and its win against 3 become forfeits by the rule; 2
+    // did not show up against X, which stays a no-show.
+    const own = rowsWith([0, 0]);
+    expect(own(1)).toMatchObject({ wins: 1, scoreFor: 0, scoreAgainst: 0 });
+    expect(own(3)).toMatchObject({ wins: 1, scoreFor: 0, scoreAgainst: 0 });
+    expect(own(2)).toMatchObject({ losses: 1, scoreFor: 0, scoreAgainst: 7 });
+    const same = rowsWith();
+    expect(same(1)).toMatchObject({ wins: 1, scoreFor: 7, scoreAgainst: 0 });
+    expect(same(3)).toMatchObject({ wins: 1, scoreFor: 7, scoreAgainst: 0 });
   });
 
   it('marks nobody as excluded without exclusions', () => {

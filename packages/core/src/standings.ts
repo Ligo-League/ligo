@@ -15,7 +15,12 @@ export interface StandingsMatch {
   b: number;
   result:
     | { kind: 'played'; games: readonly { a: number; b: number }[] }
-    | { kind: 'forfeit'; forfeitedBy: MatchSide };
+    | {
+        kind: 'forfeit';
+        forfeitedBy: MatchSide;
+        /** Set when the 50% rule made this forfeit, rather than a team failing to show up. */
+        byExclusion?: true;
+      };
 }
 
 export interface StandingsInput {
@@ -26,6 +31,8 @@ export interface StandingsInput {
   tiebreak: TiebreakSettings;
   /** Rounds credited to the winner and to the loser of a forfeit. */
   forfeitScore: readonly [number, number];
+  /** The same for a forfeit the 50% rule makes; `forfeitScore` when absent. */
+  exclusionForfeitScore?: readonly [number, number];
   /** Sanction point deltas; several per entry add up. */
   pointDeltas: readonly { entry: number; delta: number }[];
   /** The stage's matches that do not count yet, void ones aside; the 50% rule needs them. */
@@ -115,7 +122,10 @@ export function computeStandings(input: StandingsInput): StandingsResult {
     if (match.result.kind === 'forfeit') {
       const [winner, loser] = match.result.forfeitedBy === 'a' ? [b, a] : [a, b];
       const { forfeit } = input.points;
-      credit(winner, loser, input.forfeitScore, forfeit.winner, forfeit.loser);
+      const score = match.result.byExclusion
+        ? (input.exclusionForfeitScore ?? input.forfeitScore)
+        : input.forfeitScore;
+      credit(winner, loser, score, forfeit.winner, forfeit.loser);
       if (forfeit.counts_as_played) countMatch(winner, loser);
     } else {
       // A league phase played as a series needs its own rule for rounds (design doc section 5).

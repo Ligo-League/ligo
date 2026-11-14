@@ -188,6 +188,9 @@ export function loadStandingsInput(
       points: context.competition.pointsJson,
       tiebreak: context.competition.tiebreakJson,
       forfeitScore: context.season.settingsJson.forfeit_score,
+      exclusionForfeitScore:
+        context.season.settingsJson.exclusion_forfeit_score ??
+        context.season.settingsJson.forfeit_score,
       pointDeltas,
     },
   };

@@ -40,7 +40,13 @@ const LFR_S3 = {
     extension_weeks: 1,
     auto_slot: { weekday: 7, time: '21:00' },
   },
-  season: { forfeit_score: [0, 0], map_pool: [], forfeits: { warning_at: 2, exclusion_at: 3 } },
+  // A no-show is 7-0 (maintainer, 14 November 2026).
+  season: {
+    forfeit_score: [7, 0],
+    exclusion_forfeit_score: null,
+    map_pool: [],
+    forfeits: { warning_at: 2, exclusion_at: 3 },
+  },
   stage: { seed: 20261019 },
 };
 
@@ -247,6 +253,17 @@ describe('seasonSettingsSchema', () => {
     expect(seasonSettingsSchema.parse(custom).forfeits).toEqual(custom.forfeits);
   });
 
+  it('scores forfeits made by an exclusion as no-shows unless the season sets their own score', () => {
+    const stored = { forfeit_score: [7, 0], map_pool: [] };
+    // Settings stored before this key existed must keep reading.
+    expect(seasonSettingsSchema.parse(stored).exclusion_forfeit_score).toBeNull();
+    const own = { ...stored, exclusion_forfeit_score: [0, 0] };
+    expect(seasonSettingsSchema.parse(own).exclusion_forfeit_score).toEqual([0, 0]);
+    expect(accepts(seasonSettingsSchema, { ...stored, exclusion_forfeit_score: [-1, 0] })).toBe(
+      false,
+    );
+  });
+
   it.each([
     ['a threshold of zero', { warning_at: 0, exclusion_at: 3 }],
     ['a missing threshold', { warning_at: 2 }],
@@ -380,6 +397,7 @@ describe('JSON round trip', () => {
       seasonSettingsSchema,
       fc.record({
         forfeit_score: fc.tuple(score, score),
+        exclusion_forfeit_score: fc.option(fc.tuple(score, score), { nil: null }),
         map_pool: fc.uniqueArray(fc.string({ minLength: 1 }), { maxLength: 12 }),
         forfeits: fc.record({
           warning_at: fc.option(positive, { nil: null }),

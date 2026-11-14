@@ -73,9 +73,12 @@ const SEASON: Omit<typeof season.$inferInsert, 'competitionId'> = {
   endsOn: '2026-12-20',
   status: 'active',
   // The official competitive pool of the current Ubisoft season, from the maintainer
-  // (13 November 2026). Rulebook: a warning at the 2nd forfeit, exclusion at the 3rd.
+  // (13 November 2026). Rulebook: a warning at the 2nd forfeit, exclusion at the 3rd. A no-show
+  // is 7-0 (maintainer, 14 November 2026); a forfeit made by the 50% rule scores the same until
+  // O-27 says otherwise.
   settingsJson: {
-    forfeit_score: [0, 0],
+    forfeit_score: [7, 0],
+    exclusion_forfeit_score: null,
     map_pool: [
       'Bank',
       'Chalet',

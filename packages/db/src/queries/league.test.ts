@@ -91,6 +91,7 @@ describe('findGuildLeague', () => {
     linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE }, 2000);
     const settingsJson = {
       forfeit_score: [0, 0] as [number, number],
+      exclusion_forfeit_score: null,
       map_pool: [],
       forfeits: { warning_at: 2, exclusion_at: 3 },
     };

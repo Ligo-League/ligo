@@ -30,25 +30,22 @@ section 16.
   the matches the team already played (see O-04).
 - **Until answered:** each of those matches is an ordinary forfeit: 3 points for the opponent, no
   rounds.
-- **Answer (partial, maintainer, 14 November 2026):** staff excluded Nightwolves by hand, and
-  Ligo excluded Outsouki (Ligue 1) and Starly (Ligue 2) automatically when their next forfeit was
-  recorded. The 50% rule (O-04) now decides their matches. Still open: Nova 1 Esport has 7
-  forfeits, including weeks not played yet, and is not excluded. Has it left the league, and
-  should staff exclude it?
+- **Answer (partial, maintainer, 14 November 2026):** Nightwolves and Outsouki are excluded.
+  Nothing official has been said about Starly or Nova 1 Esport, and the rules are enforced
+  loosely, so no conclusion is drawn for them. (On the maintainer's local database, Ligo excluded
+  Starly automatically at its 3rd recorded forfeit; staff can undo it with
+  `/staff exclusion reinstate`.) Still open: are Starly and Nova 1 excluded?
 
-#### O-27 · The score of a forfeit
+#### O-27 · The score of a forfeit made by the 50% rule
 
-- **Question:** a forfeit by a team that does not show up seems to be 7–0 in rounds, not 0–0
-  (maintainer, 14 November 2026; on 13 November, a walkover was "no rounds"). Is it 7–0, and from
-  when: Season 3 as it is played now, or from Season 4? And what score does a forfeit that the
-  50% rule creates for an excluded team get: 7–0 as well, or 0–0?
-- **Why it matters:** the forfeit score feeds rounds won and lost, so the difference that breaks
-  ties. Changing it in Season 3 changes the current tables (score7 counts 0–0), and the Season 3
-  test then compares with score7 at 0–0.
-- **Proposal:** two season settings: `forfeit_score` for a forfeit recorded by staff, and
-  `exclusion_forfeit_score` for one the 50% rule creates, each `[0, 0]` or `[7, 0]`.
-- **Until answered:** 0–0 for both, as score7 counts them.
-- **Answer:**
+- **Question:** a no-show is 7–0 (answered below). What score does a forfeit get when the 50% rule
+  creates it for an excluded team: 7–0 as well, or 0–0?
+- **Why it matters:** the score feeds rounds won and lost, so the difference that breaks ties.
+- **Until answered:** the same as a no-show, 7–0. It is its own season setting,
+  `exclusion_forfeit_score`, so a different answer is a change of setting, not of code.
+- **Answer (partial, maintainer, 14 November 2026):** a team that does not show up loses 7–0, in
+  Season 3 and probably in Season 4: the team that showed up must not lose on difference. It is a
+  setting (`forfeit_score`). The maintainer was wrong on 13 November ("no rounds").
 
 #### O-28 · Both teams forfeit
 
@@ -628,6 +625,8 @@ section 16.
 
 - **Answer (maintainer, 13 November 2026):** a win without a score ("W.O.") is a forfeit by the
   other team. It counts as a match played, a win and a loss, with no rounds.
+- **Corrected (maintainer, 14 November 2026):** a forfeit is 7–0 in rounds, not "no rounds"
+  (O-27).
 
 #### Draws
 

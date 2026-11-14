@@ -406,6 +406,7 @@ describe('/staff match forfeit', () => {
       .set({
         settingsJson: {
           forfeit_score: [0, 0],
+          exclusion_forfeit_score: null,
           map_pool: [],
           forfeits: { warning_at: null, exclusion_at: 2 },
         },
