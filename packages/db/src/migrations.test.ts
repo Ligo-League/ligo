@@ -12,7 +12,8 @@ import { openTestDatabase } from './testing.ts';
 
 // Schema v1, the tables phase 0 was allowed to create (design doc section 15, "Start here
 // today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`,
-// 0004 `veto_step`, 0007 `request` and `queue_post`, 0009 `club`, 0010 `club_staff`.
+// 0004 `veto_step`, 0007 `request` and `queue_post`, 0009 `club`, 0010 `club_staff`, 0013
+// `rules_version`.
 const SCHEMA_TABLES = [
   'audit_log',
   'club',
@@ -34,6 +35,7 @@ const SCHEMA_TABLES = [
   'queue_post',
   'request',
   'roster_entry',
+  'rules_version',
   'sanction',
   'season',
   'slot',

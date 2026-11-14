@@ -75,6 +75,7 @@ export function seasonPageView(locale: Locale, page: Data): Page {
   });
   const others = page.seasons.filter((other) => other.slug !== season.slug);
   const body = html`<h1>${title}</h1>
+    <p><a href="/c/${competition.slug}/rules">${t(locale, 'web.season.rules')}</a></p>
     ${
       others.length > 0
         ? html`<p class="muted">

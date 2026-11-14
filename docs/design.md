@@ -6,6 +6,28 @@ Nov 12, 2026 · @Higginson Julien
 
 The platform runs LFR's competitions end to end: schedule, Discord match channels, results, standings, stat pages and images. It replaces score7. Replays add detailed stats wherever a parser exists (R6, Rocket League on PC); everything else uses manual entry.
 
+**What Ligo is, and is not** (maintainer, 14 November 2026)
+
+Ligo is the operating system of a league, and a tool that helps teams get the data they find useful out of their own matches. It is league first: seasons, divisions, promotion and relegation, rosters and the mercato, sanctions, staff validation, the weekly work in each league's Discord. Tournaments and cups come second, as a stage inside a league's season (the Coupe de France), not as a product of their own.
+
+| Ligo is                                                                                         | Ligo is not                                                                       |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| The tool that runs a league's season, end to end, with its own rules as settings                | A hub of open tournaments for anyone, with entry fees                             |
+| Discord-native: the bot works inside each league's own server                                   | A pro-scene database (schedules, world rankings, pro leaderboards)                |
+| Several titles for one group of leagues (R6, Valorant, Rocket League, mixed-team FRFL)          | A copy of a feature that a free tool already does well for one title              |
+| Team improvement measured against the team's own division, from scrims and official matches   | A replacement for the desktop clients and live trackers of other platforms        |
+| Free, non-profit, French first                                                                  | A business that takes a cut of what teams pay                                     |
+
+**Before adding a feature,** check that it helps run a league or helps a team learn from its own data. A feature that mostly serves open tournaments, the pro scene or players outside any league is out of scope, unless a partnered league needs it to run its season.
+
+**Other platforms** (November 2026; strave.gg refuses automated reads, so this comes from search results and the maintainer's visit)
+
+| Platform                            | What it does                                                                                                                                                                                                                                                                                       | What it means for Ligo                                                                                                     |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| [Strave](https://strave.gg/about)   | R6 only, English, EMEA. Open tournaments (registration, multi-stage brackets, check-in, live scoring, map ban), a pro-scene database with replay stats, player stat pages, a Windows client that syncs match data, a 2D replay viewer, a public API. Organisation plans from €0 to €25 a month; takes 15%, 10% or 6% of the entry fees it collects ([pricing](https://strave.gg/pricing)). Benelux Siege Hub runs its cups there. | Do not compete on open tournaments, pro stats, live capture or the R6 replay viewer. No Discord integration, scrim tools, playbook, promotion and relegation, mercato or staff validation found; that is Ligo's ground. A league may run its season on Ligo and an open cup on Strave. |
+| [r6tv](https://r6tv.online/about)   | A free 2D R6 replay viewer: upload a `.rec` file and watch it from above; also a library of pro rounds                                                                                                                                                                                              | An R6 replay viewer in Ligo is not worth building or charging for; link to r6tv instead                                   |
+| score7                              | LFR's current tool for fixtures and standings                                                                                                                                                                                                                                                      | What Ligo replaces first (phase 1)                                                                                         |
+
 **In scope, in priority order**
 
 1. LFR (R6) results and standings: Ligue 1 and Ligue 2 (10 and 12 teams in Season 3, round robin, BO1), the regional National leagues (BO3), promotion, relegation and barrages, and the Coupe de France knockout cup.
@@ -180,7 +202,8 @@ org_ban        id, org_id, player_id NULL, external_account NULL, reason, decide
 accreditation  id, player_id, kind ('commentator'), granted_by, granted_at, revoked_at NULL
 
 -- rules, and what teams ask of the league
-rules_version  id, competition_id, version, markdown, voted_at, effective_from
+rules_version  id, competition_id, version, markdown, voted_at NULL, effective_from, published_by, published_at
+               (never edited: a change is a new version; the one in force is the latest whose effective_from has passed)
 request        id, competition_id, season_id NULL, team_id NULL, kind, payload_json,
                approval ('auto'|'staff'), status ('pending'|'approved'|'rejected'|'withdrawn'),
                note NULL, requested_by, requested_at, decided_by NULL, decided_at NULL,
@@ -585,7 +608,7 @@ The website is the main tool of the platform (section 3): the public face of eve
 | `/c/:comp/:season`             | everyone                | Standings per division and region, fixtures by week, latest results                                                            |
 | `/c/:comp/:season/bracket`     | everyone                | National playoffs, barrages, Coupe de France                                                                                   |
 | `/c/:comp/:season/leaders`     | everyone                | Leaderboards per metric, with coverage                                                                                         |
-| `/c/:comp/rules`               | everyone                | Current rulebook version, with history                                                                                         |
+| `/c/:comp/rules`               | everyone                | Current rulebook version, with history; its staff publish a new version from `/c/:comp/rules/new` (Markdown, raw HTML shown as text) |
 | `/teams/:slug`                 | everyone                | Roster, staff, results, team stats                                                                                             |
 | `/players/:slug`               | everyone                | Season stats, splits by map, side and operator, game log (consenting players only)                                             |
 | `/matches/:id`                 | everyone                | Score per game, scoreboards, round timeline when replays exist                                                                 |
@@ -1281,6 +1304,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Team obligations      | None: no team is required to upload scrims or enter external events; external results are shown on team pages and never worth points      | You           |
 | Match volume          | FRFL and the cup provide the extra matches; the league stays at one BO1 per week                                                          | You           |
 | Team level scale      | The 0–10 rubric of section 17                                                                                                             | You           |
+| Positioning           | League first, tournaments second: the operating system of a league and a data tool for its teams, never a copy of Strave (section 1)   | You           |
 | Paid tier             | An idea for later: premium adds features and never makes a free one worse; league running and team improvement stay free (section 18)   | You           |
 | Social images         | One design rendered in every frame (square, portrait, landscape, preview); a posting mode per network: `manual` by default with a free share button, `approve` or `auto`; X only with the league's own developer app and a monthly cap, €0 by default (section 11) | You |
 
@@ -1530,7 +1554,7 @@ In both, the `manual` mode, the images page and the share button stay free (sect
 
 Stats and spreadsheets from a team's own replays stay free. A paid tier for teams makes sense only for tools that are expensive by themselves: hard to build, maintain and host, often once per title. Examples:
 
-- **A replay visualiser:** a 2D map replaying each round from the replay, like [VaLab](https://www.valab.gg/) for Valorant.
+- **A replay visualiser:** a 2D map replaying each round from the replay, like [VaLab](https://www.valab.gg/) for Valorant. Not for R6: [r6tv](https://r6tv.online/) does it for free and Strave has one (section 1, other platforms). Only for a title with no good free viewer.
 - **Position analysis:** reading player positions from replays to point out placement problems or measure reaction times.
 
 Both depend on what each title's replay format exposes and what its parser can decode; they need research before they are even a plan.

@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { zonedDate } from '@ligo/core';
 import { findLeague, listLeagueMatches, schema, type Db } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
@@ -17,6 +18,8 @@ import {
 } from '../services/me.ts';
 import { rejectResult, validateResult } from '../services/reports.ts';
 import { answerRequest } from '../services/requests.ts';
+import { requireStaff } from '../services/permissions.ts';
+import { publishRules, rulesPage } from '../services/rules.ts';
 import { clubPage, listLeagues, matchPage, seasonPage, teamPage } from '../services/site.ts';
 import { staffQueue } from '../services/staff-queue.ts';
 import { layout, type Page } from './layout.ts';
@@ -25,6 +28,7 @@ import { errorPage, messagePage, notFoundPage } from './pages/errors.ts';
 import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
 import { mePage } from './pages/me.ts';
+import { rulesFormView, rulesPageView, type RulesFormValues } from './pages/rules.ts';
 import { seasonPageView } from './pages/season.ts';
 import { staffPage } from './pages/staff.ts';
 import { teamPageView } from './pages/team.ts';
@@ -234,6 +238,90 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   // Public pages
 
   app.get('/', (c) => render(c, homePage(locale, listLeagues(db))));
+
+  // -------------------------------------------------------------------------------------------
+  // The rulebook. Registered before `/c/:competition/:season`, which would read `rules` as a
+  // season.
+
+  /** The viewer as staff of this competition, asked of Discord now; null for anyone else. */
+  const staffOf = async (viewer: Viewer | null, competitionId: number) => {
+    if (!login || !viewer) return null;
+    const actor = await webActor(db, deps.roles, viewer, competitionId, deps.now());
+    const staff = actor && requireStaff(db, actor);
+    return staff?.ok && staff.league.competition.id === competitionId ? actor : null;
+  };
+  const showRules = async (c: Context<Env>, versionId: number | null) => {
+    const now = deps.now();
+    const page = rulesPage(db, c.req.param('competition') ?? '', now, versionId);
+    if (!page.ok) return notFound(c);
+    const canPublish = (await staffOf(c.get('viewer'), page.competition.id)) !== null;
+    return render(c, rulesPageView(locale, page, { now, canPublish }));
+  };
+  app.get('/c/:competition/rules', (c) => showRules(c, null));
+  app.get('/c/:competition/rules/new', async (c) => {
+    if (!login) return notFound(c);
+    const page = rulesPage(db, c.req.param('competition'), deps.now());
+    if (!page.ok) return notFound(c);
+    const viewer = c.get('viewer');
+    if (!viewer) return c.redirect(`/auth/login?next=${encodeURIComponent(c.req.path)}`, 303);
+    if (!(await staffOf(viewer, page.competition.id))) return forbidden(c);
+    const values: RulesFormValues = {
+      // The version in force is the starting point: staff change what changed.
+      version: '',
+      markdown: page.shown?.markdown ?? '',
+      effectiveOn: zonedDate(deps.now(), page.competition.timeZone).date,
+      votedOn: '',
+    };
+    c.header('Cache-Control', 'no-store');
+    return render(
+      c,
+      rulesFormView(locale, page.competition, { values, error: null, csrf: viewer.csrf }),
+    );
+  });
+  app.get('/c/:competition/rules/:id', (c) => {
+    const id = c.req.param('id');
+    return ROW_ID.test(id) ? showRules(c, Number(id)) : notFound(c);
+  });
+  app.post('/c/:competition/rules', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const page = rulesPage(db, c.req.param('competition'), deps.now());
+    if (!page.ok) return notFound(c);
+    const actor = await staffOf(viewer, page.competition.id);
+    if (!actor) return forbidden(c);
+    const text = (key: string) => (typeof form[key] === 'string' ? form[key] : '');
+    const values: RulesFormValues = {
+      version: text('version'),
+      // Browsers send line breaks in a form as CRLF.
+      markdown: text('markdown').replaceAll('\r\n', '\n'),
+      effectiveOn: text('effective_on'),
+      votedOn: text('voted_on'),
+    };
+    const reply = publishRules(
+      db,
+      actor,
+      {
+        competitionId: page.competition.id,
+        version: values.version,
+        markdown: values.markdown,
+        effectiveOn: values.effectiveOn,
+        votedOn: values.votedOn === '' ? null : values.votedOn,
+      },
+      deps.now(),
+    );
+    if (!reply.ok) {
+      if (reply.error === 'not_staff' || reply.error === 'not_linked') return forbidden(c);
+      c.header('Cache-Control', 'no-store');
+      return render(
+        c,
+        rulesFormView(locale, page.competition, { values, error: reply.error, csrf: viewer.csrf }),
+        400,
+      );
+    }
+    return c.redirect(`/c/${page.competition.slug}/rules/${String(reply.id)}`, 303);
+  });
+
   app.get('/c/:competition/:season', (c) => {
     const page = seasonPage(db, c.req.param('competition'), c.req.param('season'));
     return page.ok ? render(c, seasonPageView(locale, page)) : notFound(c);

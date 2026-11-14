@@ -256,6 +256,7 @@ form.card p {
 }
 
 select,
+input,
 button {
   font: inherit;
   padding: 6px 10px;
@@ -360,4 +361,40 @@ a.shot img {
   max-height: 360px;
   border-radius: 6px;
   border: 1px solid var(--line);
+}
+
+/* A form whose fields run one under the other, each under its label (the rulebook). */
+form.card.stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+form.card.stack label {
+  font-weight: 600;
+}
+
+form.card.stack textarea {
+  flex: none;
+  min-height: 24em;
+  font-family: ui-monospace, monospace;
+  font-size: 0.875rem;
+}
+
+form.card.stack button {
+  align-self: flex-start;
+}
+
+/* The rulebook's text: long, read from top to bottom, linked to by section. */
+article.rules {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+article.rules :is(h1, h2, h3, h4) {
+  scroll-margin-top: 16px;
+}
+
+article.rules table {
+  display: block;
+  overflow-x: auto;
 }

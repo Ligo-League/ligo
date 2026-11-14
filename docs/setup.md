@@ -425,6 +425,29 @@ section 10).
 4. Standings and images look the same: a roster without colours or a logo of its own wears its
    club's.
 
+## 18. Forfeits at 7–0, and a forfeit by both teams
+
+1. Restart `pnpm dev`: migration 0012 runs at start-up and lets a game be forfeited by both
+   teams. Then run `pnpm discord:register`: `/staff match forfeit` gains a third choice for
+   `team`, both teams.
+2. Run `pnpm seed`: it moves Season 3's forfeit score from 0–0 to 7–0 and prints `seasons: 1`
+   updated. `/standings` then gives each team that showed up 7 rounds won for each forfeit.
+3. `/staff match forfeit`, `team`: both teams, on a match to play: each team gets a forfeit loss
+   and its forfeit count goes up; the results channel says neither team showed up.
+
+## 19. Phase 3d-3: the rulebook page
+
+1. Restart `pnpm dev`: migration 0013 runs at start-up and adds the rulebook versions.
+2. Open `http://localhost:3000/c/lfr/rules`: no rulebook is in force yet. The season page links
+   to it.
+3. Log in as a member with the `Staff` role of the linked server: the page offers
+   **Publier une nouvelle version**. Give the version a name, a date from which it is in force,
+   and the text in Markdown, then **Publier**. The draft `docs/rules-season-4.md` works as a
+   test text, but it is a draft: it says how Ligo applies each rule and lists open questions.
+4. Publish a second version with another name: the page shows it once its date has come, and
+   lists the first under **Toutes les versions**, marked as an earlier version. A published
+   version cannot be changed; a correction is a new version.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                               |
