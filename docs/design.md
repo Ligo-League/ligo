@@ -145,6 +145,15 @@ Everything hangs off org → competition → season → division → stage → m
 - Top-level entities carry `org_id`; children reach it through their parent.
 - Results are never hard-deleted: a match or game gets `status = 'void'`.
 
+**Clubs and rosters** (maintainer, 14 November 2026)
+
+A team is a club, the team's organisation, with one or more rosters: Not Scam has Katsuki and Valkyr, W Mates has W Mates and Spectrum. A roster is what plays: it holds a slot in a division, plays the matches and has a line in the standings. Season 3 already has clubs with two rosters: Greed in Ligue 1 (Greed Esport and GREED Academy), Nova in Ligue 2 (Nova 1 and Nova 2), and W Mates in both leagues. Each roster has its own name and tag; the club's logo and colours are the default, and a roster may have its own (Nova 2's colours differ). In Ligo "organisation" (`org`) already names the group that runs the leagues, such as MBL Group, so a team's organisation is called a **club** in the code and these documents. What belongs to the club and what to the roster, and how rosters of one club meet, are open (M-21, M-22).
+
+**Who acts, by level** (maintainer, 14 November 2026)
+
+- **Teams, two levels:** roster officials act for one roster; club officials act for every roster of their club and manage the club itself.
+- **Leagues, three levels:** tier (division) staff, competition staff, and group staff (the whole `org`, for example MBL Group with LFR, LFV and LFRL). Each level can do what the levels below it can. Today only competition staff exists, as the staff role of the competition's Discord server. How tier and group staff are held is open (M-05, M-20).
+
 **Schema v1**
 
 ```
@@ -157,10 +166,15 @@ player         id, org_id, slug, display_name, discord_user_id UNIQUE NULL, nati
 game_account   id, player_id, title, external_id, display_name, rank_at_registration NULL, verified,
                UNIQUE(title, external_id)
                -- r6: profileID UUID; valorant: Riot ID; rocket_league: platform:id
-team           id, org_id, title, name, tag, slug, city NULL, legal_status NULL, colors_json, logo_key NULL,
-               socials_json, discord_url NULL, can_stream, discord_role_id NULL, UNIQUE(org_id, title, tag)
+club           id, org_id, name, slug, city NULL, legal_status NULL, colors_json, logo_key NULL,
+               socials_json, discord_url NULL                          -- phase 3d, M-21
+team           id, org_id, club_id, title, name, tag, slug, colors_json NULL, logo_key NULL,
+               can_stream, discord_role_id NULL, UNIQUE(org_id, title, tag)
+               -- a roster; colours and logo NULL fall back to the club's (phase 3d)
+club_staff     club_id, player_id, role ('owner'|'manager'), since, until NULL   -- phase 3d
 team_staff     team_id, player_id, role ('owner'|'manager'|'coach'), since, until NULL
                -- 1 owner; managers and coaches up to ruleset.team_roles (3 and 1)
+               -- phase 3d: the owner moves to club_staff; team_staff keeps the roster's officials
 org_ban        id, org_id, player_id NULL, external_account NULL, reason, decided_by, at
                -- cheat list shared by every league of the group
 accreditation  id, player_id, kind ('commentator'), granted_by, granted_at, revoked_at NULL
@@ -448,6 +462,8 @@ Who acts for a team (maintainer, 13 November 2026), in `team_staff`:
 - **Captain and players** come with rosters in phase 3: one captain, who must be a player.
 
 Owner, managers and coach all act in matches (propose a time, run the veto, report and confirm a result). One person may be an official of several teams.
+
+From phase 3d these become two levels (section 4, "Who acts, by level"): the club's owner and managers act for every roster of the club; a roster's managers and coach act for that roster only.
 
 **Team requests**
 

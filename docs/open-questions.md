@@ -218,7 +218,11 @@ section 16.
   rights, or keep one?
 - **Why it matters:** a schema change before the bot joins the real server.
 - **Until answered:** one staff role per server.
-- **Answer:**
+- **Answer (partial, maintainer, 14 November 2026):** three levels: tier (division) staff,
+  competition staff, and group staff (MBL Group, every competition). Each level can do what the
+  levels below it can. Still open: how tier and group staff are held. Proposal: a Discord role
+  per level in each competition's server (a division's role, the competition's role), and for the
+  group a list of people kept in Ligo, since the group spans several servers.
 
 #### M-06 · Removing a sanction
 
@@ -338,6 +342,50 @@ section 16.
 - **Why it matters:** the staff role itself is a setting of the panel, so someone must be able
   to set it without already holding it, and a new competition needs someone to create it.
 - **Until answered:** nothing; the panel is the last step of phase 3.
+- **Answer (partial, maintainer, 14 November 2026):** it follows the staff levels (M-05): tier
+  staff open their division, competition staff their competition and its divisions, group staff
+  everything. Teams likewise: roster officials their roster, club officials the club and every
+  roster. Still open: who holds group staff first, so that someone can set the other roles.
+
+#### M-21 · Clubs and rosters: what belongs where
+
+- **Question:** a team is a club with one or more rosters (design doc section 4). Which details
+  belong to the club and which to each roster: name, tag, logo, colours, city, legal status,
+  socials, team Discord, streaming? How is a roster shown in standings: its own name ("GREED
+  Academy"), or the club's name and the roster's ("Not Scam Katsuki")? Can one club have rosters
+  in several titles (an R6 roster in LFR, a Valorant one in LFV)?
+- **Why it matters:** the `club` table and the registration form (phase 3d).
+- **Until answered:** the club holds the city, legal status, socials, team Discord, and the
+  default logo and colours; each roster has its own name and tag, and may have its own logo and
+  colours. A roster is shown by its own name. A club belongs to the group and may have rosters in
+  any of its competitions.
+- **Answer:**
+
+#### M-22 · Rosters of one club in the same league
+
+- **Question:** in Season 3, Greed has two rosters in Ligue 1 and Nova two in Ligue 2. Is there a
+  limit on rosters of one club per division? May a player move between rosters of the same club
+  during a season, and does that count as a mercato move? In a match between two rosters of one
+  club, may a club official report the result for one side and confirm it for the other?
+- **Why it matters:** registration checks, the mercato, and the permission check on match
+  actions: today someone acting for both sides counts for side A.
+- **Until answered:** no limit per division (a setting, empty by default). A move between rosters
+  of one club is an ordinary mercato move. In a match between two rosters of one club, club
+  officials may act for neither side: each roster's own officials report and confirm.
+- **Answer:**
+
+#### M-23 · The Ubisoft account at registration
+
+- **Question:** R6 players are identified by their Ubisoft `profileID`, but a player knows their
+  Ubisoft name, not that ID, and Ubisoft offers no login other sites can use. How does a player's
+  `profileID` get into Ligo?
+- **Why it matters:** the registration form (phase 3d), and matching players in replays (phase 5).
+- **Options:** (a) the player types their Ubisoft name; the first replay of their roster in which
+  that name appears pins the `profileID` (phase 5), and staff confirm it. (b) Ligo looks the name
+  up through Ubisoft's unofficial web API, which needs a Ubisoft account for the server and can
+  break without notice. (c) The player uploads one of their own replays to prove the account.
+- **Until answered:** (a): the Ubisoft name is stored as declared, unverified, with no
+  `profileID`.
 - **Answer:**
 
 ## Answered
