@@ -17,9 +17,10 @@ import {
 } from '../services/me.ts';
 import { rejectResult, validateResult } from '../services/reports.ts';
 import { answerRequest } from '../services/requests.ts';
-import { listLeagues, matchPage, seasonPage, teamPage } from '../services/site.ts';
+import { clubPage, listLeagues, matchPage, seasonPage, teamPage } from '../services/site.ts';
 import { staffQueue } from '../services/staff-queue.ts';
 import { layout, type Page } from './layout.ts';
+import { clubPageView } from './pages/club.ts';
 import { errorPage, messagePage, notFoundPage } from './pages/errors.ts';
 import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
@@ -240,6 +241,10 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   app.get('/teams/:slug', (c) => {
     const page = teamPage(db, c.req.param('slug'));
     return page.ok ? render(c, teamPageView(locale, page)) : notFound(c);
+  });
+  app.get('/clubs/:slug', (c) => {
+    const page = clubPage(db, c.req.param('slug'));
+    return page.ok ? render(c, clubPageView(locale, page)) : notFound(c);
   });
   app.get('/matches/:id', (c) => {
     const id = c.req.param('id');

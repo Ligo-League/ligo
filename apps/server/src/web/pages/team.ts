@@ -1,7 +1,7 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
 import type { TeamPage } from '../../services/site.ts';
-import { matchList, safeColor, pageOf, type Page } from '../layout.ts';
+import { matchList, safeColor, pageOf, type Html, type Page } from '../layout.ts';
 
 type Data = Extract<TeamPage, { ok: true }>;
 const ROLE_KEYS = {
@@ -12,24 +12,45 @@ const ROLE_KEYS = {
 const roleKey = (role: string) =>
   role in ROLE_KEYS ? ROLE_KEYS[role as keyof typeof ROLE_KEYS] : null;
 
-/** `/teams/:slug`: the team, its officials, and its matches of the latest season. */
+/** A team or club heading: its logo, its name and its colours. */
+export function identityHead(
+  title: Html | string,
+  look: { logoKey: string | null; colors: readonly string[] },
+): Html {
+  const logoName = look.logoKey?.match(/^logos\/([a-z0-9][a-z0-9_-]{0,63})\.png$/)?.[1];
+  const colors = look.colors.flatMap((color) => safeColor(color) ?? []);
+  return html`<div class="team-head">
+    ${logoName ? html`<img src="/logos/${logoName}.png" alt="" />` : ''}
+    <div>
+      <h1>${title}</h1>
+      ${
+        colors.length > 0
+          ? html`<div class="swatches">
+              ${colors.map((color) => html`<span style="background: ${color}"></span>`)}
+            </div>`
+          : ''
+      }
+    </div>
+  </div>`;
+}
+
+/** `/teams/:slug`: the team, its club, its officials, and its matches of the latest season. */
 export function teamPageView(locale: Locale, page: Data): Page {
   const { team, season } = page;
-  const logoName = team.logoKey?.match(/^logos\/([a-z0-9][a-z0-9_-]{0,63})\.png$/)?.[1];
-  const colors = team.colors.flatMap((color) => safeColor(color) ?? []);
-  const body = html`<div class="team-head">
-      ${logoName ? html`<img src="/logos/${logoName}.png" alt="" />` : ''}
-      <div>
-        <h1>${team.name} <span class="muted">(${team.tag})</span></h1>
-        ${
-          colors.length > 0
-            ? html`<div class="swatches">
-                ${colors.map((color) => html`<span style="background: ${color}"></span>`)}
-              </div>`
-            : ''
-        }
-      </div>
-    </div>
+  const title = html`${team.name} <span class="muted">(${team.tag})</span>`;
+  const body = html`${identityHead(title, team)}
+    <p>
+      ${t(locale, 'web.team.club')} <a href="/clubs/${page.club.slug}">${page.club.name}</a>
+      ${
+        page.siblings.length > 0
+          ? html` · ${t(locale, 'web.team.siblings')}
+            ${page.siblings.map(
+              (sibling, index) =>
+                html`${index > 0 ? ', ' : ''}<a href="/teams/${sibling.slug}">${sibling.name}</a>`,
+            )}`
+          : ''
+      }
+    </p>
     ${
       season
         ? html`<p>

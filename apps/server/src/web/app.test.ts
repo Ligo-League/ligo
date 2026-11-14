@@ -107,6 +107,15 @@ describe('a team page', () => {
     expect(text).not.toContain('700000000000000001');
   });
 
+  it('links the club, and its other rosters', async () => {
+    const { db, get } = site();
+    // Bravo joins Alpha Esport's club: two rosters of one club.
+    db.update(schema.team).set({ clubId: 1 }).where(eq(schema.team.tag, 'BRV')).run();
+    const { text } = await get('/teams/alpha-esport');
+    expect(text).toMatch(/Club : <a href="\/clubs\/alpha-esport">Alpha Esport<\/a>/);
+    expect(text).toContain('<a href="/teams/bravo">Bravo</a>');
+  });
+
   it('answers 404 for an unknown team', async () => {
     expect((await site().get('/teams/zulu')).status).toBe(404);
   });
@@ -196,5 +205,22 @@ describe('errors', () => {
     expect(failed.text).toContain('Le site a rencontré un problème');
     expect(failed.text).not.toContain('database');
     expect(logger.error).toHaveBeenCalledOnce();
+  });
+});
+
+describe('a club page', () => {
+  it('lists the club’s rosters and where each plays', async () => {
+    const { db, get } = site();
+    db.update(schema.team).set({ clubId: 1 }).where(eq(schema.team.tag, 'XRA')).run();
+    const { text, status } = await get('/clubs/alpha-esport');
+    expect(status).toBe(200);
+    expect(text).toContain('<h1>Alpha Esport</h1>');
+    expect(text).toContain('<a href="/teams/alpha-esport">Alpha Esport</a>');
+    expect(text).toContain('<a href="/teams/xray">Xray</a>');
+    expect(text).toMatch(/LFR · Saison 3 · Ligue 2/);
+  });
+
+  it('answers 404 for an unknown club', async () => {
+    expect((await site().get('/clubs/zulu')).status).toBe(404);
   });
 });
