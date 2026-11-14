@@ -91,9 +91,19 @@ M-xx : mainteneur).
 
 ### 2.3 Effectifs
 
-- 5 joueurs et jusqu'à 2 remplaçants, dont **un capitaine**, qui est forcément un joueur.
-  Mercato uniquement pendant les fenêtres annoncées, 3 mouvements par équipe, un joueur transféré
-  est bloqué un jour.
+- 5 joueurs et jusqu'à 2 remplaçants, dont **un capitaine**, qui est forcément un titulaire.
+  Quand le capitaine ne peut pas jouer un match, un autre joueur du match est capitaine pour ce
+  match.
+- **Un joueur, une équipe par compétition** : un joueur peut figurer dans plusieurs équipes
+  seulement si elles ne jouent pas la même compétition. Ligue 1 et Ligue 2 comptent comme une
+  seule compétition, puisque montées et descentes les relient. Une inscription qui ne respecte pas
+  cette règle est refusée.
+- **Âge** : 16 ans minimum.
+- **Serveur Discord** : un joueur doit être membre du serveur Discord de la LFR pour rejoindre
+  une équipe.
+- **Changements d'effectif** : libres jusqu'à quelques jours avant le début de la saison (nombre
+  à fixer), puis uniquement pendant les fenêtres de mercato annoncées : 3 mouvements par équipe,
+  un joueur transféré est bloqué un jour.
 - À l'inscription, chaque joueur **accepte la publication de ses statistiques**. Sans cet
   accord, il ne peut pas figurer dans un effectif.
 - **Inscription sur le site** : le responsable inscrit le club (ou une nouvelle équipe d'un club
@@ -101,9 +111,11 @@ M-xx : mainteneur).
   Il partage ensuite un lien d'invitation : chaque joueur rejoint avec son propre compte Discord.
   Personne ne renseigne les données d'un autre : chaque joueur indique lui-même, sur sa page, son
   nom Ubisoft, son profileID s'il l'a, son rang (qu'il tient à jour), sa nationalité et son accord
-  sur les statistiques. Le staff valide l'inscription une fois l'équipe au complet.
-- **Statut** : Règlement S3 ; capitaine (article 2.2), accord sur les statistiques et inscription
-  décidés (mainteneur, 14 novembre 2026).
+  sur les statistiques. Le staff voit l'inscription dès son dépôt et la valide une fois l'équipe
+  au complet.
+- **Statut** : Règlement S3 ; capitaine (article 2.2), accord sur les statistiques, inscription,
+  capitaine titulaire, une équipe par compétition, âge, serveur Discord et verrouillage des
+  effectifs décidés (mainteneur, 14 novembre 2026). À trancher : O-32 et O-33.
 - **Appliquée par** : `/c/lfr/register` et `/me` ; les joueurs rejoignent et le staff valide
   dans les étapes suivantes de la phase 3. Le mercato viendra ensuite.
 
@@ -375,3 +387,5 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 | O-17     | Coupe de France : forme du tableau, côtés     | Non appliqué                        |
 | O-22     | Qui peut se déclarer disponible (recrutement) | Joueurs sans équipe, mercato ouvert |
 | O-27     | Score d'un forfait créé par la règle des 50 % | 7–0, comme une absence              |
+| O-32     | Verrouillage des effectifs avant la saison    | Aucun : changements jusqu'au début  |
+| O-33     | Âge : à quelle date, et comment le vérifier   | Date de naissance, au 1er jour      |

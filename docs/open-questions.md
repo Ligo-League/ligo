@@ -176,34 +176,24 @@ section 16.
 - **Until answered:** the roadmap assumes late December or early January at the earliest.
 - **Answer:**
 
-#### O-29 · One player in two registrations
+#### O-32 · When lineups lock before the season
 
-- **Question:** may a player join two registrations of the same competition, for example two
-  rosters of different clubs while they decide, or must they be in one only?
-- **Why it matters:** joining from an invitation (phase 3d-4a-2). Once a team is approved, a
-  player on two rosters of one league breaks the lineups and the replay checks.
-- **Until answered:** a player is in one registration per competition at a time; joining a second
-  one is refused until they leave the first. Registrations in other competitions (LFV, say) don't
-  count.
+- **Question:** how many days before Season 4 starts are LFR lineups locked? From then on, a
+  lineup changes only during a mercato window.
+- **Why it matters:** the lock is a setting (`lineup_lock_days`, M-29); the filer's actions on the
+  registration page stop at that date.
+- **Until answered:** 0 days: lineups may change until the season starts.
 - **Answer:**
 
-#### O-30 · Who may be captain
+#### O-33 · How the minimum age is checked
 
-- **Question:** must the captain be one of the roster's players, starter or substitute, or may it
-  be someone else, such as the coach?
-- **Why it matters:** the filer names the captain at registration, and the captain acts in
-  matches (M-19).
-- **Until answered:** any player of the roster, starter or substitute.
-- **Answer:**
-
-#### O-31 · Conditions on players
-
-- **Question:** does LFR set any condition on who may play: a minimum age, a share of players
-  living in France or of French nationality, or a minimum rank?
-- **Why it matters:** a condition Ligo knows can be shown on the registration page and checked
-  before staff approve. Stats consent from a player under 15 may also need a parent's consent
-  in France.
-- **Until answered:** no condition is checked; nationality and rank are shown to staff.
+- **Question:** LFR requires players to be 16 or older (O-31). On which date must they be 16: when
+  they join, or when the season starts? And is a birth date given by the player needed, or is a
+  declaration ("I am 16 or older") enough?
+- **Why it matters:** a birth date lets Ligo check the age on any date, and the next seasons
+  without asking again, but it is personal data to keep private.
+- **Until answered:** each player gives their birth date on `/me`; nobody else sees it (staff see
+  only "16 or older"); the age counts on the season's first day.
 - **Answer:**
 
 ### Team tools
@@ -476,26 +466,53 @@ section 16.
   and its staff answer it, with the approval settings of club changes being those of team changes.
 - **Answer:**
 
-#### M-29 · When staff see a registration, and changes after it
+#### M-31 · Eligibility settings other leagues need
 
-- **Question:** do staff see a registration as soon as it is filed, or only once the lineup is
-  complete and the filer sends it? And once it is sent, may the lineup still change (a player
-  leaving, a new one joining) before staff answer?
-- **Why it matters:** the registration page's actions (phase 3d-4a-2) and the staff queue (3d-4b).
-- **Until answered:** the filer sends the registration once the lineup is complete; staff see it
-  from then. After sending, the lineup is locked until staff answer; the filer may take it back
-  to change it, and sends it again.
-- **Answer:**
-
-#### M-30 · Membership of the league's Discord server
-
-- **Question:** must a player be a member of the league's Discord server to join a registration?
-- **Why it matters:** team roles and channels (phase 4) need it; checking it at join needs the
-  server's invitation link as a setting.
-- **Until answered:** not checked in phase 3; phase 4 checks it when it gives roles.
+- **Question:** the Benelux league needs players aged 18 or older, at least 3 starters living in
+  the Benelux, PC only, and a club based in the Benelux (O-31). Are these built with LFR's age
+  check, or when the Benelux league comes to Ligo?
+- **Why it matters:** each needs data Ligo does not hold yet (country of residence, platform, the
+  club's country), so a field on `/me` or on the registration form, and a migration.
+- **Until answered:** only the minimum age is built now, as a setting; the design document lists
+  the others as settings to come.
 - **Answer:**
 
 ## Answered
+
+#### O-29 · One player in two registrations
+
+- **Answer (maintainer, 14 November 2026):** a player may be on rosters of several teams only if
+  those rosters do not play in the same competition. Every division of a competition counts as
+  one, since promotion and relegation join them. Playing the same game in two competitions of
+  the group is allowed. This is a hard rule, not a setting. Joining a registration is refused
+  for it, and staff refuse a team's entry for it at approval.
+
+#### O-30 · Who may be captain
+
+- **Answer (maintainer, 14 November 2026):** only a starter may be captain, since the captain is
+  part of the main roster. When the captain cannot play a match, another player of the match's
+  lineup becomes a temporary captain for it (with M-19, in the match steps).
+
+#### O-31 · Conditions on players
+
+- **Answer (maintainer, 14 November 2026):** LFR requires players aged 16 or older, nothing else.
+  Other leagues have other conditions, so they are settings. The Benelux league, for example,
+  requires players aged 18 or older, at least 3 starters living in the Benelux, PC only, and a
+  club based in the Benelux. How age is checked: O-33. When the other settings are built: M-31.
+
+#### M-29 · When staff see a registration, and changes after it
+
+- **Answer (maintainer, 14 November 2026):** staff see a registration as soon as it is filed,
+  without a notification. Its lineup may change until a set number of days before the season
+  starts (`lineup_lock_days`, a setting; LFR's number: O-32), then only during mercato windows. A
+  league without mercato windows changes lineups only between seasons; that period is always
+  open.
+
+#### M-30 · Membership of the league's Discord server
+
+- **Answer (maintainer, 14 November 2026):** yes. A player who is not a member of the league's
+  Discord server cannot join a registration: Ligo says so, with the server's invitation link, and
+  accepts them once they have joined.
 
 #### M-28 · Looking a player's rank up
 
