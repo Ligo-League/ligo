@@ -46,7 +46,7 @@ import {
   registrationView,
   type RegisterValues,
 } from './pages/register.ts';
-import { inviteUrl } from './invites.ts';
+import { inviteUrl } from '../services/invites.ts';
 import { rulesFormView, rulesPageView, type RulesFormValues } from './pages/rules.ts';
 import { seasonPageView } from './pages/season.ts';
 import { staffPage } from './pages/staff.ts';

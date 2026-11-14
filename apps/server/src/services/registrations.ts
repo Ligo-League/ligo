@@ -2,9 +2,11 @@ import { randomBytes } from 'node:crypto';
 import {
   checkRosterDetails,
   lineupStatus,
+  playerGaps,
   slugify,
   type FieldErrors,
   type LineupGap,
+  type PlayerProfile,
   type RegistrationSettings,
   type RosterDetailsError,
 } from '@ligo/core';
@@ -23,6 +25,7 @@ const {
   club,
   clubStaff,
   competition,
+  gameAccount,
   player,
   registrationInvite,
   registrationPlayer,
@@ -369,6 +372,75 @@ export async function fileRegistration(
   });
 }
 
+/** What each player declared, for whether they may play: see `playerGaps`. */
+export function profilesOf(
+  db: Reader,
+  playerIds: readonly number[],
+  title: string,
+): Map<number, PlayerProfile> {
+  if (playerIds.length === 0) return new Map();
+  const ranked = new Set(
+    db
+      .select({ playerId: gameAccount.playerId, rank: gameAccount.rank, title: gameAccount.title })
+      .from(gameAccount)
+      .where(inArray(gameAccount.playerId, [...playerIds]))
+      .all()
+      .filter((account) => account.title === title && account.rank !== null)
+      .map((account) => account.playerId),
+  );
+  return new Map(
+    db
+      .select()
+      .from(player)
+      .where(inArray(player.id, [...playerIds]))
+      .all()
+      .map((found) => [
+        found.id,
+        {
+          gameAccount: ranked.has(found.id),
+          nationality: found.nationality,
+          statsConsent: found.statsConsentAt !== null,
+          birthDate: found.birthDate,
+        },
+      ]),
+  );
+}
+
+/**
+ * The players who joined a registration, in the order they joined. Ready: nothing keeps them
+ * from playing (their account, nationality, consent where required, and the league's age).
+ */
+export function lineupOf(
+  db: Reader,
+  requestId: number,
+  title: string,
+  settings: RegistrationSettings,
+  seasonStartsOn: string,
+): RegistrationPlayerView[] {
+  const joined = db
+    .select({ entry: registrationPlayer, name: player.displayName })
+    .from(registrationPlayer)
+    .innerJoin(player, eq(registrationPlayer.playerId, player.id))
+    .where(eq(registrationPlayer.requestId, requestId))
+    .orderBy(registrationPlayer.joinedAt)
+    .all();
+  const profiles = profilesOf(
+    db,
+    joined.map(({ entry }) => entry.playerId),
+    title,
+  );
+  return joined.map(({ entry, name }) => {
+    const profile = profiles.get(entry.playerId);
+    return {
+      playerId: entry.playerId,
+      name,
+      role: entry.role,
+      captain: entry.captain,
+      ready: profile !== undefined && playerGaps(profile, settings, seasonStartsOn).length === 0,
+    };
+  });
+}
+
 export interface RegistrationPlayerView {
   playerId: number;
   name: string;
@@ -435,42 +507,7 @@ export function registrationStatus(
     .orderBy(desc(registrationInvite.id))
     .get();
 
-  const joined = db
-    .select({ entry: registrationPlayer, player })
-    .from(registrationPlayer)
-    .innerJoin(player, eq(registrationPlayer.playerId, player.id))
-    .where(eq(registrationPlayer.requestId, requestId))
-    .orderBy(registrationPlayer.joinedAt)
-    .all();
-  const ids = joined.map(({ player: found }) => found.id);
-  const ranked = new Set(
-    ids.length === 0
-      ? []
-      : db
-          .select({ playerId: schema.gameAccount.playerId, rank: schema.gameAccount.rank })
-          .from(schema.gameAccount)
-          .where(
-            and(
-              inArray(schema.gameAccount.playerId, ids),
-              eq(schema.gameAccount.title, row.competition.title),
-            ),
-          )
-          .all()
-          .filter((account) => account.rank !== null)
-          .map((account) => account.playerId),
-  );
-  // Ready: their account and rank declared, their nationality given, and stats consent where the
-  // league requires it.
-  const players = joined.map(({ entry, player: found }): RegistrationPlayerView => ({
-    playerId: found.id,
-    name: found.displayName,
-    role: entry.role,
-    captain: entry.captain,
-    ready:
-      ranked.has(found.id) &&
-      found.nationality !== null &&
-      (!settings.stats_consent_required || found.statsConsentAt !== null),
-  }));
+  const players = lineupOf(db, requestId, row.competition.title, settings, row.season.startsOn);
 
   return {
     ok: true,
