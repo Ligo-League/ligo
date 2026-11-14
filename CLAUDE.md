@@ -199,6 +199,10 @@ When no trigger applies, one line in the plan is enough: "Hosting: nothing neede
 
 ## Don't
 
+- **Never delete, reset or recreate a database (the local `data/ligo.db`, staging or
+  production) without asking the maintainer first, every time.** This holds even when a reset
+  looks like the simplest fix; propose it and wait for an explicit yes. A past permission does
+  not carry over.
 - Don't change the database schema without a migration and a note in the plan.
 - Don't regenerate a published schedule; schedule changes are audited match edits.
 - Don't add features from later roadmap phases.
