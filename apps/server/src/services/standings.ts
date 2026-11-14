@@ -8,7 +8,7 @@ import {
   type StandingsZoneKind,
   type StandingsRow,
 } from '@ligo/core';
-import { findGuildLeague, loadStandingsInput, type Db, type Theme } from '@ligo/db';
+import { findGuildLeague, loadStandingsInput, type Db, type League, type Theme } from '@ligo/db';
 
 export interface StandingsTableRow extends Omit<StandingsRow, 'entry'> {
   team: { name: string; tag: string; colors: string[]; logoKey: string | null };
@@ -49,6 +49,16 @@ export function getStandings(
 ): StandingsReply {
   const league = request.guildId === null ? undefined : findGuildLeague(db, request.guildId);
   if (!league) return { ok: false, error: 'not_linked' };
+  return leagueStandings(db, league, request.division);
+}
+
+/** The standings of a league's season, as `getStandings` describes; the website asks by URL. */
+export function leagueStandings(
+  db: Pick<Db, 'select'>,
+  league: League,
+  divisionName?: string | null,
+): Exclude<StandingsReply, { ok: false; error: 'not_linked' }> {
+  const request = { division: divisionName };
   if (!league.season) return { ok: false, error: 'no_season' };
 
   let divisions = league.divisions;

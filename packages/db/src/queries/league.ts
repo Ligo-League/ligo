@@ -11,14 +11,18 @@ import {
   team,
 } from '../schema/index.ts';
 
-export interface GuildLeague {
-  guild: typeof leagueGuild.$inferSelect;
+/** A competition with one of its seasons, as the commands and the website read it. */
+export interface League {
   org: typeof org.$inferSelect;
   competition: typeof competition.$inferSelect;
-  /** The latest season that has left registration; undefined before the first one starts. */
+  /** The season asked for, or the latest that has left registration; undefined before any. */
   season: typeof season.$inferSelect | undefined;
   /** That season's divisions, top level first, each with its league stage when it has one. */
   divisions: { division: typeof division.$inferSelect; stageId: number | undefined }[];
+}
+
+export interface GuildLeague extends League {
+  guild: typeof leagueGuild.$inferSelect;
 }
 
 /**
@@ -27,21 +31,50 @@ export interface GuildLeague {
  */
 export function findGuildLeague(db: Pick<Db, 'select'>, guildId: string): GuildLeague | undefined {
   const found = db
-    .select({ guild: leagueGuild, org, competition })
+    .select({ guild: leagueGuild })
     .from(leagueGuild)
-    .innerJoin(competition, eq(leagueGuild.competitionId, competition.id))
-    .innerJoin(org, eq(competition.orgId, org.id))
     .where(eq(leagueGuild.guildId, guildId))
     .get();
   if (!found) return undefined;
+  const league = findLeague(db, found.guild.competitionId);
+  return league && { ...league, guild: found.guild };
+}
 
-  const seasonRow = db
-    .select()
-    .from(season)
-    .where(and(eq(season.competitionId, found.competition.id), ne(season.status, 'registration')))
-    .orderBy(desc(season.startsOn), desc(season.id))
+/**
+ * A competition with one of its seasons: `seasonId`, or by default the latest season that has
+ * left registration. Undefined when the competition, or the season asked for, is not there.
+ */
+export function findLeague(
+  db: Pick<Db, 'select'>,
+  competitionId: number,
+  seasonId?: number,
+): League | undefined {
+  const found = db
+    .select({ org, competition })
+    .from(competition)
+    .innerJoin(org, eq(competition.orgId, org.id))
+    .where(eq(competition.id, competitionId))
     .get();
-  if (!seasonRow) return { ...found, season: undefined, divisions: [] };
+  if (!found) return undefined;
+
+  const seasonRow =
+    seasonId === undefined
+      ? db
+          .select()
+          .from(season)
+          .where(
+            and(eq(season.competitionId, found.competition.id), ne(season.status, 'registration')),
+          )
+          .orderBy(desc(season.startsOn), desc(season.id))
+          .get()
+      : db
+          .select()
+          .from(season)
+          .where(and(eq(season.competitionId, found.competition.id), eq(season.id, seasonId)))
+          .get();
+  if (!seasonRow) {
+    return seasonId === undefined ? { ...found, season: undefined, divisions: [] } : undefined;
+  }
 
   const divisions = db
     .select()
