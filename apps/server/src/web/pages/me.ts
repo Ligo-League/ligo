@@ -1,7 +1,7 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
 import type { Profile } from '../../services/me.ts';
-import { csrfField, pageOf, type Page } from '../layout.ts';
+import { csrfField, pageOf, type Html, type Page } from '../layout.ts';
 
 export interface MeData {
   profile: Profile;
@@ -10,6 +10,8 @@ export interface MeData {
   csrf: string;
   /** What the last form did, from the address it sent back to. */
   flash: 'saved' | 'invalid_nationality' | null;
+  /** The game account form, filled with what is stored or what was just typed. */
+  game: Html;
 }
 
 const ROLE_KEYS = {
@@ -58,6 +60,8 @@ export function mePage(locale: Locale, data: MeData): Page {
           </ul>`
         : html`<p class="muted">${t(locale, 'web.me.noTeams')}</p>`
     }
+    <h2>${t(locale, 'web.me.game')}</h2>
+    ${data.game}
     <h2>${t(locale, 'web.me.nationality')}</h2>
     <form class="card" method="post" action="/me/nationality">
       ${csrfField(data.csrf)}

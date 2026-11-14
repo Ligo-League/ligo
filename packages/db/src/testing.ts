@@ -12,5 +12,5 @@ export function openTestDatabase(): Db {
 export { linkGuild } from './seed/link-guild.ts';
 export type { MatchRow } from './seed/matches-csv.ts';
 export type { TeamRow } from './seed/parse-teams-csv.ts';
-export { seedLfr } from './seed/seed-lfr.ts';
+export { openLfrRegistration, seedLfr } from './seed/seed-lfr.ts';
 export { seedMatches } from './seed/seed-matches.ts';

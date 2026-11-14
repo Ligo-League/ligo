@@ -211,6 +211,9 @@ importers:
       '@ligo/render':
         specifier: workspace:*
         version: link:../../packages/render
+      '@ligo/titles':
+        specifier: workspace:*
+        version: link:../../packages/titles
       discord.js:
         specifier: ^14.28.1
         version: 14.28.1

@@ -452,6 +452,19 @@ section 10).
    lists the first under **Toutes les versions**, marked as an earlier version. A published
    version cannot be changed; a correction is a new version.
 
+## 20. Phase 3d-4a, first part: registering a team
+
+1. Restart `pnpm dev`: migration 0014 runs at start-up. Then `pnpm seed`: it prints
+   `Opened Saison 4 for registration`, with placeholder dates (4 January to 14 March 2027).
+2. A rulebook must be in force before anyone can register: publish one at
+   `http://localhost:3000/c/lfr/rules/new` (section 19), dated today or earlier.
+3. The home page shows **S'inscrire** next to Saison 4. Log in, fill in the club and the team,
+   optionally a transparent PNG logo (1 MB at most), accept the rulebook, and send.
+4. The registration's page, `/registrations/1`, shows the invitation link to share. Joining from
+   it comes in the next step; until then the page lists no player.
+5. On `/me`, the **Compte Rainbow Six Siege** form saves your Ubisoft name, your profileID if you
+   have it, and your rank.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                               |

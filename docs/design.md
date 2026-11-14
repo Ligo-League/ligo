@@ -639,8 +639,9 @@ Each phase adds its own settings to the panel as it adds them to the bot. Who ma
 
 **Registration** (replaces the rulebook's form posted in the registration channel)
 
-- **Team:** name, city, status (association, association 1901, company, amateur), transparent PNG logo, at least 2 colours, manager, up to 3 staff, social links, team Discord, whether the team can stream on its own.
-- **Players:** 5 players and up to 2 substitutes, each with Ubisoft ID, Discord account (by login or invitation link), competitive rank and nationality.
+- **Team:** name, city, status (association, association 1901, company, amateur), transparent PNG logo, 2 to 5 colours (each chosen with a colour picker), manager, up to 3 staff, social links, team Discord, whether the team can stream on its own.
+- **Players:** 5 players and up to 2 substitutes (`ruleset.registration`). Nobody declares another person's data (maintainer, 14 November 2026): the filer shares the registration's invitation link, and each player joins with their own Discord account. Each player keeps their own R6 account on `/me`: Ubisoft name, `profileID` when they have it, and rank, which they keep up to date themselves; Ligo looks no rank up elsewhere (M-28). Nationality and stats consent are on `/me` too. The filer then sets starters, substitutes and the captain.
+- **Invitation link:** `/join/<invitation>/<token>`, where the token is an HMAC of the invitation's row and a random nonce under the server's secret. It is never stored: the filer can see it again on `/registrations/:id`, and a new nonce voids the old link. It expires after `invite_days` (7).
 - **Rules acceptance:** the manager accepts the current rulebook version ("lu et approuvé"), stored with `rules_version_id` and a timestamp, replacing the signed page.
 - **Stats consent:** each player gives it from their invitation link; it can be made mandatory by competition setting, and is mandatory in LFR from Season 4 (O-20).
 - **Division:** a new roster usually starts in Ligue 2; when places are free in Ligue 1, because teams left, staff may place it there. A roster that does not come back loses its place and registers again like a new one (O-26). Staff choose the division when they approve.

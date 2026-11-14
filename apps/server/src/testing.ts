@@ -1,5 +1,6 @@
 import {
   linkGuild,
+  openLfrRegistration,
   openTestDatabase,
   seedLfr,
   seedMatches,
@@ -78,4 +79,29 @@ export function setResultValidation(
   db.update(schema.competition)
     .set({ rulesetJson: { ...row.rulesetJson, result_validation: mode } })
     .run();
+}
+
+/**
+ * The test league with Season 4 open for registration, its rulebook in force from `rulesFrom`
+ * (version 1, published by a staff player).
+ */
+export function registrationDatabase(rulesFrom = 0) {
+  const db = leagueDatabase();
+  openLfrRegistration(db, 4000);
+  const staff = db
+    .insert(schema.player)
+    .values({ orgId: 1, slug: 'lea-staff', displayName: 'Léa Staff', createdAt: 0 })
+    .returning()
+    .get();
+  db.insert(schema.rulesVersion)
+    .values({
+      competitionId: 1,
+      version: 'Saison 4',
+      markdown: '# Règlement',
+      effectiveFrom: rulesFrom,
+      publishedBy: staff.id,
+      publishedAt: 0,
+    })
+    .run();
+  return db;
 }

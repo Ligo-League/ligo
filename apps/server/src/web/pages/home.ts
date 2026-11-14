@@ -20,6 +20,14 @@ export function homePage(locale: Locale, leagues: readonly LeagueLinks[]): Page 
                       <span class="muted"
                         >· ${t(locale, `web.season.status.${season.status}`)}</span
                       >
+                      ${
+                        season.status === 'registration'
+                          ? html`·
+                              <a href="/c/${competition.slug}/register"
+                                >${t(locale, 'web.home.register')}</a
+                              >`
+                          : ''
+                      }
                     </li>`,
                 )}
               </ul>

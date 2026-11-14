@@ -30,7 +30,7 @@ export function testSite(options: { db?: Db; users?: Record<string, DiscordUser>
     assets: fakeAssetStore(),
     evidence,
     locale: 'fr',
-    files: { css: '', htmx: '' },
+    files: { css: '', htmx: '', colors: '' },
     logger,
     login: { oauth, secret: 'x'.repeat(40), publicUrl: new URL(TEST_ORIGIN) },
     roles: (_guildId, userId) => Promise.resolve(roles.get(userId) ?? []),

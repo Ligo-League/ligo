@@ -6,8 +6,12 @@ import { dirname, join } from 'node:path';
 // files live on disk; the keys stay the same. Evidence is never served publicly: the website
 // reads it through a route that checks who asks.
 
-/** The only keys the store answers: nothing else on disk can be reached through a key. */
-export const EVIDENCE_KEY = /^evidence\/[1-9]\d{0,9}\/[0-9a-f]{64}\.(png|jpg|webp)$/;
+/**
+ * The only keys the store answers: score screenshots by match, and logos uploaded at
+ * registration (`uploads/`). Nothing else on disk can be reached through a key.
+ */
+export const EVIDENCE_KEY =
+  /^(?:evidence\/[1-9]\d{0,9}\/[0-9a-f]{64}\.(?:png|jpg|webp)|uploads\/[0-9a-f]{64}\.png)$/;
 
 export interface EvidenceStore {
   /** Stores the file; a key already stored is left as it is, since the key names the content. */

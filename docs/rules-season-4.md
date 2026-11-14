@@ -96,8 +96,16 @@ M-xx : mainteneur).
   est bloqué un jour.
 - À l'inscription, chaque joueur **accepte la publication de ses statistiques**. Sans cet
   accord, il ne peut pas figurer dans un effectif.
-- **Statut** : Règlement S3 ; capitaine (article 2.2) et accord sur les statistiques décidés. Pas
-  encore appliquée par l'outil (inscriptions et mercato sur le site, phase 3).
+- **Inscription sur le site** : le responsable inscrit le club (ou une nouvelle équipe d'un club
+  qu'il dirige) et l'équipe, et accepte le règlement en vigueur, dont la version est enregistrée.
+  Il partage ensuite un lien d'invitation : chaque joueur rejoint avec son propre compte Discord.
+  Personne ne renseigne les données d'un autre : chaque joueur indique lui-même, sur sa page, son
+  nom Ubisoft, son profileID s'il l'a, son rang (qu'il tient à jour), sa nationalité et son accord
+  sur les statistiques. Le staff valide l'inscription une fois l'équipe au complet.
+- **Statut** : Règlement S3 ; capitaine (article 2.2), accord sur les statistiques et inscription
+  décidés (mainteneur, 14 novembre 2026).
+- **Appliquée par** : `/c/lfr/register` et `/me` ; les joueurs rejoignent et le staff valide
+  dans les étapes suivantes de la phase 3. Le mercato viendra ensuite.
 
 ### 2.4 Demandes des équipes
 

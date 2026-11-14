@@ -398,3 +398,41 @@ article.rules table {
   display: block;
   overflow-x: auto;
 }
+
+/* Registration: a field's problem under it, the colour pickers side by side, a link to copy. */
+.field-error {
+  color: var(--zone-relegation);
+  font-size: 0.875rem;
+}
+
+p.colors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+p.colors .color {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+p.colors [hidden] {
+  display: none;
+}
+
+input.copy {
+  width: 100%;
+  font-family: ui-monospace, monospace;
+}
+
+dl.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+}
+
+dl.facts dd {
+  margin: 0;
+}

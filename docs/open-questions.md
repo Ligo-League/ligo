@@ -385,6 +385,8 @@ section 16.
   fallback, too tedious to require. Still open: how other Discord bots and tracker sites find a
   `profileID`, to look at before phase 5. Until then the form asks for the Ubisoft name, and the
   `profileID` when the player has it; neither is verified before a replay confirms it.
+- **Settled for registration (maintainer, 14 November 2026):** each player enters their own
+  Ubisoft name, `profileID` and rank on `/me`; the filer of a registration declares nobody.
 
 #### M-24 · Funding: sponsors, legal structure and licences
 
@@ -445,6 +447,17 @@ section 16.
 - **Answer:**
 
 ## Answered
+
+#### M-28 · Looking a player's rank up
+
+- **Question:** could Ligo read each player's R6 rank from a tracker (R6 Tracker Network), stored
+  and refreshed whenever someone looks at it?
+- **What was found:** scraping r6.tracker.network is against its terms and behind Cloudflare;
+  Tracker Network's public API does not clearly cover R6; R6 tools read Ubisoft's unofficial API,
+  which needs a Ubisoft account login on the server and can change without notice; hosted
+  services (r6data) need a key and have unknown terms. All of them need the player's `profileID`.
+- **Answer (maintainer, 14 November 2026):** not worth it if it is not reliably possible. Each
+  player declares their rank on `/me` and keeps it up to date themselves.
 
 #### O-28 · Both teams forfeit
 

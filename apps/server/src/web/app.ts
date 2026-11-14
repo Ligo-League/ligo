@@ -1,14 +1,24 @@
 import { readFile } from 'node:fs/promises';
-import { zonedDate } from '@ligo/core';
+import { ROSTER_COLORS_MAX, zonedDate, type FieldErrors } from '@ligo/core';
 import { findLeague, listLeagueMatches, schema, type Db } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
+import { R6_RANKS } from '@ligo/titles';
 import type { EvidenceStore } from '../assets/evidence-store.ts';
 import type { AssetStore } from '../assets/store.ts';
 import type { DiscordGateway } from '../discord/gateway.ts';
 import { announceReportDecision, announceRequestDecision } from '../discord/staff-decisions.ts';
 import { t, type Locale, type MessageKey } from '../i18n/index.ts';
 import { evidenceCompetition, openEvidence } from '../services/evidence.ts';
+import { gameProfileOf, saveGameProfile, type SaveProfileError } from '../services/game-profile.ts';
+import { LOGO_MAX_BYTES } from '../services/logo.ts';
+import {
+  fileRegistration,
+  registrationForm,
+  registrationStatus,
+  type RegistrationFieldError,
+} from '../services/registrations.ts';
 import {
   countryChoices,
   loginPlayer,
@@ -28,6 +38,14 @@ import { errorPage, messagePage, notFoundPage } from './pages/errors.ts';
 import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
 import { mePage } from './pages/me.ts';
+import {
+  EMPTY_REGISTER_VALUES,
+  gameProfileForm,
+  registerFormView,
+  registrationView,
+  type RegisterValues,
+} from './pages/register.ts';
+import { inviteUrl } from './invites.ts';
 import { rulesFormView, rulesPageView, type RulesFormValues } from './pages/rules.ts';
 import { seasonPageView } from './pages/season.ts';
 import { staffPage } from './pages/staff.ts';
@@ -53,6 +71,8 @@ import {
 export interface StaticFiles {
   css: string;
   htmx: string;
+  /** The registration form's "add a colour" button. */
+  colors: string;
 }
 
 export interface WebDeps {
@@ -74,11 +94,12 @@ export interface WebDeps {
 
 /** The stylesheet next to this file, and htmx at the version pinned in package.json. */
 export async function loadStaticFiles(): Promise<StaticFiles> {
-  const [css, htmx] = await Promise.all([
+  const [css, htmx, colors] = await Promise.all([
     readFile(new URL('./static/site.css', import.meta.url), 'utf8'),
     readFile(new URL(import.meta.resolve('htmx.org/dist/htmx.min.js')), 'utf8'),
+    readFile(new URL('./static/colors.js', import.meta.url), 'utf8'),
   ]);
-  return { css, htmx };
+  return { css, htmx, colors };
 }
 
 interface Viewer extends WebUser {
@@ -127,7 +148,11 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   const { db, locale, login } = deps;
   const app = new Hono<Env>();
 
-  const render = (c: Context<Env>, page: Page, status: 200 | 400 | 403 | 404 | 500 | 502 = 200) => {
+  const render = (
+    c: Context<Env>,
+    page: Page,
+    status: 200 | 400 | 403 | 404 | 413 | 500 | 502 = 200,
+  ) => {
     const viewer = c.get('viewer');
     const nav = {
       user: viewer && { name: viewer.name, csrf: viewer.csrf },
@@ -220,6 +245,12 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   );
   app.get('/static/htmx.min.js', (c) =>
     c.body(deps.files.htmx, 200, {
+      'Content-Type': 'text/javascript; charset=utf-8',
+      'Cache-Control': STATIC_CACHE,
+    }),
+  );
+  app.get('/static/colors.js', (c) =>
+    c.body(deps.files.colors, 200, {
       'Content-Type': 'text/javascript; charset=utf-8',
       'Cache-Control': STATIC_CACHE,
     }),
@@ -322,6 +353,166 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     return c.redirect(`/c/${page.competition.slug}/rules/${String(reply.id)}`, 303);
   });
 
+  // -------------------------------------------------------------------------------------------
+  // Registration (phase 3d-4a). Registered before `/c/:competition/:season` too.
+
+  const registrationClosed = (c: Context<Env>, error: 'not_found' | 'closed' | 'no_rules') =>
+    error === 'not_found'
+      ? notFound(c)
+      : error === 'closed'
+        ? render(
+            c,
+            messagePage(
+              locale,
+              t(locale, 'web.register.closed.title'),
+              t(locale, 'web.register.closed.body'),
+            ),
+          )
+        : render(
+            c,
+            messagePage(
+              locale,
+              t(locale, 'web.register.noRules.title'),
+              t(locale, 'web.register.noRules.body'),
+            ),
+          );
+
+  app.get('/c/:competition/register', (c) => {
+    if (!login) return notFound(c);
+    const viewer = c.get('viewer');
+    if (!viewer) return c.redirect(`/auth/login?next=${encodeURIComponent(c.req.path)}`, 303);
+    const form = registrationForm(db, c.req.param('competition'), viewer.playerId, deps.now());
+    if (!form.ok) return registrationClosed(c, form.error);
+    c.header('Cache-Control', 'no-store');
+    return render(
+      c,
+      registerFormView(locale, form, {
+        values: { ...EMPTY_REGISTER_VALUES, clubKind: form.clubs.length > 0 ? 'existing' : 'new' },
+        errors: [],
+        csrf: viewer.csrf,
+      }),
+    );
+  });
+
+  app.post(
+    '/c/:competition/register',
+    // The logo is at most 1 MB; the rest of the form is small. A larger body is refused before
+    // it is read.
+    bodyLimit({
+      maxSize: LOGO_MAX_BYTES + 64 * 1024,
+      // bodyLimit types its context loosely: it is this app's own.
+      onError: (c: Context<Env>) =>
+        render(
+          c,
+          messagePage(
+            locale,
+            t(locale, 'web.register.tooBig.title'),
+            t(locale, 'web.register.tooBig.body'),
+          ),
+          413,
+        ),
+    }),
+    async (c) => {
+      const guarded = await guard(c);
+      if (guarded instanceof Response) return guarded;
+      const { viewer, form } = guarded;
+      const slug = c.req.param('competition');
+      const text = (key: string) => (typeof form[key] === 'string' ? form[key] : '');
+      const values: RegisterValues = {
+        clubKind: text('club_kind') === 'existing' ? 'existing' : 'new',
+        clubId: text('club_id'),
+        clubName: text('club_name'),
+        clubCity: text('club_city'),
+        clubLegalStatus: text('club_legal_status'),
+        clubSocials: text('club_socials').replaceAll('\r\n', '\n'),
+        clubDiscord: text('club_discord'),
+        rosterName: text('roster_name'),
+        tag: text('roster_tag'),
+        // Disabled pickers are not sent: the colours are the places that were, in order.
+        colors: Array.from({ length: ROSTER_COLORS_MAX }, (_, index) =>
+          text(`color_${index + 1}`),
+        ).filter((color) => color.trim() !== ''),
+        canStream: text('can_stream') === '1',
+      };
+      const upload = form.logo;
+      const logo =
+        upload instanceof File && upload.size > 0
+          ? new Uint8Array(await upload.arrayBuffer())
+          : null;
+      const reply = await fileRegistration(
+        db,
+        deps.evidence,
+        viewer.playerId,
+        slug,
+        {
+          club:
+            values.clubKind === 'existing'
+              ? {
+                  kind: 'existing',
+                  clubId: /^\d{1,10}$/.test(values.clubId) ? Number(values.clubId) : -1,
+                }
+              : {
+                  kind: 'new',
+                  name: values.clubName,
+                  city: values.clubCity,
+                  legalStatus: values.clubLegalStatus,
+                  socials: values.clubSocials,
+                  discordUrl: values.clubDiscord,
+                },
+          roster: {
+            name: values.rosterName,
+            tag: values.tag,
+            colors: values.colors,
+            canStream: values.canStream,
+          },
+          logo,
+          rulesVersionId: Number(text('rules_version')),
+          rulesAccepted: text('rules_accepted') === '1',
+        },
+        deps.now(),
+      );
+      if (reply.ok) return c.redirect(`/registrations/${String(reply.id)}`, 303);
+      if (!('errors' in reply)) return registrationClosed(c, reply.error);
+      const form2 = registrationForm(db, slug, viewer.playerId, deps.now());
+      if (!form2.ok) return registrationClosed(c, form2.error);
+      c.header('Cache-Control', 'no-store');
+      return render(
+        c,
+        registerFormView(locale, form2, {
+          values,
+          errors: reply.errors satisfies FieldErrors<RegistrationFieldError>,
+          csrf: viewer.csrf,
+        }),
+        400,
+      );
+    },
+  );
+
+  app.get('/registrations/:id', (c) => {
+    if (!login) return notFound(c);
+    const viewer = c.get('viewer');
+    if (!viewer) return c.redirect(`/auth/login?next=${encodeURIComponent(c.req.path)}`, 303);
+    const id = c.req.param('id');
+    const status = ROW_ID.test(id)
+      ? registrationStatus(db, viewer.playerId, Number(id), deps.now())
+      : null;
+    if (!status?.ok) return notFound(c);
+    const competitionRow = db
+      .select({ scheduling: schema.competition.schedulingJson })
+      .from(schema.competition)
+      .where(eq(schema.competition.slug, status.competition.slug))
+      .get();
+    // The link holds the invitation's secret: the page is the filer's only, and kept by no cache.
+    c.header('Cache-Control', 'no-store');
+    return render(
+      c,
+      registrationView(locale, status, {
+        inviteUrl: status.invite ? inviteUrl(login.publicUrl, login.secret, status.invite) : null,
+        timeZone: competitionRow?.scheduling.time_zone ?? 'Europe/Paris',
+      }),
+    );
+  });
+
   app.get('/c/:competition/:season', (c) => {
     const page = seasonPage(db, c.req.param('competition'), c.req.param('season'));
     return page.ok ? render(c, seasonPageView(locale, page)) : notFound(c);
@@ -390,8 +581,40 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     if (!viewer) return c.redirect('/auth/login?next=/me', 303);
     const profile = profileOf(db, viewer.playerId);
     if (!profile) return c.redirect('/auth/login?next=/me', 303);
-    const staffOf = await staffCompetitions(db, deps.roles, viewer, deps.now());
     const flash = c.req.query('saved') === '1' ? 'saved' : (c.req.query('error') ?? null);
+    return showMe(c, viewer, profile, {
+      flash: flash === 'saved' || flash === 'invalid_nationality' ? flash : null,
+      game: null,
+    });
+  });
+
+  // The game account part of `/me` is filled again with what was typed when it is refused.
+  const showMe = async (
+    c: Context<Env>,
+    viewer: Viewer,
+    profile: NonNullable<ReturnType<typeof profileOf>>,
+    state: {
+      flash: 'saved' | 'invalid_nationality' | null;
+      game: {
+        values: { ubisoftName: string; profileId: string; rank: string };
+        errors: FieldErrors<SaveProfileError>;
+      } | null;
+    },
+    status: 200 | 400 = 200,
+  ) => {
+    const staffOf = await staffCompetitions(db, deps.roles, viewer, deps.now());
+    const stored = gameProfileOf(db, viewer.playerId);
+    const game = gameProfileForm(locale, {
+      values: state.game?.values ?? {
+        ubisoftName: stored?.ubisoftName ?? '',
+        profileId: stored?.profileId ?? '',
+        rank: stored?.rank ?? '',
+      },
+      ranks: R6_RANKS,
+      verified: stored?.verified ?? false,
+      errors: state.game?.errors ?? [],
+      csrf: viewer.csrf,
+    });
     return render(
       c,
       mePage(locale, {
@@ -399,9 +622,33 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
         staffOf: staffOf.map((competition) => competition.name),
         countries: countryChoices(locale),
         csrf: viewer.csrf,
-        flash: flash === 'saved' || flash === 'invalid_nationality' ? flash : null,
+        flash: state.flash,
+        game,
       }),
+      status,
     );
+  };
+
+  app.post('/me/game-profile', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const text = (key: string) => (typeof form[key] === 'string' ? form[key] : '');
+    const values = {
+      ubisoftName: text('ubisoft_name'),
+      profileId: text('profile_id'),
+      rank: text('rank'),
+    };
+    const reply = saveGameProfile(
+      db,
+      viewer.playerId,
+      { ...values, profileId: values.profileId.trim() === '' ? null : values.profileId },
+      deps.now(),
+    );
+    if (reply.ok) return c.redirect('/me?saved=1', 303);
+    const profile = profileOf(db, viewer.playerId);
+    if (!profile) return c.redirect('/auth/login?next=/me', 303);
+    return showMe(c, viewer, profile, { flash: null, game: { values, errors: reply.errors } }, 400);
   });
 
   app.post('/me/nationality', async (c) => {
