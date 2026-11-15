@@ -1,11 +1,12 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
 import type { RegistrationEntry, registrationsOf } from '../../services/joining.ts';
+import type { rostersOf } from '../../services/rosters.ts';
 import type { Profile } from '../../services/me.ts';
 import { csrfField, pageOf, type Html, type Page } from '../layout.ts';
 
 export const ME_ERRORS = ['invalid_nationality', 'invalid_birth_date', 'lineup_locked'] as const;
-export type MeFlash = 'saved' | 'left' | (typeof ME_ERRORS)[number];
+export type MeFlash = 'saved' | 'left' | 'joined' | (typeof ME_ERRORS)[number];
 
 export interface MeData {
   profile: Profile;
@@ -20,6 +21,8 @@ export interface MeData {
   adminOf: { name: string; slug: string }[];
   /** The registrations the player filed or joined, answered ones included. */
   registrations: ReturnType<typeof registrationsOf>;
+  /** The rosters the player plays for, outside any season (M-33). */
+  rosters: ReturnType<typeof rostersOf>;
 }
 
 const ROLE_KEYS = {
@@ -68,6 +71,32 @@ function registrationsView(locale: Locale, data: MeData): Html | string {
     </ul>`;
 }
 
+/** The rosters the player plays for, each with a way to leave while it may change. */
+function rostersView(locale: Locale, data: MeData): Html | string {
+  if (data.rosters.length === 0) return '';
+  return html`<h2>${t(locale, 'web.me.rosters')}</h2>
+    <ul class="card">
+      ${data.rosters.map(
+        (roster) =>
+          html`<li>
+            <a href="/teams/${roster.slug}">${roster.name}</a>
+            ${
+              roster.canLeave
+                ? html`<form
+                    method="post"
+                    action="/teams/${roster.slug}/roster/leave"
+                    class="inline"
+                  >
+                    ${csrfField(data.csrf)}
+                    <button type="submit">${t(locale, 'web.me.registration.leave')}</button>
+                  </form>`
+                : ''
+            }
+          </li>`,
+      )}
+    </ul>`;
+}
+
 /** `/me`: the player's own account: teams, nationality and stats consent. */
 export function mePage(locale: Locale, data: MeData): Page {
   const { player, teams } = data.profile;
@@ -77,7 +106,7 @@ export function mePage(locale: Locale, data: MeData): Page {
       timeZone: 'Europe/Paris',
     }).format(at);
   const flash =
-    data.flash === 'saved' || data.flash === 'left'
+    data.flash === 'saved' || data.flash === 'left' || data.flash === 'joined'
       ? html`<p class="card flash">${t(locale, `web.me.${data.flash}`)}</p>`
       : data.flash
         ? html`<p class="card flash error">${t(locale, `web.me.error.${data.flash}`)}</p>`
@@ -122,7 +151,7 @@ export function mePage(locale: Locale, data: MeData): Page {
         : html`<p class="muted">${t(locale, 'web.me.noTeams')}</p>`
     }
     <p><a href="/clubs/new">${t(locale, 'web.me.createClub')}</a></p>
-    ${registrationsView(locale, data)}
+    ${rostersView(locale, data)} ${registrationsView(locale, data)}
     <h2>${t(locale, 'web.me.game')}</h2>
     ${data.game}
     <h2>${t(locale, 'web.me.nationality')}</h2>

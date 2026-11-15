@@ -3,6 +3,7 @@ import { html } from 'hono/html';
 import { requestWhat } from '../../discord/request-text.ts';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
 import { REQUEST_NOTE_MAX_LENGTH, type RequestView } from '../../services/requests.ts';
+import type { RosterMember } from '../../services/rosters.ts';
 import type { TeamMember } from '../../services/team-staff.ts';
 import { csrfField, formatWhen, pageOf, type Html, type Page } from '../layout.ts';
 
@@ -10,7 +11,15 @@ import { csrfField, formatWhen, pageOf, type Html, type Page } from '../layout.t
 // rule (`mayFile`); the services check it again on every POST.
 
 /** What a form sends back with, read back from the address: anything else shows nothing. */
-export const MANAGE_DONE = ['created', 'filed', 'applied', 'changed', 'withdrawn'] as const;
+export const MANAGE_DONE = [
+  'created',
+  'filed',
+  'applied',
+  'changed',
+  'withdrawn',
+  'invite',
+  'player_removed',
+] as const;
 export type ManageDone = (typeof MANAGE_DONE)[number];
 
 const ERROR_KEYS = {
@@ -35,6 +44,7 @@ const ERROR_KEYS = {
   member_not_found: 'web.manage.error.member_not_found',
   discord_unreachable: 'web.manage.error.discord_unreachable',
   invalid_role: 'web.manage.error.invalid_role',
+  roster_closed: 'web.rosterJoin.closed',
 } as const satisfies Record<string, MessageKey>;
 export type ManageError = keyof typeof ERROR_KEYS;
 export const isManageError = (value: string | undefined): value is ManageError =>
@@ -45,8 +55,18 @@ export type ManageFlash = { done: ManageDone } | { error: ManageError; max: numb
 export interface TeamManageData {
   team: { name: string; tag: string; slug: string; clubSlug: string };
   members: TeamMember[];
-  /** The roster's players, starters first. */
+  /** The season's lineup, starters first, shown while the roster plays in a season under way. */
   players: { name: string; role: string; captain: boolean }[];
+  /** The roster's own players, while they may change (M-33). */
+  roster: {
+    open: boolean;
+    members: RosterMember[];
+    max: number;
+    /** Whether the viewer manages the players: an official who may add officials. */
+    canManage: boolean;
+    /** The link to share, for those who manage the players; null when none is in force. */
+    inviteUrl: string | null;
+  };
   /** The requests waiting for this roster. */
   requests: RequestView[];
   /** League staff change the team directly, without a request. */
@@ -90,6 +110,115 @@ const usernameField = (locale: Locale) =>
     /></label>
     <p class="muted">${t(locale, 'web.manage.usernameHelp')}</p>`;
 
+const PLAYER_GAP_KEYS = {
+  game_account: 'web.join.gap.game_account',
+  nationality: 'web.join.gap.nationality',
+} as const satisfies Record<string, MessageKey>;
+
+/**
+ * A roster whose players may change (M-33): its players, each with what they still have to
+ * complete, its invitation link for the officials who manage them, and removal.
+ */
+function openPlayers(locale: Locale, data: TeamManageData, base: string): Html {
+  const { roster } = data;
+  const count = t(locale, 'web.manage.playersCount', {
+    count: roster.members.length,
+    max: roster.max,
+  });
+  const members =
+    roster.members.length === 0
+      ? html`<p class="muted">${t(locale, 'web.manage.noPlayers')}</p>`
+      : html`<ul class="card">
+          ${roster.members.map((member) => {
+            const gaps = member.gaps.filter(
+              (gap): gap is keyof typeof PLAYER_GAP_KEYS => gap in PLAYER_GAP_KEYS,
+            );
+            return html`<li>
+              ${member.name}
+              ${
+                gaps.length > 0
+                  ? html`<span class="muted"
+                      >· ${t(locale, 'web.manage.playerGaps')}
+                      ${gaps.map((gap) => t(locale, PLAYER_GAP_KEYS[gap])).join(', ')}</span
+                    >`
+                  : ''
+              }
+              ${
+                roster.canManage
+                  ? html`<form
+                      method="post"
+                      action="${base}/players/${member.playerId}/remove"
+                      class="inline"
+                    >
+                      ${csrfField(data.csrf)}
+                      <button type="submit">${t(locale, 'web.manage.remove')}</button>
+                    </form>`
+                  : ''
+              }
+            </li>`;
+          })}
+        </ul>`;
+  const invite = !roster.canManage
+    ? ''
+    : roster.inviteUrl
+      ? html`<div class="card">
+          <p>${t(locale, 'web.manage.inviteShare')}</p>
+          <p><code>${roster.inviteUrl}</code></p>
+          <form method="post" action="${base}/invite">
+            ${csrfField(data.csrf)}
+            <input type="hidden" name="renew" value="1" />
+            <button type="submit">${t(locale, 'web.manage.inviteRenew')}</button>
+          </form>
+        </div>`
+      : html`<form class="card" method="post" action="${base}/invite">
+          ${csrfField(data.csrf)}
+          <p>${t(locale, 'web.manage.inviteNone')}</p>
+          <button type="submit">${t(locale, 'web.manage.inviteCreate')}</button>
+        </form>`;
+  return html`<h2 id="players">${t(locale, 'web.team.players')}</h2>
+    <p class="muted">${count}</p>
+    ${members} ${invite}`;
+}
+
+/**
+ * A roster playing in a season under way: its lineup changes only during a mercato window
+ * (M-29), which comes with the mercato (3f). The forms are shown closed, with the reason.
+ */
+function closedPlayers(locale: Locale, data: TeamManageData): Html {
+  const closed = t(locale, 'web.manage.mercatoClosed');
+  return html`<h2 id="players">${t(locale, 'web.team.players')}</h2>
+    ${
+      data.players.length === 0
+        ? html`<p class="muted">${t(locale, 'web.manage.noPlayers')}</p>`
+        : html`<ul class="card">
+            ${data.players.map(
+              (entry) =>
+                html`<li>
+                  ${entry.name}
+                  <span class="muted"
+                    >·
+                    ${t(
+                      locale,
+                      entry.role === 'sub' ? 'web.registration.sub' : 'web.registration.starter',
+                    )}${entry.captain ? html` · ${t(locale, 'web.registration.captain')}` : ''}</span
+                  >
+                  <button type="button" class="inline" disabled title="${closed}">
+                    ${t(locale, 'web.manage.remove')}
+                  </button>
+                </li>`,
+            )}
+          </ul>`
+    }
+    <form class="card">
+      <fieldset disabled>
+        <legend>${t(locale, 'web.manage.addPlayer')}</legend>
+        <p class="muted">${closed}</p>
+        ${usernameField(locale)}
+        <button type="button">${t(locale, 'web.manage.ask')}</button>
+      </fieldset>
+    </form>`;
+}
+
 /** The roster's officials, and the forms to change them, as `/team` offers them. */
 export function teamManagePage(locale: Locale, data: TeamManageData): Page {
   const { team, staff, myRole, free } = data;
@@ -128,47 +257,7 @@ export function teamManagePage(locale: Locale, data: TeamManageData): Page {
     )}
   </ul>`;
 
-  // Lineups change only during a mercato window (M-29); none opens before the mercato (3f), so
-  // the forms are shown closed, with the reason, rather than missing.
-  const closed = t(locale, free ? 'web.manage.playersSoon' : 'web.manage.mercatoClosed');
-  const players = html`<h2>${t(locale, 'web.team.players')}</h2>
-    ${
-      data.players.length === 0
-        ? html`<p class="muted">${t(locale, 'web.manage.noPlayers')}</p>`
-        : html`<ul class="card">
-            ${data.players.map(
-              (entry) =>
-                html`<li>
-                  ${entry.name}
-                  <span class="muted"
-                    >·
-                    ${t(
-                      locale,
-                      entry.role === 'sub' ? 'web.registration.sub' : 'web.registration.starter',
-                    )}${entry.captain ? html` · ${t(locale, 'web.registration.captain')}` : ''}</span
-                  >
-                  <button type="button" class="inline" disabled title="${closed}">
-                    ${t(locale, 'web.manage.remove')}
-                  </button>
-                </li>`,
-            )}
-          </ul>`
-    }
-    <form class="card">
-      <fieldset disabled>
-        <legend>${t(locale, 'web.manage.addPlayer')}</legend>
-        <p class="muted">${closed}</p>
-        ${usernameField(locale)}
-        <label
-          >${t(locale, 'web.manage.role')}
-          <select name="role">
-            <option>${t(locale, 'web.registration.starter')}</option>
-            <option>${t(locale, 'web.registration.sub')}</option>
-          </select></label
-        >
-        <button type="button">${t(locale, 'web.manage.ask')}</button>
-      </fieldset>
-    </form>`;
+  const players = data.roster.open ? openPlayers(locale, data, base) : closedPlayers(locale, data);
 
   const addForm =
     addRoles.length > 0

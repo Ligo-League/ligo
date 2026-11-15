@@ -844,6 +844,25 @@ export const fr = {
     'C’est créé : ajoute tes responsables, puis inscris l’équipe dans une ligue.',
   'web.manage.addRoster': 'ajouter une équipe au club',
   'web.me.createClub': 'Créer un club',
+  'web.rosterJoin.title': 'Rejoindre {roster}',
+  'web.rosterJoin.intro':
+    'Tu es invité à rejoindre {roster} [{tag}] avec ton propre compte. L’équipe choisira ses titulaires et ses remplaçants quand elle s’inscrira dans une ligue.',
+  'web.rosterJoin.submit': 'Rejoindre {roster}',
+  'web.rosterJoin.already': 'Tu fais déjà partie de cette équipe :',
+  'web.rosterJoin.closed':
+    'Cette équipe joue une saison en cours : son effectif ne change que pendant une fenêtre de mercato.',
+  'web.rosterJoin.full': 'Cette équipe a déjà le nombre maximum de joueurs :',
+  'web.manage.playersCount': '{count} joueur(s) sur {max} au plus.',
+  'web.manage.playerGaps': 'à compléter :',
+  'web.manage.inviteShare':
+    'Partage ce lien avec tes joueurs : chacun rejoint avec son propre compte Discord.',
+  'web.manage.inviteNone': 'Aucun lien d’invitation en cours.',
+  'web.manage.inviteCreate': 'Créer un lien d’invitation',
+  'web.manage.inviteRenew': 'Nouveau lien (l’ancien ne marche plus)',
+  'web.manage.done.invite': 'Lien d’invitation prêt.',
+  'web.manage.done.player_removed': 'Joueur retiré de l’équipe.',
+  'web.me.rosters': 'Équipes où je joue',
+  'web.me.joined': 'Tu as rejoint l’équipe.',
   'web.manage.title': 'Gérer {team}',
   'web.manage.intro':
     'Ce que fait la commande /team, sur le site : chaque changement part au staff de la ligue, ou s’applique tout de suite quand la ligue le prévoit.',
@@ -851,7 +870,6 @@ export const fr = {
     'Tu es staff de la ligue : tes changements s’appliquent tout de suite, sans demande.',
   'web.manage.introFree':
     'Cette équipe ne joue encore dans aucune compétition : ses responsables la changent tout de suite, sans demande.',
-  'web.manage.playersSoon': 'L’invitation des joueurs arrive bientôt sur le site.',
   'web.manage.officials': 'Responsables',
   'web.manage.remove': 'Retirer',
   'web.manage.add': 'Ajouter un responsable',

@@ -316,4 +316,3 @@ export function rostersOf(db: Reader, playerId: number): (RosterRef & { canLeave
       return state ? [{ ...state.team, canLeave: state.open }] : [];
     });
 }
-

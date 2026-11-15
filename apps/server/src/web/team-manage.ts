@@ -11,6 +11,13 @@ import {
   withdrawRequest,
   type RequestInput,
 } from '../services/requests.ts';
+import { rosterInviteUrl } from '../services/invites.ts';
+import {
+  currentRosterInvite,
+  managesPlayers,
+  rosterMembers,
+  rosterState,
+} from '../services/rosters.ts';
 import { rosterPlayers } from '../services/site.ts';
 import { changeFreeRoster, rosterToManage, type ManagedRoster } from '../services/team-manage.ts';
 import { listTeamStaff, type MemberRef } from '../services/team-staff.ts';
@@ -103,6 +110,19 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
     if (found instanceof Response) return found;
     const { roster, actor } = found;
     const myRole = highestRole(teamsOfPlayer(db, viewer.playerId), roster.teamId);
+    const state = rosterState(db, roster.teamId);
+    const canManage = managesPlayers(db, viewer.playerId, roster.teamId);
+    const invite =
+      state?.open && canManage ? currentRosterInvite(db, roster.teamId, deps.now()) : null;
+    // The link holds the invitation's secret: the page is then kept by no cache.
+    if (invite) c.header('Cache-Control', 'no-store');
+    const rosterData = {
+      open: state?.open ?? false,
+      members: state ? rosterMembers(db, roster.teamId, state.team.title) : [],
+      max: state?.max ?? 0,
+      canManage,
+      inviteUrl: invite ? rosterInviteUrl(deps.login.publicUrl, deps.login.secret, invite) : null,
+    };
     if (actor === null) {
       return render(
         c,
@@ -110,6 +130,7 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
           team: roster,
           members: listTeamStaff(db, roster.teamId),
           players: rosterPlayers(db, roster.teamId),
+          roster: rosterData,
           requests: [],
           staff: false,
           free: true,
@@ -135,6 +156,7 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
         team: roster,
         members: officials.members,
         players: rosterPlayers(db, roster.teamId),
+        roster: rosterData,
         requests: requests.ok ? requests.requests : [],
         staff: requireStaff(db, actor).ok,
         free: false,

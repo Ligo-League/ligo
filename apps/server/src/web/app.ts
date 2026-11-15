@@ -41,6 +41,8 @@ import { matchPageView } from './pages/match.ts';
 import { ME_ERRORS, mePage, type MeFlash } from './pages/me.ts';
 import { clubRoutes } from './clubs.ts';
 import { matchTimeRoutes } from './match-time.ts';
+import { rosterRoutes } from './rosters.ts';
+import { rostersOf } from '../services/rosters.ts';
 import { teamManageRoutes } from './team-manage.ts';
 import {
   EMPTY_REGISTER_VALUES,
@@ -195,7 +197,7 @@ const INVITE_TOKEN = /^[\w-]{43}$/;
 
 /** A path as the error log keeps it: an invitation's token is a secret and never written down. */
 export const loggedPath = (path: string): string =>
-  path.replace(/^\/join\/([^/]*)\/[^/]+/, '/join/$1/…');
+  path.replace(/^\/(join|invite)\/([^/]*)\/[^/]+/, '/$1/$2/…');
 
 const oneOf = <T extends string>(values: readonly T[], value: string | undefined): T | null =>
   values.find((candidate) => candidate === value) ?? null;
@@ -814,6 +816,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     return page.ok ? render(c, clubPageView(locale, page)) : notFound(c);
   });
   const matchTime = matchTimeRoutes(app, { deps, render, notFound, forbidden, guard });
+  rosterRoutes(app, { deps, render, notFound, forbidden, guard });
   app.get('/matches/:id', async (c) => {
     const id = c.req.param('id');
     const page = MATCH_ID.test(id) ? matchPage(db, Number(id)) : null;
@@ -879,7 +882,9 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
         ? 'saved'
         : c.req.query('left') === '1'
           ? 'left'
-          : oneOf(ME_ERRORS, c.req.query('error'));
+          : c.req.query('joined') === '1'
+            ? 'joined'
+            : oneOf(ME_ERRORS, c.req.query('error'));
     return showMe(c, viewer, profile, { flash, game: null });
   });
 
@@ -920,6 +925,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
         flash: state.flash,
         game,
         registrations: registrationsOf(db, viewer.playerId, deps.now()),
+        rosters: rostersOf(db, viewer.playerId),
         adminOf: await adminCompetitions(db, deps.gateway, viewer.discordUserId),
       }),
       status,

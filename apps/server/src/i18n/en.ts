@@ -806,13 +806,31 @@ export const en: Record<MessageKey, string> = {
   'web.manage.done.created': 'Created: add your officials, then register the team in a league.',
   'web.manage.addRoster': 'add a team to the club',
   'web.me.createClub': 'Create a club',
+  'web.rosterJoin.title': 'Join {roster}',
+  'web.rosterJoin.intro':
+    'You are invited to join {roster} [{tag}] with your own account. The team picks its starters and substitutes when it registers in a league.',
+  'web.rosterJoin.submit': 'Join {roster}',
+  'web.rosterJoin.already': 'You are already on this team:',
+  'web.rosterJoin.closed':
+    'This team plays a season under way: its lineup changes only during a mercato window.',
+  'web.rosterJoin.full': 'This team already has the most players it may have:',
+  'web.manage.playersCount': '{count} player(s), {max} at most.',
+  'web.manage.playerGaps': 'to complete:',
+  'web.manage.inviteShare':
+    'Share this link with your players: each joins with their own Discord account.',
+  'web.manage.inviteNone': 'No invitation link in force.',
+  'web.manage.inviteCreate': 'Create an invitation link',
+  'web.manage.inviteRenew': 'New link (the old one stops working)',
+  'web.manage.done.invite': 'Invitation link ready.',
+  'web.manage.done.player_removed': 'Player removed from the team.',
+  'web.me.rosters': 'Teams I play for',
+  'web.me.joined': 'You joined the team.',
   'web.manage.title': 'Manage {team}',
   'web.manage.intro':
     'What the /team command does, on the website: each change goes to league staff, or applies at once where the league allows it.',
   'web.manage.introStaff': 'You are league staff: your changes apply at once, without a request.',
   'web.manage.introFree':
     'This team plays in no competition yet: its officials change it at once, without a request.',
-  'web.manage.playersSoon': 'Inviting players is coming to the website soon.',
   'web.manage.officials': 'Officials',
   'web.manage.remove': 'Remove',
   'web.manage.add': 'Add an official',
