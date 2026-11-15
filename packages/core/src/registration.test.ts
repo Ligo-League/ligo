@@ -5,6 +5,7 @@ import {
   checkBirthDate,
   changeLineup,
   checkGameProfile,
+  chooseLineup,
   checkRosterDetails,
   lineupLocked,
   lineupStatus,
@@ -15,8 +16,9 @@ import {
   ROSTER_COLORS_MAX,
   type LineupMember,
   type PlayerProfile,
+  type RegistrationRole,
 } from './registration.ts';
-import { registrationSchema } from './settings.ts';
+import { registrationSchema, teamRolesSchema } from './settings.ts';
 
 // Registering a roster (design doc section 7, "Registration"; maintainer, 14 November 2026). The
 // filer gives the roster's name, tag and colours, then invites players, who join with their own
@@ -386,24 +388,147 @@ describe('changeLineup', () => {
   });
 });
 
+describe('chooseLineup', () => {
+  // The roster's players 1 to 8; player 8 is already in another registration of the league.
+  const CANDIDATES = [1, 2, 3, 4, 5, 6, 7, 8].map((playerId) => ({
+    playerId,
+    unavailable: playerId === 8,
+  }));
+  const roles = (starters: number[], subs: number[] = []) =>
+    new Map<number, RegistrationRole>([
+      ...starters.map((id) => [id, 'player'] as const),
+      ...subs.map((id) => [id, 'sub'] as const),
+    ]);
+
+  it('picks starters, substitutes and a starter as captain among the roster’s players', () => {
+    expect(
+      chooseLineup(CANDIDATES, { roles: roles([1, 2, 3, 4, 5], [6]), captainId: 2 }, SETTINGS),
+    ).toEqual({
+      ok: true,
+      lineup: [
+        { playerId: 1, role: 'player', captain: false },
+        { playerId: 2, role: 'player', captain: true },
+        { playerId: 3, role: 'player', captain: false },
+        { playerId: 4, role: 'player', captain: false },
+        { playerId: 5, role: 'player', captain: false },
+        { playerId: 6, role: 'sub', captain: false },
+      ],
+    });
+  });
+
+  it('lets the lineup be built in steps: fewer starters, no captain yet', () => {
+    expect(chooseLineup(CANDIDATES, { roles: roles([1, 2]), captainId: null }, SETTINGS).ok).toBe(
+      true,
+    );
+  });
+
+  it('refuses a player not on the roster, or already in another roster of the league (O-29)', () => {
+    expect(chooseLineup(CANDIDATES, { roles: roles([1, 9]), captainId: null }, SETTINGS)).toEqual({
+      ok: false,
+      error: 'not_on_roster',
+    });
+    expect(chooseLineup(CANDIDATES, { roles: roles([1], [8]), captainId: null }, SETTINGS)).toEqual(
+      {
+        ok: false,
+        error: 'unavailable',
+        playerIds: [8],
+      },
+    );
+    expect(chooseLineup(CANDIDATES, { roles: roles([1]), captainId: 9 }, SETTINGS)).toEqual({
+      ok: false,
+      error: 'not_on_roster',
+    });
+  });
+
+  it('keeps the captain a starter (O-30) and the numbers within the league’s', () => {
+    expect(chooseLineup(CANDIDATES, { roles: roles([1], [2]), captainId: 2 }, SETTINGS)).toEqual({
+      ok: false,
+      error: 'captain_not_starter',
+    });
+    expect(chooseLineup(CANDIDATES, { roles: roles([1], [2]), captainId: 3 }, SETTINGS)).toEqual({
+      ok: false,
+      error: 'captain_not_starter',
+    });
+    expect(
+      chooseLineup(CANDIDATES, { roles: roles([1, 2, 3, 4, 5, 6]), captainId: null }, SETTINGS),
+    ).toEqual({
+      ok: false,
+      error: 'too_many_starters',
+    });
+    expect(
+      chooseLineup(CANDIDATES, { roles: roles([1], [2, 3, 4]), captainId: null }, SETTINGS),
+    ).toEqual({
+      ok: false,
+      error: 'too_many_subs',
+    });
+  });
+
+  it('never makes a lineup past the league’s numbers', () => {
+    fc.assert(
+      fc.property(
+        fc.subarray([1, 2, 3, 4, 5, 6, 7]),
+        fc.subarray([1, 2, 3, 4, 5, 6, 7]),
+        (starters, subs) => {
+          const reply = chooseLineup(
+            CANDIDATES,
+            {
+              roles: roles(
+                starters,
+                subs.filter((id) => !starters.includes(id)),
+              ),
+              captainId: null,
+            },
+            SETTINGS,
+          );
+          if (!reply.ok) return;
+          const picked = reply.lineup.filter((entry) => entry.role === 'player').length;
+          expect(picked).toBeLessThanOrEqual(SETTINGS.starters);
+          expect(reply.lineup.length - picked).toBeLessThanOrEqual(SETTINGS.subs_max);
+        },
+      ),
+    );
+  });
+});
+
 describe('mayApprove', () => {
   const complete = lineupStatus(FIVE, SETTINGS);
+  const ROLES = teamRolesSchema.parse({});
+  const READY_INPUT = {
+    lineup: complete,
+    onOtherRoster: [],
+    notMembers: [],
+    officials: { manager: 1, coach: 1 },
+    divisionTeams: 11,
+  };
 
   it('approves a complete lineup into a division with room, its players on no other roster', () => {
-    expect(
-      mayApprove({ lineup: complete, onOtherRoster: [], divisionTeams: 11 }, SETTINGS),
-    ).toEqual({ ok: true });
+    expect(mayApprove(READY_INPUT, SETTINGS, ROLES)).toEqual({ ok: true });
   });
 
   it('says every reason to wait, all at once', () => {
     const incomplete = lineupStatus(FIVE.slice(0, 4), SETTINGS);
     expect(
-      mayApprove({ lineup: incomplete, onOtherRoster: [3, 4], divisionTeams: 12 }, SETTINGS),
+      mayApprove(
+        {
+          lineup: incomplete,
+          onOtherRoster: [3, 4],
+          notMembers: [2],
+          officials: { manager: 4, coach: 2 },
+          divisionTeams: 12,
+        },
+        SETTINGS,
+        ROLES,
+      ),
     ).toEqual({
       ok: false,
       errors: [
         { error: 'lineup_incomplete' },
         { error: 'player_on_other_roster', playerIds: [3, 4] },
+        // Each player is on the league's Discord server (M-30).
+        { error: 'player_not_member', playerIds: [2] },
+        // The roster's officials, set up before it registered, fit the league's limits.
+        { error: 'too_many_officials', role: 'manager', have: 4, max: 3 },
+        { error: 'too_many_officials', role: 'coach', have: 2, max: 1 },
         { error: 'division_full', max: 12 },
       ],
     });
@@ -411,7 +536,7 @@ describe('mayApprove', () => {
 
   it('takes the division maximum from the settings', () => {
     const small = registrationSchema.parse({ division_max: 8 });
-    expect(mayApprove({ lineup: complete, onOtherRoster: [], divisionTeams: 8 }, small)).toEqual({
+    expect(mayApprove({ ...READY_INPUT, divisionTeams: 8 }, small, ROLES)).toEqual({
       ok: false,
       errors: [{ error: 'division_full', max: 8 }],
     });

@@ -1,4 +1,4 @@
-import type { RegistrationSettings } from './settings.ts';
+import type { RegistrationSettings, TeamRolesSettings } from './settings.ts';
 
 // Registering a roster (design doc section 7, "Registration"; maintainer, 14 November 2026).
 // The filer gives the roster's details and shares an invitation; players join with their own
@@ -281,30 +281,99 @@ export function changeLineup<M extends LineupMember>(
   return { ok: true, members: next };
 }
 
+export type LineupChoiceError =
+  'not_on_roster' | 'captain_not_starter' | 'too_many_starters' | 'too_many_subs';
+
+/**
+ * The filer picks a registration's lineup among the roster's players (M-33): each one picked is a
+ * starter or a substitute, and the captain a starter (O-30), or nobody while the lineup is built.
+ * A player already on another roster or registration of the competition cannot be picked (O-29).
+ * The numbers stay within the league's.
+ */
+export function chooseLineup(
+  candidates: readonly { playerId: number; unavailable: boolean }[],
+  choice: { roles: ReadonlyMap<number, RegistrationRole>; captainId: number | null },
+  settings: RegistrationSettings,
+):
+  | { ok: true; lineup: { playerId: number; role: RegistrationRole; captain: boolean }[] }
+  | { ok: false; error: LineupChoiceError }
+  | { ok: false; error: 'unavailable'; playerIds: number[] } {
+  const known = new Map(candidates.map((entry) => [entry.playerId, entry]));
+  if ([...choice.roles.keys()].some((playerId) => !known.has(playerId))) {
+    return { ok: false, error: 'not_on_roster' };
+  }
+  if (choice.captainId !== null && !known.has(choice.captainId)) {
+    return { ok: false, error: 'not_on_roster' };
+  }
+  const unavailable = [...choice.roles.keys()].filter((id) => known.get(id)?.unavailable);
+  if (unavailable.length > 0) return { ok: false, error: 'unavailable', playerIds: unavailable };
+  if (choice.captainId !== null && choice.roles.get(choice.captainId) !== 'player') {
+    return { ok: false, error: 'captain_not_starter' };
+  }
+  // In the roster's order, so the lineup reads the same on every page.
+  const lineup = candidates.flatMap((entry) => {
+    const role = choice.roles.get(entry.playerId);
+    return role
+      ? [{ playerId: entry.playerId, role, captain: entry.playerId === choice.captainId }]
+      : [];
+  });
+  const starters = lineup.filter((entry) => entry.role === 'player').length;
+  if (starters > settings.starters) return { ok: false, error: 'too_many_starters' };
+  if (lineup.length - starters > settings.subs_max) return { ok: false, error: 'too_many_subs' };
+  return { ok: true, lineup };
+}
+
 export type ApprovalError =
   | { error: 'lineup_incomplete' }
   | { error: 'player_on_other_roster'; playerIds: number[] }
+  | { error: 'player_not_member'; playerIds: number[] }
+  | { error: 'too_many_officials'; role: 'manager' | 'coach'; have: number; max: number }
   | { error: 'division_full'; max: number };
 
 /**
  * Whether staff may approve a registration into a division: its lineup complete, none of its
- * players on another roster of the competition (O-29), and room left in the division (O-16).
- * Every reason is given at once.
+ * players on another roster of the competition (O-29), each on the league's Discord server
+ * (M-30), the roster's officials within the league's limits (they were set up before it
+ * registered, M-33), and room left in the division (O-16). Every reason is given at once.
  */
 export function mayApprove(
   input: {
     lineup: { complete: boolean };
     /** The registration's players already on another roster of the competition this season. */
     onOtherRoster: readonly number[];
+    /** The registration's players not on the league's Discord server now. */
+    notMembers: readonly number[];
+    /** The roster's own managers and coaches. */
+    officials: { manager: number; coach: number };
     /** The teams the division already holds. */
     divisionTeams: number;
   },
   settings: RegistrationSettings,
+  roles: TeamRolesSettings,
 ): { ok: true } | { ok: false; errors: ApprovalError[] } {
   const errors: ApprovalError[] = [];
   if (!input.lineup.complete) errors.push({ error: 'lineup_incomplete' });
   if (input.onOtherRoster.length > 0) {
     errors.push({ error: 'player_on_other_roster', playerIds: [...input.onOtherRoster] });
+  }
+  if (input.notMembers.length > 0) {
+    errors.push({ error: 'player_not_member', playerIds: [...input.notMembers] });
+  }
+  if (input.officials.manager > roles.managers_max) {
+    errors.push({
+      error: 'too_many_officials',
+      role: 'manager',
+      have: input.officials.manager,
+      max: roles.managers_max,
+    });
+  }
+  if (input.officials.coach > roles.coaches_max) {
+    errors.push({
+      error: 'too_many_officials',
+      role: 'coach',
+      have: input.officials.coach,
+      max: roles.coaches_max,
+    });
   }
   if (input.divisionTeams >= settings.division_max) {
     errors.push({ error: 'division_full', max: settings.division_max });

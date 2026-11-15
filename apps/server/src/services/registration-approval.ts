@@ -225,9 +225,14 @@ function approvable(
         found.season.id,
         members.map((entry) => entry.playerId),
       ),
+      // Joining a registration required the league's Discord server; the roster and its
+      // officials are created by this approval.
+      notMembers: [],
+      officials: { manager: 0, coach: 0 },
       divisionTeams: teamsIn(db, divisionId),
     },
     settings,
+    found.competition.rulesetJson.team_roles,
   );
   if (!verdict.ok) return { ok: false, error: 'not_approvable', reasons: verdict.errors };
 
