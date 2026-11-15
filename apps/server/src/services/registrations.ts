@@ -4,7 +4,6 @@ import {
   lineupLocked,
   lineupStatus,
   playerGaps,
-  slugify,
   type FieldErrors,
   type LineupGap,
   type PlayerProfile,
@@ -17,6 +16,13 @@ import { and, desc, eq, inArray, isNull, lte } from 'drizzle-orm';
 import type { EvidenceStore } from '../assets/evidence-store.ts';
 import { squareLogo } from '@ligo/render';
 import { LOGO_SIZE } from '../assets/store.ts';
+import {
+  checkNewClub,
+  clubsRunBy,
+  slugOf,
+  waitingRegistrations,
+  type ClubFieldError,
+} from './clubs.ts';
 import { checkLogo, logoKeyOf, type LogoError } from './logo.ts';
 
 // Registering a roster (design doc section 7, "Registration"; maintainer, 14 November 2026). A
@@ -27,7 +33,6 @@ import { checkLogo, logoKeyOf, type LogoError } from './logo.ts';
 const {
   auditLog,
   club,
-  clubStaff,
   competition,
   gameAccount,
   player,
@@ -40,8 +45,6 @@ const {
 } = schema;
 
 const DAY_MS = 86_400_000;
-const SOCIALS_MAX = 5;
-const LEGAL_STATUSES = ['association', 'association_1901', 'company', 'amateur'] as const;
 
 type Reader = Pick<Db, 'select'>;
 
@@ -64,19 +67,6 @@ function openSeason(db: Reader, competitionSlug: string, now: number) {
     .get();
   if (!rules) return { ok: false as const, error: 'no_rules' as const };
   return { ok: true as const, competition: found, season: open, rules };
-}
-
-/** The clubs the player runs now, as owner or manager, in the competition's organisation. */
-function clubsRunBy(db: Reader, playerId: number, orgId: number) {
-  const rows = db
-    .select({ id: club.id, name: club.name })
-    .from(clubStaff)
-    .innerJoin(club, eq(clubStaff.clubId, club.id))
-    .where(and(eq(clubStaff.playerId, playerId), isNull(clubStaff.until), eq(club.orgId, orgId)))
-    .orderBy(club.name)
-    .all();
-  // Owner and manager rows of the same club come once.
-  return rows.filter((row, index) => rows.findIndex((other) => other.id === row.id) === index);
 }
 
 /**
@@ -177,13 +167,8 @@ export interface RegistrationRequest {
 export type RegistrationFieldError =
   | RosterDetailsError
   | LogoError
+  | ClubFieldError
   | 'logo_not_stored'
-  | 'invalid_club_name'
-  | 'club_taken'
-  | 'invalid_city'
-  | 'invalid_legal_status'
-  | 'invalid_link'
-  | 'invalid_discord_url'
   | 'not_your_club'
   | 'name_taken'
   | 'tag_taken'
@@ -194,71 +179,6 @@ export type FileRegistrationReply =
   | { ok: true; id: number }
   | RegistrationClosed
   | { ok: false; errors: FieldErrors<RegistrationFieldError> };
-
-const slugOf = (name: string) => {
-  const slug = slugify(name);
-  return slug.ok ? slug.slug : null;
-};
-
-/** An http(s) address, or null for anything else (javascript:, data:, a typo). */
-function webAddress(text: string, protocols: readonly string[]): URL | null {
-  try {
-    const url = new URL(text);
-    return protocols.includes(url.protocol) ? url : null;
-  } catch {
-    return null;
-  }
-}
-
-type NewClub = Extract<RegistrationPayload['club'], { kind: 'new' }>;
-
-function checkNewClub(
-  input: Extract<RegistrationRequest['club'], { kind: 'new' }>,
-  fail: (field: string, error: RegistrationFieldError) => void,
-): NewClub {
-  const name = input.name.trim();
-  if (name.length < 2 || name.length > 40 || slugOf(name) === null) {
-    fail('club.name', 'invalid_club_name');
-  }
-  const city = input.city.trim();
-  if (city.length > 60) fail('club.city', 'invalid_city');
-  const legalStatus = LEGAL_STATUSES.find((status) => status === input.legalStatus) ?? null;
-  if (input.legalStatus !== '' && legalStatus === null) {
-    fail('club.legalStatus', 'invalid_legal_status');
-  }
-  const lines = input.socials
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line !== '');
-  const socials = lines.flatMap((line) => {
-    const url = webAddress(line, ['https:', 'http:']);
-    return url ? [{ label: url.hostname.replace(/^www\./, ''), url: url.href }] : [];
-  });
-  if (socials.length !== lines.length || socials.length > SOCIALS_MAX) {
-    fail('club.socials', 'invalid_link');
-  }
-  const discordText = input.discordUrl.trim();
-  const discord = discordText === '' ? null : webAddress(discordText, ['https:']);
-  if (discordText !== '' && discord === null) fail('club.discordUrl', 'invalid_discord_url');
-  return {
-    kind: 'new',
-    name,
-    city: city === '' ? null : city,
-    legalStatus,
-    socials,
-    discordUrl: discord?.href ?? null,
-  };
-}
-
-/** The names, tags and new clubs of the registrations still waiting, which nobody may reuse. */
-function waitingRegistrations(db: Reader): RegistrationPayload[] {
-  return db
-    .select({ payload: request.payloadJson })
-    .from(request)
-    .where(and(eq(request.kind, 'registration'), eq(request.status, 'pending')))
-    .all()
-    .flatMap(({ payload }) => ('roster' in payload ? [payload] : []));
-}
 
 /**
  * A member registers a roster: checked, its logo kept, then filed with an invitation for the
