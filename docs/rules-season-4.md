@@ -117,8 +117,10 @@ M-xx : mainteneur).
 - **Statut** : Règlement S3 ; capitaine (article 2.2), accord sur les statistiques, inscription,
   capitaine titulaire, une équipe par compétition, âge, serveur Discord et verrouillage des
   effectifs décidés (mainteneur, 14 et 15 novembre 2026).
-- **Appliquée par** : `/c/lfr/register` et `/me` ; les joueurs rejoignent et le staff valide
-  dans les étapes suivantes de la phase 3. Le mercato viendra ensuite.
+- **Appliquée par** : `/c/lfr/register` et `/me` ; les joueurs rejoignent par le lien
+  d'invitation ; le responsable compose l'effectif sur la page de l'inscription ; le staff valide
+  sur `/staff`, en choisissant la division (12 équipes au plus), ou refuse avec une raison. La
+  validation crée le club, l'équipe, sa place et son effectif. Le mercato viendra ensuite.
 
 ### 2.4 Demandes des équipes
 

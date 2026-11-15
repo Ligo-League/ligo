@@ -9,7 +9,7 @@ import {
   type Db,
   type LeagueMatch,
 } from '@ligo/db';
-import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import { leagueStandings, type StandingsTable } from './standings.ts';
 import { listTeamStaff } from './team-staff.ts';
 
@@ -246,6 +246,8 @@ export type TeamPage =
       /** The club's other rosters. */
       siblings: TeamLink[];
       officials: { name: string; role: string }[];
+      /** Its roster of the latest season it has one: starters first, the captain marked. */
+      players: { name: string; role: string; captain: boolean }[];
       /** The latest season the team plays in, if any. */
       season: Omit<Place, 'seasonId'> | null;
       matches: MatchLine[];
@@ -266,6 +268,34 @@ export function teamPage(db: Pick<Db, 'select'>, slug: string): TeamPage {
         (found) => found.a.teamId === roster.teamId || found.b.teamId === roster.teamId,
       )
     : [];
+  // The roster of the latest season it has one, registration included: an approved team shows
+  // its players before its season starts.
+  const rosterSeason = db
+    .select({ seasonId: schema.rosterEntry.seasonId })
+    .from(schema.rosterEntry)
+    .innerJoin(season, eq(schema.rosterEntry.seasonId, season.id))
+    .where(and(eq(schema.rosterEntry.teamId, roster.teamId), isNull(schema.rosterEntry.validTo)))
+    .orderBy(desc(season.startsOn), desc(season.id))
+    .get();
+  const players = rosterSeason
+    ? db
+        .select({
+          name: schema.player.displayName,
+          role: schema.rosterEntry.role,
+          captain: schema.rosterEntry.captain,
+        })
+        .from(schema.rosterEntry)
+        .innerJoin(schema.player, eq(schema.rosterEntry.playerId, schema.player.id))
+        .where(
+          and(
+            eq(schema.rosterEntry.teamId, roster.teamId),
+            eq(schema.rosterEntry.seasonId, rosterSeason.seasonId),
+            isNull(schema.rosterEntry.validTo),
+          ),
+        )
+        .orderBy(asc(schema.rosterEntry.role), asc(schema.player.displayName))
+        .all()
+    : [];
   const siblings = listClubRosters(db, roster.club.id)
     .filter((other) => other.teamId !== roster.teamId)
     .map((other) => ({ name: other.name, tag: other.tag, slug: other.slug }));
@@ -281,6 +311,7 @@ export function teamPage(db: Pick<Db, 'select'>, slug: string): TeamPage {
     club: { name: roster.club.name, slug: roster.club.slug },
     siblings,
     officials,
+    players,
     season: place && {
       competition: place.competition,
       season: place.season,

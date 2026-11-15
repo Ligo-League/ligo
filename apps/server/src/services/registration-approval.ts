@@ -92,10 +92,7 @@ export interface RegistrationToApprove {
 }
 
 /** The registrations waiting for a competition's staff, oldest first. */
-export function registrationsToApprove(
-  db: Reader,
-  competitionId: number,
-): RegistrationToApprove[] {
+export function registrationsToApprove(db: Reader, competitionId: number): RegistrationToApprove[] {
   const ids = db
     .select({ id: request.id })
     .from(request)

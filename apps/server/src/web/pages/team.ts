@@ -78,6 +78,26 @@ export function teamPageView(locale: Locale, page: Data): Page {
           </ul>`
         : html`<p class="muted">${t(locale, 'web.team.noOfficials')}</p>`
     }
+    ${
+      page.players.length > 0
+        ? html`<h2>${t(locale, 'web.team.players')}</h2>
+            <ul class="card">
+              ${page.players.map(
+                (entry) =>
+                  html`<li>
+                    ${entry.name}
+                    <span class="muted"
+                      >·
+                      ${t(
+                        locale,
+                        entry.role === 'sub' ? 'web.registration.sub' : 'web.registration.starter',
+                      )}${entry.captain ? html` · ${t(locale, 'web.registration.captain')}` : ''}</span
+                    >
+                  </li>`,
+              )}
+            </ul>`
+        : ''
+    }
     <h2>${t(locale, 'web.team.matches')}</h2>
     ${
       page.matches.length > 0 && season

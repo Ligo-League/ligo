@@ -503,7 +503,17 @@ section 10).
    there (with `DISCORD_GUILD_ID` set to the new server).
 5. `pnpm seed` no longer changes LFR's server once it has one: the website is where it changes.
 
-## If something goes wrong
+## 24. Phase 3d-7: staff approve registrations
+
+1. Restart `pnpm dev`: migration 0016 runs at start-up. Then `pnpm seed`: it sets LFR's
+   division maximum (12).
+2. With the staff role, open `http://localhost:3000/staff`: **Inscriptions** lists each
+   registration with its players (Ubisoft name, rank, nationality, whether they are ready), what
+   it still lacks, and each division's room.
+3. **Valider** with a division creates the club (if new, with the filer as owner), the team, its
+   place and its players; the logo is copied to `data/assets/render/logos/`. The team's page
+   lists its players, and the filer's registration page says where it plays.
+4. **Refuser** needs a reason; the filer reads it on the registration's page.
 
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |

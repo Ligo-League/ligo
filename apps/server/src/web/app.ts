@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { ROSTER_COLORS_MAX, zonedDate, type FieldErrors } from '@ligo/core';
 import { findLeague, listLeagueMatches, schema, type Db } from '@ligo/db';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { R6_RANKS } from '@ligo/titles';
@@ -61,6 +61,11 @@ import {
   type SaveDiscordError,
 } from '../services/league-discord.ts';
 import { discordSettingsPage } from './pages/league-discord.ts';
+import {
+  approveRegistration,
+  registrationsToApprove,
+  rejectRegistration,
+} from '../services/registration-approval.ts';
 import {
   removeFromRegistration,
   renewInvite,
@@ -144,7 +149,15 @@ const ROW_ID = MATCH_ID;
 
 // What a staff decision sends back to `/staff` with, read back from the address: anything else
 // shows nothing.
-const STAFF_DONE = ['validated', 'rejected', 'approved', 'rejected_request'] as const;
+const STAFF_DONE = [
+  'validated',
+  'rejected',
+  'approved',
+  'rejected_request',
+  'registration_approved',
+  'registration_approved_logo_lost',
+  'registration_rejected',
+] as const;
 const STAFF_ERRORS = [
   'match_not_found',
   'stale',
@@ -156,6 +169,11 @@ const STAFF_ERRORS = [
   'not_on_team',
   'owner_cannot_leave',
   'role_full',
+  'invalid_division',
+  'not_approvable',
+  'club_taken',
+  'name_taken',
+  'tag_taken',
 ] as const;
 // What a filer's change sends back to the registration's page with; anything else shows nothing.
 const REGISTRATION_DONE = ['lineup', 'removed', 'invite', 'withdrawn'] as const;
@@ -964,7 +982,14 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       const league = findLeague(db, competition.id);
       if (!league) return [];
       const timeZone = league.competition.schedulingJson.time_zone;
-      return [{ name: competition.name, timeZone, queue: staffQueue(db, league) }];
+      return [
+        {
+          name: competition.name,
+          timeZone,
+          queue: staffQueue(db, league),
+          registrations: registrationsToApprove(db, league.competition.id),
+        },
+      ];
     });
     const done = oneOf(STAFF_DONE, c.req.query('done'));
     const error = oneOf(STAFF_ERRORS, c.req.query('error'));
@@ -1055,6 +1080,54 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     }
     await announceRequestDecision(discord, reply);
     return backToQueue(c, `done=${decision === 'approve' ? 'approved' : 'rejected_request'}`);
+  });
+
+  // Registrations: staff of the registration's own league, asked of Discord now; the services
+  // check it again.
+  const registrationActor = async (viewer: Viewer, id: string) => {
+    const found = db
+      .select({ competitionId: schema.request.competitionId })
+      .from(schema.request)
+      .where(and(eq(schema.request.id, Number(id)), eq(schema.request.kind, 'registration')))
+      .get();
+    if (!found) return null;
+    return webActor(db, deps.roles, viewer, found.competitionId, deps.now());
+  };
+  app.post('/staff/registrations/:id/:decision', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const decision = oneOf(['approve', 'reject'] as const, c.req.param('decision'));
+    const id = c.req.param('id');
+    if (!decision || !ROW_ID.test(id)) return notFound(c);
+    const actor = await registrationActor(viewer, id);
+    if (!actor) return backToQueue(c, 'error=not_found');
+    if (decision === 'reject') {
+      const reason = typeof form.reason === 'string' ? form.reason : '';
+      const reply = rejectRegistration(db, actor, { requestId: Number(id), reason }, deps.now());
+      if (!reply.ok) {
+        const refused = reply.error === 'not_staff' || reply.error === 'not_linked';
+        return refused ? forbidden(c) : backToQueue(c, `error=${reply.error}`);
+      }
+      return backToQueue(c, 'done=registration_rejected');
+    }
+    const division = typeof form.division === 'string' && ROW_ID.test(form.division);
+    const reply = await approveRegistration(
+      db,
+      deps.assets,
+      deps.evidence,
+      actor,
+      { requestId: Number(id), divisionId: division ? Number(form.division) : -1 },
+      deps.now(),
+    );
+    if (!reply.ok) {
+      const refused = reply.error === 'not_staff' || reply.error === 'not_linked';
+      return refused ? forbidden(c) : backToQueue(c, `error=${reply.error}`);
+    }
+    return backToQueue(
+      c,
+      reply.logoLost ? 'done=registration_approved_logo_lost' : 'done=registration_approved',
+    );
   });
 
   app.notFound(notFound);

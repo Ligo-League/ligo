@@ -529,6 +529,35 @@ export function lineupOf(
   });
 }
 
+/** What staff answered: the refusal's reason, or the approved roster and its division. */
+function decisionOf(
+  db: Reader,
+  found: { reason: string | null; teamId: number | null; seasonId: number | null },
+) {
+  const placed =
+    found.teamId === null
+      ? undefined
+      : db
+          .select({ name: team.name, slug: team.slug, division: schema.division.name })
+          .from(team)
+          .leftJoin(schema.slot, eq(schema.slot.teamId, team.id))
+          .leftJoin(
+            schema.division,
+            and(
+              eq(schema.slot.divisionId, schema.division.id),
+              eq(schema.division.seasonId, found.seasonId ?? -1),
+            ),
+          )
+          .where(eq(team.id, found.teamId))
+          .all()
+          .sort((x, y) => (x.division === null ? 1 : 0) - (y.division === null ? 1 : 0))[0];
+  return {
+    reason: found.reason,
+    team: placed ? { name: placed.name, slug: placed.slug } : null,
+    division: placed?.division ?? null,
+  };
+}
+
 export interface RegistrationPlayerView {
   playerId: number;
   name: string;
@@ -554,6 +583,12 @@ export type RegistrationStatus =
       lineup: { complete: boolean; gaps: LineupGap[] };
       /** Lineups are locked: no player joins, leaves or changes role (M-29). */
       locked: boolean;
+      /** Staff's answer: the reason of a refusal, the roster and division of an approval. */
+      decision: {
+        reason: string | null;
+        team: { name: string; slug: string } | null;
+        division: string | null;
+      };
     }
   | { ok: false; error: 'not_found' };
 
@@ -626,5 +661,6 @@ export function registrationStatus(
     players,
     lineup: lineupStatus(players, settings),
     locked: lockedNow(row, now),
+    decision: decisionOf(db, row.request),
   };
 }

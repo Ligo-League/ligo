@@ -255,6 +255,17 @@ export function registerFormView(
   return pageOf(title, body);
 }
 
+/** What a lineup still lacks, one line each. */
+export function lineupGapList(locale: Locale, gaps: readonly LineupGap[]): Html {
+  return html`<ul>
+    ${gaps.map((gap) => {
+      const values: Record<string, number> =
+        gap.gap === 'not_ready' ? { count: gap.playerIds.length } : { ...gap, gap: 0 };
+      return html`<li>${t(locale, GAP_KEYS[gap.gap], values)}</li>`;
+    })}
+  </ul>`;
+}
+
 const GAP_KEYS = {
   starters: 'web.registration.gap.starters',
   subs: 'web.registration.gap.subs',
@@ -294,11 +305,7 @@ export function registrationView(
           </p>`
         : ''
     }
-    ${
-      waiting
-        ? ''
-        : html`<p class="card flash error">${t(locale, 'web.registration.withdrawn')}</p>`
-    }
+    ${outcome()}
     ${
       waiting && data.locked
         ? html`<p class="card flash error">${t(locale, 'web.registration.locked')}</p>`
@@ -339,6 +346,26 @@ export function registrationView(
     ${open && data.players.length > 0 ? lineupForm(locale, data, base, options.csrf) : playerList()}
     ${lineupView()} ${waiting ? withdrawForm(locale, base, options.csrf) : ''}`;
   return pageOf(title, body);
+
+  function outcome(): Html | string {
+    const { decision } = data;
+    if (data.status === 'approved' && decision.team) {
+      return html`<p class="card flash">
+        ${t(locale, 'web.registration.approved', { division: decision.division ?? '?' })}
+        <a href="/teams/${decision.team.slug}">${decision.team.name}</a>
+      </p>`;
+    }
+    if (data.status === 'rejected') {
+      return html`<div class="card flash error">
+        <p>${t(locale, 'web.registration.rejected')}</p>
+        <blockquote>${decision.reason ?? ''}</blockquote>
+      </div>`;
+    }
+    if (data.status === 'withdrawn') {
+      return html`<p class="card flash error">${t(locale, 'web.registration.withdrawn')}</p>`;
+    }
+    return '';
+  }
 
   function inviteSection(): Html {
     return html`<h2>${t(locale, 'web.registration.invite')}</h2>
