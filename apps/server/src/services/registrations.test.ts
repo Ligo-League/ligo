@@ -159,6 +159,19 @@ describe('fileRegistration', () => {
     expect(await file({ club: { kind: 'existing', clubId: 2 } })).toEqual({ ok: true, id: 1 });
   });
 
+  it('keeps the logo as a 128 px square, and refuses one it cannot decode', async () => {
+    const { store, file } = setup();
+    expect(await file({ logo: LOGO.slice(0, 33) })).toEqual({
+      ok: false,
+      errors: [{ field: 'logo', error: 'invalid_logo' }],
+    });
+    expect(store.files.size).toBe(0);
+    expect(await file()).toEqual({ ok: true, id: 1 });
+    const [kept] = [...store.files.values()];
+    const view = new DataView(kept?.buffer ?? new ArrayBuffer(24));
+    expect([view.getUint32(16), view.getUint32(20)]).toEqual([128, 128]);
+  });
+
   it('can do without a logo', async () => {
     const { db, store, file } = setup();
     expect(await file({ logo: null })).toEqual({ ok: true, id: 1 });

@@ -15,7 +15,8 @@ import {
 import { schema, type Db, type RegistrationPayload } from '@ligo/db';
 import { and, desc, eq, inArray, isNull, lte } from 'drizzle-orm';
 import type { EvidenceStore } from '../assets/evidence-store.ts';
-import { checkLogo, logoKeyOf, type LogoError } from './logo.ts';
+import { squareLogo } from '@ligo/render';
+import { checkLogo, LOGO_SIZE, logoKeyOf, type LogoError } from './logo.ts';
 
 // Registering a roster (design doc section 7, "Registration"; maintainer, 14 November 2026). A
 // logged-in member files the club and roster details, with the rulebook in force accepted; the
@@ -331,19 +332,29 @@ export async function fileRegistration(
     if (taken) fail('tag', 'tag_taken');
   }
 
+  // The logo is kept as the 128 px square images and pages use (design doc section 11); a file
+  // that passes the checks but cannot be decoded is refused here, while the filer can fix it.
+  let logo: Uint8Array | null = null;
   if (input.logo !== null) {
-    const logo = checkLogo(input.logo);
-    if (!logo.ok) fail('logo', logo.error);
+    const checked = checkLogo(input.logo);
+    if (!checked.ok) fail('logo', checked.error);
+    else {
+      try {
+        logo = squareLogo(input.logo, LOGO_SIZE);
+      } catch {
+        fail('logo', 'invalid_logo');
+      }
+    }
   }
   if (!input.rulesAccepted) fail('rules', 'rules_not_accepted');
   else if (input.rulesVersionId !== open.rules.id) fail('rules', 'rules_changed');
   if (errors.length > 0 || !details.ok) return { ok: false, errors };
 
   let logoKey: string | null = null;
-  if (input.logo !== null) {
-    logoKey = logoKeyOf(input.logo);
+  if (logo !== null) {
+    logoKey = logoKeyOf(logo);
     try {
-      await store.put(logoKey, input.logo);
+      await store.put(logoKey, logo);
     } catch {
       return { ok: false, errors: [{ field: 'logo', error: 'logo_not_stored' }] };
     }
