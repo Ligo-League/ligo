@@ -452,6 +452,23 @@ section 16.
 
 ## Answered
 
+#### M-33 · A club and its rosters before any competition
+
+- **Question:** people must be able to create a club and a roster that belong to no competition,
+  and set them up for the next season before asking a league to approve them (maintainer,
+  15 November 2026). Today the club and roster only exist once staff approve a registration. What
+  can be set up before (officials, players), and does a registration then enter an existing
+  roster with its players?
+- **Why it matters:** the registration flow (3d-4 to 3d-7) creates the club and the roster at
+  approval; this moves their creation earlier, and changes what approval does.
+- **Answer (maintainer, 15 November 2026):** anyone logged in creates a club and rosters on the
+  website, in no competition, and sets up each roster's officials and players; players join
+  through an invitation link and complete their own profile, as today. No mercato limit applies
+  to a roster in no competition. The registration form then offers the rosters the filer leads
+  (or a new one); the roster's players are the registration's lineup, checked as today, and the
+  filer sets starters and the captain. Approval adds the slot and the season's roster entries; it
+  no longer creates the club and roster. Built right after 3e-2.
+
 #### M-32 · Telling the other team about what is done on the website
 
 - **Question:** when a team acts on the website (proposes a time, reports a result, starts a
