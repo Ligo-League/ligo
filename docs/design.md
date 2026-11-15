@@ -1248,7 +1248,7 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
 6. **Season end and cups.** `closeSeason()` with promotion, relegation and barrages (format pending); Coupe de France bracket with BO1 → BO3 → BO5; tie-break matches. Done when Season 4 closes and the cup runs to a final on the platform.
 7. **FRFL mixed mode.** Lineups per match, balanced proposals, OpenSkill, player standings, per-user channels. Done when one FRFL week runs end to end.
 8. **LFRL Rocket League.** boxcars WebAssembly build, RL normaliser, metric schema and images. Done when a PC series' stats arrive from replays with no manual typing.
-9. **Polish and expansion.** Styled images in every frame, automatic social posting (section 11), leaderboards with coverage, impact rating, National regions and playoffs, LFV replays and the Riot API once possible, other organisations.
+9. **Polish and expansion.** Styled images in every frame, automatic social posting (section 11), leaderboards with coverage, impact rating, National regions and playoffs, LFV replays and the Riot API once possible, other organisations. A person picker of Ligo's own wherever someone must be named (an official, a player), searching the players Ligo knows, instead of typing an exact Discord username; invitation links or notifications are the alternative (maintainer, 15 November 2026).
 10. **Team development tools (R6, section 17).** In this order:
     - the practice book (replay upload and manual entry) and the team report;
     - the playbook and round tags;
