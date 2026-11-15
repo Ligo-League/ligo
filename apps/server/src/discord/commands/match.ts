@@ -8,11 +8,11 @@ import {
   searchReportableMatches,
 } from '../../services/reports.ts';
 import { proposeTime, readMatchTime, searchSchedulableMatches } from '../../services/scheduling.ts';
-import { setVetoMessage, startVeto } from '../../services/veto.ts';
-import { vetoMessage } from '../veto-message.ts';
+import { startVeto } from '../../services/veto.ts';
+import { postVeto, vetoStartMessage } from '../veto-message.ts';
 import { postProposal, proposalMessage } from '../schedule-posts.ts';
 import { suggestDays } from '../day-suggestions.ts';
-import { impossibleScore, matchLabel, mention } from '../match-text.ts';
+import { impossibleScore, matchLabel } from '../match-text.ts';
 import { reportPostMessage, reportQueueMessage } from '../report-posts.ts';
 import { described, MAX_CHOICE_LENGTH, MAX_CHOICES } from './describe.ts';
 import type { Command, CommandContext, CommandInteraction } from './types.ts';
@@ -76,30 +76,14 @@ async function vetoCommand(
     await interaction.reply({ content: t(locale, `veto.error.${reply.error}`), ephemeral: true });
     return;
   }
-  const message = vetoMessage(locale, reply.view);
-  const pinged = {
-    ...message,
-    content: [message.content, reply.mentionUserIds.map(mention).join(' ')]
-      .filter(Boolean)
-      .join('\n'),
-    mentionUserIds: reply.mentionUserIds,
-  };
   // Posted rather than replied, so that its ID is known and the clock can edit it later.
-  if (interaction.channelId !== null) {
-    try {
-      const posted = await context.gateway.postMessage(interaction.channelId, pinged);
-      setVetoMessage(db, reply.view.match.id, {
-        channelId: interaction.channelId,
-        messageId: posted.messageId,
-      });
-      await interaction.reply({ content: t(locale, 'veto.started'), ephemeral: true });
-      return;
-    } catch {
-      // The bot cannot post here: the reply still carries the buttons; only the clock's edits
-      // of the message are lost.
-    }
+  if (interaction.channelId !== null && (await postVeto(context, interaction.channelId, reply))) {
+    await interaction.reply({ content: t(locale, 'veto.started'), ephemeral: true });
+    return;
   }
-  await interaction.reply({ ...pinged, ephemeral: false });
+  // The bot cannot post here: the reply still carries the buttons; only the clock's edits of the
+  // message are lost.
+  await interaction.reply({ ...vetoStartMessage(locale, reply), ephemeral: false });
 }
 
 export const matchCommand: Command = {
