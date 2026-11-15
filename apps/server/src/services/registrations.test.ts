@@ -1,307 +1,206 @@
 import { schema } from '@ligo/db';
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { fakeEvidenceStore } from '../assets/evidence-store.ts';
-import { leagueDatabase, registrationDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
-import { pngForTests } from './logo.ts';
-import type { Actor } from './permissions.ts';
+import { kairosRoster, leagueDatabase, registrationDatabase } from '../testing.ts';
 import { ensurePlayer } from './players.ts';
-import {
-  fileRegistration,
-  registrationForm,
-  registrationStatus,
-  type RegistrationRequest,
-} from './registrations.ts';
-import { setTeamOwner } from './team-staff.ts';
+import { fileRegistration, registrationForm, registrationStatus } from './registrations.ts';
 
-// Registering a roster (design doc section 7, "Registration"; maintainer, 14 November 2026): a
-// logged-in member files the club and roster details with the rulebook accepted; players then
-// join from the invitation, with their own account. Staff approve in phase 3d-4b.
+// Registering a roster (design doc section 7; maintainer, 14 and 15 November 2026, M-33): an
+// official who manages a roster's players registers it with the rulebook accepted, then picks
+// its lineup among its players. Season 4 of LFR is open for registrations.
 
 const NOW = 10_000;
-const DAY = 86_400_000;
-const LOGO = pngForTests({ width: 512, height: 512, colorType: 6 });
-const STAFF: Actor = {
-  guildId: TEST_GUILD,
-  user: { id: '222222222222222222', displayName: 'Léa Staff' },
-  memberRoleIds: [TEST_STAFF_ROLE],
-};
+const REQUEST = { teamId: 0, rulesVersionId: 1, rulesAccepted: true };
 
-function setup(db = registrationDatabase()) {
-  const filer = ensurePlayer(
-    db,
-    { orgId: 1, discordUserId: '700000000000000001', displayName: 'Ana' },
-    1,
-  ).id;
-  const store = fakeEvidenceStore();
-  const file = (overrides: Partial<RegistrationRequest> = {}, by = filer) =>
-    fileRegistration(db, store, by, 'lfr', { ...REQUEST, ...overrides }, NOW);
-  return { db, filer, store, file };
+async function setup(db = registrationDatabase()) {
+  const kairos = await kairosRoster(db);
+  const file = (changes: Partial<typeof REQUEST> = {}, by = kairos.owner) =>
+    fileRegistration(db, by, 'lfr', { ...REQUEST, teamId: kairos.teamId, ...changes }, NOW);
+  return { db, ...kairos, file };
 }
 
-const REQUEST: RegistrationRequest = {
-  club: {
-    kind: 'new',
-    name: 'Kairos Esport',
-    city: 'Lyon',
-    legalStatus: 'association_1901',
-    socials: 'https://x.com/kairos\nhttps://www.twitch.tv/kairos',
-    discordUrl: 'https://discord.gg/kairos',
-  },
-  roster: { name: 'Kairos', tag: 'krs', colors: ['#112233', '#ffffff'], canStream: true },
-  logo: LOGO,
-  rulesVersionId: 1,
-  rulesAccepted: true,
-};
-
 describe('registrationForm', () => {
-  it('opens while a season takes registrations and a rulebook is in force', () => {
-    const { db, filer } = setup();
-    expect(registrationForm(db, 'lfr', filer, NOW)).toMatchObject({
+  it('opens while a season takes registrations and a rulebook is in force', async () => {
+    const { db, owner, teamId } = await setup();
+    expect(registrationForm(db, 'lfr', owner, NOW)).toMatchObject({
       ok: true,
       competition: { name: 'LFR', slug: 'lfr' },
       season: { name: 'Saison 4' },
       rules: { id: 1, version: 'Saison 4' },
-      clubs: [],
+      rosters: [{ teamId, name: 'Kairos', tag: 'KRS', slug: 'kairos', players: 5 }],
       settings: { starters: 5, subs_max: 2, stats_consent_required: true },
     });
-    expect(registrationForm(db, 'nope', filer, NOW)).toEqual({ ok: false, error: 'not_found' });
-    const closed = setup(leagueDatabase());
-    expect(registrationForm(closed.db, 'lfr', closed.filer, NOW)).toEqual({
+    expect(registrationForm(db, 'nope', owner, NOW)).toEqual({ ok: false, error: 'not_found' });
+    const closed = await setup(leagueDatabase());
+    expect(registrationForm(closed.db, 'lfr', closed.owner, NOW)).toEqual({
       ok: false,
       error: 'closed',
     });
-    const early = setup(registrationDatabase(NOW + 1));
-    expect(registrationForm(early.db, 'lfr', early.filer, NOW)).toEqual({
+    const early = await setup(registrationDatabase(NOW + 1));
+    expect(registrationForm(early.db, 'lfr', early.owner, NOW)).toEqual({
       ok: false,
       error: 'no_rules',
     });
   });
 
-  it('offers the clubs the member runs, for a new roster of one of them', () => {
-    const { db, filer } = setup();
-    setTeamOwner(
+  it('offers only the rosters whose players the member manages, not registered yet', async () => {
+    const { db, teamId, file } = await setup();
+    const coach = ensurePlayer(
       db,
-      STAFF,
-      { teamId: 2, member: { id: '700000000000000001', displayName: 'Ana' } },
-      5,
-    );
-    expect(registrationForm(db, 'lfr', filer, NOW)).toMatchObject({
-      ok: true,
-      clubs: [{ id: 2, name: 'Bravo' }],
-    });
+      { orgId: 1, discordUserId: '719999999999999999', displayName: 'Coach' },
+      1,
+    ).id;
+    db.insert(schema.teamStaff).values({ teamId, playerId: coach, role: 'coach', since: 1 }).run();
+    expect(registrationForm(db, 'lfr', coach, NOW)).toMatchObject({ ok: true, rosters: [] });
+    expect(file().ok).toBe(true);
+    const owner = db.select().from(schema.clubStaff).get()?.playerId ?? 0;
+    expect(registrationForm(db, 'lfr', owner, NOW)).toMatchObject({ ok: true, rosters: [] });
   });
 });
 
 describe('fileRegistration', () => {
-  it('files the request with the rulebook accepted, keeps the logo, and opens an invitation', async () => {
-    const { db, filer, store, file } = setup();
-    expect(await file()).toEqual({ ok: true, id: 1 });
-
-    const [stored] = db.select().from(schema.request).all();
-    expect(stored).toMatchObject({
-      competitionId: 1,
-      seasonId: 2,
-      teamId: null,
+  it('files a registration naming the roster, with the rulebook accepted, audited', async () => {
+    const { db, owner, teamId, file } = await setup();
+    expect(file()).toEqual({ ok: true, id: 1 });
+    expect(db.select().from(schema.request).get()).toMatchObject({
       kind: 'registration',
-      approval: 'staff',
       status: 'pending',
-      requestedBy: filer,
-      requestedAt: NOW,
+      teamId,
+      requestedBy: owner,
+      payloadJson: { rules: { versionId: 1, acceptedAt: NOW } },
     });
-    const logoKey = [...store.files.keys()][0];
-    expect(logoKey).toMatch(/^uploads\/[0-9a-f]{64}\.png$/);
-    expect(stored?.payloadJson).toEqual({
-      club: {
-        kind: 'new',
-        name: 'Kairos Esport',
-        city: 'Lyon',
-        legalStatus: 'association_1901',
-        socials: [
-          { label: 'x.com', url: 'https://x.com/kairos' },
-          { label: 'twitch.tv', url: 'https://www.twitch.tv/kairos' },
-        ],
-        discordUrl: 'https://discord.gg/kairos',
-      },
-      roster: {
-        name: 'Kairos',
-        tag: 'KRS',
-        colors: ['#112233', '#FFFFFF'],
-        logoKey,
-        canStream: true,
-      },
-      rules: { versionId: 1, acceptedAt: NOW },
-    });
-    expect(db.select().from(schema.registrationInvite).all()).toMatchObject([
-      { requestId: 1, createdAt: NOW, expiresAt: NOW + 7 * DAY, revokedAt: null },
-    ]);
-    expect(db.select().from(schema.registrationInvite).get()?.nonce).toMatch(/^[\w-]{43}$/);
     expect(db.select().from(schema.auditLog).all().at(-1)).toMatchObject({
-      actorPlayerId: filer,
+      actorPlayerId: owner,
       action: 'registration.file',
-      entity: 'request',
       entityId: '1',
-      afterJson: { roster: 'Kairos', tag: 'KRS', club: 'Kairos Esport', rulesVersionId: 1 },
+      afterJson: { teamId, roster: 'Kairos', rulesVersionId: 1 },
     });
+    // The lineup is picked next, among the roster's players.
+    expect(db.select().from(schema.registrationPlayer).all()).toEqual([]);
   });
 
-  it('registers a new roster of a club the member runs, and no other club', async () => {
-    const { db, file } = setup();
-    expect(await file({ club: { kind: 'existing', clubId: 2 } })).toEqual({
+  it('refuses a roster not the member’s, one registered already, and the rulebook not accepted', async () => {
+    const { db, playerIds, file } = await setup();
+    expect(file({}, playerIds[0] ?? 0)).toEqual({
       ok: false,
-      errors: [{ field: 'club.clubId', error: 'not_your_club' }],
+      errors: [{ field: 'roster', error: 'not_your_roster' }],
     });
-    setTeamOwner(
-      db,
-      STAFF,
-      { teamId: 2, member: { id: '700000000000000001', displayName: 'Ana' } },
-      5,
-    );
-    expect(await file({ club: { kind: 'existing', clubId: 2 } })).toEqual({ ok: true, id: 1 });
-  });
-
-  it('keeps the logo as a 128 px square, and refuses one it cannot decode', async () => {
-    const { store, file } = setup();
-    expect(await file({ logo: LOGO.slice(0, 33) })).toEqual({
+    expect(file({ rulesAccepted: false })).toEqual({
       ok: false,
-      errors: [{ field: 'logo', error: 'invalid_logo' }],
+      errors: [{ field: 'rules', error: 'rules_not_accepted' }],
     });
-    expect(store.files.size).toBe(0);
-    expect(await file()).toEqual({ ok: true, id: 1 });
-    const [kept] = [...store.files.values()];
-    const view = new DataView(kept?.buffer ?? new ArrayBuffer(24));
-    expect([view.getUint32(16), view.getUint32(20)]).toEqual([128, 128]);
-  });
-
-  it('can do without a logo', async () => {
-    const { db, store, file } = setup();
-    expect(await file({ logo: null })).toEqual({ ok: true, id: 1 });
-    expect(store.files.size).toBe(0);
-    expect(db.select().from(schema.request).get()?.payloadJson).toMatchObject({
-      roster: { logoKey: null },
-    });
-  });
-
-  it('reports every problem with its field, and stores nothing', async () => {
-    const { db, store, file } = setup();
-    const reply = await file({
-      club: {
-        kind: 'new',
-        name: 'alpha esport',
-        city: 'x'.repeat(61),
-        legalStatus: 'club',
-        socials: 'javascript:alert(1)',
-        discordUrl: 'http://discord.gg/x',
-      },
-      roster: { name: 'Bravo', tag: 'brv', colors: ['#000000'], canStream: false },
-      logo: pngForTests({ width: 512, height: 512, colorType: 2 }),
-      rulesAccepted: false,
-    });
-    expect(reply).toEqual({
-      ok: false,
-      errors: [
-        { field: 'club.city', error: 'invalid_city' },
-        { field: 'club.legalStatus', error: 'invalid_legal_status' },
-        { field: 'club.socials', error: 'invalid_link' },
-        { field: 'club.discordUrl', error: 'invalid_discord_url' },
-        { field: 'club.name', error: 'club_taken' },
-        { field: 'colors', error: 'invalid_colors' },
-        { field: 'rosterName', error: 'name_taken' },
-        { field: 'tag', error: 'tag_taken' },
-        { field: 'logo', error: 'logo_not_transparent' },
-        { field: 'rules', error: 'rules_not_accepted' },
-      ],
-    });
-    expect(db.select().from(schema.request).all()).toEqual([]);
-    expect(store.files.size).toBe(0);
-  });
-
-  it('refuses a name or tag another registration already waits with', async () => {
-    const { file } = setup();
-    await file();
-    expect(
-      await file({
-        club: { ...REQUEST.club, name: 'Kairos Two' } as RegistrationRequest['club'],
-        roster: { ...REQUEST.roster, name: 'kairos' },
-      }),
-    ).toEqual({
-      ok: false,
-      errors: [
-        { field: 'rosterName', error: 'name_taken' },
-        { field: 'tag', error: 'tag_taken' },
-      ],
-    });
-    expect(await file({ roster: { ...REQUEST.roster, name: 'Kairos B', tag: 'KRSB' } })).toEqual({
-      ok: false,
-      errors: [{ field: 'club.name', error: 'club_taken' }],
-    });
-  });
-
-  it('asks again when the rulebook changed while the form was open', async () => {
-    const { file } = setup();
-    expect(await file({ rulesVersionId: 9 })).toEqual({
+    expect(file({ rulesVersionId: 99 })).toEqual({
       ok: false,
       errors: [{ field: 'rules', error: 'rules_changed' }],
     });
+    expect(file().ok).toBe(true);
+    expect(file()).toEqual({ ok: false, errors: [{ field: 'roster', error: 'not_your_roster' }] });
+    expect(db.select().from(schema.request).all()).toHaveLength(1);
   });
 
-  it('refuses when registration is closed, or the competition unknown', async () => {
-    const closed = setup(leagueDatabase());
-    expect(await closed.file()).toEqual({ ok: false, error: 'closed' });
-    const { db, filer, store } = setup();
-    expect(await fileRegistration(db, store, filer, 'nope', REQUEST, NOW)).toEqual({
+  it('is closed outside the registration period', async () => {
+    const { file } = await setup(leagueDatabase());
+    expect(file()).toEqual({ ok: false, error: 'closed' });
+  });
+});
+
+describe('registrationStatus', () => {
+  it('shows the filer the roster’s players to pick, and nobody else anything', async () => {
+    const { db, owner, playerIds, file } = await setup();
+    file();
+    const status = registrationStatus(db, owner, 1, NOW);
+    expect(status).toMatchObject({
+      ok: true,
+      status: 'pending',
+      club: 'Kairos Esport',
+      roster: { name: 'Kairos', slug: 'kairos' },
+      rulesVersion: 'Saison 4',
+      players: [],
+      locked: false,
+    });
+    expect(status.ok && status.candidates.map((entry) => entry.playerId)).toEqual(playerIds);
+    expect(status.ok && status.candidates[0]).toMatchObject({
+      role: null,
+      captain: false,
+      gaps: [],
+      unavailable: false,
+    });
+    expect(registrationStatus(db, playerIds[0] ?? 0, 1, NOW)).toEqual({
       ok: false,
       error: 'not_found',
     });
   });
 
-  it('keeps nothing when the logo cannot be stored', async () => {
-    const { db, store, file } = setup();
-    store.failing = true;
-    expect(await file()).toEqual({
-      ok: false,
-      errors: [{ field: 'logo', error: 'logo_not_stored' }],
-    });
-    expect(db.select().from(schema.request).all()).toEqual([]);
+  it('marks a player under the league’s age, or one in another registration of the league', async () => {
+    const { db, owner, playerIds, file } = await setup();
+    file();
+    const [young, taken] = playerIds;
+    db.update(schema.player)
+      .set({ birthDate: '2015-01-01' })
+      .where(eq(schema.player.id, young ?? 0))
+      .run();
+    db.insert(schema.request)
+      .values({
+        competitionId: 1,
+        seasonId: db.select().from(schema.request).get()?.seasonId ?? 0,
+        kind: 'registration',
+        payloadJson: { rules: { versionId: 1, acceptedAt: 1 } },
+        approval: 'staff',
+        requestedBy: owner,
+        requestedAt: 1,
+      })
+      .run();
+    db.insert(schema.registrationPlayer)
+      .values({ requestId: 2, playerId: taken ?? 0, role: 'player', joinedAt: 1 })
+      .run();
+    const status = registrationStatus(db, owner, 1, NOW);
+    expect(status.ok && status.candidates.slice(0, 2)).toMatchObject([
+      { gaps: ['too_young'], unavailable: false },
+      { gaps: [], unavailable: true },
+    ]);
   });
-});
 
-describe('registrationStatus', () => {
-  it('shows the filer the registration, its invitation and what is missing', async () => {
-    const { db, filer, file } = setup();
-    await file();
-    expect(registrationStatus(db, filer, 1, NOW + DAY)).toMatchObject({
+  it('still shows an older registration, filed with its club and roster, and staff’s answer', async () => {
+    const { db, owner } = await setup();
+    db.insert(schema.request)
+      .values({
+        competitionId: 1,
+        seasonId:
+          db.select().from(schema.season).where(eq(schema.season.name, 'Saison 4')).get()?.id ?? 0,
+        kind: 'registration',
+        payloadJson: {
+          club: {
+            kind: 'new',
+            name: 'Benelux Club',
+            city: null,
+            legalStatus: null,
+            socials: [],
+            discordUrl: null,
+          },
+          roster: {
+            name: 'Benelux',
+            tag: 'BNL',
+            colors: ['#000000', '#FFFFFF'],
+            logoKey: null,
+            canStream: false,
+          },
+          rules: { versionId: 1, acceptedAt: 1 },
+        },
+        approval: 'staff',
+        status: 'rejected',
+        reason: 'Logo non conforme',
+        decidedAt: 2,
+        requestedBy: owner,
+        requestedAt: 1,
+      })
+      .run();
+    expect(registrationStatus(db, owner, 1, NOW)).toMatchObject({
       ok: true,
-      id: 1,
-      status: 'pending',
-      competition: { name: 'LFR', slug: 'lfr' },
-      season: 'Saison 4',
-      club: { name: 'Kairos Esport', existing: false },
-      roster: { name: 'Kairos', tag: 'KRS', hasLogo: true },
-      rulesVersion: 'Saison 4',
-      invite: { id: 1, expiresAt: NOW + 7 * DAY, active: true },
-      players: [],
-      lineup: {
-        complete: false,
-        gaps: [
-          { gap: 'starters', have: 0, want: 5 },
-          { gap: 'captain', have: 0 },
-        ],
-      },
+      status: 'rejected',
+      club: 'Benelux Club',
+      roster: { name: 'Benelux', slug: null },
+      candidates: [],
+      decision: { reason: 'Logo non conforme' },
     });
-    expect(registrationStatus(db, filer, 1, NOW + 8 * DAY)).toMatchObject({
-      invite: { active: false },
-    });
-  });
-
-  it('is the filer’s only: anyone else finds nothing there', async () => {
-    const { db, file } = setup();
-    await file();
-    const other = ensurePlayer(
-      db,
-      { orgId: 1, discordUserId: '700000000000000002', displayName: 'Ben' },
-      1,
-    ).id;
-    expect(registrationStatus(db, other, 1, NOW)).toEqual({ ok: false, error: 'not_found' });
-    expect(registrationStatus(db, other, 99, NOW)).toEqual({ ok: false, error: 'not_found' });
   });
 });

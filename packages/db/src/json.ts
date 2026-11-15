@@ -117,6 +117,17 @@ export const registrationPayloadSchema = z.strictObject({
 });
 export type RegistrationPayload = z.infer<typeof registrationPayloadSchema>;
 
+/**
+ * `request.payload_json` of a registration that enters an existing roster (M-33, maintainer,
+ * 15 November 2026): the roster is the request's `team_id`, its lineup the registration's
+ * players; only the rulebook accepted is kept here. Registrations filed before carry the
+ * roster and its club instead (`registrationPayloadSchema`), kept for their history.
+ */
+export const rosterRegistrationPayloadSchema = z.strictObject({
+  rules: z.strictObject({ versionId: z.int().positive(), acceptedAt: z.int().nonnegative() }),
+});
+export type RosterRegistrationPayload = z.infer<typeof rosterRegistrationPayloadSchema>;
+
 /** `audit_log.before_json` / `after_json`: a snapshot of the changed entity. */
 export const auditSnapshotSchema = z.record(z.string(), z.unknown());
 export type AuditSnapshot = z.infer<typeof auditSnapshotSchema>;
@@ -128,7 +139,9 @@ export type AuditSnapshot = z.infer<typeof auditSnapshotSchema>;
 export const requestPayloadSchema = z.union([
   z.strictObject({ playerId: z.int().positive(), role: z.enum(ADDABLE_TEAM_ROLES) }),
   z.strictObject({ playerId: z.int().positive() }),
-  // `registration`: filed before the team exists, so it carries the roster and its club.
+  // `registration`: filed before the team existed (until 15 November 2026), so it carries the
+  // roster and its club; since, it names its roster in `team_id`.
   z.lazy(() => registrationPayloadSchema),
+  z.lazy(() => rosterRegistrationPayloadSchema),
 ]);
 export type RequestPayload = z.infer<typeof requestPayloadSchema>;

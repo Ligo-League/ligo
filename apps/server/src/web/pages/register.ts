@@ -1,4 +1,10 @@
-import { ROSTER_COLORS_MAX, ROSTER_COLORS_MIN, type FieldErrors, type LineupGap } from '@ligo/core';
+import {
+  ROSTER_COLORS_MAX,
+  ROSTER_COLORS_MIN,
+  type FieldErrors,
+  type LineupGap,
+  type PlayerGap,
+} from '@ligo/core';
 import type { R6Rank } from '@ligo/titles';
 import { html } from 'hono/html';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
@@ -8,17 +14,15 @@ import type {
   RegistrationForm,
   RegistrationStatus,
 } from '../../services/registrations.ts';
-import { csrfField, pageOf, safeColor, type Html, type Page } from '../layout.ts';
+import { csrfField, pageOf, type Html, type Page } from '../layout.ts';
 
 type FormData = Extract<RegistrationForm, { ok: true }>;
 type StatusData = Extract<RegistrationStatus, { ok: true }>;
 
 const LEGAL_STATUSES = ['association', 'association_1901', 'company', 'amateur'] as const;
 
-/** What the member typed, to fill the form again after a refusal. The logo cannot be refilled. */
+/** A club and its roster as typed (`/clubs/new`), to fill the form again after a refusal. */
 export interface RegisterValues {
-  clubKind: 'new' | 'existing';
-  clubId: string;
   clubName: string;
   clubCity: string;
   clubLegalStatus: string;
@@ -30,20 +34,6 @@ export interface RegisterValues {
   colors: string[];
   canStream: boolean;
 }
-
-export const EMPTY_REGISTER_VALUES: RegisterValues = {
-  clubKind: 'new',
-  clubId: '',
-  clubName: '',
-  clubCity: '',
-  clubLegalStatus: '',
-  clubSocials: '',
-  clubDiscord: '',
-  rosterName: '',
-  tag: '',
-  colors: ['#000000', '#FFFFFF'],
-  canStream: false,
-};
 
 const DEFAULT_COLORS = ['#000000', '#FFFFFF'];
 
@@ -166,15 +156,13 @@ export function rosterFields(
     </label>`;
 }
 
-const errorKey = (error: RegistrationFieldError): MessageKey => `web.register.error.${error}`;
-
-/** `/c/:competition/register`: the club, the roster, the rulebook accepted. */
+/** `/c/:competition/register`: one of the member's rosters, the rulebook accepted. */
 export function registerFormView(
   locale: Locale,
   form: FormData,
-  state: { values: RegisterValues; errors: FieldErrors<RegistrationFieldError>; csrf: string },
+  state: { teamId: string; errors: FieldErrors<RegistrationFieldError>; csrf: string },
 ): Page {
-  const { values, errors } = state;
+  const { errors } = state;
   const title = t(locale, 'web.register.title', {
     competition: form.competition.name,
     season: form.season.name,
@@ -184,72 +172,50 @@ export function registerFormView(
     return found.length === 0
       ? ''
       : html`<p class="field-error">
-          ${found.map((entry) => t(locale, errorKey(entry.error))).join(' ')}
+          ${found.map((entry) => t(locale, `web.register.error.${entry.error}`)).join(' ')}
         </p>`;
   };
-  const checked = (on: boolean) => (on ? 'checked' : '');
   const { settings } = form;
-
+  const intro = html`<p>
+    ${t(locale, 'web.register.intro', { starters: settings.starters, subs: settings.subs_max })}
+  </p>`;
+  if (form.rosters.length === 0) {
+    return pageOf(
+      title,
+      html`<h1>${title}</h1>
+        ${intro}
+        <p class="card flash">${t(locale, 'web.register.noRoster')}</p>
+        <p><a href="/clubs/new">${t(locale, 'web.me.createClub')}</a></p>`,
+    );
+  }
   const body = html`<h1>${title}</h1>
-    <p>
-      ${t(locale, 'web.register.intro', {
-        starters: settings.starters,
-        subs: settings.subs_max,
-      })}
-    </p>
+    ${intro}
     ${
       errors.length > 0
         ? html`<p class="card flash error">${t(locale, 'web.register.fix')}</p>`
         : ''
     }
-    <form
-      class="card stack"
-      method="post"
-      action="/c/${form.competition.slug}/register"
-      enctype="multipart/form-data"
-    >
+    <form class="card stack" method="post" action="/c/${form.competition.slug}/register">
       ${csrfField(state.csrf)}
       <input type="hidden" name="rules_version" value="${String(form.rules.id)}" />
-      <h2>${t(locale, 'web.register.club')}</h2>
-      ${
-        form.clubs.length > 0
-          ? html`<label>
-                <input
-                  type="radio"
-                  name="club_kind"
-                  value="existing"
-                  ${checked(values.clubKind === 'existing')}
-                />
-                ${t(locale, 'web.register.club.existing')}
-              </label>
-              <select name="club_id" aria-label="${t(locale, 'web.register.club.existing')}">
-                ${form.clubs.map(
-                  (entry) =>
-                    html`<option
-                      value="${String(entry.id)}"
-                      ${values.clubId === String(entry.id) ? 'selected' : ''}
-                    >
-                      ${entry.name}
-                    </option>`,
-                )}
-              </select>
-              ${fieldError('club.clubId')}
-              <label>
-                <input
-                  type="radio"
-                  name="club_kind"
-                  value="new"
-                  ${checked(values.clubKind === 'new')}
-                />
-                ${t(locale, 'web.register.club.new')}
-              </label>`
-          : html`<input type="hidden" name="club_kind" value="new" />`
-      }
-      ${clubFields(locale, values, fieldError)}
-
-      <h2>${t(locale, 'web.register.roster')}</h2>
-      ${rosterFields(locale, values, fieldError)}
-
+      <label for="team">${t(locale, 'web.register.roster')}</label>
+      <select id="team" name="team" required>
+        ${form.rosters.map(
+          (roster) =>
+            html`<option
+              value="${String(roster.teamId)}"
+              ${state.teamId === String(roster.teamId) ? 'selected' : ''}
+            >
+              ${t(locale, 'web.register.rosterOption', {
+                name: roster.name,
+                tag: roster.tag,
+                players: roster.players,
+              })}
+            </option>`,
+        )}
+      </select>
+      <p class="muted">${t(locale, 'web.register.rosterHint')}</p>
+      ${fieldError('roster')}
       <h2>${t(locale, 'web.register.rules')}</h2>
       <p>
         <a href="/c/${form.competition.slug}/rules" target="_blank" rel="noopener"
@@ -286,14 +252,25 @@ const GAP_KEYS = {
   not_ready: 'web.registration.gap.not_ready',
 } as const satisfies Record<LineupGap['gap'], MessageKey>;
 
-/** `/registrations/:id`: the filer follows the registration and shares the invitation. */
+const PLAYER_GAP_KEYS = {
+  game_account: 'web.join.gap.game_account',
+  nationality: 'web.join.gap.nationality',
+  stats_consent: 'web.join.gap.stats_consent',
+  birth_date: 'web.join.gap.birth_date',
+  too_young: 'web.registration.tooYoung',
+} as const satisfies Record<PlayerGap, MessageKey>;
+
+/** `/registrations/:id`: the filer follows the registration and picks its lineup. */
 export function registrationView(
   locale: Locale,
   data: StatusData,
   options: {
-    inviteUrl: string | null;
     timeZone: string;
     csrf: string;
+    /** The lineup's players not on the league's Discord server; null when Discord cannot say. */
+    notOnServer: number[] | null;
+    /** The league's public invitation to its Discord server, when it has one. */
+    serverInvite: string | null;
     /** What the last action did, from the address it sent back to. */
     flash: { error: boolean; key: MessageKey } | null;
   },
@@ -309,6 +286,7 @@ export function registrationView(
       timeStyle: 'short',
       timeZone: options.timeZone,
     }).format(at);
+  const offServer = new Set(options.notOnServer ?? []);
   const body = html`<h1>${title}</h1>
     ${
       options.flash
@@ -332,31 +310,21 @@ export function registrationView(
     </p>
     <dl class="card facts">
       <dt>${t(locale, 'web.registration.club')}</dt>
-      <dd>
-        ${data.club.name}
-        ${data.club.existing ? '' : html`<span class="muted">(${t(locale, 'web.registration.newClub')})</span>`}
-      </dd>
+      <dd>${data.club}</dd>
       <dt>${t(locale, 'web.registration.roster')}</dt>
       <dd>
-        ${data.roster.name} <span class="muted">[${data.roster.tag}]</span>
-        <span class="swatches">
-          ${data.roster.colors.map((color) => {
-            const safe = safeColor(color);
-            return safe ? html`<span style="background:${safe}"></span>` : '';
-          })}
-        </span>
-      </dd>
-      <dt>${t(locale, 'web.registration.logo')}</dt>
-      <dd>
-        ${t(locale, data.roster.hasLogo ? 'web.registration.logo.yes' : 'web.registration.logo.no')}
+        ${
+          data.roster.slug
+            ? html`<a href="/teams/${data.roster.slug}">${data.roster.name}</a>`
+            : data.roster.name
+        }
       </dd>
       <dt>${t(locale, 'web.registration.rules')}</dt>
       <dd>${t(locale, 'web.registration.rulesAccepted', { version: data.rulesVersion })}</dd>
     </dl>
-    ${open ? inviteSection() : ''}
     <h2>${t(locale, 'web.registration.players')}</h2>
-    ${open && data.players.length > 0 ? lineupForm(locale, data, base, options.csrf) : playerList()}
-    ${lineupView()} ${waiting ? withdrawForm(locale, base, options.csrf) : ''}`;
+    ${open && data.roster.slug ? pickForm() : playerList()} ${serverNote()} ${lineupView()}
+    ${waiting ? withdrawForm(locale, base, options.csrf) : ''}`;
   return pageOf(title, body);
 
   function outcome(): Html | string {
@@ -379,38 +347,98 @@ export function registrationView(
     return '';
   }
 
-  function inviteSection(): Html {
-    return html`<h2>${t(locale, 'web.registration.invite')}</h2>
+  /** Players not on the league's server cannot be approved (M-30): they are told where it is. */
+  function serverNote(): Html | string {
+    if (!waiting) return '';
+    if (options.notOnServer === null) {
+      return html`<p class="muted">${t(locale, 'web.join.discordUnavailable')}</p>`;
+    }
+    if (options.notOnServer.length === 0) return '';
+    return html`<div class="card flash error">
+      <p>${t(locale, 'web.registration.notOnServer', { count: options.notOnServer.length })}</p>
       ${
-        data.invite && options.inviteUrl
-          ? html`<div class="card">
-              <p>${t(locale, 'web.registration.inviteHint')}</p>
-              <p>
-                <input
-                  class="copy"
-                  type="text"
-                  readonly
-                  value="${options.inviteUrl}"
-                  aria-label="${t(locale, 'web.registration.invite')}"
-                />
-              </p>
-              <p class="muted">
-                ${t(
-                  locale,
-                  data.invite.active
-                    ? 'web.registration.inviteUntil'
-                    : 'web.registration.inviteExpired',
-                  { date: date(data.invite.expiresAt) },
-                )}
-              </p>
-            </div>`
-          : html`<p class="muted">${t(locale, 'web.registration.noInvite')}</p>`
+        options.serverInvite
+          ? html`<p>
+              <a href="${options.serverInvite}" rel="noopener noreferrer"
+                >${t(locale, 'web.join.joinServer')}</a
+              >
+            </p>`
+          : ''
       }
-      <form method="post" action="${base}/invite">
-        ${csrfField(options.csrf)}
-        <button type="submit">${t(locale, 'web.registration.newInvite')}</button>
-        <span class="muted">${t(locale, 'web.registration.newInviteHint')}</span>
-      </form>`;
+    </div>`;
+  }
+
+  /** The roster's players, each to pick as a starter or a substitute, and the captain. */
+  function pickForm(): Html {
+    if (data.candidates.length === 0) {
+      return html`<p class="card flash">
+        ${t(locale, 'web.registration.noRosterPlayers')}
+        <a href="/teams/${data.roster.slug ?? ''}/manage#players"
+          >${t(locale, 'web.registration.invitePlayers')}</a
+        >
+      </p>`;
+    }
+    return html`<form method="post" action="${base}/lineup">
+      ${csrfField(options.csrf)}
+      <table class="card lineup">
+        <thead>
+          <tr>
+            <th>${t(locale, 'web.registration.lineup.player')}</th>
+            <th>${t(locale, 'web.registration.lineup.role')}</th>
+            <th>${t(locale, 'web.registration.captain')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.candidates.map((entry) => {
+            const notes = [
+              ...entry.gaps.map((gap) => t(locale, PLAYER_GAP_KEYS[gap])),
+              ...(entry.unavailable ? [t(locale, 'web.registration.unavailable')] : []),
+              ...(offServer.has(entry.playerId) ? [t(locale, 'web.registration.offServer')] : []),
+            ];
+            return html`<tr>
+              <td>
+                ${entry.name}
+                ${
+                  notes.length > 0
+                    ? html`<span class="muted"
+                        >· ${t(locale, 'web.registration.notReady')} : ${notes.join(', ')}</span
+                      >`
+                    : ''
+                }
+              </td>
+              <td>
+                <select
+                  name="role_${entry.playerId}"
+                  aria-label="${t(locale, 'web.registration.lineup.roleOf', { name: entry.name })}"
+                  ${entry.unavailable && entry.role === null ? 'disabled' : ''}
+                >
+                  <option value="" ${entry.role === null ? 'selected' : ''}>
+                    ${t(locale, 'web.registration.lineup.out')}
+                  </option>
+                  <option value="player" ${entry.role === 'player' ? 'selected' : ''}>
+                    ${t(locale, 'web.registration.starter')}
+                  </option>
+                  <option value="sub" ${entry.role === 'sub' ? 'selected' : ''}>
+                    ${t(locale, 'web.registration.sub')}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="radio"
+                  name="captain"
+                  value="${entry.playerId}"
+                  ${entry.captain ? 'checked' : ''}
+                  aria-label="${t(locale, 'web.registration.lineup.captainOf', { name: entry.name })}"
+                />
+              </td>
+            </tr>`;
+          })}
+        </tbody>
+      </table>
+      <p class="muted">${t(locale, 'web.registration.lineup.hint')}</p>
+      <button type="submit">${t(locale, 'web.registration.lineup.save')}</button>
+    </form>`;
   }
 
   function playerList(): Html {
@@ -450,67 +478,6 @@ export function registrationView(
           </div>`
     }`;
   }
-}
-
-/** The lineup as the filer sets it: each player's role and the captain, or a player removed. */
-function lineupForm(locale: Locale, data: StatusData, base: string, csrf: string): Html {
-  return html`<form method="post" action="${base}/lineup">
-    ${csrfField(csrf)}
-    <table class="card lineup">
-      <thead>
-        <tr>
-          <th>${t(locale, 'web.registration.lineup.player')}</th>
-          <th>${t(locale, 'web.registration.lineup.role')}</th>
-          <th>${t(locale, 'web.registration.captain')}</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.players.map(
-          (entry) =>
-            html`<tr>
-              <td>
-                ${entry.name}
-                ${
-                  entry.ready
-                    ? ''
-                    : html`<span class="muted">· ${t(locale, 'web.registration.notReady')}</span>`
-                }
-              </td>
-              <td>
-                <select
-                  name="role_${entry.playerId}"
-                  aria-label="${t(locale, 'web.registration.lineup.roleOf', { name: entry.name })}"
-                >
-                  <option value="player" ${entry.role === 'player' ? 'selected' : ''}>
-                    ${t(locale, 'web.registration.starter')}
-                  </option>
-                  <option value="sub" ${entry.role === 'sub' ? 'selected' : ''}>
-                    ${t(locale, 'web.registration.sub')}
-                  </option>
-                </select>
-              </td>
-              <td>
-                <input
-                  type="radio"
-                  name="captain"
-                  value="${entry.playerId}"
-                  ${entry.captain ? 'checked' : ''}
-                  aria-label="${t(locale, 'web.registration.lineup.captainOf', { name: entry.name })}"
-                />
-              </td>
-              <td>
-                <button type="submit" formaction="${base}/players/${entry.playerId}/remove">
-                  ${t(locale, 'web.registration.lineup.remove')}
-                </button>
-              </td>
-            </tr>`,
-        )}
-      </tbody>
-    </table>
-    <p class="muted">${t(locale, 'web.registration.lineup.hint')}</p>
-    <button type="submit">${t(locale, 'web.registration.lineup.save')}</button>
-  </form>`;
 }
 
 /** Withdrawing the registration, with a box to tick first. */

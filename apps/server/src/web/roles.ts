@@ -1,7 +1,7 @@
 import { schema, type Db } from '@ligo/db';
 import { asc, eq } from 'drizzle-orm';
 import type { DiscordGateway } from '../discord/gateway.ts';
-import type { MemberCheck } from '../services/joining.ts';
+import type { MemberCheck } from '../services/registration-players.ts';
 import type { Actor } from '../services/permissions.ts';
 
 // Who is league staff on the website: the members holding the staff role in the league's Discord

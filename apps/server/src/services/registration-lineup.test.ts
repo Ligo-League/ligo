@@ -1,227 +1,154 @@
+import type { RegistrationRole } from '@ligo/core';
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { fakeEvidenceStore } from '../assets/evidence-store.ts';
-import { registrationDatabase } from '../testing.ts';
-import { saveGameProfile } from './game-profile.ts';
-import { inviteToken } from './invites.ts';
-import { joinRegistration, joinView } from './joining.ts';
-import { setNationality, setStatsConsent } from './me.ts';
-import { ensurePlayer } from './players.ts';
-import {
-  removeFromRegistration,
-  renewInvite,
-  setLineup,
-  withdrawRegistration,
-} from './registration-lineup.ts';
+import { kairosRoster, registrationDatabase, rosterPlayerForTests } from '../testing.ts';
+import { setLineup, withdrawRegistration } from './registration-lineup.ts';
 import { fileRegistration, registrationStatus } from './registrations.ts';
+import { removeFromRoster } from './rosters.ts';
 
-// The filer builds the lineup (maintainer, 14 and 15 November 2026): starters, substitutes and
-// the captain, a starter (O-30); a player removed; a new invitation link; the registration
-// withdrawn. Lineup changes stop once the lineup locks (M-29).
+// The filer picks the registration's lineup among the roster's players (M-33): starters,
+// substitutes and the captain, a starter (O-30); not a player of another roster of the league
+// (O-29); until the lineup locks (M-29). Season 4 starts on 4 January 2027.
 
 const NOW = 10_000;
-const SECRET = 's'.repeat(40);
-const SEASON_START = Date.UTC(2027, 0, 4, 12);
-const always = () => Promise.resolve(true);
+const SEASON_START = Date.parse('2027-01-04T12:00:00Z');
 
-async function setup(players = 6) {
+async function setup(players = 7) {
   const db = registrationDatabase();
-  const filer = ensurePlayer(
+  const kairos = await kairosRoster(db, players);
+  const filed = fileRegistration(
     db,
-    { orgId: 1, discordUserId: '700000000000000001', displayName: 'Ana' },
-    1,
-  ).id;
-  await fileRegistration(
-    db,
-    fakeEvidenceStore(),
-    filer,
+    kairos.owner,
     'lfr',
-    {
-      club: {
-        kind: 'new',
-        name: 'Kairos Esport',
-        city: '',
-        legalStatus: '',
-        socials: '',
-        discordUrl: '',
-      },
-      roster: { name: 'Kairos', tag: 'KRS', colors: ['#112233', '#FFFFFF'], canStream: false },
-      logo: null,
-      rulesVersionId: 1,
-      rulesAccepted: true,
-    },
+    { teamId: kairos.teamId, rulesVersionId: 1, rulesAccepted: true },
     NOW,
   );
-  const invite = db.select().from(schema.registrationInvite).get();
-  if (!invite) throw new Error('no invitation');
-  const link = { inviteId: invite.id, token: inviteToken(SECRET, invite), secret: SECRET };
-  const ids: number[] = [];
-  for (let n = 1; n <= players; n += 1) {
-    const discordUserId = `71000000000000000${String(n)}`;
-    const id = ensurePlayer(db, { orgId: 1, discordUserId, displayName: `P${String(n)}` }, 1).id;
-    saveGameProfile(
+  if (!filed.ok) throw new Error('not filed');
+  const pick = (
+    starters: number[],
+    subs: number[] = [],
+    captainId: number | null = null,
+    now = NOW,
+  ) =>
+    setLineup(
       db,
-      id,
-      { ubisoftName: `Player${String(n)}`, profileId: null, rank: 'gold' },
-      1,
+      kairos.owner,
+      filed.id,
+      {
+        roles: new Map<number, RegistrationRole>([
+          ...starters.map((id) => [id, 'player'] as const),
+          ...subs.map((id) => [id, 'sub'] as const),
+        ]),
+        captainId,
+      },
+      now,
     );
-    setNationality(db, id, 'FR', 1);
-    setStatsConsent(db, id, true, 1);
-    db.update(schema.player).set({ birthDate: '2000-01-01' }).where(eq(schema.player.id, id)).run();
-    await joinRegistration(db, always, { id, discordUserId }, link, NOW);
-    ids.push(id);
-  }
-  const lastAudit = () => db.select().from(schema.auditLog).all().at(-1);
-  return { db, filer, ids, link, lastAudit };
+  const lineup = () =>
+    db
+      .select()
+      .from(schema.registrationPlayer)
+      .all()
+      .map((row) => [row.playerId, row.role, row.captain]);
+  return { db, ...kairos, requestId: filed.id, pick, lineup };
 }
 
 describe('setLineup', () => {
-  it('sets roles and the captain, audited, and the lineup becomes complete', async () => {
-    const { db, filer, ids, lastAudit } = await setup();
-    const [first = 0, , , , fifth = 0, sixth = 0] = ids;
-    expect(registrationStatus(db, filer, 1, NOW)).toMatchObject({
-      lineup: { complete: false, gaps: [{ gap: 'captain', have: 0 }] },
-    });
-    const roles = new Map([
-      [fifth, 'sub' as const],
-      [sixth, 'player' as const],
+  it('picks starters, substitutes and the captain among the roster’s players, audited', async () => {
+    const { db, owner, playerIds, requestId, pick, lineup } = await setup();
+    const [a = 0, b = 0, c = 0, d = 0, e = 0, f = 0] = playerIds;
+    expect(pick([a, b, c, d, e], [f], b)).toEqual({ ok: true });
+    expect(lineup()).toEqual([
+      [a, 'player', false],
+      [b, 'player', true],
+      [c, 'player', false],
+      [d, 'player', false],
+      [e, 'player', false],
+      [f, 'sub', false],
     ]);
-    expect(setLineup(db, filer, 1, { roles, captainId: first }, NOW)).toEqual({ ok: true });
-    expect(registrationStatus(db, filer, 1, NOW)).toMatchObject({
-      lineup: { complete: true, gaps: [] },
-    });
-    expect(
-      db
-        .select()
-        .from(schema.registrationPlayer)
-        .all()
-        .map((row) => [row.playerId, row.role, row.captain]),
-    ).toEqual([
-      [ids[0], 'player', true],
-      [ids[1], 'player', false],
-      [ids[2], 'player', false],
-      [ids[3], 'player', false],
-      [fifth, 'sub', false],
-      [sixth, 'player', false],
-    ]);
-    expect(lastAudit()).toMatchObject({
-      actorPlayerId: filer,
+    const status = registrationStatus(db, owner, requestId, NOW);
+    expect(status.ok && status.lineup).toEqual({ complete: true, gaps: [] });
+    expect(db.select().from(schema.auditLog).all().at(-1)).toMatchObject({
+      actorPlayerId: owner,
       action: 'registration.lineup',
-      entityId: '1',
-      afterJson: { captainId: first, subs: [fifth] },
+      beforeJson: { starters: [], subs: [], captainId: null },
+      afterJson: { starters: [a, b, c, d, e], subs: [f], captainId: b },
     });
-  });
-
-  it('refuses a substitute as captain, or too many starters', async () => {
-    const { db, filer, ids } = await setup();
-    const sixth = ids[5] ?? 0;
-    expect(setLineup(db, filer, 1, { roles: new Map(), captainId: sixth }, NOW)).toEqual({
-      ok: false,
-      error: 'captain_not_starter',
-    });
-    expect(
-      setLineup(db, filer, 1, { roles: new Map([[sixth, 'player']]), captainId: null }, NOW),
-    ).toEqual({ ok: false, error: 'too_many_starters' });
-  });
-
-  it('is the filer’s only, while the registration waits and the lineup is open', async () => {
-    const { db, filer, ids } = await setup();
-    const change = { roles: new Map(), captainId: ids[0] ?? 0 };
-    expect(setLineup(db, ids[1] ?? 0, 1, change, NOW)).toEqual({ ok: false, error: 'not_found' });
-    expect(setLineup(db, filer, 1, change, SEASON_START)).toEqual({
-      ok: false,
-      error: 'lineup_locked',
-    });
-    expect(withdrawRegistration(db, filer, 1, NOW)).toEqual({ ok: true });
-    expect(setLineup(db, filer, 1, change, NOW)).toEqual({ ok: false, error: 'not_found' });
-  });
-});
-
-describe('removeFromRegistration', () => {
-  it('takes a player out, audited, until the lineup locks', async () => {
-    const { db, filer, ids, lastAudit } = await setup(2);
-    const [first = 0, second = 0] = ids;
-    setLineup(db, filer, 1, { roles: new Map(), captainId: first }, NOW);
-    expect(removeFromRegistration(db, filer, 1, first, SEASON_START)).toEqual({
-      ok: false,
-      error: 'lineup_locked',
-    });
-    expect(removeFromRegistration(db, filer, 1, first, NOW)).toEqual({ ok: true });
-    expect(
-      db
-        .select()
-        .from(schema.registrationPlayer)
-        .all()
-        .map((row) => row.playerId),
-    ).toEqual([second]);
-    expect(lastAudit()).toMatchObject({
-      actorPlayerId: filer,
-      action: 'registration.remove_player',
-      beforeJson: { playerId: first, role: 'player', captain: true },
-    });
-    expect(removeFromRegistration(db, filer, 1, first, NOW)).toEqual({
-      ok: false,
-      error: 'not_joined',
-    });
-    expect(removeFromRegistration(db, second, 1, second, NOW)).toEqual({
-      ok: false,
-      error: 'not_found',
-    });
-  });
-});
-
-describe('renewInvite', () => {
-  it('replaces the link: the old one stops working, the new one lasts the full time', async () => {
-    const { db, filer, link, lastAudit } = await setup(0);
-    const later = NOW + 3 * 86_400_000;
-    expect(renewInvite(db, filer, 1, later)).toEqual({ ok: true });
-    const invites = db.select().from(schema.registrationInvite).all();
-    expect(invites).toMatchObject([
-      { id: 1, revokedAt: later },
-      { id: 2, requestId: 1, createdAt: later, expiresAt: later + 7 * 86_400_000, revokedAt: null },
+    // A new pick replaces the lineup: a player left out stays on the roster.
+    expect(pick([a, b], [], a)).toEqual({ ok: true });
+    expect(lineup()).toEqual([
+      [a, 'player', true],
+      [b, 'player', false],
     ]);
-    expect(invites[1]?.nonce).not.toBe(invites[0]?.nonce);
-    const player = { id: filer, discordUserId: '700000000000000001' };
-    expect(await joinView(db, always, player, link, later)).toEqual({
-      ok: false,
-      error: 'invalid_link',
-    });
-    expect(lastAudit()).toMatchObject({ action: 'registration.renew_invite', entityId: '1' });
-    expect(registrationStatus(db, filer, 1, later)).toMatchObject({ invite: { id: 2 } });
+  });
+
+  it('refuses a player not on the roster, or one in another registration of the league', async () => {
+    const { db, owner, playerIds, pick } = await setup();
+    const [a = 0] = playerIds;
+    expect(pick([a, 9999])).toEqual({ ok: false, error: 'not_on_roster' });
+    db.insert(schema.request)
+      .values({
+        competitionId: 1,
+        seasonId: db.select().from(schema.request).get()?.seasonId ?? 0,
+        kind: 'registration',
+        payloadJson: { rules: { versionId: 1, acceptedAt: 1 } },
+        approval: 'staff',
+        requestedBy: owner,
+        requestedAt: 1,
+      })
+      .run();
+    db.insert(schema.registrationPlayer)
+      .values({ requestId: 2, playerId: a, role: 'player', joinedAt: 1 })
+      .run();
+    expect(pick([a])).toEqual({ ok: false, error: 'unavailable', playerIds: [a] });
+  });
+
+  it('keeps the captain a starter, and the numbers within the league’s', async () => {
+    const { playerIds, pick, lineup } = await setup();
+    const [a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0] = playerIds;
+    expect(pick([a], [b], b)).toEqual({ ok: false, error: 'captain_not_starter' });
+    expect(pick([a, b, c, d, e, f])).toEqual({ ok: false, error: 'too_many_starters' });
+    expect(pick([a], [b, c, d])).toEqual({ ok: false, error: 'too_many_subs' });
+    expect(pick([a, b, c, d, e], [f, g], a)).toEqual({ ok: true });
+    expect(lineup()).toHaveLength(7);
   });
 
   it('is the filer’s only, and stops once the lineup locks', async () => {
-    const { db, filer, ids } = await setup(1);
-    expect(renewInvite(db, ids[0] ?? 0, 1, NOW)).toEqual({ ok: false, error: 'not_found' });
-    expect(renewInvite(db, filer, 1, SEASON_START)).toEqual({ ok: false, error: 'lineup_locked' });
+    const { db, playerIds, requestId, pick } = await setup();
+    const [a = 0] = playerIds;
+    expect(setLineup(db, a, requestId, { roles: new Map(), captainId: null }, NOW)).toEqual({
+      ok: false,
+      error: 'not_found',
+    });
+    expect(pick([a], [], null, SEASON_START)).toEqual({ ok: false, error: 'lineup_locked' });
+  });
+
+  it('drops a player who leaves the roster from the lineup', async () => {
+    const { db, teamId, playerIds, pick, lineup } = await setup();
+    const [a = 0, b = 0] = playerIds;
+    pick([a, b], [], a);
+    expect(removeFromRoster(db, { playerId: b }, teamId, b, NOW)).toEqual({ ok: true });
+    expect(lineup()).toEqual([[a, 'player', true]]);
+    // A player joining the roster later is there to pick.
+    const late = rosterPlayerForTests(db, teamId, 9);
+    expect(pick([a, late], [], a)).toEqual({ ok: true });
   });
 });
 
 describe('withdrawRegistration', () => {
-  it('withdraws the registration, audited: its link dies and its players are free', async () => {
-    const { db, filer, link, lastAudit } = await setup(1);
-    expect(withdrawRegistration(db, filer, 1, SEASON_START)).toEqual({ ok: true });
-    expect(db.select().from(schema.request).get()).toMatchObject({
+  it('lets the filer withdraw, audited; the registration then waits no more', async () => {
+    const { db, owner, requestId, pick, playerIds } = await setup();
+    expect(withdrawRegistration(db, owner, requestId, NOW)).toEqual({ ok: true });
+    expect(
+      db.select().from(schema.request).where(eq(schema.request.id, requestId)).get(),
+    ).toMatchObject({
       status: 'withdrawn',
-      decidedAt: SEASON_START,
-      decidedBy: filer,
+      decidedBy: owner,
     });
-    expect(lastAudit()).toMatchObject({
-      actorPlayerId: filer,
-      action: 'registration.withdraw',
-      beforeJson: { status: 'pending' },
-      afterJson: { status: 'withdrawn' },
-    });
-    const player = { id: filer, discordUserId: '700000000000000001' };
-    expect(await joinView(db, always, player, link, NOW)).toEqual({
+    expect(pick([playerIds[0] ?? 0])).toEqual({ ok: false, error: 'not_found' });
+    expect(withdrawRegistration(db, owner, requestId, NOW)).toEqual({
       ok: false,
-      error: 'invalid_link',
+      error: 'not_found',
     });
-    expect(registrationStatus(db, filer, 1, NOW)).toMatchObject({
-      status: 'withdrawn',
-      locked: false,
-    });
-    expect(withdrawRegistration(db, filer, 1, NOW)).toEqual({ ok: false, error: 'not_found' });
   });
 });

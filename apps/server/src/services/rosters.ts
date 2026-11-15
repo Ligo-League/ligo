@@ -8,17 +8,29 @@ import {
   type RosterJoinError,
 } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
-import { and, asc, desc, eq, gt, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull } from 'drizzle-orm';
 import { inviteTokenMatches } from './invites.ts';
 import { highestRole, teamsOfPlayer } from './permissions.ts';
-import { profilesOf } from './registrations.ts';
+import { profilesOf } from './profiles.ts';
 
 // A roster's own players (M-33, M-34, maintainer, 15 November 2026). Each joins from the
 // roster's invitation link with their own account and completes their own profile; they leave
 // when they want, and the officials who may add officials remove them. The list stays open all
 // year, as a preparation; a season's lineup (`roster_entry`) follows the mercato (M-35).
 
-const { auditLog, division, org, player, rosterInvite, rosterPlayer, season, slot, team } = schema;
+const {
+  auditLog,
+  division,
+  org,
+  player,
+  registrationPlayer,
+  request,
+  rosterInvite,
+  rosterPlayer,
+  season,
+  slot,
+  team,
+} = schema;
 
 type Reader = Pick<Db, 'select'>;
 const DAY_MS = 86_400_000;
@@ -282,6 +294,29 @@ export function removeFromRoster(
       .get();
     if (!current) return { ok: false, error: 'not_found' };
     tx.update(rosterPlayer).set({ leftAt: now }).where(eq(rosterPlayer.id, current.id)).run();
+    // A player who left the roster leaves the lineups it waits to register with.
+    const waiting = tx
+      .select({ id: request.id })
+      .from(request)
+      .where(
+        and(
+          eq(request.teamId, teamId),
+          eq(request.kind, 'registration'),
+          eq(request.status, 'pending'),
+        ),
+      )
+      .all()
+      .map((row) => row.id);
+    if (waiting.length > 0) {
+      tx.delete(registrationPlayer)
+        .where(
+          and(
+            inArray(registrationPlayer.requestId, waiting),
+            eq(registrationPlayer.playerId, playerId),
+          ),
+        )
+        .run();
+    }
     tx.insert(auditLog)
       .values({
         actorPlayerId: by.playerId,
@@ -290,6 +325,7 @@ export function removeFromRoster(
         entity: 'team',
         entityId: String(teamId),
         beforeJson: { playerId, joinedAt: current.joinedAt },
+        afterJson: waiting.length > 0 ? { registrations: waiting } : null,
         at: now,
       })
       .run();

@@ -379,7 +379,7 @@ export const fr = {
     "Le club d'une équipe a un propriétaire et {clubManagers} managers au plus, qui agissent pour toutes ses équipes ; chaque équipe a {managers} managers et {coaches} coach au plus. Le staff répond aux demandes en {hours} h.",
   'help.choice.register': '/register',
   'help.page.register':
-    "**`/register`** — inscrire une équipe\nOuvert à tous, pendant les inscriptions.\n\nLe bot donne le lien du formulaire sur le site : le club, l'équipe, son logo, et l'acceptation du règlement. Tu partages ensuite le lien d'invitation de l'inscription : chaque joueur la rejoint avec son propre compte, après avoir rempli sa page (compte R6, rang, nationalité, date de naissance, accord sur les statistiques). Tu choisis ensuite les titulaires, les remplaçants et le capitaine, un titulaire.",
+    "**`/register`** — inscrire une équipe\nOuvert à tous, pendant les inscriptions.\n\nLe bot donne le lien du formulaire sur le site. D'abord, ton club et ton équipe existent sur le site (« Créer un club » sur ta page), et tes joueurs l'ont rejointe par son lien d'invitation, chacun avec son propre compte et sa page remplie (compte R6, rang, nationalité, date de naissance, accord sur les statistiques). Le formulaire inscrit l'équipe et enregistre l'acceptation du règlement ; tu choisis ensuite parmi ses joueurs les titulaires, les remplaçants et le capitaine, un titulaire.",
   'help.page.league':
     "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
   'command.match.veto.description': "Lance le veto des cartes d'un match de ton équipe.",
@@ -562,12 +562,10 @@ export const fr = {
   'web.home.register': 'S’inscrire',
   'web.register.title': 'Inscription — {competition}, {season}',
   'web.register.intro':
-    'Inscris une équipe : le club, puis l’équipe. Une fois l’inscription envoyée, tu partages un lien d’invitation : chaque joueur rejoint avec son propre compte et renseigne lui-même son compte Ubisoft et son rang. L’équipe compte {starters} titulaires et jusqu’à {subs} remplaçants.',
+    'Inscris une de tes équipes : choisis-la, accepte le règlement, puis compose son effectif parmi ses joueurs sur la page de l’inscription. L’équipe compte {starters} titulaires et jusqu’à {subs} remplaçants.',
   'web.register.fix':
     'Certains champs sont à corriger, ils sont indiqués ci-dessous. Le logo est à choisir à nouveau.',
   'web.register.club': 'Le club',
-  'web.register.club.existing': 'Une nouvelle équipe d’un club que je dirige',
-  'web.register.club.new': 'Un nouveau club',
   'web.register.club.name': 'Nom du club',
   'web.register.club.nameHint':
     'Le club regroupe ses équipes : une équipe seule a aussi son club, souvent du même nom.',
@@ -637,49 +635,52 @@ export const fr = {
   'web.registration.title': 'Inscription — {roster}',
   'web.registration.filed': 'Inscription envoyée pour {competition}, {season}, le {date}.',
   'web.registration.club': 'Club',
-  'web.registration.newClub': 'nouveau',
   'web.registration.roster': 'Équipe',
-  'web.registration.logo': 'Logo',
-  'web.registration.logo.yes': 'Reçu',
-  'web.registration.logo.no': 'Aucun',
   'web.registration.rules': 'Règlement',
   'web.registration.rulesAccepted': 'Version « {version} », lue et approuvée',
-  'web.registration.invite': 'Lien d’invitation',
-  'web.registration.inviteHint':
-    'Partage ce lien avec tes joueurs, par exemple sur le Discord de l’équipe. Chacun rejoint avec son propre compte Discord et renseigne son compte Ubisoft et son rang.',
-  'web.registration.inviteUntil': 'Valable jusqu’au {date}.',
-  'web.registration.inviteExpired': 'Expiré le {date}.',
-  'web.registration.noInvite': 'Aucun lien d’invitation en cours.',
   'web.registration.withdrawn': 'Inscription retirée : elle n’attend plus le staff.',
   'web.registration.locked':
     'Les effectifs sont verrouillés : l’effectif ne change plus avant une fenêtre de mercato.',
-  'web.registration.newInvite': 'Nouveau lien',
-  'web.registration.newInviteHint': 'L’ancien lien cesse de fonctionner.',
   'web.registration.lineup.player': 'Joueur',
   'web.registration.lineup.role': 'Rôle',
   'web.registration.lineup.roleOf': 'Rôle de {name}',
   'web.registration.lineup.captainOf': '{name} capitaine',
-  'web.registration.lineup.remove': 'Retirer',
-  'web.registration.lineup.hint': 'Le capitaine est forcément un titulaire.',
+  'web.registration.lineup.hint':
+    'Choisis parmi les joueurs de l’équipe ; ceux que tu laisses hors de l’effectif restent dans l’équipe. Le capitaine est forcément un titulaire.',
   'web.registration.lineup.save': 'Enregistrer l’effectif',
   'web.registration.withdraw': 'Retirer l’inscription',
   'web.registration.withdrawHint':
     'L’inscription n’attendra plus le staff, son lien cessera de fonctionner, et ses joueurs pourront rejoindre une autre équipe.',
   'web.registration.withdrawConfirm': 'Je confirme le retrait de l’inscription.',
   'web.registration.done.lineup': 'Effectif enregistré.',
-  'web.registration.done.removed': 'Joueur retiré.',
-  'web.registration.done.invite': 'Nouveau lien créé : l’ancien ne fonctionne plus.',
   'web.registration.done.withdrawn': 'Inscription retirée.',
   'web.registration.error.lineup_locked': 'Les effectifs sont verrouillés : rien n’a changé.',
   'web.registration.error.captain_not_starter': 'Le capitaine doit être un titulaire.',
   'web.registration.error.too_many_starters': 'Trop de titulaires pour cette ligue.',
   'web.registration.error.too_many_subs': 'Trop de remplaçants pour cette ligue.',
-  'web.registration.error.unknown_player':
-    'Ce joueur ne fait plus partie de l’inscription : recharge la page.',
-  'web.registration.error.not_joined': 'Ce joueur ne fait plus partie de l’inscription.',
   'web.registration.error.confirm': 'Coche la case pour confirmer le retrait.',
+  'web.register.noRoster':
+    'Tu ne gères les joueurs d’aucune équipe qui puisse s’inscrire : crée d’abord ton club et ton équipe, invite tes joueurs, puis reviens ici.',
+  'web.register.rosterOption': '{name} [{tag}] · {players} joueur(s)',
+  'web.register.rosterHint':
+    'Les équipes que tu gères, du jeu de la ligue, pas encore inscrites cette saison.',
+  'web.register.error.not_your_roster':
+    'Choisis une des équipes de la liste : celle-ci n’est pas à toi, ou elle est déjà inscrite.',
+  'web.registration.tooYoung': 'trop jeune pour la ligue',
+  'web.registration.unavailable': 'déjà dans une autre équipe de la ligue',
+  'web.registration.offServer': 'pas sur le serveur Discord de la ligue',
+  'web.registration.notOnServer':
+    '{count} joueur(s) de l’effectif ne sont pas sur le serveur Discord de la ligue : le staff ne peut pas valider l’inscription avant qu’ils le rejoignent.',
+  'web.registration.noRosterPlayers': 'Ton équipe n’a encore aucun joueur.',
+  'web.registration.invitePlayers': 'Invite-les depuis sa page.',
+  'web.registration.lineup.out': 'hors effectif',
+  'web.registration.error.not_on_roster': 'Ce joueur n’est plus dans l’équipe : recharge la page.',
+  'web.registration.error.unavailable':
+    'Un des joueurs choisis est déjà dans une autre équipe de la ligue : il ne peut pas être dans cet effectif.',
+  'web.staff.error.discord_unavailable':
+    'Discord ne répond pas : impossible de vérifier que chaque joueur est sur le serveur de la ligue. Réessaie dans un instant.',
   'web.registration.players': 'Joueurs',
-  'web.registration.noPlayers': 'Aucun joueur n’a encore rejoint.',
+  'web.registration.noPlayers': 'Aucun joueur dans l’effectif.',
   'web.registration.starter': 'titulaire',
   'web.registration.sub': 'remplaçant',
   'web.registration.captain': 'capitaine',
@@ -903,14 +904,6 @@ export const fr = {
   'web.me.manage': 'gérer',
   'web.me.error.lineup_locked':
     'Les effectifs sont verrouillés : tu ne peux plus quitter cette équipe.',
-  'web.join.title': 'Rejoindre {roster}',
-  'web.join.intro':
-    '{filer} t’invite dans l’équipe {roster} ({tag}) du club {club}, pour {competition} — {season}.',
-  'web.join.shared':
-    'En rejoignant, ton nom, ton compte R6 et ton rang sont visibles par la personne qui a inscrit l’équipe et par le staff.',
-  'web.join.submit': 'Rejoindre {roster}',
-  'web.join.joined': 'Tu fais partie de cette équipe, comme {role}.',
-  'web.join.myPage': 'Voir ma page',
   'web.join.complete': 'Avant de rejoindre, complète ta page :',
   'web.join.gap.game_account': 'ton compte R6 (nom Ubisoft et rang)',
   'web.join.gap.nationality': 'ta nationalité',
@@ -918,20 +911,8 @@ export const fr = {
   'web.join.gap.birth_date': 'ta date de naissance',
   'web.join.openMyPage': 'Ouvrir ma page',
   'web.join.reload': 'Puis recharge cette page.',
-  'web.join.tooYoung':
-    'La ligue demande d’avoir au moins {age} ans le {date}, premier jour de la saison.',
-  'web.join.notMember':
-    'Pour rejoindre une équipe, il faut être membre du serveur Discord de la ligue.',
   'web.join.joinServer': 'Rejoindre le serveur Discord',
   'web.join.discordUnavailable': 'Discord ne répond pas pour l’instant : réessaie dans un moment.',
-  'web.join.refused.lineup_locked':
-    'Les effectifs sont verrouillés : il n’est plus possible de rejoindre cette équipe.',
-  'web.join.refused.roster_full': 'Cette équipe est complète.',
-  'web.join.refused.in_other_registration':
-    'Tu fais déjà partie d’une autre équipe de cette compétition. Quitte-la depuis ta page pour rejoindre celle-ci.',
-  'web.join.invalid.title': 'Lien d’invitation invalide',
-  'web.join.invalid.body':
-    'Ce lien n’est plus valable : il a expiré, a été remplacé, ou l’inscription est close. Demande un nouveau lien à la personne qui a inscrit l’équipe.',
   'web.me.discordSettings': 'Serveur Discord de la ligue :',
   'web.discord.title': 'Serveur Discord — {competition}',
   'web.discord.intro':
@@ -978,15 +959,10 @@ export const fr = {
   'web.staff.registration.division': 'Division',
   'web.staff.registration.room': '{division} — {teams}/{max}',
   'web.staff.done.registration_approved': 'Inscription validée : l’équipe est créée.',
-  'web.staff.done.registration_approved_logo_lost':
-    'Inscription validée, mais le logo n’a pas pu être copié : l’équipe s’affiche avec ses couleurs.',
   'web.staff.done.registration_rejected': 'Inscription refusée.',
   'web.staff.error.invalid_division': 'Choisis une division de la saison de l’inscription.',
   'web.staff.error.not_approvable':
     'Inscription pas encore validable : effectif incomplet, joueur déjà dans une autre équipe, ou division pleine.',
-  'web.staff.error.club_taken': 'Un club porte déjà ce nom depuis le dépôt de l’inscription.',
-  'web.staff.error.name_taken': 'Une équipe porte déjà ce nom depuis le dépôt de l’inscription.',
-  'web.staff.error.tag_taken': 'Une équipe porte déjà ce tag depuis le dépôt de l’inscription.',
   'web.me.error.invalid_nationality': 'Choisis un pays dans la liste.',
   'web.me.staffQueue': 'Ouvrir la file du staff',
   'web.staff.title': 'File du staff',

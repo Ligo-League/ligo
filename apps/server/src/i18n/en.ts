@@ -357,7 +357,7 @@ export const en: Record<MessageKey, string> = {
     "A team's club has one owner and at most {clubManagers} managers, who act for all its teams; each team has at most {managers} managers and {coaches} coach. Staff answer requests within {hours} hours.",
   'help.choice.register': '/register',
   'help.page.register':
-    "**`/register`** — register a team\nOpen to everyone, while registration is open.\n\nThe bot gives the link to the form on the website: the club, the team, its logo, and accepting the rulebook. You then share the registration's invitation link: each player joins with their own account, after filling in their page (R6 account, rank, nationality, date of birth, stats consent). You then choose the starters, the substitutes and the captain, a starter.",
+    '**`/register`** — register a team\nOpen to everyone, while registration is open.\n\nThe bot gives the link to the form on the website. First, your club and team exist on the website ("Create a club" on your page), and your players joined the team from its invitation link, each with their own account and their page filled in (R6 account, rank, nationality, date of birth, stats consent). The form registers the team and records that you accept the rulebook; you then pick among its players the starters, the substitutes and the captain, a starter.',
   'help.page.league':
     "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Match schedule: extensions and agreed times, until each match has its own channel.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
   'command.match.veto.description': "Start the map veto of one of your team's matches.",
@@ -531,11 +531,9 @@ export const en: Record<MessageKey, string> = {
   'web.home.register': 'Register',
   'web.register.title': 'Registration — {competition}, {season}',
   'web.register.intro':
-    'Register a team: the club, then the team. Once sent, you share an invitation link: each player joins with their own account and fills in their Ubisoft account and rank themselves. The team has {starters} starters and up to {subs} substitutes.',
+    "Register one of your teams: pick it, accept the rulebook, then build its lineup among its players on the registration's page. The team has {starters} starters and up to {subs} substitutes.",
   'web.register.fix': 'Some fields need fixing; they are marked below. Choose the logo again.',
   'web.register.club': 'The club',
-  'web.register.club.existing': 'A new team of a club I run',
-  'web.register.club.new': 'A new club',
   'web.register.club.name': 'Club name',
   'web.register.club.nameHint':
     'A club holds its teams: a team on its own has a club too, often with the same name.',
@@ -601,49 +599,52 @@ export const en: Record<MessageKey, string> = {
   'web.registration.title': 'Registration — {roster}',
   'web.registration.filed': 'Registration sent for {competition}, {season}, on {date}.',
   'web.registration.club': 'Club',
-  'web.registration.newClub': 'new',
   'web.registration.roster': 'Team',
-  'web.registration.logo': 'Logo',
-  'web.registration.logo.yes': 'Received',
-  'web.registration.logo.no': 'None',
   'web.registration.rules': 'Rulebook',
   'web.registration.rulesAccepted': 'Version “{version}”, read and approved',
-  'web.registration.invite': 'Invitation link',
-  'web.registration.inviteHint':
-    'Share this link with your players, for example on the team’s Discord. Each joins with their own Discord account and fills in their Ubisoft account and rank.',
-  'web.registration.inviteUntil': 'Valid until {date}.',
-  'web.registration.inviteExpired': 'Expired on {date}.',
-  'web.registration.noInvite': 'No invitation link in use.',
   'web.registration.withdrawn': 'Registration withdrawn: it no longer waits for staff.',
   'web.registration.locked':
     'Lineups are locked: the lineup changes no more until a mercato window.',
-  'web.registration.newInvite': 'New link',
-  'web.registration.newInviteHint': 'The old link stops working.',
   'web.registration.lineup.player': 'Player',
   'web.registration.lineup.role': 'Role',
   'web.registration.lineup.roleOf': 'Role of {name}',
   'web.registration.lineup.captainOf': '{name} as captain',
-  'web.registration.lineup.remove': 'Remove',
-  'web.registration.lineup.hint': 'The captain must be a starter.',
+  'web.registration.lineup.hint':
+    "Pick among the team's players; those left out stay on the team. The captain must be a starter.",
   'web.registration.lineup.save': 'Save the lineup',
   'web.registration.withdraw': 'Withdraw the registration',
   'web.registration.withdrawHint':
     'The registration will no longer wait for staff, its link will stop working, and its players will be free to join another team.',
   'web.registration.withdrawConfirm': 'I confirm withdrawing the registration.',
   'web.registration.done.lineup': 'Lineup saved.',
-  'web.registration.done.removed': 'Player removed.',
-  'web.registration.done.invite': 'New link made: the old one no longer works.',
   'web.registration.done.withdrawn': 'Registration withdrawn.',
   'web.registration.error.lineup_locked': 'Lineups are locked: nothing changed.',
   'web.registration.error.captain_not_starter': 'The captain must be a starter.',
   'web.registration.error.too_many_starters': 'Too many starters for this league.',
   'web.registration.error.too_many_subs': 'Too many substitutes for this league.',
-  'web.registration.error.unknown_player':
-    'This player is no longer in the registration: reload the page.',
-  'web.registration.error.not_joined': 'This player is no longer in the registration.',
   'web.registration.error.confirm': 'Tick the box to confirm the withdrawal.',
+  'web.register.noRoster':
+    'You manage the players of no team that can register: create your club and team first, invite your players, then come back here.',
+  'web.register.rosterOption': '{name} [{tag}] · {players} player(s)',
+  'web.register.rosterHint':
+    "The teams you manage, of the league's game, not registered yet this season.",
+  'web.register.error.not_your_roster':
+    'Pick one of the teams in the list: this one is not yours, or it is registered already.',
+  'web.registration.tooYoung': 'too young for the league',
+  'web.registration.unavailable': 'already on another team of the league',
+  'web.registration.offServer': "not on the league's Discord server",
+  'web.registration.notOnServer':
+    "{count} player(s) of the lineup are not on the league's Discord server: staff cannot approve the registration until they join it.",
+  'web.registration.noRosterPlayers': 'Your team has no players yet.',
+  'web.registration.invitePlayers': 'Invite them from its page.',
+  'web.registration.lineup.out': 'not in the lineup',
+  'web.registration.error.not_on_roster': 'This player is no longer on the team: reload the page.',
+  'web.registration.error.unavailable':
+    'One of the players picked is already on another team of the league: they cannot be in this lineup.',
+  'web.staff.error.discord_unavailable':
+    "Discord is not answering: each player cannot be checked against the league's server. Try again in a moment.",
   'web.registration.players': 'Players',
-  'web.registration.noPlayers': 'No player has joined yet.',
+  'web.registration.noPlayers': 'No player in the lineup.',
   'web.registration.starter': 'starter',
   'web.registration.sub': 'substitute',
   'web.registration.captain': 'captain',
@@ -863,14 +864,6 @@ export const en: Record<MessageKey, string> = {
   'web.manage.error.invalid_role': 'Pick a role from the list.',
   'web.me.manage': 'manage',
   'web.me.error.lineup_locked': 'Lineups are locked: you can no longer leave this team.',
-  'web.join.title': 'Join {roster}',
-  'web.join.intro':
-    '{filer} invites you to the team {roster} ({tag}) of the club {club}, for {competition} — {season}.',
-  'web.join.shared':
-    'Once you join, your name, your R6 account and your rank are visible to the person who registered the team and to staff.',
-  'web.join.submit': 'Join {roster}',
-  'web.join.joined': 'You are in this team, as a {role}.',
-  'web.join.myPage': 'See my page',
   'web.join.complete': 'Before joining, complete your page:',
   'web.join.gap.game_account': 'your R6 account (Ubisoft name and rank)',
   'web.join.gap.nationality': 'your nationality',
@@ -878,18 +871,8 @@ export const en: Record<MessageKey, string> = {
   'web.join.gap.birth_date': 'your date of birth',
   'web.join.openMyPage': 'Open my page',
   'web.join.reload': 'Then reload this page.',
-  'web.join.tooYoung':
-    'The league requires players to be at least {age} on {date}, the season’s first day.',
-  'web.join.notMember': 'To join a team, you must be a member of the league’s Discord server.',
   'web.join.joinServer': 'Join the Discord server',
   'web.join.discordUnavailable': 'Discord is not answering right now: try again in a moment.',
-  'web.join.refused.lineup_locked': 'Lineups are locked: this team can no longer be joined.',
-  'web.join.refused.roster_full': 'This team is full.',
-  'web.join.refused.in_other_registration':
-    'You are already in another team of this competition. Leave it from your page to join this one.',
-  'web.join.invalid.title': 'Invalid invitation link',
-  'web.join.invalid.body':
-    'This link no longer works: it expired, was replaced, or the registration is closed. Ask the person who registered the team for a new link.',
   'web.me.discordSettings': 'League Discord server:',
   'web.discord.title': 'Discord server — {competition}',
   'web.discord.intro':
@@ -934,15 +917,10 @@ export const en: Record<MessageKey, string> = {
   'web.staff.registration.division': 'Division',
   'web.staff.registration.room': '{division} — {teams}/{max}',
   'web.staff.done.registration_approved': 'Registration approved: the team is created.',
-  'web.staff.done.registration_approved_logo_lost':
-    'Registration approved, but the logo could not be copied: the team shows its colours.',
   'web.staff.done.registration_rejected': 'Registration refused.',
   'web.staff.error.invalid_division': 'Choose a division of the registration’s season.',
   'web.staff.error.not_approvable':
     'Not approvable yet: incomplete lineup, a player already in another team, or a full division.',
-  'web.staff.error.club_taken': 'A club took this name since the registration was filed.',
-  'web.staff.error.name_taken': 'A team took this name since the registration was filed.',
-  'web.staff.error.tag_taken': 'A team took this tag since the registration was filed.',
   'web.me.error.invalid_nationality': 'Pick a country from the list.',
   'web.me.staffQueue': 'Open the staff queue',
   'web.staff.title': 'Staff queue',

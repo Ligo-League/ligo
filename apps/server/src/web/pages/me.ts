@@ -1,6 +1,6 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
-import type { RegistrationEntry, registrationsOf } from '../../services/joining.ts';
+import type { RegistrationEntry, registrationsOf } from '../../services/registration-players.ts';
 import type { rostersOf } from '../../services/rosters.ts';
 import type { Profile } from '../../services/me.ts';
 import { csrfField, pageOf, type Html, type Page } from '../layout.ts';
@@ -58,14 +58,6 @@ function registrationsView(locale: Locale, data: MeData): Html | string {
               ${t(locale, entry.role === 'player' ? 'web.registration.starter' : 'web.registration.sub')}</span
             >
             ${status(entry)}
-            ${
-              entry.canLeave
-                ? html`<form method="post" action="/registrations/${entry.requestId}/leave">
-                    ${csrfField(data.csrf)}
-                    <button type="submit">${t(locale, 'web.me.registration.leave')}</button>
-                  </form>`
-                : ''
-            }
           </li>`,
       )}
     </ul>`;

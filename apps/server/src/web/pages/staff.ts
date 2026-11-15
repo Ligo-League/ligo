@@ -201,8 +201,7 @@ function registrationItem(
           tag: entry.roster.tag,
         })}</strong
       >
-      · ${entry.club.name}
-      ${entry.club.existing ? '' : html`<span class="muted">(${t(locale, 'web.registration.newClub')})</span>`}
+      · ${entry.club}
     </p>
     <p class="muted">
       ${t(locale, 'web.staff.request.by', {

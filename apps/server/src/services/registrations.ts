@@ -1,50 +1,30 @@
-import { randomBytes } from 'node:crypto';
 import {
-  checkRosterDetails,
   lineupLocked,
   lineupStatus,
+  mayManagePlayers,
   playerGaps,
   type FieldErrors,
   type LineupGap,
-  type PlayerProfile,
+  type PlayerGap,
+  type RegistrationRole,
   type RegistrationSettings,
-  type RosterDetailsError,
   zonedDate,
 } from '@ligo/core';
-import { schema, type Db, type RegistrationPayload } from '@ligo/db';
-import { and, desc, eq, inArray, isNull, lte } from 'drizzle-orm';
-import type { EvidenceStore } from '../assets/evidence-store.ts';
-import { squareLogo } from '@ligo/render';
-import { LOGO_SIZE } from '../assets/store.ts';
-import {
-  checkNewClub,
-  clubsRunBy,
-  slugOf,
-  waitingRegistrations,
-  type ClubFieldError,
-} from './clubs.ts';
-import { checkLogo, logoKeyOf, type LogoError } from './logo.ts';
+import { schema, type Db } from '@ligo/db';
+import { and, asc, desc, eq, inArray, lte } from 'drizzle-orm';
+import { teamsOfPlayer } from './permissions.ts';
+import { profilesOf } from './profiles.ts';
+import { clubNameOf, rosterNameOf, unavailablePlayers } from './registration-players.ts';
+import { rosterMembers } from './rosters.ts';
 
-// Registering a roster (design doc section 7, "Registration"; maintainer, 14 November 2026). A
-// logged-in member files the club and roster details, with the rulebook in force accepted; the
-// registration is a `registration` request, which staff approve in phase 3d-4b. Players join from
-// the invitation with their own account (phase 3d-4a-2): nobody declares another person's data.
+// Registering a roster (design doc section 7, "Registration"; maintainer, 14 and 15 November
+// 2026). The roster exists first, in no competition, with its own players (M-33): an official
+// who manages its players registers it, with the rulebook in force accepted, then picks its
+// lineup among those players. The registration is a `registration` request naming the roster
+// in `team_id`; staff approve it into a division. Nobody declares another person's data.
 
-const {
-  auditLog,
-  club,
-  competition,
-  gameAccount,
-  player,
-  registrationInvite,
-  registrationPlayer,
-  request,
-  rulesVersion,
-  season,
-  team,
-} = schema;
-
-const DAY_MS = 86_400_000;
+const { auditLog, competition, player, registrationPlayer, request, rulesVersion, season, team } =
+  schema;
 
 type Reader = Pick<Db, 'select'>;
 
@@ -108,6 +88,67 @@ export function registrationLink(
   };
 }
 
+/** A roster the player may register: they manage its players, it plays the league's game. */
+export interface RegistrableRoster {
+  teamId: number;
+  name: string;
+  tag: string;
+  slug: string;
+  players: number;
+}
+
+/**
+ * The rosters a player may register for the season: those whose players they manage, of the
+ * league's group and game, without a registration of this season waiting or approved.
+ */
+function registrableRosters(
+  db: Reader,
+  playerId: number,
+  open: { competition: typeof competition.$inferSelect; season: typeof season.$inferSelect },
+): RegistrableRoster[] {
+  const managed = [
+    ...new Set(
+      teamsOfPlayer(db, playerId)
+        .filter((held) => mayManagePlayers(held.role))
+        .map((held) => held.teamId),
+    ),
+  ];
+  if (managed.length === 0) return [];
+  const entered = new Set(
+    db
+      .select({ teamId: request.teamId })
+      .from(request)
+      .where(
+        and(
+          eq(request.kind, 'registration'),
+          eq(request.seasonId, open.season.id),
+          inArray(request.status, ['pending', 'approved']),
+        ),
+      )
+      .all()
+      .map((row) => row.teamId),
+  );
+  return db
+    .select()
+    .from(team)
+    .where(inArray(team.id, managed))
+    .orderBy(team.name)
+    .all()
+    .filter(
+      (row) =>
+        row.orgId === open.competition.orgId &&
+        row.title === open.competition.title &&
+        !entered.has(row.id),
+    )
+    .map((row) => ({
+      teamId: row.id,
+      name: row.name,
+      tag: row.tag,
+      slug: row.slug,
+      players: rosterMembers(db, row.id, row.title).length,
+    }));
+}
+
 export type RegistrationClosed = { ok: false; error: 'not_found' | 'closed' | 'no_rules' };
 
 export type RegistrationForm =
@@ -116,8 +157,8 @@ export type RegistrationForm =
       competition: { id: number; name: string; slug: string };
       season: { id: number; name: string };
       rules: { id: number; version: string };
-      /** Clubs the member runs: a new roster may join one of them. */
-      clubs: { id: number; name: string }[];
+      /** The rosters the member may register now. */
+      rosters: RegistrableRoster[];
       settings: RegistrationSettings;
     }
   | RegistrationClosed;
@@ -139,41 +180,20 @@ export function registrationForm(
     },
     season: { id: open.season.id, name: open.season.name },
     rules: open.rules,
-    clubs: clubsRunBy(db, playerId, open.competition.orgId),
+    rosters: registrableRosters(db, playerId, open),
     settings: open.competition.rulesetJson.registration,
   };
 }
 
-/** What the form sends, as typed: everything is checked here. */
+/** What the form sends: the roster, and the rulebook version it showed. */
 export interface RegistrationRequest {
-  club:
-    | {
-        kind: 'new';
-        name: string;
-        city: string;
-        legalStatus: string;
-        /** One link per line. */
-        socials: string;
-        discordUrl: string;
-      }
-    | { kind: 'existing'; clubId: number };
-  roster: { name: string; tag: string; colors: string[]; canStream: boolean };
-  logo: Uint8Array | null;
+  teamId: number;
   /** The version the form showed: a newer one in force means asking again. */
   rulesVersionId: number;
   rulesAccepted: boolean;
 }
 
-export type RegistrationFieldError =
-  | RosterDetailsError
-  | LogoError
-  | ClubFieldError
-  | 'logo_not_stored'
-  | 'not_your_club'
-  | 'name_taken'
-  | 'tag_taken'
-  | 'rules_not_accepted'
-  | 'rules_changed';
+export type RegistrationFieldError = 'not_your_roster' | 'rules_not_accepted' | 'rules_changed';
 
 export type FileRegistrationReply =
   | { ok: true; id: number }
@@ -181,150 +201,44 @@ export type FileRegistrationReply =
   | { ok: false; errors: FieldErrors<RegistrationFieldError> };
 
 /**
- * A member registers a roster: checked, its logo kept, then filed with an invitation for the
- * players. Every problem comes back with its field, and nothing is stored then.
+ * An official who manages a roster's players registers it for the season open for
+ * registrations, the rulebook in force accepted. Its lineup is picked next, on its page.
  */
-export async function fileRegistration(
+export function fileRegistration(
   db: Db,
-  store: EvidenceStore,
   playerId: number,
   competitionSlug: string,
   input: RegistrationRequest,
   now: number,
-): Promise<FileRegistrationReply> {
-  const open = openSeason(db, competitionSlug, now);
-  if (!open.ok) return open;
-  const orgId = open.competition.orgId;
-
-  const errors: FieldErrors<RegistrationFieldError> = [];
-  const fail = (field: string, error: RegistrationFieldError) => errors.push({ field, error });
-  const waiting = waitingRegistrations(db);
-
-  let clubPayload: RegistrationPayload['club'];
-  if (input.club.kind === 'new') {
-    const created = checkNewClub(input.club, fail);
-    const slug = slugOf(created.name);
-    const taken =
-      slug !== null &&
-      (db
-        .select({ id: club.id })
-        .from(club)
-        .where(and(eq(club.orgId, orgId), eq(club.slug, slug)))
-        .get() !== undefined ||
-        waiting.some((other) => other.club.kind === 'new' && slugOf(other.club.name) === slug));
-    if (taken) fail('club.name', 'club_taken');
-    clubPayload = created;
-  } else {
-    const { clubId } = input.club;
-    if (!clubsRunBy(db, playerId, orgId).some((entry) => entry.id === clubId)) {
-      fail('club.clubId', 'not_your_club');
-    }
-    clubPayload = { kind: 'existing', clubId };
-  }
-
-  const details = checkRosterDetails({
-    rosterName: input.roster.name,
-    tag: input.roster.tag,
-    colors: input.roster.colors,
-  });
-  const detailErrors = details.ok ? [] : details.errors;
-  errors.push(...detailErrors);
-  const rosterName = input.roster.name.trim();
-  const rosterSlug = slugOf(rosterName);
-  const tag = input.roster.tag.trim().toUpperCase();
-  if (!detailErrors.some((entry) => entry.field === 'rosterName') && rosterSlug !== null) {
-    const taken =
-      db
-        .select({ id: team.id })
-        .from(team)
-        .where(and(eq(team.orgId, orgId), eq(team.slug, rosterSlug)))
-        .get() !== undefined || waiting.some((other) => slugOf(other.roster.name) === rosterSlug);
-    if (taken) fail('rosterName', 'name_taken');
-  }
-  if (!detailErrors.some((entry) => entry.field === 'tag')) {
-    const taken =
-      db
-        .select({ id: team.id })
-        .from(team)
-        .where(
-          and(eq(team.orgId, orgId), eq(team.title, open.competition.title), eq(team.tag, tag)),
-        )
-        .get() !== undefined || waiting.some((other) => other.roster.tag === tag);
-    if (taken) fail('tag', 'tag_taken');
-  }
-
-  // The logo is kept as the 128 px square images and pages use (design doc section 11); a file
-  // that passes the checks but cannot be decoded is refused here, while the filer can fix it.
-  let logo: Uint8Array | null = null;
-  if (input.logo !== null) {
-    const checked = checkLogo(input.logo);
-    if (!checked.ok) fail('logo', checked.error);
-    else {
-      try {
-        logo = squareLogo(input.logo, LOGO_SIZE);
-      } catch {
-        fail('logo', 'invalid_logo');
-      }
-    }
-  }
-  if (!input.rulesAccepted) fail('rules', 'rules_not_accepted');
-  else if (input.rulesVersionId !== open.rules.id) fail('rules', 'rules_changed');
-  if (errors.length > 0 || !details.ok) return { ok: false, errors };
-
-  let logoKey: string | null = null;
-  if (logo !== null) {
-    logoKey = logoKeyOf(logo);
-    try {
-      await store.put(logoKey, logo);
-    } catch {
-      return { ok: false, errors: [{ field: 'logo', error: 'logo_not_stored' }] };
-    }
-  }
-
-  const payload: RegistrationPayload = {
-    club: clubPayload,
-    roster: {
-      name: details.value.rosterName,
-      tag: details.value.tag,
-      colors: details.value.colors,
-      logoKey,
-      canStream: input.roster.canStream,
-    },
-    rules: { versionId: open.rules.id, acceptedAt: now },
-  };
+): FileRegistrationReply {
   return db.transaction((tx): FileRegistrationReply => {
-    // The logo upload took a moment: another registration may have taken the name or the tag.
-    const again = waitingRegistrations(tx);
-    if (again.some((other) => other.roster.tag === payload.roster.tag)) {
-      return { ok: false, errors: [{ field: 'tag', error: 'tag_taken' }] };
+    const open = openSeason(tx, competitionSlug, now);
+    if (!open.ok) return open;
+    const errors: FieldErrors<RegistrationFieldError> = [];
+    // Checked inside the transaction: another registration of the roster may have just been filed.
+    const roster = registrableRosters(tx, playerId, open).find(
+      (entry) => entry.teamId === input.teamId,
+    );
+    if (!roster) errors.push({ field: 'roster', error: 'not_your_roster' });
+    if (!input.rulesAccepted) errors.push({ field: 'rules', error: 'rules_not_accepted' });
+    else if (input.rulesVersionId !== open.rules.id) {
+      errors.push({ field: 'rules', error: 'rules_changed' });
     }
+    if (errors.length > 0 || !roster) return { ok: false, errors };
     const stored = tx
       .insert(request)
       .values({
         competitionId: open.competition.id,
         seasonId: open.season.id,
-        teamId: null,
+        teamId: roster.teamId,
         kind: 'registration',
-        payloadJson: payload,
+        payloadJson: { rules: { versionId: open.rules.id, acceptedAt: now } },
         approval: 'staff',
         requestedBy: playerId,
         requestedAt: now,
       })
       .returning({ id: request.id })
       .get();
-    tx.insert(registrationInvite)
-      .values({
-        requestId: stored.id,
-        nonce: randomBytes(32).toString('base64url'),
-        createdAt: now,
-        expiresAt: now + open.competition.rulesetJson.registration.invite_days * DAY_MS,
-      })
-      .run();
-    const clubName =
-      clubPayload.kind === 'new'
-        ? clubPayload.name
-        : (tx.select({ name: club.name }).from(club).where(eq(club.id, clubPayload.clubId)).get()
-            ?.name ?? null);
     tx.insert(auditLog)
       .values({
         actorPlayerId: playerId,
@@ -332,12 +246,7 @@ export async function fileRegistration(
         action: 'registration.file',
         entity: 'request',
         entityId: String(stored.id),
-        afterJson: {
-          roster: payload.roster.name,
-          tag: payload.roster.tag,
-          club: clubName,
-          rulesVersionId: open.rules.id,
-        },
+        afterJson: { teamId: roster.teamId, roster: roster.name, rulesVersionId: open.rules.id },
         at: now,
       })
       .run();
@@ -361,13 +270,17 @@ export function lockedNow(
   );
 }
 
-/** A registration still waiting for staff, with its competition and season; nothing otherwise. */
+/**
+ * A registration still waiting for staff, with its competition, season and roster; nothing
+ * otherwise. Only registrations that name a roster wait (M-33): older ones were withdrawn.
+ */
 export function waitingRegistration(db: Reader, requestId: number) {
   const row = db
-    .select({ request, competition, season })
+    .select({ request, competition, season, team })
     .from(request)
     .innerJoin(competition, eq(request.competitionId, competition.id))
     .innerJoin(season, eq(request.seasonId, season.id))
+    .innerJoin(team, eq(request.teamId, team.id))
     .where(
       and(
         eq(request.id, requestId),
@@ -376,47 +289,12 @@ export function waitingRegistration(db: Reader, requestId: number) {
       ),
     )
     .get();
-  const payload = row?.request.payloadJson;
-  return row && payload && 'roster' in payload ? { ...row, payload } : null;
-}
-
-/** What each player declared, for whether they may play: see `playerGaps`. */
-export function profilesOf(
-  db: Reader,
-  playerIds: readonly number[],
-  title: string,
-): Map<number, PlayerProfile> {
-  if (playerIds.length === 0) return new Map();
-  const ranked = new Set(
-    db
-      .select({ playerId: gameAccount.playerId, rank: gameAccount.rank, title: gameAccount.title })
-      .from(gameAccount)
-      .where(inArray(gameAccount.playerId, [...playerIds]))
-      .all()
-      .filter((account) => account.title === title && account.rank !== null)
-      .map((account) => account.playerId),
-  );
-  return new Map(
-    db
-      .select()
-      .from(player)
-      .where(inArray(player.id, [...playerIds]))
-      .all()
-      .map((found) => [
-        found.id,
-        {
-          gameAccount: ranked.has(found.id),
-          nationality: found.nationality,
-          statsConsent: found.statsConsentAt !== null,
-          birthDate: found.birthDate,
-        },
-      ]),
-  );
+  return row && !('roster' in row.request.payloadJson) ? row : null;
 }
 
 /**
- * The players who joined a registration, in the order they joined. Ready: nothing keeps them
- * from playing (their account, nationality, consent where required, and the league's age).
+ * A registration's lineup, starters first, then by name. Ready: nothing keeps them from playing
+ * (their account, nationality, consent where required, and the league's age).
  */
 export function lineupOf(
   db: Reader,
@@ -430,7 +308,7 @@ export function lineupOf(
     .from(registrationPlayer)
     .innerJoin(player, eq(registrationPlayer.playerId, player.id))
     .where(eq(registrationPlayer.requestId, requestId))
-    .orderBy(registrationPlayer.joinedAt)
+    .orderBy(asc(registrationPlayer.role), asc(player.displayName), asc(player.id))
     .all();
   const profiles = profilesOf(
     db,
@@ -452,10 +330,10 @@ export function lineupOf(
 /** What staff answered: the refusal's reason, or the approved roster and its division. */
 function decisionOf(
   db: Reader,
-  found: { reason: string | null; teamId: number | null; seasonId: number | null },
+  found: { reason: string | null; teamId: number | null; seasonId: number | null; status: string },
 ) {
   const placed =
-    found.teamId === null
+    found.teamId === null || found.status !== 'approved'
       ? undefined
       : db
           .select({ name: team.name, slug: team.slug, division: schema.division.name })
@@ -481,9 +359,22 @@ function decisionOf(
 export interface RegistrationPlayerView {
   playerId: number;
   name: string;
-  role: 'player' | 'sub';
+  role: RegistrationRole;
   captain: boolean;
   ready: boolean;
+}
+
+/** One of the roster's players, as the filer picks the lineup among them. */
+export interface LineupCandidate {
+  playerId: number;
+  name: string;
+  /** In the lineup, and as what; null when not picked. */
+  role: RegistrationRole | null;
+  captain: boolean;
+  /** What keeps them from playing in this league: their profile, the league's age. */
+  gaps: PlayerGap[];
+  /** Already in another roster or registration of the competition (O-29). */
+  unavailable: boolean;
 }
 
 export type RegistrationStatus =
@@ -492,16 +383,17 @@ export type RegistrationStatus =
       id: number;
       status: string;
       requestedAt: number;
-      competition: { name: string; slug: string };
+      competition: { id: number; name: string; slug: string };
       season: string;
-      club: { name: string; existing: boolean };
-      roster: { name: string; tag: string; colors: string[]; canStream: boolean; hasLogo: boolean };
+      club: string;
+      /** The roster: its own page, once it names one (M-33). */
+      roster: { name: string; slug: string | null };
       rulesVersion: string;
-      /** The invitation in use; its link is computed from `nonce` by the website. */
-      invite: { id: number; nonce: string; expiresAt: number; active: boolean } | null;
       players: RegistrationPlayerView[];
+      /** The roster's players, for the filer to pick the lineup; none for older registrations. */
+      candidates: LineupCandidate[];
       lineup: { complete: boolean; gaps: LineupGap[] };
-      /** Lineups are locked: no player joins, leaves or changes role (M-29). */
+      /** Lineups are locked: no player is picked, dropped or changes role (M-29). */
       locked: boolean;
       /** Staff's answer: the reason of a refusal, the roster and division of an approval. */
       decision: {
@@ -514,7 +406,7 @@ export type RegistrationStatus =
 
 /**
  * A registration as its filer follows it. Anyone else finds nothing: staff see registrations in
- * their own list (phase 3d-4b).
+ * their own list.
  */
 export function registrationStatus(
   db: Reader,
@@ -529,56 +421,63 @@ export function registrationStatus(
     .innerJoin(season, eq(request.seasonId, season.id))
     .where(and(eq(request.id, requestId), eq(request.kind, 'registration')))
     .get();
-  const payload = row?.request.payloadJson;
-  if (!row || row.request.requestedBy !== playerId || !payload || !('roster' in payload)) {
+  const rosterName = row ? rosterNameOf(db, row.request) : null;
+  if (!row || row.request.requestedBy !== playerId || rosterName === null) {
     return { ok: false, error: 'not_found' };
   }
   const settings = row.competition.rulesetJson.registration;
-
-  const clubName =
-    payload.club.kind === 'new'
-      ? payload.club.name
-      : (db.select({ name: club.name }).from(club).where(eq(club.id, payload.club.clubId)).get()
-          ?.name ?? '?');
+  const payload = row.request.payloadJson;
+  const versionId = 'rules' in payload ? payload.rules.versionId : -1;
   const rules = db
     .select({ version: rulesVersion.version })
     .from(rulesVersion)
-    .where(eq(rulesVersion.id, payload.rules.versionId))
+    .where(eq(rulesVersion.id, versionId))
     .get();
-  const invite = db
-    .select()
-    .from(registrationInvite)
-    .where(and(eq(registrationInvite.requestId, requestId), isNull(registrationInvite.revokedAt)))
-    .orderBy(desc(registrationInvite.id))
-    .get();
-
   const players = lineupOf(db, requestId, row.competition.title, settings, row.season.startsOn);
+  const named = 'roster' in payload ? null : row.request.teamId;
+  const slug =
+    named === null
+      ? null
+      : (db.select({ slug: team.slug }).from(team).where(eq(team.id, named)).get()?.slug ?? null);
+
+  let candidates: LineupCandidate[] = [];
+  if (named !== null) {
+    const members = rosterMembers(db, named, row.competition.title);
+    const ids = members.map((member) => member.playerId);
+    const profiles = profilesOf(db, ids, row.competition.title);
+    const taken = new Set(
+      unavailablePlayers(
+        db,
+        { requestId, competitionId: row.competition.id, seasonId: row.season.id },
+        ids,
+      ),
+    );
+    candidates = members.map((member) => {
+      const picked = players.find((entry) => entry.playerId === member.playerId);
+      const profile = profiles.get(member.playerId);
+      return {
+        playerId: member.playerId,
+        name: member.name,
+        role: picked?.role ?? null,
+        captain: picked?.captain ?? false,
+        gaps: profile ? playerGaps(profile, settings, row.season.startsOn) : ['game_account'],
+        unavailable: taken.has(member.playerId),
+      };
+    });
+  }
 
   return {
     ok: true,
     id: row.request.id,
     status: row.request.status,
     requestedAt: row.request.requestedAt,
-    competition: { name: row.competition.name, slug: row.competition.slug },
+    competition: { id: row.competition.id, name: row.competition.name, slug: row.competition.slug },
     season: row.season.name,
-    club: { name: clubName, existing: payload.club.kind === 'existing' },
-    roster: {
-      name: payload.roster.name,
-      tag: payload.roster.tag,
-      colors: payload.roster.colors,
-      canStream: payload.roster.canStream,
-      hasLogo: payload.roster.logoKey !== null,
-    },
+    club: clubNameOf(db, row.request),
+    roster: { name: rosterName, slug },
     rulesVersion: rules?.version ?? '?',
-    invite: invite
-      ? {
-          id: invite.id,
-          nonce: invite.nonce,
-          expiresAt: invite.expiresAt,
-          active: invite.expiresAt > now,
-        }
-      : null,
     players,
+    candidates,
     lineup: lineupStatus(players, settings),
     locked: lockedNow(row, now),
     decision: decisionOf(db, row.request),

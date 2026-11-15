@@ -1,9 +1,8 @@
 import { readFile } from 'node:fs/promises';
-import { ROSTER_COLORS_MAX, zonedDate, type FieldErrors } from '@ligo/core';
+import { zonedDate, type FieldErrors } from '@ligo/core';
 import { findLeague, listLeagueMatches, schema, type Db } from '@ligo/db';
 import { and, eq } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
-import { bodyLimit } from 'hono/body-limit';
 import { R6_RANKS } from '@ligo/titles';
 import type { EvidenceStore } from '../assets/evidence-store.ts';
 import type { AssetStore } from '../assets/store.ts';
@@ -12,7 +11,6 @@ import { announceReportDecision, announceRequestDecision } from '../discord/staf
 import { t, type Locale, type MessageKey } from '../i18n/index.ts';
 import { evidenceCompetition, openEvidence } from '../services/evidence.ts';
 import { gameProfileOf, saveGameProfile, type SaveProfileError } from '../services/game-profile.ts';
-import { LOGO_MAX_BYTES } from '../services/logo.ts';
 import {
   fileRegistration,
   registrationForm,
@@ -44,21 +42,8 @@ import { matchTimeRoutes } from './match-time.ts';
 import { rosterRoutes } from './rosters.ts';
 import { rostersOf } from '../services/rosters.ts';
 import { teamManageRoutes } from './team-manage.ts';
-import {
-  EMPTY_REGISTER_VALUES,
-  gameProfileForm,
-  registerFormView,
-  registrationView,
-  type RegisterValues,
-} from './pages/register.ts';
-import { inviteUrl } from '../services/invites.ts';
-import {
-  joinRegistration,
-  joinView,
-  leaveRegistration,
-  registrationsOf,
-} from '../services/joining.ts';
-import { joinPageView } from './pages/join.ts';
+import { gameProfileForm, registerFormView, registrationView } from './pages/register.ts';
+import { leagueServer, notOnServer, registrationsOf } from '../services/registration-players.ts';
 import {
   adminCompetitions,
   discordSettings,
@@ -71,12 +56,7 @@ import {
   registrationsToApprove,
   rejectRegistration,
 } from '../services/registration-approval.ts';
-import {
-  removeFromRegistration,
-  renewInvite,
-  setLineup,
-  withdrawRegistration,
-} from '../services/registration-lineup.ts';
+import { setLineup, withdrawRegistration } from '../services/registration-lineup.ts';
 import { rulesFormView, rulesPageView, type RulesFormValues } from './pages/rules.ts';
 import { seasonPageView } from './pages/season.ts';
 import { staffPage } from './pages/staff.ts';
@@ -160,7 +140,6 @@ const STAFF_DONE = [
   'approved',
   'rejected_request',
   'registration_approved',
-  'registration_approved_logo_lost',
   'registration_rejected',
 ] as const;
 const STAFF_ERRORS = [
@@ -176,24 +155,19 @@ const STAFF_ERRORS = [
   'role_full',
   'invalid_division',
   'not_approvable',
-  'club_taken',
-  'name_taken',
-  'tag_taken',
+  'discord_unavailable',
 ] as const;
 // What a filer's change sends back to the registration's page with; anything else shows nothing.
-const REGISTRATION_DONE = ['lineup', 'removed', 'invite', 'withdrawn'] as const;
+const REGISTRATION_DONE = ['lineup', 'withdrawn'] as const;
 const REGISTRATION_ERRORS = [
   'lineup_locked',
   'captain_not_starter',
   'too_many_starters',
   'too_many_subs',
-  'unknown_player',
-  'not_joined',
+  'not_on_roster',
+  'unavailable',
   'confirm',
 ] as const;
-
-// An invitation link's token, as `/join/<invitation>/<token>` carries it.
-const INVITE_TOKEN = /^[\w-]{43}$/;
 
 /** A path as the error log keeps it: an invitation's token is a secret and never written down. */
 export const loggedPath = (path: string): string =>
@@ -535,111 +509,45 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     const form = registrationForm(db, c.req.param('competition'), viewer.playerId, deps.now());
     if (!form.ok) return registrationClosed(c, form.error);
     c.header('Cache-Control', 'no-store');
+    return render(c, registerFormView(locale, form, { teamId: '', errors: [], csrf: viewer.csrf }));
+  });
+
+  app.post('/c/:competition/register', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const slug = c.req.param('competition');
+    const text = (key: string) => (typeof form[key] === 'string' ? form[key] : '');
+    const reply = fileRegistration(
+      db,
+      viewer.playerId,
+      slug,
+      {
+        teamId: ROW_ID.test(text('team')) ? Number(text('team')) : -1,
+        rulesVersionId: Number(text('rules_version')),
+        rulesAccepted: text('rules_accepted') === '1',
+      },
+      deps.now(),
+    );
+    if (reply.ok) return c.redirect(`/registrations/${String(reply.id)}`, 303);
+    if (!('errors' in reply)) return registrationClosed(c, reply.error);
+    const again = registrationForm(db, slug, viewer.playerId, deps.now());
+    if (!again.ok) return registrationClosed(c, again.error);
+    c.header('Cache-Control', 'no-store');
     return render(
       c,
-      registerFormView(locale, form, {
-        values: { ...EMPTY_REGISTER_VALUES, clubKind: form.clubs.length > 0 ? 'existing' : 'new' },
-        errors: [],
+      registerFormView(locale, again, {
+        teamId: text('team'),
+        errors: reply.errors satisfies FieldErrors<RegistrationFieldError>,
         csrf: viewer.csrf,
       }),
+      400,
     );
   });
 
-  app.post(
-    '/c/:competition/register',
-    // The logo is at most 1 MB; the rest of the form is small. A larger body is refused before
-    // it is read.
-    bodyLimit({
-      maxSize: LOGO_MAX_BYTES + 64 * 1024,
-      // bodyLimit types its context loosely: it is this app's own.
-      onError: (c: Context<Env>) =>
-        render(
-          c,
-          messagePage(
-            locale,
-            t(locale, 'web.register.tooBig.title'),
-            t(locale, 'web.register.tooBig.body'),
-          ),
-          413,
-        ),
-    }),
-    async (c) => {
-      const guarded = await guard(c);
-      if (guarded instanceof Response) return guarded;
-      const { viewer, form } = guarded;
-      const slug = c.req.param('competition');
-      const text = (key: string) => (typeof form[key] === 'string' ? form[key] : '');
-      const values: RegisterValues = {
-        clubKind: text('club_kind') === 'existing' ? 'existing' : 'new',
-        clubId: text('club_id'),
-        clubName: text('club_name'),
-        clubCity: text('club_city'),
-        clubLegalStatus: text('club_legal_status'),
-        clubSocials: text('club_socials').replaceAll('\r\n', '\n'),
-        clubDiscord: text('club_discord'),
-        rosterName: text('roster_name'),
-        tag: text('roster_tag'),
-        // Disabled pickers are not sent: the colours are the places that were, in order.
-        colors: Array.from({ length: ROSTER_COLORS_MAX }, (_, index) =>
-          text(`color_${index + 1}`),
-        ).filter((color) => color.trim() !== ''),
-        canStream: text('can_stream') === '1',
-      };
-      const upload = form.logo;
-      const logo =
-        upload instanceof File && upload.size > 0
-          ? new Uint8Array(await upload.arrayBuffer())
-          : null;
-      const reply = await fileRegistration(
-        db,
-        deps.evidence,
-        viewer.playerId,
-        slug,
-        {
-          club:
-            values.clubKind === 'existing'
-              ? {
-                  kind: 'existing',
-                  clubId: /^\d{1,10}$/.test(values.clubId) ? Number(values.clubId) : -1,
-                }
-              : {
-                  kind: 'new',
-                  name: values.clubName,
-                  city: values.clubCity,
-                  legalStatus: values.clubLegalStatus,
-                  socials: values.clubSocials,
-                  discordUrl: values.clubDiscord,
-                },
-          roster: {
-            name: values.rosterName,
-            tag: values.tag,
-            colors: values.colors,
-            canStream: values.canStream,
-          },
-          logo,
-          rulesVersionId: Number(text('rules_version')),
-          rulesAccepted: text('rules_accepted') === '1',
-        },
-        deps.now(),
-      );
-      if (reply.ok) return c.redirect(`/registrations/${String(reply.id)}`, 303);
-      if (!('errors' in reply)) return registrationClosed(c, reply.error);
-      const form2 = registrationForm(db, slug, viewer.playerId, deps.now());
-      if (!form2.ok) return registrationClosed(c, form2.error);
-      c.header('Cache-Control', 'no-store');
-      return render(
-        c,
-        registerFormView(locale, form2, {
-          values,
-          errors: reply.errors satisfies FieldErrors<RegistrationFieldError>,
-          csrf: viewer.csrf,
-        }),
-        400,
-      );
-    },
-  );
-
-  app.get('/registrations/:id', (c) => {
+  // Asked of the bot on every visit: a player who just joined the league's server counts at once.
+  const memberOf = createMemberCheck(deps.gateway);
+  app.get('/registrations/:id', async (c) => {
     if (!login) return notFound(c);
     const viewer = c.get('viewer');
     if (!viewer) return c.redirect(`/auth/login?next=${encodeURIComponent(c.req.path)}`, 303);
@@ -653,15 +561,22 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       .from(schema.competition)
       .where(eq(schema.competition.slug, status.competition.slug))
       .get();
-    // The link holds the invitation's secret: the page is the filer's only, and kept by no cache.
+    // The filer's own page, about other players: kept by no cache.
     c.header('Cache-Control', 'no-store');
+    const offServer =
+      status.status === 'pending'
+        ? await notOnServer(
+            db,
+            memberOf,
+            status.competition.id,
+            status.players.map((entry) => entry.playerId),
+          )
+        : [];
     return render(
       c,
       registrationView(locale, status, {
-        inviteUrl:
-          status.invite && status.status === 'pending'
-            ? inviteUrl(login.publicUrl, login.secret, status.invite)
-            : null,
+        notOnServer: offServer,
+        serverInvite: leagueServer(db, status.competition.id)?.inviteUrl ?? null,
         timeZone: competitionRow?.scheduling.time_zone ?? 'Europe/Paris',
         csrf: viewer.csrf,
         flash: registrationFlash(c.req.query('done'), c.req.query('error')),
@@ -701,29 +616,6 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     );
     return backToRegistration(c, id, reply, 'lineup');
   });
-  app.post('/registrations/:id/players/:player/remove', async (c) => {
-    const guarded = await guard(c);
-    if (guarded instanceof Response) return guarded;
-    const id = c.req.param('id');
-    const playerId = c.req.param('player');
-    if (!ROW_ID.test(id) || !ROW_ID.test(playerId)) return notFound(c);
-    const reply = removeFromRegistration(
-      db,
-      guarded.viewer.playerId,
-      Number(id),
-      Number(playerId),
-      deps.now(),
-    );
-    return backToRegistration(c, id, reply, 'removed');
-  });
-  app.post('/registrations/:id/invite', async (c) => {
-    const guarded = await guard(c);
-    if (guarded instanceof Response) return guarded;
-    const id = c.req.param('id');
-    if (!ROW_ID.test(id)) return notFound(c);
-    const reply = renewInvite(db, guarded.viewer.playerId, Number(id), deps.now());
-    return backToRegistration(c, id, reply, 'invite');
-  });
   app.post('/registrations/:id/withdraw', async (c) => {
     const guarded = await guard(c);
     if (guarded instanceof Response) return guarded;
@@ -737,68 +629,6 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
         ? withdrawRegistration(db, guarded.viewer.playerId, Number(id), deps.now())
         : { ok: false as const, error: 'confirm' };
     return backToRegistration(c, id, reply, 'withdrawn');
-  });
-
-  // Joining a registration from its invitation link (maintainer, 14 November 2026). The link
-  // holds a secret: pages under it are kept by no cache, and the path never reaches the log.
-  const memberOf = createMemberCheck(deps.gateway);
-  const inviteLink = (c: Context<Env>) => {
-    const id = c.req.param('id') ?? '';
-    const token = c.req.param('token') ?? '';
-    return login && ROW_ID.test(id) && INVITE_TOKEN.test(token)
-      ? { inviteId: Number(id), token, secret: login.secret }
-      : null;
-  };
-  const invalidInvite = (c: Context<Env>) =>
-    render(
-      c,
-      messagePage(locale, t(locale, 'web.join.invalid.title'), t(locale, 'web.join.invalid.body')),
-      404,
-    );
-  app.get('/join/:id/:token', async (c) => {
-    if (!login) return notFound(c);
-    c.header('Cache-Control', 'no-store');
-    const link = inviteLink(c);
-    if (!link) return invalidInvite(c);
-    const viewer = c.get('viewer');
-    // A dead link says so before asking anyone to log in.
-    const visitor = { id: -1, discordUserId: null };
-    const reply = await joinView(
-      db,
-      memberOf,
-      viewer ? { id: viewer.playerId, discordUserId: viewer.discordUserId } : visitor,
-      link,
-      deps.now(),
-    );
-    if (!reply.ok) return invalidInvite(c);
-    if (!viewer) return c.redirect(`/auth/login?next=${encodeURIComponent(c.req.path)}`, 303);
-    return render(c, joinPageView(locale, reply, { action: c.req.path, csrf: viewer.csrf }));
-  });
-  app.post('/join/:id/:token', async (c) => {
-    const guarded = await guard(c);
-    if (guarded instanceof Response) return guarded;
-    const { viewer } = guarded;
-    const link = inviteLink(c);
-    if (!link) return invalidInvite(c);
-    const reply = await joinRegistration(
-      db,
-      memberOf,
-      { id: viewer.playerId, discordUserId: viewer.discordUserId },
-      link,
-      deps.now(),
-    );
-    if (!reply.ok && reply.error === 'invalid_link') return invalidInvite(c);
-    // Joined or not, the page says where the player stands now.
-    return c.redirect(c.req.path, 303);
-  });
-  app.post('/registrations/:id/leave', async (c) => {
-    const guarded = await guard(c);
-    if (guarded instanceof Response) return guarded;
-    const id = c.req.param('id');
-    if (!ROW_ID.test(id)) return notFound(c);
-    const reply = leaveRegistration(db, guarded.viewer.playerId, Number(id), deps.now());
-    if (reply.ok) return c.redirect('/me?left=1', 303);
-    return reply.error === 'not_found' ? notFound(c) : c.redirect(`/me?error=${reply.error}`, 303);
   });
 
   app.get('/c/:competition/:season', (c) => {
@@ -924,7 +754,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
         csrf: viewer.csrf,
         flash: state.flash,
         game,
-        registrations: registrationsOf(db, viewer.playerId, deps.now()),
+        registrations: registrationsOf(db, viewer.playerId),
         rosters: rostersOf(db, viewer.playerId),
         adminOf: await adminCompetitions(db, deps.gateway, viewer.discordUserId),
       }),
@@ -994,19 +824,17 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     if (!viewer) return c.redirect('/auth/login?next=/staff', 303);
     const competitions = await staffCompetitions(db, deps.roles, viewer, deps.now());
     if (competitions.length === 0) return forbidden(c);
-    const leagues = competitions.flatMap((competition) => {
+    const leagues = [];
+    for (const competition of competitions) {
       const league = findLeague(db, competition.id);
-      if (!league) return [];
-      const timeZone = league.competition.schedulingJson.time_zone;
-      return [
-        {
-          name: competition.name,
-          timeZone,
-          queue: staffQueue(db, league),
-          registrations: registrationsToApprove(db, league.competition.id),
-        },
-      ];
-    });
+      if (!league) continue;
+      leagues.push({
+        name: competition.name,
+        timeZone: league.competition.schedulingJson.time_zone,
+        queue: staffQueue(db, league),
+        registrations: await registrationsToApprove(db, memberOf, league.competition.id),
+      });
+    }
     const done = oneOf(STAFF_DONE, c.req.query('done'));
     const error = oneOf(STAFF_ERRORS, c.req.query('error'));
     const flash: { error: boolean; key: MessageKey } | null = done
@@ -1130,8 +958,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     const division = typeof form.division === 'string' && ROW_ID.test(form.division);
     const reply = await approveRegistration(
       db,
-      deps.assets,
-      deps.evidence,
+      memberOf,
       actor,
       { requestId: Number(id), divisionId: division ? Number(form.division) : -1 },
       deps.now(),
@@ -1140,10 +967,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       const refused = reply.error === 'not_staff' || reply.error === 'not_linked';
       return refused ? forbidden(c) : backToQueue(c, `error=${reply.error}`);
     }
-    return backToQueue(
-      c,
-      reply.logoLost ? 'done=registration_approved_logo_lost' : 'done=registration_approved',
-    );
+    return backToQueue(c, 'done=registration_approved');
   });
 
   teamManageRoutes(app, { deps, render, notFound, forbidden, guard });

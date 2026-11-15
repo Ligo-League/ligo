@@ -7,7 +7,13 @@ import {
   type MatchRow,
   type TeamRow,
 } from '@ligo/db/testing';
-import { schema } from '@ligo/db';
+import { schema, type Db } from '@ligo/db';
+import { eq } from 'drizzle-orm';
+import { fakeAssetStore } from './assets/store.ts';
+import { createClub } from './services/clubs.ts';
+import { saveGameProfile } from './services/game-profile.ts';
+import { setNationality, setStatsConsent } from './services/me.ts';
+import { ensurePlayer } from './services/players.ts';
 
 export const TEST_GUILD = '876543210987654321';
 export const TEST_STAFF_ROLE = '111111111111111111';
@@ -104,4 +110,48 @@ export function registrationDatabase(rulesFrom = 0) {
     })
     .run();
   return db;
+}
+
+/**
+ * Ana's club Kairos Esport and its roster Kairos (KRS), in no competition, with `players`
+ * players on the roster, each with a complete profile for LFR: R6 account, nationality, stats
+ * consent, born in 2000. Discord IDs `71000000000000000n` for player n.
+ */
+export async function kairosRoster(db: Db, players = 5) {
+  const owner = ensurePlayer(
+    db,
+    { orgId: 1, discordUserId: '700000000000000001', displayName: 'Ana' },
+    1,
+  ).id;
+  await createClub(
+    db,
+    fakeAssetStore(),
+    owner,
+    {
+      orgId: 1,
+      title: 'r6',
+      club: { name: 'Kairos Esport', city: '', legalStatus: '', socials: '', discordUrl: '' },
+      roster: { name: 'Kairos', tag: 'KRS', colors: ['#112233', '#FFFFFF'], canStream: false },
+      logo: null,
+    },
+    1,
+  );
+  const teamId = db.select().from(schema.team).where(eq(schema.team.slug, 'kairos')).get()?.id ?? 0;
+  const playerIds: number[] = [];
+  for (let n = 1; n <= players; n += 1) {
+    playerIds.push(rosterPlayerForTests(db, teamId, n));
+  }
+  return { owner, teamId, playerIds };
+}
+
+/** Player n, with a complete profile for LFR, on the roster. */
+export function rosterPlayerForTests(db: Db, teamId: number, n: number): number {
+  const discordUserId = `71000000000000000${String(n)}`.slice(-18);
+  const id = ensurePlayer(db, { orgId: 1, discordUserId, displayName: `P${String(n)}` }, 1).id;
+  saveGameProfile(db, id, { ubisoftName: `Player${String(n)}`, profileId: null, rank: 'gold' }, 1);
+  setNationality(db, id, 'FR', 1);
+  setStatsConsent(db, id, true, 1);
+  db.update(schema.player).set({ birthDate: '2000-01-01' }).where(eq(schema.player.id, id)).run();
+  db.insert(schema.rosterPlayer).values({ teamId, playerId: id, joinedAt: n }).run();
+  return id;
 }
