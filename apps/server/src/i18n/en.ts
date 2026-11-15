@@ -306,6 +306,10 @@ export const en: Record<MessageKey, string> = {
   'error.unknownButton': 'This button can no longer be used.',
   'error.unknownForm': 'This form can no longer be used.',
   'error.unexpected': 'Something went wrong. Please try again in a moment.',
+  'command.register.description': 'The link to the form that registers a team in the league.',
+  'register.open': 'Registration is open for {competition}, {season}: {url}',
+  'register.closed': 'Registration is not open for {competition}.',
+  'register.not_linked': 'This server is linked to no league.',
   'command.help.description': "Explains the bot's commands in detail.",
   'command.help.option.command': 'The command to explain. Without it, the list of commands.',
   'help.choice.standings': '/standings',
@@ -315,7 +319,7 @@ export const en: Record<MessageKey, string> = {
   'help.choice.team': '/team',
   'help.choice.league': '/league channel',
   'help.overview':
-    "**Ligo's commands**\n• `/standings` — the season's standings, as an image or as text.\n• `/match propose-time` — propose a match time to the other team.\n• `/match veto` — the map veto, before the match.\n• `/match report` — report the result of your team's match, with a screenshot of the scoreboard.\n• `/team` — your team's officials, and your requests to staff to change them.\n• `/help` — this help. `/help command:` explains one command in detail.",
+    "**Ligo's commands**\n• `/standings` — the season's standings, as an image or as text.\n• `/match propose-time` — propose a match time to the other team.\n• `/match veto` — the map veto, before the match.\n• `/match report` — report the result of your team's match, with a screenshot of the scoreboard.\n• `/team` — your team's officials, and your requests to staff to change them.\n• `/register` — the link to register a team, while registration is open.\n• `/help` — this help. `/help command:` explains one command in detail.",
   'help.overview.staff':
     "**League staff**\n• `/staff match` — validate, enter, correct or annul a result; record a forfeit.\n• `/staff sanction` — a warning or points for a team, and the list of its sanctions.\n• `/staff exclusion` — exclude a team, reinstate it after an appeal, set its automatic exclusion.\n• `/team` — each team's officials, and the teams' requests.\n• `/league channel` — the bot's channels: validation queue and results.\n\n**Setting up**\n1. `/league channel` twice: the staff validation queue, then the results channel.\n2. `/team owner` for each team.\nTeams can then report their results with `/match report`.",
   'help.page.standings':
@@ -346,6 +350,9 @@ export const en: Record<MessageKey, string> = {
     "**`/team`** — who acts for each team\nA team's officials (its owner, managers and coach) report its results, propose its match times and run its veto.\n\n**For teams** — the owner and managers ask, league staff approve or refuse with a reason:\n• `/team member add` — add a manager or a coach (`member`, `role`).\n• `/team owner` — hand the team over; the owner only, who then leaves the team.\n• `/team member remove` — remove an official; the owner only, no approval needed.\n• `/team leave` — leave the team, no approval needed; the owner hands it over first.\n• `/team requests` — your requests still waiting, to withdraw them.\n• `/team list` — your team's officials.\n`team` is needed only if you are an official of several teams; `note` is a word for staff. The answer comes by direct message.\n\n**For league staff** — the same commands change the team directly, without a request (`team` required). Requests arrive in the validation queue with **Approve** and **Refuse**; `/team requests` lists them all.",
   'help.team.max':
     "A team's club has one owner and at most {clubManagers} managers, who act for all its teams; each team has at most {managers} managers and {coaches} coach. Staff answer requests within {hours} hours.",
+  'help.choice.register': '/register',
+  'help.page.register':
+    "**`/register`** — register a team\nOpen to everyone, while registration is open.\n\nThe bot gives the link to the form on the website: the club, the team, its logo, and accepting the rulebook. You then share the registration's invitation link: each player joins with their own account, after filling in their page (R6 account, rank, nationality, date of birth, stats consent). You then choose the starters, the substitutes and the captain, a starter.",
   'help.page.league':
     "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Match schedule: extensions and agreed times, until each match has its own channel.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
   'command.match.veto.description': "Start the map veto of one of your team's matches.",

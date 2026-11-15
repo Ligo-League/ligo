@@ -72,8 +72,9 @@ export function createDiscordClient(deps: {
   db: Db;
   assets: AssetStore;
   evidence: EvidenceStore;
+  publicUrl: URL;
 }): Client {
-  const { commands, buttons, forms, logger, db, assets, evidence } = deps;
+  const { commands, buttons, forms, logger, db, assets, evidence, publicUrl } = deps;
   const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   });
@@ -86,6 +87,7 @@ export function createDiscordClient(deps: {
     assets,
     evidence,
     now: () => Date.now(),
+    publicUrl,
   });
 
   client.once(Events.ClientReady, (ready) => {

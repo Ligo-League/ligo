@@ -77,6 +77,45 @@ function clubsRunBy(db: Reader, playerId: number, orgId: number) {
   return rows.filter((row, index) => rows.findIndex((other) => other.id === row.id) === index);
 }
 
+/**
+ * Where a Discord server's league takes registrations, for `/register`: the form's path while
+ * a season is open for them.
+ */
+export function registrationLink(
+  db: Reader,
+  guildId: string | null,
+):
+  | { ok: true; path: string; competition: string; season: string }
+  | {
+      ok: false;
+      error: 'not_linked' | 'closed';
+      competition?: string;
+    } {
+  const linked =
+    guildId === null
+      ? undefined
+      : db
+          .select({ competition })
+          .from(schema.leagueGuild)
+          .innerJoin(competition, eq(schema.leagueGuild.competitionId, competition.id))
+          .where(eq(schema.leagueGuild.guildId, guildId))
+          .get();
+  if (!linked) return { ok: false, error: 'not_linked' };
+  const open = db
+    .select({ name: season.name })
+    .from(season)
+    .where(and(eq(season.competitionId, linked.competition.id), eq(season.status, 'registration')))
+    .orderBy(desc(season.startsOn), desc(season.id))
+    .get();
+  if (!open) return { ok: false, error: 'closed', competition: linked.competition.name };
+  return {
+    ok: true,
+    path: `/c/${linked.competition.slug}/register`,
+    competition: linked.competition.name,
+    season: open.name,
+  };
+}
+
 export type RegistrationClosed = { ok: false; error: 'not_found' | 'closed' | 'no_rules' };
 
 export type RegistrationForm =

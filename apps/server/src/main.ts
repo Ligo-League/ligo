@@ -39,11 +39,20 @@ logger.info({ path: databasePath }, 'Database ready');
 
 const assets = createLocalAssetStore(resolve(config.assetsDir));
 const evidence = createLocalEvidenceStore(resolve(config.storageDir), SCREENSHOT_MAX_BYTES, logger);
-const client = createDiscordClient({ commands, buttons, forms, logger, db, assets, evidence });
+const publicUrl = new URL(config.web.publicUrl);
+const client = createDiscordClient({
+  commands,
+  buttons,
+  forms,
+  logger,
+  db,
+  assets,
+  evidence,
+  publicUrl,
+});
 // Calls through the gateway fail until the bot is connected; the website then sees no roles.
 const gateway = createDiscordGateway(client);
 
-const publicUrl = new URL(config.web.publicUrl);
 const login = config.web.login && {
   oauth: createDiscordOAuth({
     clientId: config.discordClientId,

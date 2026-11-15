@@ -2,6 +2,7 @@ import { helpCommand } from './help.ts';
 import { leagueCommand } from './league.ts';
 import { matchCommand } from './match.ts';
 import { pingCommand } from './ping.ts';
+import { registerCommand } from './register.ts';
 import { staffCommand } from './staff.ts';
 import { standingsCommand } from './standings.ts';
 import { teamCommand } from './team.ts';
@@ -15,5 +16,6 @@ export const commands: readonly Command[] = [
   staffCommand,
   teamCommand,
   leagueCommand,
+  registerCommand,
   helpCommand,
 ];

@@ -155,6 +155,8 @@ export interface CommandContext {
   evidence: EvidenceStore;
   /** The current time in Unix milliseconds; services take it as a parameter. */
   now(): number;
+  /** The website's address, for links in replies (`PUBLIC_URL`). */
+  publicUrl: URL;
 }
 
 /** A slash command: a thin adapter that calls a service and formats the reply. */

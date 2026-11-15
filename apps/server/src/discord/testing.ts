@@ -317,6 +317,7 @@ export function fakeContext(overrides: Partial<CommandContext> = {}): CommandCon
     assets: fakeAssetStore(),
     evidence: fakeEvidenceStore(),
     now: () => 1_800_000_000_000,
+    publicUrl: new URL('http://localhost:3000'),
     ...overrides,
   };
 }

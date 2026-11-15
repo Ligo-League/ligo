@@ -175,6 +175,7 @@ describe('/help', () => {
       staff: ['staff-match', 'staff-sanction', 'staff-exclusion'],
       team: ['team'],
       league: ['league'],
+      register: ['register'],
     };
     const facts = FACTS[1] as HelpFacts;
     for (const command of commands) {

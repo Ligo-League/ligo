@@ -480,6 +480,17 @@ section 10).
 5. Once joined, the player sees the registration on `/me`, with **Quitter l'équipe**; the filer
    sees them on `/registrations/1`.
 
+## 22. Phase 3d-5: the lineup, and `/register`
+
+1. Run `pnpm discord:register` once: `/register` appears. In the server, it answers with the
+   link to the registration form, to you alone.
+2. On `/registrations/1`, the filer chooses each player's role and the captain (a starter), and
+   clicks **Enregistrer l'effectif**. **Retirer** takes a player out.
+3. **Nouveau lien** replaces the invitation link: the old one stops working.
+4. **Retirer l'inscription**, with its box ticked, withdraws the registration: its players are
+   free to join another team.
+5. From the season's first day (lineups locked), the page only shows the lineup.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                               |

@@ -328,6 +328,10 @@ export const fr = {
   'error.unknownButton': "Ce bouton n'est plus utilisable.",
   'error.unknownForm': "Ce formulaire n'est plus utilisable.",
   'error.unexpected': 'Une erreur est survenue. Réessaie dans un instant.',
+  'command.register.description': 'Le lien du formulaire pour inscrire une équipe à la ligue.',
+  'register.open': 'Les inscriptions sont ouvertes pour {competition}, {season} : {url}',
+  'register.closed': 'Les inscriptions ne sont pas ouvertes pour {competition}.',
+  'register.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'command.help.description': 'Explique les commandes du bot en détail.',
   'command.help.option.command': 'La commande à expliquer. Sans elle, la liste des commandes.',
   'help.choice.standings': '/standings',
@@ -337,7 +341,7 @@ export const fr = {
   'help.choice.team': '/team',
   'help.choice.league': '/league channel',
   'help.overview':
-    "**Les commandes de Ligo**\n• `/standings` — le classement de la saison, en image ou en texte.\n• `/match propose-time` — proposer un horaire de match à l'équipe adverse.\n• `/match veto` — le veto des cartes, avant le match.\n• `/match report` — signaler le résultat d'un match de ton équipe, avec la capture d'écran du tableau des scores.\n• `/team` — les responsables de ton équipe, et tes demandes de changement au staff.\n• `/help` — cette aide. `/help command:` explique une commande en détail.",
+    "**Les commandes de Ligo**\n• `/standings` — le classement de la saison, en image ou en texte.\n• `/match propose-time` — proposer un horaire de match à l'équipe adverse.\n• `/match veto` — le veto des cartes, avant le match.\n• `/match report` — signaler le résultat d'un match de ton équipe, avec la capture d'écran du tableau des scores.\n• `/team` — les responsables de ton équipe, et tes demandes de changement au staff.\n• `/register` — le lien pour inscrire une équipe, quand les inscriptions sont ouvertes.\n• `/help` — cette aide. `/help command:` explique une commande en détail.",
   'help.overview.staff':
     '**Staff de la ligue**\n• `/staff match` — valider, saisir, corriger ou annuler un résultat ; enregistrer un forfait.\n• `/staff sanction` — un avertissement ou des points pour une équipe, et la liste de ses sanctions.\n• `/staff exclusion` — exclure une équipe, la réintégrer après un appel, régler son exclusion automatique.\n• `/team` — les responsables de chaque équipe, et les demandes des équipes.\n• `/league channel` — les salons du bot : file de validation et résultats.\n\n**Mise en place**\n1. `/league channel` deux fois : la file de validation du staff, puis le salon des résultats.\n2. `/team owner` pour chaque équipe.\nLes équipes peuvent alors signaler leurs résultats avec `/match report`.',
   'help.page.standings':
@@ -369,6 +373,9 @@ export const fr = {
     "**`/team`** — qui agit pour chaque équipe\nLes responsables d'une équipe (son propriétaire, ses managers et son coach) signalent ses résultats, proposent ses horaires et font son veto.\n\n**Pour les équipes** — le propriétaire et les managers demandent, le staff de la ligue approuve ou refuse avec une raison :\n• `/team member add` — ajouter un manager ou un coach (`member`, `role`).\n• `/team owner` — confier l'équipe à quelqu'un ; réservé au propriétaire, qui quitte alors l'équipe.\n• `/team member remove` — retirer un responsable ; réservé au propriétaire, sans validation.\n• `/team leave` — quitter l'équipe, sans validation ; le propriétaire la confie d'abord.\n• `/team requests` — tes demandes en attente, pour les retirer.\n• `/team list` — les responsables de ton équipe.\n`team` ne sert que si tu es responsable de plusieurs équipes ; `note` est un mot pour le staff. La réponse arrive en message privé.\n\n**Pour le staff de la ligue** — les mêmes commandes changent l'équipe directement, sans demande (`team` obligatoire). Les demandes arrivent dans la file de validation avec **Approuver** et **Refuser** ; `/team requests` les liste toutes.",
   'help.team.max':
     "Le club d'une équipe a un propriétaire et {clubManagers} managers au plus, qui agissent pour toutes ses équipes ; chaque équipe a {managers} managers et {coaches} coach au plus. Le staff répond aux demandes en {hours} h.",
+  'help.choice.register': '/register',
+  'help.page.register':
+    "**`/register`** — inscrire une équipe\nOuvert à tous, pendant les inscriptions.\n\nLe bot donne le lien du formulaire sur le site : le club, l'équipe, son logo, et l'acceptation du règlement. Tu partages ensuite le lien d'invitation de l'inscription : chaque joueur la rejoint avec son propre compte, après avoir rempli sa page (compte R6, rang, nationalité, date de naissance, accord sur les statistiques). Tu choisis ensuite les titulaires, les remplaçants et le capitaine, un titulaire.",
   'help.page.league':
     "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
   'command.match.veto.description': "Lance le veto des cartes d'un match de ton équipe.",

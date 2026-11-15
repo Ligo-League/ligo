@@ -18,6 +18,7 @@ export const HELP_TOPICS = [
   'staff-exclusion',
   'team',
   'league',
+  'register',
 ] as const;
 export type HelpTopic = (typeof HELP_TOPICS)[number];
 
@@ -31,6 +32,7 @@ const PAGES: Record<HelpTopic, MessageKey> = {
   'staff-exclusion': 'help.page.staffExclusion',
   team: 'help.page.team',
   league: 'help.page.league',
+  register: 'help.page.register',
 };
 
 /** A weekday from 1 (Monday) to 7 (Sunday), by name. 1 January 2024 was a Monday. */
