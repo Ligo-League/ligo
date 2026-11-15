@@ -1,4 +1,5 @@
-import type { Db } from '@ligo/db';
+import { schema, type Db } from '@ligo/db';
+import { eq } from 'drizzle-orm';
 import { vi } from 'vitest';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeAssetStore } from '../assets/store.ts';
@@ -12,6 +13,18 @@ import { fakeDiscordOAuth, type DiscordUser } from './oauth.ts';
 export const TEST_ORIGIN = 'http://localhost:3000';
 export const ANA = { id: '700000000000000001', displayName: 'Ana' };
 export const TEST_NOW = 1_800_000_000_000;
+
+/**
+ * Season 4 starting in June 2027, after the test clock (15 January 2027): its lineups are open,
+ * as they are while teams register. The seed's placeholder start, 4 January, would lock them.
+ */
+export function openLineups(db: Db): Db {
+  db.update(schema.season)
+    .set({ startsOn: '2027-06-07', endsOn: '2027-08-15' })
+    .where(eq(schema.season.name, 'Saison 4'))
+    .run();
+  return db;
+}
 
 /**
  * `users` maps an OAuth code to the Discord user Discord would answer for it; `code-ana` logs

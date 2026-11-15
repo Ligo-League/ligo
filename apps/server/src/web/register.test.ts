@@ -2,7 +2,7 @@ import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
 import { pngForTests } from '../services/logo.ts';
 import { leagueDatabase, registrationDatabase } from '../testing.ts';
-import { TEST_ORIGIN, testSite } from './testing.ts';
+import { openLineups, TEST_ORIGIN, testSite } from './testing.ts';
 
 // Registration on the website (design doc section 7; maintainer, 14 November 2026): a member
 // files the club and roster, then shares the invitation link; each player keeps their own R6
@@ -11,7 +11,7 @@ import { TEST_ORIGIN, testSite } from './testing.ts';
 const BEN = { id: '700000000000000002', displayName: 'Ben' };
 const LOGO = pngForTests({ width: 512, height: 512, colorType: 6 });
 
-function site(db = registrationDatabase()) {
+function site(db = openLineups(registrationDatabase())) {
   const browser = testSite({ db, users: { 'code-ben': BEN } });
   /** The registration form sent as a browser does, as multipart with the session's token. */
   const register = async (fields: Record<string, string> = {}, logo: Uint8Array | null = LOGO) => {

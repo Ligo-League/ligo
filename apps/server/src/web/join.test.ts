@@ -9,7 +9,7 @@ import { ensurePlayer } from '../services/players.ts';
 import { fileRegistration } from '../services/registrations.ts';
 import { registrationDatabase, TEST_GUILD } from '../testing.ts';
 import { loggedPath } from './app.ts';
-import { ANA, TEST_NOW, testSite } from './testing.ts';
+import { ANA, openLineups, TEST_NOW, testSite } from './testing.ts';
 
 // Joining a registration from its invitation link, on the website (maintainer, 14 and 15
 // November 2026).
@@ -20,11 +20,7 @@ const SECRET = 'x'.repeat(40);
 async function site() {
   const db = registrationDatabase();
   const browser = testSite({ db, users: { 'code-ben': BEN } });
-  // The test clock is 15 January 2027: Season 4 starts later here, so lineups are still open.
-  db.update(schema.season)
-    .set({ startsOn: '2027-06-07', endsOn: '2027-08-15' })
-    .where(eq(schema.season.name, 'Saison 4'))
-    .run();
+  openLineups(db);
   // Ben files the registration; Ana joins it.
   const ben = ensurePlayer(db, { orgId: 1, discordUserId: BEN.id, displayName: 'Ben' }, 1).id;
   await fileRegistration(

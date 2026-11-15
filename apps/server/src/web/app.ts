@@ -54,6 +54,12 @@ import {
   registrationsOf,
 } from '../services/joining.ts';
 import { joinPageView } from './pages/join.ts';
+import {
+  removeFromRegistration,
+  renewInvite,
+  setLineup,
+  withdrawRegistration,
+} from '../services/registration-lineup.ts';
 import { rulesFormView, rulesPageView, type RulesFormValues } from './pages/rules.ts';
 import { seasonPageView } from './pages/season.ts';
 import { staffPage } from './pages/staff.ts';
@@ -142,6 +148,18 @@ const STAFF_ERRORS = [
   'owner_cannot_leave',
   'role_full',
 ] as const;
+// What a filer's change sends back to the registration's page with; anything else shows nothing.
+const REGISTRATION_DONE = ['lineup', 'removed', 'invite', 'withdrawn'] as const;
+const REGISTRATION_ERRORS = [
+  'lineup_locked',
+  'captain_not_starter',
+  'too_many_starters',
+  'too_many_subs',
+  'unknown_player',
+  'not_joined',
+  'confirm',
+] as const;
+
 // An invitation link's token, as `/join/<invitation>/<token>` carries it.
 const INVITE_TOKEN = /^[\w-]{43}$/;
 
@@ -151,6 +169,16 @@ export const loggedPath = (path: string): string =>
 
 const oneOf = <T extends string>(values: readonly T[], value: string | undefined): T | null =>
   values.find((candidate) => candidate === value) ?? null;
+
+function registrationFlash(
+  done: string | undefined,
+  error: string | undefined,
+): { error: boolean; key: MessageKey } | null {
+  const doneKey = oneOf(REGISTRATION_DONE, done);
+  if (doneKey) return { error: false, key: `web.registration.done.${doneKey}` };
+  const errorKey = oneOf(REGISTRATION_ERRORS, error);
+  return errorKey ? { error: true, key: `web.registration.error.${errorKey}` } : null;
+}
 // Pages show live data; static files change only with a release.
 const STATIC_CACHE = 'public, max-age=3600';
 // Scripts and styles from this site only; inline style attributes carry team colours.
@@ -528,10 +556,85 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     return render(
       c,
       registrationView(locale, status, {
-        inviteUrl: status.invite ? inviteUrl(login.publicUrl, login.secret, status.invite) : null,
+        inviteUrl:
+          status.invite && status.status === 'pending'
+            ? inviteUrl(login.publicUrl, login.secret, status.invite)
+            : null,
         timeZone: competitionRow?.scheduling.time_zone ?? 'Europe/Paris',
+        csrf: viewer.csrf,
+        flash: registrationFlash(c.req.query('done'), c.req.query('error')),
       }),
     );
+  });
+
+  // The filer's changes to their registration: each answer goes back to its page.
+  const backToRegistration = (
+    c: Context<Env>,
+    id: string,
+    reply: { ok: true } | { ok: false; error: string },
+    done: (typeof REGISTRATION_DONE)[number],
+  ) => {
+    if (reply.ok) return c.redirect(`/registrations/${id}?done=${done}`, 303);
+    if (reply.error === 'not_found') return notFound(c);
+    return c.redirect(`/registrations/${id}?error=${reply.error}`, 303);
+  };
+  app.post('/registrations/:id/lineup', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const id = c.req.param('id');
+    if (!ROW_ID.test(id)) return notFound(c);
+    const roles = new Map<number, 'player' | 'sub'>();
+    for (const [key, value] of Object.entries(form)) {
+      const playerId = /^role_([1-9]\d{0,9})$/.exec(key)?.[1];
+      if (playerId && (value === 'player' || value === 'sub')) roles.set(Number(playerId), value);
+    }
+    const captain = typeof form.captain === 'string' && ROW_ID.test(form.captain);
+    const reply = setLineup(
+      db,
+      viewer.playerId,
+      Number(id),
+      { roles, captainId: captain ? Number(form.captain) : null },
+      deps.now(),
+    );
+    return backToRegistration(c, id, reply, 'lineup');
+  });
+  app.post('/registrations/:id/players/:player/remove', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const id = c.req.param('id');
+    const playerId = c.req.param('player');
+    if (!ROW_ID.test(id) || !ROW_ID.test(playerId)) return notFound(c);
+    const reply = removeFromRegistration(
+      db,
+      guarded.viewer.playerId,
+      Number(id),
+      Number(playerId),
+      deps.now(),
+    );
+    return backToRegistration(c, id, reply, 'removed');
+  });
+  app.post('/registrations/:id/invite', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const id = c.req.param('id');
+    if (!ROW_ID.test(id)) return notFound(c);
+    const reply = renewInvite(db, guarded.viewer.playerId, Number(id), deps.now());
+    return backToRegistration(c, id, reply, 'invite');
+  });
+  app.post('/registrations/:id/withdraw', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const id = c.req.param('id');
+    if (!ROW_ID.test(id)) return notFound(c);
+    // Checked first, so another member learns nothing from the confirmation's answer.
+    const status = registrationStatus(db, guarded.viewer.playerId, Number(id), deps.now());
+    if (!status.ok) return notFound(c);
+    const reply =
+      guarded.form.confirm === '1'
+        ? withdrawRegistration(db, guarded.viewer.playerId, Number(id), deps.now())
+        : { ok: false as const, error: 'confirm' };
+    return backToRegistration(c, id, reply, 'withdrawn');
   });
 
   // Joining a registration from its invitation link (maintainer, 14 November 2026). The link
