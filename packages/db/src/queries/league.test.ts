@@ -33,38 +33,22 @@ describe('linkGuild', () => {
     ).toMatchObject([{ actorKind: 'system', entity: 'league_guild', entityId: GUILD, at: 2000 }]);
   });
 
-  it('changes nothing when run again, and updates a changed staff role', () => {
+  it('links once: afterwards the website changes the server, and the seed keeps it', () => {
     const db = seeded();
     linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE }, 2000);
-    expect(linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE }, 3000)).toBe('unchanged');
-    expect(linkGuild(db, { guildId: GUILD, staffRoleId: '222222222222222222' }, 4000)).toBe(
-      'updated',
+    db.update(leagueGuild).set({ inviteUrl: 'https://discord.gg/lfr' }).run();
+    expect(linkGuild(db, { guildId: GUILD, staffRoleId: '222222222222222222' }, 3000)).toBe(
+      'unchanged',
+    );
+    expect(linkGuild(db, { guildId: '333333333333333333', staffRoleId: STAFF_ROLE }, 4000)).toBe(
+      'unchanged',
     );
     expect(db.select().from(leagueGuild).all()).toMatchObject([
-      { guildId: GUILD, staffRoleId: '222222222222222222' },
+      { guildId: GUILD, staffRoleId: STAFF_ROLE, inviteUrl: 'https://discord.gg/lfr' },
     ]);
     expect(
       db.select().from(auditLog).where(eq(auditLog.action, 'seed.guild.link')).all(),
-    ).toHaveLength(2);
-  });
-
-  it('keeps the server’s public invitation, and refuses anything else', () => {
-    const db = seeded();
-    const inviteUrl = 'https://discord.gg/lfr';
-    linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE }, 2000);
-    expect(linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE, inviteUrl }, 3000)).toBe(
-      'updated',
-    );
-    expect(db.select().from(leagueGuild).get()?.inviteUrl).toBe(inviteUrl);
-    for (const wrong of [
-      'http://discord.gg/lfr',
-      'https://evil.example/lfr',
-      'https://discord.gg/',
-    ]) {
-      expect(() =>
-        linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE, inviteUrl: wrong }, 4000),
-      ).toThrow(/Not a Discord invitation/);
-    }
+    ).toHaveLength(1);
   });
 
   it('refuses to run before the competition exists', () => {

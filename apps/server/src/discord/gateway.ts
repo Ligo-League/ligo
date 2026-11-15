@@ -1,4 +1,4 @@
-import { DiscordAPIError, type Client } from 'discord.js';
+import { DiscordAPIError, PermissionFlagsBits, type Client } from 'discord.js';
 import { isDiscordAttachmentUrl } from '../services/attachments.ts';
 import type { OutgoingMessage } from './commands/types.ts';
 import { toDiscordMessage } from './outgoing.ts';
@@ -24,10 +24,28 @@ export interface DiscordGateway {
    * unreachable or the bot is not connected yet.
    */
   memberRoleIds(guildId: string, userId: string): Promise<string[] | null>;
+  /**
+   * The servers the bot is in where a user may manage the server: its owner, or a member with
+   * Manage Server (Administrator included). Rights to a league's Discord settings come from
+   * there (maintainer, 15 November 2026). Rejects when Discord is unreachable.
+   */
+  manageableGuilds(userId: string): Promise<{ id: string; name: string }[]>;
+  /**
+   * The roles of a server the bot is in that a league may use as its staff role: neither
+   * @everyone nor a role an integration manages. Null when the bot is not in the server.
+   */
+  guildRoles(guildId: string): Promise<{ id: string; name: string }[] | null>;
+  /** Where an invitation leads, and when it expires; null for one Discord does not know. */
+  resolveInvite(url: string): Promise<{ guildId: string; expiresAt: number | null } | null>;
 }
 
-// Discord's error code for a user who is not a member of the server.
+// Discord's error codes for a user who is not a member, a server the bot is not in, and an
+// invitation that does not exist.
 const UNKNOWN_MEMBER = 10007;
+const UNKNOWN_GUILD = 10004;
+const UNKNOWN_INVITE = 10006;
+const isDiscordError = (error: unknown, ...codes: number[]) =>
+  error instanceof DiscordAPIError && typeof error.code === 'number' && codes.includes(error.code);
 
 const DOWNLOAD_TIMEOUT_MS = 10_000;
 
@@ -102,6 +120,47 @@ export function createDiscordGateway(client: Client): DiscordGateway {
         return [...member.roles.cache.keys()];
       } catch (error) {
         if (error instanceof DiscordAPIError && error.code === UNKNOWN_MEMBER) return null;
+        throw error;
+      }
+    },
+
+    async manageableGuilds(userId) {
+      const found: { id: string; name: string }[] = [];
+      for (const guild of client.guilds.cache.values()) {
+        try {
+          const member = await guild.members.fetch(userId);
+          if (guild.ownerId === userId || member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+            found.push({ id: guild.id, name: guild.name });
+          }
+        } catch (error) {
+          if (!isDiscordError(error, UNKNOWN_MEMBER)) throw error;
+        }
+      }
+      return found.sort((x, y) => x.name.localeCompare(y.name));
+    },
+
+    async guildRoles(guildId) {
+      try {
+        const guild = await client.guilds.fetch(guildId);
+        const roles = await guild.roles.fetch();
+        return [...roles.values()]
+          .filter((role) => role.id !== guild.id && !role.managed)
+          .sort((x, y) => y.position - x.position)
+          .map((role) => ({ id: role.id, name: role.name }));
+      } catch (error) {
+        if (isDiscordError(error, UNKNOWN_GUILD)) return null;
+        throw error;
+      }
+    },
+
+    async resolveInvite(url) {
+      try {
+        const invite = await client.fetchInvite(url);
+        return invite.guild
+          ? { guildId: invite.guild.id, expiresAt: invite.expiresTimestamp }
+          : null;
+      } catch (error) {
+        if (isDiscordError(error, UNKNOWN_INVITE)) return null;
         throw error;
       }
     },

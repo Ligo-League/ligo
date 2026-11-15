@@ -254,6 +254,10 @@ export interface FakeGateway extends DiscordGateway {
   roleReads: number;
   /** What a download returns: a PNG header unless a test sets other bytes. */
   downloadData: Uint8Array;
+  /** The servers the bot is in: their name, roles, and the users who may manage them. */
+  guilds: Map<string, { name: string; roles: { id: string; name: string }[]; managers: string[] }>;
+  /** Invitations Discord knows, by address. */
+  invites: Map<string, { guildId: string; expiresAt: number | null }>;
 }
 
 /** An in-memory Discord: messages are kept in a list, downloads return `downloadData`. */
@@ -266,6 +270,8 @@ export function fakeGateway(): FakeGateway {
     members: new Map(),
     roleReads: 0,
     downloadData: PNG_HEADER_FOR_TESTS,
+    guilds: new Map(),
+    invites: new Map(),
     postMessage(channelId, message) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       const messageId = String(900_000_000_000_000_000n + BigInt(gateway.posted.length + 1));
@@ -302,6 +308,22 @@ export function fakeGateway(): FakeGateway {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       gateway.roleReads += 1;
       return Promise.resolve(gateway.members.get(`${guildId}:${userId}`) ?? null);
+    },
+    manageableGuilds(userId) {
+      if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
+      return Promise.resolve(
+        [...gateway.guilds]
+          .filter(([, guild]) => guild.managers.includes(userId))
+          .map(([id, guild]) => ({ id, name: guild.name })),
+      );
+    },
+    guildRoles(guildId) {
+      if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
+      return Promise.resolve(gateway.guilds.get(guildId)?.roles ?? null);
+    },
+    resolveInvite(url) {
+      if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
+      return Promise.resolve(gateway.invites.get(url) ?? null);
     },
   };
   return gateway;
