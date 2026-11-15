@@ -6,10 +6,14 @@ import { formatWhen, matchOutcome, pageOf, type Html, type Page } from '../layou
 type Data = Extract<MatchPage, { ok: true }>;
 
 /**
- * `/matches/:id`: the teams, the time or the result, and each game's map and bans. `panel` is
+ * `/matches/:id`: the teams, the time or the result, and each game's map and bans. `panels` are
  * what the viewer's own team may do in the match, when they act for a side.
  */
-export function matchPageView(locale: Locale, page: Data, panel: Html | string = ''): Page {
+export function matchPageView(
+  locale: Locale,
+  page: Data,
+  panels: readonly (Html | string)[] = [],
+): Page {
   const { match, league } = page;
   const { timeZone } = league.competition;
   const title = t(locale, 'web.match.title', { a: match.a.name, b: match.b.name });
@@ -30,7 +34,7 @@ export function matchPageView(locale: Locale, page: Data, panel: Html | string =
     </h1>
     <p>${matchOutcome(locale, match, timeZone)}</p>
     ${match.result && when ? html`<p class="muted">${when}</p>` : ''}
-    ${page.host ? html`<p>${t(locale, 'web.match.host', { team: page.host })}</p>` : ''} ${panel}
+    ${page.host ? html`<p>${t(locale, 'web.match.host', { team: page.host })}</p>` : ''} ${panels}
     <h2>${t(locale, 'web.match.games')}</h2>
     ${
       page.games.length > 0

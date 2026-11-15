@@ -38,6 +38,7 @@ import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
 import { ME_ERRORS, mePage, type MeFlash } from './pages/me.ts';
 import { clubRoutes } from './clubs.ts';
+import { matchReportRoutes } from './match-report.ts';
 import { matchTimeRoutes } from './match-time.ts';
 import { rosterRoutes } from './rosters.ts';
 import { rostersOf } from '../services/rosters.ts';
@@ -646,15 +647,19 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     return page.ok ? render(c, clubPageView(locale, page)) : notFound(c);
   });
   const matchTime = matchTimeRoutes(app, { deps, render, notFound, forbidden, guard });
+  const matchReport = matchReportRoutes(app, { deps, render, notFound, forbidden, guard });
   rosterRoutes(app, { deps, render, notFound, forbidden, guard });
   app.get('/matches/:id', async (c) => {
     const id = c.req.param('id');
     const page = MATCH_ID.test(id) ? matchPage(db, Number(id)) : null;
     if (!page?.ok) return notFound(c);
     // What the viewer's own team may do: the page is then theirs, kept by no shared cache.
-    const panel = await matchTime.panel(c, Number(id));
-    if (panel !== '') c.header('Cache-Control', 'private, no-store');
-    return render(c, matchPageView(locale, page, panel));
+    const panels = [
+      await matchReport.panel(c, Number(id)),
+      await matchTime.panel(c, Number(id)),
+    ].filter((panel) => panel !== '');
+    if (panels.length > 0) c.header('Cache-Control', 'private, no-store');
+    return render(c, matchPageView(locale, page, panels));
   });
 
   // -------------------------------------------------------------------------------------------

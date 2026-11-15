@@ -826,6 +826,30 @@ export const fr = {
     'Horaire proposé. Il n’a pas pu être publié sur Discord : l’autre équipe le voit sur cette page.',
   'web.time.done.accepted': 'Horaire accepté : le match est fixé.',
   'web.time.done.declined': 'Proposition refusée.',
+  'web.report.title': 'Résultat du match',
+  'web.report.score': 'Manches gagnées par {team}',
+  'web.report.screenshot': 'Capture du tableau des scores',
+  'web.report.screenshotHint': 'PNG, JPEG ou WebP, 20 Mo au plus.',
+  'web.report.screenshotAlt': 'Capture du tableau des scores',
+  'web.report.send': 'Déclarer le résultat',
+  'web.report.posted':
+    'L’autre équipe est prévenue sur Discord, dans le salon des horaires, et confirme ou conteste ici ou là-bas.',
+  'web.report.notPosted':
+    'La ligue n’a pas de salon des horaires : l’autre équipe voit le résultat sur cette page.',
+  'web.report.line': '{a} {scoreA}–{scoreB} {b}',
+  'web.report.by': '· déclaré par {team}',
+  'web.report.status.reported': 'En attente de la réponse de l’autre équipe.',
+  'web.report.status.confirmed':
+    'Confirmé par l’autre équipe : en attente de validation par le staff.',
+  'web.report.status.disputed': 'Contesté : le staff va trancher.',
+  'web.report.done.reported': 'Résultat déclaré : l’autre équipe est prévenue sur Discord.',
+  'web.report.done.reported_unposted':
+    'Résultat déclaré. Il n’a pas pu être publié sur Discord : l’autre équipe le voit sur cette page.',
+  'web.report.done.confirmed': 'Résultat confirmé : le staff va le valider.',
+  'web.report.done.validated': 'Résultat confirmé : il compte au classement.',
+  'web.report.done.disputed': 'Résultat contesté : le staff va trancher.',
+  'web.report.tooBig.title': 'Capture trop lourde',
+  'web.report.tooBig.body': 'La capture dépasse 20 Mo. Envoie une image plus légère.',
   'web.club.new.title': 'Créer un club',
   'web.club.new.intro':
     'Le club et sa première équipe existent tout de suite, sans compétition : tu en es propriétaire. Tu prépares ses responsables, puis tu l’inscris dans une ligue quand les inscriptions sont ouvertes.',

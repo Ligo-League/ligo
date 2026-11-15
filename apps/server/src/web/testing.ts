@@ -93,11 +93,37 @@ export function testSite(options: { db?: Db; users?: Record<string, DiscordUser>
       body: new URLSearchParams({ _csrf: token, ...fields }),
     });
   };
+  /** A form with files (`multipart/form-data`), posted as `post` does. */
+  const postFile = async (
+    path: string,
+    fields: Record<string, string>,
+    files: Record<string, File>,
+  ) => {
+    const page = await (await request('/me')).text();
+    const body = new FormData();
+    body.set('_csrf', /name="_csrf" value="([^"]+)"/.exec(page)?.[1] ?? '');
+    for (const [name, value] of Object.entries(fields)) body.set(name, value);
+    for (const [name, file] of Object.entries(files)) body.set(name, file);
+    return request(path, { method: 'POST', headers: { Origin: TEST_ORIGIN }, body });
+  };
   const advance = (ms: number) => {
     now += ms;
   };
   const setRoles = (value: string[], userId = ANA.id) => {
     roles.set(userId, value);
   };
-  return { db, oauth, gateway, evidence, logger, jar, request, logIn, post, advance, setRoles };
+  return {
+    db,
+    oauth,
+    gateway,
+    evidence,
+    logger,
+    jar,
+    request,
+    logIn,
+    post,
+    postFile,
+    advance,
+    setRoles,
+  };
 }
