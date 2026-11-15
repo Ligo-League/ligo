@@ -45,6 +45,8 @@ export type ManageFlash = { done: ManageDone } | { error: ManageError; max: numb
 export interface TeamManageData {
   team: { name: string; tag: string; slug: string };
   members: TeamMember[];
+  /** The roster's players, starters first. */
+  players: { name: string; role: string; captain: boolean }[];
   /** The requests waiting for this roster. */
   requests: RequestView[];
   /** League staff change the team directly, without a request. */
@@ -117,6 +119,48 @@ export function teamManagePage(locale: Locale, data: TeamManageData): Page {
         </li>`,
     )}
   </ul>`;
+
+  // Lineups change only during a mercato window (M-29); none opens before the mercato (3f), so
+  // the forms are shown closed, with the reason, rather than missing.
+  const closed = t(locale, 'web.manage.mercatoClosed');
+  const players = html`<h2>${t(locale, 'web.team.players')}</h2>
+    ${
+      data.players.length === 0
+        ? html`<p class="muted">${t(locale, 'web.manage.noPlayers')}</p>`
+        : html`<ul class="card">
+            ${data.players.map(
+              (entry) =>
+                html`<li>
+                  ${entry.name}
+                  <span class="muted"
+                    >·
+                    ${t(
+                      locale,
+                      entry.role === 'sub' ? 'web.registration.sub' : 'web.registration.starter',
+                    )}${entry.captain ? html` · ${t(locale, 'web.registration.captain')}` : ''}</span
+                  >
+                  <button type="button" class="inline" disabled title="${closed}">
+                    ${t(locale, 'web.manage.remove')}
+                  </button>
+                </li>`,
+            )}
+          </ul>`
+    }
+    <form class="card">
+      <fieldset disabled>
+        <legend>${t(locale, 'web.manage.addPlayer')}</legend>
+        <p class="muted">${closed}</p>
+        ${usernameField(locale)}
+        <label
+          >${t(locale, 'web.manage.role')}
+          <select name="role">
+            <option>${t(locale, 'web.registration.starter')}</option>
+            <option>${t(locale, 'web.registration.sub')}</option>
+          </select></label
+        >
+        <button type="button">${t(locale, 'web.manage.ask')}</button>
+      </fieldset>
+    </form>`;
 
   const addForm =
     addRoles.length > 0
@@ -200,6 +244,6 @@ export function teamManagePage(locale: Locale, data: TeamManageData): Page {
       ${flashView(locale, data.flash)}
       <p>${t(locale, intro)}</p>
       <h2>${t(locale, 'web.manage.officials')}</h2>
-      ${members} ${addForm} ${ownerForm} ${requests} ${leaveForm}`,
+      ${members} ${addForm} ${ownerForm} ${players} ${requests} ${leaveForm}`,
   );
 }

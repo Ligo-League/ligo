@@ -48,6 +48,23 @@ describe('/teams/:slug/manage', () => {
     expect(await (await request('/me')).text()).toContain('href="/teams/bravo/manage"');
   });
 
+  it('shows the players, with the lineup forms closed until a mercato window opens', async () => {
+    const { request, logIn, db } = site();
+    await logIn('/teams/bravo/manage');
+    const before = await (await request('/teams/bravo/manage')).text();
+    expect(before).toContain('Aucun joueur enregistré pour cette équipe.');
+    const seasonId = db.select().from(schema.season).get()?.id ?? 0;
+    const playerId = db.select().from(schema.player).get()?.id ?? 0;
+    db.insert(schema.rosterEntry)
+      .values({ seasonId, teamId: 2, playerId, role: 'player', captain: true, validFrom: 0 })
+      .run();
+    const page = await (await request('/teams/bravo/manage')).text();
+    expect(page).toMatch(/Ana\s*<span class="muted"\s*>·\s*titulaire · capitaine/);
+    expect(page).toContain('<legend>Ajouter un joueur</legend>');
+    expect(page).toContain('<fieldset disabled>');
+    expect(page).toContain('aucune n’est ouverte');
+  });
+
   it('is for the roster’s officials and league staff only', async () => {
     const { request, logIn, jar } = site();
     const loggedOut = await request('/teams/bravo/manage');

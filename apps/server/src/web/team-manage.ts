@@ -11,6 +11,7 @@ import {
   withdrawRequest,
   type RequestInput,
 } from '../services/requests.ts';
+import { rosterPlayers } from '../services/site.ts';
 import { rosterToManage, type ManagedRoster } from '../services/team-manage.ts';
 import { listTeamStaff, type MemberRef } from '../services/team-staff.ts';
 import type { Env, Viewer, WebDeps } from './app.ts';
@@ -101,6 +102,7 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
       teamManagePage(locale, {
         team: roster,
         members: officials.members,
+        players: rosterPlayers(db, roster.teamId),
         requests: requests.ok ? requests.requests : [],
         staff: requireStaff(db, actor).ok,
         myRole: highestRole(teamsOfPlayer(db, viewer.playerId), roster.teamId),

@@ -238,6 +238,38 @@ function latestPlace(db: Pick<Db, 'select'>, teamId: number): Place | null {
   };
 }
 
+/**
+ * A roster's players in the latest season it has a roster in, registration included, so an
+ * approved team shows its players before its season starts: starters first, the captain marked.
+ */
+export function rosterPlayers(
+  db: Pick<Db, 'select'>,
+  teamId: number,
+): { name: string; role: (typeof schema.rosterEntry.$inferSelect)['role']; captain: boolean }[] {
+  const { player, rosterEntry } = schema;
+  const rosterSeason = db
+    .select({ seasonId: rosterEntry.seasonId })
+    .from(rosterEntry)
+    .innerJoin(season, eq(rosterEntry.seasonId, season.id))
+    .where(and(eq(rosterEntry.teamId, teamId), isNull(rosterEntry.validTo)))
+    .orderBy(desc(season.startsOn), desc(season.id))
+    .get();
+  if (!rosterSeason) return [];
+  return db
+    .select({ name: player.displayName, role: rosterEntry.role, captain: rosterEntry.captain })
+    .from(rosterEntry)
+    .innerJoin(player, eq(rosterEntry.playerId, player.id))
+    .where(
+      and(
+        eq(rosterEntry.teamId, teamId),
+        eq(rosterEntry.seasonId, rosterSeason.seasonId),
+        isNull(rosterEntry.validTo),
+      ),
+    )
+    .orderBy(asc(rosterEntry.role), asc(player.displayName))
+    .all();
+}
+
 export type TeamPage =
   | {
       ok: true;
@@ -268,34 +300,7 @@ export function teamPage(db: Pick<Db, 'select'>, slug: string): TeamPage {
         (found) => found.a.teamId === roster.teamId || found.b.teamId === roster.teamId,
       )
     : [];
-  // The roster of the latest season it has one, registration included: an approved team shows
-  // its players before its season starts.
-  const rosterSeason = db
-    .select({ seasonId: schema.rosterEntry.seasonId })
-    .from(schema.rosterEntry)
-    .innerJoin(season, eq(schema.rosterEntry.seasonId, season.id))
-    .where(and(eq(schema.rosterEntry.teamId, roster.teamId), isNull(schema.rosterEntry.validTo)))
-    .orderBy(desc(season.startsOn), desc(season.id))
-    .get();
-  const players = rosterSeason
-    ? db
-        .select({
-          name: schema.player.displayName,
-          role: schema.rosterEntry.role,
-          captain: schema.rosterEntry.captain,
-        })
-        .from(schema.rosterEntry)
-        .innerJoin(schema.player, eq(schema.rosterEntry.playerId, schema.player.id))
-        .where(
-          and(
-            eq(schema.rosterEntry.teamId, roster.teamId),
-            eq(schema.rosterEntry.seasonId, rosterSeason.seasonId),
-            isNull(schema.rosterEntry.validTo),
-          ),
-        )
-        .orderBy(asc(schema.rosterEntry.role), asc(schema.player.displayName))
-        .all()
-    : [];
+  const players = rosterPlayers(db, roster.teamId);
   const siblings = listClubRosters(db, roster.club.id)
     .filter((other) => other.teamId !== roster.teamId)
     .map((other) => ({ name: other.name, tag: other.tag, slug: other.slug }));

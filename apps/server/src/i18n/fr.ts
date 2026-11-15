@@ -815,6 +815,10 @@ export const fr = {
   'web.manage.officials': 'Responsables',
   'web.manage.remove': 'Retirer',
   'web.manage.add': 'Ajouter un responsable',
+  'web.manage.addPlayer': 'Ajouter un joueur',
+  'web.manage.noPlayers': 'Aucun joueur enregistré pour cette équipe.',
+  'web.manage.mercatoClosed':
+    'Fermé : l’effectif ne change que pendant une fenêtre de mercato, et aucune n’est ouverte.',
   'web.manage.owner': 'Confier le club',
   'web.manage.ownerHelp':
     'Le nouveau propriétaire répond du club devant la ligue ; tu quittes alors le club.',

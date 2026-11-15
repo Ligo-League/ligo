@@ -777,6 +777,10 @@ export const en: Record<MessageKey, string> = {
   'web.manage.officials': 'Officials',
   'web.manage.remove': 'Remove',
   'web.manage.add': 'Add an official',
+  'web.manage.addPlayer': 'Add a player',
+  'web.manage.noPlayers': 'No player registered for this team.',
+  'web.manage.mercatoClosed':
+    'Closed: the lineup changes only during a mercato window, and none is open.',
   'web.manage.owner': 'Hand the club over',
   'web.manage.ownerHelp':
     'The new owner answers for the club to the league; you then leave the club.',
