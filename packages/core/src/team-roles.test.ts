@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { teamRolesSchema } from './settings.ts';
 import {
   actsForSide,
+  mayNameMatchCaptain,
   checkTeamChange,
   roleLevel,
   type MatchRoleHeld,
@@ -147,6 +148,61 @@ describe('actsForSide', () => {
     ];
     expect(actsForSide(ownerCaptain, GREED_V_GREED, 'a')).toBe(false);
     expect(actsForSide(ownerCaptain, GREED_V_GREED, 'b')).toBe(true);
+  });
+
+  // The captain for one match (O-30, O-30b, maintainer, 14 and 15 November 2026).
+  it('counts a captaincy held for one match in that match only', () => {
+    const standIn: MatchRoleHeld[] = [{ teamId: 1, clubId: 10, role: 'captain', matchId: 7 }];
+    expect(actsForSide(standIn, { id: 7, ...GREED_V_NOVA }, 'a')).toBe(true);
+    expect(actsForSide(standIn, { id: 7, ...GREED_V_NOVA }, 'b')).toBe(false);
+    expect(actsForSide(standIn, { id: 8, ...GREED_V_NOVA }, 'a')).toBe(false);
+    // Without its ID, the match is not that one.
+    expect(actsForSide(standIn, GREED_V_NOVA, 'a')).toBe(false);
+  });
+});
+
+// The captain for one match (O-30b): the side's officials or its usual captain name a starter or
+// a substitute of the season's lineup, until the result is reported; the usual captain keeps
+// acting, and a stand-in names nobody.
+describe('mayNameMatchCaptain', () => {
+  const MATCH = { id: 7, status: 'scheduled', a: { teamId: 1 }, b: { teamId: 3 } };
+  const manager: MatchRoleHeld[] = [{ teamId: 1, clubId: 10, role: 'manager' }];
+  const captain: MatchRoleHeld[] = [{ teamId: 1, clubId: 10, role: 'captain' }];
+  const standIn: MatchRoleHeld[] = [{ teamId: 1, clubId: 10, role: 'captain', matchId: 7 }];
+  const sub = { inLineup: true, usualCaptain: false };
+
+  it('lets the side’s officials and its usual captain name a player of the lineup, or nobody', () => {
+    expect(mayNameMatchCaptain(manager, MATCH, 'a', sub)).toEqual({ ok: true });
+    expect(mayNameMatchCaptain(captain, MATCH, 'a', sub)).toEqual({ ok: true });
+    expect(mayNameMatchCaptain(manager, MATCH, 'a', null)).toEqual({ ok: true });
+  });
+
+  it('refuses a stand-in, the other side and anyone else', () => {
+    for (const held of [standIn, [], manager]) {
+      const side = held === manager ? 'b' : 'a';
+      expect(mayNameMatchCaptain(held, MATCH, side, sub)).toEqual({
+        ok: false,
+        error: 'not_allowed',
+      });
+    }
+  });
+
+  it('takes a player of the lineup who is not the usual captain already', () => {
+    expect(
+      mayNameMatchCaptain(manager, MATCH, 'a', { inLineup: false, usualCaptain: false }),
+    ).toEqual({ ok: false, error: 'not_in_lineup' });
+    expect(
+      mayNameMatchCaptain(manager, MATCH, 'a', { inLineup: true, usualCaptain: true }),
+    ).toEqual({ ok: false, error: 'usual_captain' });
+  });
+
+  it('closes once the result is reported', () => {
+    for (const status of ['reported', 'validated', 'forfeit', 'void']) {
+      expect(mayNameMatchCaptain(manager, { ...MATCH, status }, 'a', sub)).toEqual({
+        ok: false,
+        error: 'match_closed',
+      });
+    }
   });
 });
 

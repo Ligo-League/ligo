@@ -80,29 +80,56 @@ export interface MatchRoleHeld {
   teamId: number;
   clubId: number;
   role: MatchRole;
+  /** Set for the captain of one match only (O-30b): the role counts in that match alone. */
+  matchId?: number;
 }
 
 type Side = 'a' | 'b';
 
 /**
  * Whether these roles let someone act for `side` of a match. A club official acts for neither
- * side of a match between two rosters of their club: each roster's own officials do (M-22).
+ * side of a match between two rosters of their club: each roster's own officials do (M-22). A
+ * role held for one match counts in that match only.
  */
 export function actsForSide(
   held: readonly MatchRoleHeld[],
-  match: { a: { teamId: number }; b: { teamId: number } },
+  match: { id?: number; a: { teamId: number }; b: { teamId: number } },
   side: Side,
 ): boolean {
   const opponent = match[side === 'a' ? 'b' : 'a'].teamId;
-  return held.some(
+  const here = held.filter((mine) => mine.matchId === undefined || mine.matchId === match.id);
+  return here.some(
     (mine) =>
       mine.teamId === match[side].teamId &&
       (roleLevel(mine.role) === 'roster' ||
-        !held.some(
+        !here.some(
           (theirs) =>
             theirs.teamId === opponent &&
             theirs.clubId === mine.clubId &&
             roleLevel(theirs.role) === 'club',
         )),
   );
+}
+
+export type MatchCaptainError = 'not_allowed' | 'match_closed' | 'not_in_lineup' | 'usual_captain';
+
+/**
+ * Whether someone may name the captain of one match for `side` (O-30, O-30b): the side's
+ * officials or its usual captain, never a stand-in, until the result is reported. The player is
+ * a starter or a substitute of the side's season lineup, other than its usual captain, who acts
+ * anyway; `null` names nobody, back to the usual captain alone.
+ */
+export function mayNameMatchCaptain(
+  held: readonly MatchRoleHeld[],
+  match: { id: number; status: string; a: { teamId: number }; b: { teamId: number } },
+  side: Side,
+  candidate: { inLineup: boolean; usualCaptain: boolean } | null,
+): { ok: true } | { ok: false; error: MatchCaptainError } {
+  const lasting = held.filter((mine) => mine.matchId === undefined);
+  if (!actsForSide(lasting, match, side)) return { ok: false, error: 'not_allowed' };
+  if (match.status !== 'scheduled') return { ok: false, error: 'match_closed' };
+  if (candidate === null) return { ok: true };
+  if (!candidate.inLineup) return { ok: false, error: 'not_in_lineup' };
+  if (candidate.usualCaptain) return { ok: false, error: 'usual_captain' };
+  return { ok: true };
 }
