@@ -111,6 +111,10 @@ M-xx : mainteneur).
   fenêtres de mercato annoncées : 3 mouvements par équipe, un joueur transféré est bloqué un jour.
 - À l'inscription, chaque joueur **accepte la publication de ses statistiques**. Sans cet
   accord, il ne peut pas figurer dans un effectif.
+- **Clubs avant toute compétition** : chacun peut créer sur le site un club et sa première équipe,
+  sans compétition, et en est propriétaire ; les responsables du club y ajoutent des équipes. Les
+  noms et les tags sont réservés dès la création. Tant qu'une équipe ne joue dans aucune
+  compétition, ses responsables la changent eux-mêmes, sans validation.
 - **Inscription sur le site** : le responsable inscrit le club (ou une nouvelle équipe d'un club
   qu'il dirige) et l'équipe, et accepte le règlement en vigueur, dont la version est enregistrée.
   Il partage ensuite un lien d'invitation : chaque joueur rejoint avec son propre compte Discord.

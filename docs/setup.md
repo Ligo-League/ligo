@@ -538,6 +538,14 @@ channel`), mentioning the other side, with **Accepter** and **Refuser**.
 4. The other side answers on the page or with the buttons; either way the Discord post shows the
    answer, and an agreed time is announced.
 
+## 27. Phase 3d-9: clubs before any competition
+
+1. Logged in, open `http://localhost:3000/me` and click **Créer un club**: the club, its first
+   roster (name, tag, colours, logo), and you as owner. No restart or seed needed.
+2. The roster's page (`/teams/<slug>/manage`) says it plays in no competition: officials you add
+   by Discord username (on LFR's server) apply at once, without the staff queue.
+3. **ajouter une équipe au club** adds another roster with its own colours and logo.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
