@@ -14,7 +14,11 @@ import {
 } from './evidence.ts';
 import { ensurePlayer } from './players.ts';
 
-const STAFF = { guildId: TEST_GUILD, memberRoleIds: [TEST_STAFF_ROLE] };
+const STAFF = {
+  guildId: TEST_GUILD,
+  user: { id: '222222222222222222', displayName: 'Léa Staff' },
+  memberRoleIds: [TEST_STAFF_ROLE],
+};
 const PNG = new Uint8Array([...PNG_HEADER_FOR_TESTS, 1, 2, 3]);
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]);
 const WEBP = new Uint8Array([...Buffer.from('RIFF'), 0, 0, 0, 0, ...Buffer.from('WEBPVP8 ')]);

@@ -36,7 +36,10 @@ async function queueSite() {
   setTeamOwner(db, staff, { teamId: 2, member: BRAVO.user }, 100);
   setTeamOwner(db, staff, { teamId: 3, member: CHARLIE.user }, 100);
   db.update(schema.leagueGuild).set({ alertsChannelId: QUEUE, resultsChannelId: RESULTS }).run();
-  const site = testSite({ db, users: { 'code-lea': LEA } });
+  const site = testSite({
+    db,
+    users: { 'code-lea': LEA, 'code-otto': { id: '700000000000000009', displayName: 'Otto' } },
+  });
   site.setRoles([TEST_STAFF_ROLE], LEA.id);
 
   const reported = await reportResult(
@@ -260,11 +263,15 @@ describe('/evidence/:id', () => {
     );
   });
 
-  it('shows it to nobody else: a visitor, a team, staff who lost the role', async () => {
-    const { request, logIn, setRoles, evidenceId } = await queueSite();
+  it('shows it to the match’s teams too, to nobody else: a visitor, another member, staff who lost the role', async () => {
+    const { request, logIn, setRoles, evidenceId, jar } = await queueSite();
     const path = `/evidence/${String(evidenceId)}`;
     expect((await request(path)).status).toBe(403);
+    // Ana runs Bravo, which reported it.
     await logIn('/me');
+    expect((await request(path)).status).toBe(200);
+    jar.clear();
+    await logIn('/me', 'code-otto');
     expect((await request(path)).status).toBe(403);
     await logIn('/staff', 'code-lea');
     expect((await request(path)).status).toBe(200);

@@ -1,5 +1,4 @@
 import { OTHER_DISPUTE_REASON, type DisputeReason } from '@ligo/core';
-import { announceWithCard } from '../match-card.ts';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
 import {
   answerReport,
@@ -19,13 +18,8 @@ import type {
   FormSubmitInteraction,
   ButtonInteraction,
 } from '../commands/types.ts';
-import {
-  disputeQueueMessage,
-  mention,
-  notifyQueue,
-  reasonLabel,
-  storedLine,
-} from '../match-text.ts';
+import { reasonLabel } from '../match-text.ts';
+import { announceReportAnswer, answeredReportMessage } from '../report-posts.ts';
 import { announceReportDecision, reportDecisionMessage } from '../staff-decisions.ts';
 
 // The buttons under a result report. The custom ID names the match and, as nonce, the evidence
@@ -49,52 +43,14 @@ const ERROR_KEYS = {
 const refusal = (locale: Locale, error: AnswerError) =>
   t(locale, ERROR_KEYS[error], { max: DISPUTE_DETAILS_MAX_LENGTH });
 
-/** Tells the channel, then staff, that the report was answered. Its buttons go once answered. */
+/** The click's message shows the answer, without buttons; then staff hear of it. */
 async function announceAnswer(
   interaction: Pick<ButtonInteraction | FormSubmitInteraction, 'update' | 'user'>,
   reply: Extract<AnswerReply, { ok: true }>,
   context: CommandContext,
 ): Promise<void> {
-  const { locale } = context;
-  const line = storedLine(locale, reply.match);
-  const member = mention(interaction.user.id);
-  // The public message names no reason: a reason can accuse a player, and staff decide.
-  await interaction.update({ content: t(locale, `report.${reply.status}`, { line, member }) });
-  if (reply.status === 'validated') {
-    // The report's post in the staff queue no longer waits for staff: it says so, without buttons.
-    for (const post of reply.posts) {
-      try {
-        await context.gateway.editMessage(post.channelId, post.messageId, {
-          content: t(locale, 'queue.validatedByOpponent', { line, member }),
-        });
-      } catch {
-        // A post deleted or out of reach only looks out of date: the result is stored.
-      }
-    }
-    await announceWithCard(
-      context,
-      reply.resultsChannelId,
-      { content: t(locale, 'result.announce', { line }) },
-      reply.match.id,
-      'result',
-    );
-    return;
-  }
-  if (reply.dispute) {
-    await notifyQueue(
-      context,
-      reply.queueChannelId,
-      disputeQueueMessage(locale, line, interaction.user.id, reply.dispute),
-      { entity: 'dispute', entityId: reply.dispute.id },
-    );
-    return;
-  }
-  await notifyQueue(
-    context,
-    reply.queueChannelId,
-    { content: t(locale, `queue.${reply.status}`, { line, member }) },
-    { entity: 'match', entityId: reply.match.id },
-  );
+  await interaction.update(answeredReportMessage(context.locale, reply, interaction.user.id));
+  await announceReportAnswer(context, reply, interaction.user.id, { editPost: false });
 }
 
 /** Confirm, under the public report: for the other team. */

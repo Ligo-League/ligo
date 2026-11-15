@@ -6,6 +6,8 @@ import { buttons } from '../buttons/index.ts';
 import { forms } from '../forms.ts';
 import { routeButton, routeForm } from '../router.ts';
 import {
+  FAKE_CHANNEL,
+  FAKE_REPLY_MESSAGE,
   fakeAutocomplete,
   fakeButton,
   fakeContext,
@@ -102,6 +104,15 @@ describe('/match report', () => {
       },
     ]);
     expect(status()).toBe('reported');
+  });
+
+  it('keeps its public reply as the report’s post, which an answer on the website edits', async () => {
+    const { db, run } = session();
+    await run(report(BRAVO));
+    expect(db.select().from(schema.evidence).get()).toMatchObject({
+      postChannelId: FAKE_CHANNEL,
+      postMessageId: FAKE_REPLY_MESSAGE,
+    });
   });
 
   it('posts it in the staff queue with the buttons for staff, and records the post', async () => {

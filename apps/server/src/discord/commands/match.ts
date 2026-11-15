@@ -3,38 +3,19 @@ import { ApplicationCommandOptionType, InteractionContextType } from 'discord.js
 import { t } from '../../i18n/index.ts';
 import {
   checkReport,
+  recordReportPost,
   reportResult,
   searchReportableMatches,
-  type ReportDetails,
 } from '../../services/reports.ts';
 import { proposeTime, readMatchTime, searchSchedulableMatches } from '../../services/scheduling.ts';
 import { setVetoMessage, startVeto } from '../../services/veto.ts';
 import { vetoMessage } from '../veto-message.ts';
 import { postProposal, proposalMessage } from '../schedule-posts.ts';
 import { suggestDays } from '../day-suggestions.ts';
-import { buttonId } from '../button-id.ts';
-import { impossibleScore, matchLabel, matchLine, mention } from '../match-text.ts';
+import { impossibleScore, matchLabel, mention } from '../match-text.ts';
+import { reportPostMessage, reportQueueMessage } from '../report-posts.ts';
 import { described, MAX_CHOICE_LENGTH, MAX_CHOICES } from './describe.ts';
-import type { Command, CommandContext, CommandInteraction, MessageButton } from './types.ts';
-
-/** The buttons under a report: the other team's, then the staff's in the queue. */
-export function reportButtons(
-  label: (kind: 'confirm' | 'dispute' | 'validate' | 'reject') => string,
-  report: Pick<ReportDetails, 'match' | 'evidenceId'>,
-  audience: 'opponent' | 'staff',
-): MessageButton[] {
-  const button = (
-    kind: 'confirm' | 'dispute' | 'validate' | 'reject',
-    style: MessageButton['style'],
-  ): MessageButton => ({
-    customId: buttonId(`report-${kind}`, report.match.id, report.evidenceId),
-    label: label(kind),
-    style,
-  });
-  return audience === 'opponent'
-    ? [button('confirm', 'success'), button('dispute', 'danger')]
-    : [button('validate', 'success'), button('reject', 'danger')];
-}
+import type { Command, CommandContext, CommandInteraction } from './types.ts';
 
 async function proposeTimeCommand(
   interaction: CommandInteraction,
@@ -250,23 +231,13 @@ export const matchCommand: Command = {
 
     // Fetching the screenshot and posting it for staff can take longer than Discord waits.
     await interaction.defer();
-    const reporter = mention(interaction.user.id);
-    const label = (kind: 'confirm' | 'dispute' | 'validate' | 'reject') =>
-      t(locale, `report.button.${kind}`);
     const reply = await reportResult(
       context.db,
       context.gateway,
       context.evidence,
       interaction,
       request,
-      (report) => ({
-        content: t(locale, 'queue.report', {
-          line: matchLine(locale, report.match, report),
-          reporter,
-          team: report.match[report.side].name,
-        }),
-        buttons: reportButtons(label, report, 'staff'),
-      }),
+      (report) => reportQueueMessage(locale, report, interaction.user.id),
       context.now(),
     );
     if (!reply.ok) {
@@ -280,23 +251,17 @@ export const matchCommand: Command = {
       return;
     }
 
-    const { opponentIds } = reply;
-    const text = {
-      reporter,
-      team: reply.match[reply.side].name,
-      line: matchLine(locale, reply.match, reply),
-    };
-    const posted =
-      opponentIds.length > 0
-        ? t(locale, 'report.posted', { ...text, opponents: opponentIds.map(mention).join(' ') })
-        : t(locale, 'report.postedNoOpponent', text);
-    await interaction.reply({
-      content: reply.queued ? posted : `${posted}\n${t(locale, 'report.notQueued')}`,
+    const post = await interaction.reply({
+      ...reportPostMessage(locale, reply, interaction.user.id),
       ephemeral: false,
-      files: [reply.screenshot],
-      buttons: reportButtons(label, reply, 'opponent'),
-      mentionUserIds: opponentIds,
     });
+    // Kept so that an answer given on the website edits it too.
+    if (post && interaction.channelId !== null) {
+      recordReportPost(context.db, reply.evidenceId, {
+        channelId: interaction.channelId,
+        messageId: post.messageId,
+      });
+    }
   },
 
   async autocomplete(interaction, context) {

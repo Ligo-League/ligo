@@ -137,6 +137,8 @@ export const en: Record<MessageKey, string> = {
   'match.error.not_reportable': 'This match already has a reported or validated result.',
   'match.error.screenshot_required': 'The screenshot of the scoreboard is required.',
   'match.error.screenshot_unreadable': 'I could not fetch the screenshot. Please try again.',
+  'match.error.screenshot_unstored':
+    'I could not keep the screenshot. Please try again in a moment.',
   'match.error.queue_not_set':
     'The league has not chosen its validation channel yet. Please tell the staff.',
   'match.error.stale': 'This button belongs to an older report.',

@@ -143,6 +143,7 @@ export const fr = {
   'match.error.not_reportable': 'Ce match a déjà un résultat signalé ou validé.',
   'match.error.screenshot_required': "La capture d'écran du tableau des scores est obligatoire.",
   'match.error.screenshot_unreadable': "Je n'ai pas pu récupérer la capture. Réessaie.",
+  'match.error.screenshot_unstored': "Je n'ai pas pu garder la capture. Réessaie dans un moment.",
   'match.error.queue_not_set':
     "La ligue n'a pas encore choisi son salon de validation. Préviens le staff.",
   'match.error.stale': 'Ce bouton correspond à un ancien signalement.',

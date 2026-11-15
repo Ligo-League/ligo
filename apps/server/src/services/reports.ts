@@ -21,7 +21,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import type { CommandFile, OutgoingMessage } from '../discord/commands/types.ts';
 import type { EvidenceStore } from '../assets/evidence-store.ts';
 import type { DiscordGateway } from '../discord/gateway.ts';
-import { imageTypeOf, keepEvidence } from './evidence.ts';
+import { evidenceKeyOf, imageTypeOf, keepEvidence } from './evidence.ts';
 import { matchQuery } from './match-search.ts';
 import {
   actsFor,
@@ -71,12 +71,31 @@ const scoreOf = (stored: LeagueMatch['game']) =>
 // ---------------------------------------------------------------------------------------------
 // A team reports
 
+/** A screenshot uploaded on the website: the file's own bytes. */
+export interface UploadedScreenshot {
+  data: Uint8Array;
+}
+
 export interface ReportRequest {
   matchId: number;
   /** Rounds won by side A and side B of the match. */
   scoreA: number;
   scoreB: number;
-  screenshot: Screenshot | null;
+  /** Attached in Discord (its address there), or uploaded on the website (its bytes). */
+  screenshot: Screenshot | UploadedScreenshot | null;
+}
+
+const isUpload = (screenshot: Screenshot | UploadedScreenshot): screenshot is UploadedScreenshot =>
+  'data' in screenshot;
+
+/**
+ * The same checks wherever the screenshot comes from: an image of at most the size Discord
+ * allows. An upload is judged by its own bytes, never by the name or type the browser gave.
+ */
+function acceptable(screenshot: Screenshot | UploadedScreenshot): boolean {
+  if (!isUpload(screenshot)) return isAcceptableScreenshot(screenshot);
+  const { data } = screenshot;
+  return data.length > 0 && data.length <= SCREENSHOT_MAX_BYTES && imageTypeOf(data) !== null;
 }
 
 export type ReportError =
@@ -103,7 +122,7 @@ type ReportCheck =
       league: GuildLeague;
       match: LeagueMatch;
       side: Side;
-      screenshot: Screenshot;
+      screenshot: Screenshot | UploadedScreenshot;
       queueChannelId: string;
     };
 
@@ -148,8 +167,7 @@ export function checkReport(
 
   // A team's result rests on its screenshot: staff validate by looking at it.
   if (!request.screenshot) return { ok: false, error: 'screenshot_required' };
-  if (!isAcceptableScreenshot(request.screenshot))
-    return { ok: false, error: 'invalid_screenshot' };
+  if (!acceptable(request.screenshot)) return { ok: false, error: 'invalid_screenshot' };
   const queueChannelId = league.guild.alertsChannelId;
   if (!queueChannelId) return { ok: false, error: 'queue_not_set' };
 
@@ -164,15 +182,17 @@ export interface ReportDetails {
   side: Side;
   /** Marks this report: the nonce of its buttons. */
   evidenceId: number;
-  /** The people who may confirm or dispute: the other team's manager and staff. */
   /** The other side's officials and captain, to mention (Discord IDs). */
   opponentIds: string[];
   screenshot: CommandFile;
+  /** Where a report made on the website is posted for the other team (M-32), when set. */
+  scheduleChannelId: string | null;
 }
 
 export type ReportReply =
   | ReportRefusal
-  | { ok: false; error: 'screenshot_unreadable' }
+  /** The screenshot could not be downloaded, or (uploaded) kept by the server. */
+  | { ok: false; error: 'screenshot_unreadable' | 'screenshot_unstored' }
   /**
    * `queued` is false when the report is stored but could not be posted to the staff queue;
    * `kept` is false when the server could not keep its own copy of the screenshot.
@@ -182,9 +202,10 @@ export type ReportReply =
 const EXTENSIONS = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' } as const;
 
 /**
- * A team's manager or staff reports the result of its match. The screenshot is downloaded, kept
- * by the server for the website, and posted again in the staff queue: the link Discord gave for
- * the upload expires. `queueMessage` formats that post; the service knows no user-facing text.
+ * A team's officials or captain report the result of its match. A screenshot attached in Discord
+ * is downloaded, kept by the server for the website, and posted again in the staff queue: the
+ * link Discord gave for the upload expires. One uploaded on the website is kept first, since it
+ * is the only copy. `queueMessage` formats the queue post; the service knows no user-facing text.
  */
 export async function reportResult(
   db: Db,
@@ -198,16 +219,32 @@ export async function reportResult(
   const first = checkReport(db, actor, request);
   if (!first.ok) return first;
 
+  const source = first.screenshot;
   let data: Uint8Array;
-  try {
-    data = await gateway.downloadAttachment(first.screenshot.url, SCREENSHOT_MAX_BYTES);
-  } catch {
-    return { ok: false, error: 'screenshot_unreadable' };
+  if (isUpload(source)) {
+    data = source.data;
+  } else {
+    try {
+      data = await gateway.downloadAttachment(source.url, SCREENSHOT_MAX_BYTES);
+    } catch {
+      return { ok: false, error: 'screenshot_unreadable' };
+    }
   }
   // The type Discord declares is the uploader's word; the file's own bytes decide.
   const type = imageTypeOf(data);
   if (!type) return { ok: false, error: 'invalid_screenshot' };
   const screenshot: CommandFile = { name: `score-${request.matchId}.${EXTENSIONS[type]}`, data };
+  let objectKey: string | null = null;
+  if (isUpload(source)) {
+    const key = evidenceKeyOf(request.matchId, data, type);
+    try {
+      await store.put(key, data);
+    } catch {
+      // Without the server's copy there would be no screenshot at all: nothing is stored.
+      return { ok: false, error: 'screenshot_unstored' };
+    }
+    objectKey = key;
+  }
 
   const stored = db.transaction((tx): ReportRefusal | ({ ok: true } & ReportDetails) => {
     // The download took time: the match may have been reported or changed meanwhile.
@@ -244,8 +281,9 @@ export async function reportResult(
         matchId: found.id,
         gameId,
         kind: 'score_screenshot',
+        objectKey,
         // Replaced below by the address of the staff queue post, which does not expire.
-        url: check.screenshot.url,
+        url: isUpload(check.screenshot) ? null : check.screenshot.url,
         uploadedBy: reporter.id,
         visibility: 'teams',
         at: now,
@@ -266,15 +304,27 @@ export async function reportResult(
       .run();
 
     const opponentIds = teamMentions(tx, found[other(side)].teamId, found.seasonId);
-    return { ok: true, match: found, scoreA, scoreB, side, evidenceId, opponentIds, screenshot };
+    return {
+      ok: true,
+      match: found,
+      scoreA,
+      scoreB,
+      side,
+      evidenceId,
+      opponentIds,
+      screenshot,
+      scheduleChannelId: league.guild.scheduleChannelId,
+    };
   });
   if (!stored.ok) return stored;
-  const kept = await keepEvidence(
-    db,
-    store,
-    { evidenceId: stored.evidenceId, matchId: stored.match.id },
-    data,
-  );
+  const kept =
+    objectKey !== null ||
+    (await keepEvidence(
+      db,
+      store,
+      { evidenceId: stored.evidenceId, matchId: stored.match.id },
+      data,
+    ));
 
   let queued = true;
   try {
@@ -295,6 +345,14 @@ export async function reportResult(
     queued = false;
   }
   return { ...stored, queued, kept };
+}
+
+/** Keeps where the report's public post is, with the other team's buttons, so an answer edits it. */
+export function recordReportPost(db: Db, evidenceId: number, post: PostRef): void {
+  db.update(evidence)
+    .set({ postChannelId: post.channelId, postMessageId: post.messageId })
+    .where(eq(evidence.id, evidenceId))
+    .run();
 }
 
 export type ReportableSearch =
@@ -368,6 +426,8 @@ export type AnswerReply =
        * no longer wait for anyone. Empty otherwise.
        */
       posts: PostRef[];
+      /** The report's public post, with the buttons answered, when it is known. */
+      post: PostRef | null;
       queueChannelId: string | null;
       resultsChannelId: string | null;
     }
@@ -525,18 +585,19 @@ export function answerReport(
       })
       .run();
 
+    const report = latestScoreEvidence(tx, found.id);
     return {
       ok: true,
       match: found,
       status,
       dispute: dispute && disputeId !== null ? { ...dispute, id: disputeId } : null,
+      post:
+        report?.postChannelId && report.postMessageId
+          ? { channelId: report.postChannelId, messageId: report.postMessageId }
+          : null,
       posts:
         status === 'validated'
-          ? queuePostsOf(
-              tx,
-              { entity: 'match', entityId: found.id },
-              latestScoreEvidence(tx, found.id)?.at ?? 0,
-            )
+          ? queuePostsOf(tx, { entity: 'match', entityId: found.id }, report?.at ?? 0)
           : [],
       queueChannelId: league.guild.alertsChannelId,
       resultsChannelId: resultsChannelFor(league, found),

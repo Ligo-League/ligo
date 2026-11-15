@@ -73,7 +73,8 @@ export interface CommandInteraction extends InteractionBase {
    * rendering an image. The reply that follows is then visible to everyone.
    */
   defer(): Promise<void>;
-  reply(message: ReplyMessage): Promise<void>;
+  /** Sends the reply; a public one gives back its message, which the bot may edit later. */
+  reply(message: ReplyMessage): Promise<{ messageId: string } | null>;
 }
 
 export interface AutocompleteChoice {

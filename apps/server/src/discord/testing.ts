@@ -43,6 +43,9 @@ const actorOf = (input: FakeInput) => ({
   memberRoleIds: input.memberRoleIds ?? [],
 });
 
+/** The message ID of a fake command's public reply. */
+export const FAKE_REPLY_MESSAGE = '910000000000000001';
+
 export interface FakeInteraction extends CommandInteraction {
   replies: ReplyMessage[];
   /** True once `defer` has been called. */
@@ -102,7 +105,7 @@ export function fakeInteraction(commandName: string, input: FakeInput = {}): Fak
       // Discord refuses a second reply to the same interaction.
       if (replies.length > 0) return Promise.reject(new Error('Interaction already answered'));
       replies.push(message);
-      return Promise.resolve();
+      return Promise.resolve(message.ephemeral ? null : { messageId: FAKE_REPLY_MESSAGE });
     },
   };
 }

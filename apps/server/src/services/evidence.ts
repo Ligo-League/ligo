@@ -3,7 +3,7 @@ import { listLeagueMatches, schema, type Db } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import type { EvidenceStore } from '../assets/evidence-store.ts';
 import type { DiscordGateway } from '../discord/gateway.ts';
-import { requireStaff, type Actor } from './permissions.ts';
+import { matchActorOf, requireStaff, sideOf, type Actor } from './permissions.ts';
 import { SCREENSHOT_MAX_BYTES } from './results.ts';
 
 // The server keeps its own copy of each score screenshot (maintainer, 14 November 2026), so the
@@ -96,21 +96,29 @@ export type EvidenceReply =
   | { ok: false; error: 'not_linked' | 'not_staff' | 'not_found' };
 
 /**
- * The server's copy of a piece of evidence, for league staff of its match's league. Evidence of
- * another league, or without a copy, is not found. The teams of the match get theirs in 3e.
+ * The server's copy of a piece of evidence, for league staff of its match's league and, unless
+ * it is marked for staff, for the match's two teams (officials and captain). Evidence of another
+ * league, or without a copy, is not found.
  */
 export async function openEvidence(
   db: Pick<Db, 'select'>,
   store: EvidenceStore,
-  actor: Pick<Actor, 'guildId' | 'memberRoleIds'>,
+  actor: Actor,
   evidenceId: number,
 ): Promise<EvidenceReply> {
-  const staff = requireStaff(db, actor);
-  if (!staff.ok) return staff;
   const row = db.select().from(evidence).where(eq(evidence.id, evidenceId)).get();
-  if (!row?.objectKey || evidenceCompetition(db, row.id) !== staff.league.competition.id) {
+  const [found] = row ? listLeagueMatches(db, { matchId: row.matchId }) : [];
+  const staff = requireStaff(db, actor);
+  if (!staff.ok) {
+    const team =
+      row?.visibility !== 'staff' &&
+      found !== undefined &&
+      sideOf(matchActorOf(db, actor, found.seasonId).teams, found) !== null;
+    if (!team) return staff;
+  } else if (found?.competitionId !== staff.league.competition.id) {
     return { ok: false, error: 'not_found' };
   }
+  if (!row?.objectKey) return { ok: false, error: 'not_found' };
   const data = await store.read(row.objectKey);
   // Checked again on the way out: only an image is ever served.
   const type = data && imageTypeOf(data);

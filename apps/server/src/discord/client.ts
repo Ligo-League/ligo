@@ -60,6 +60,23 @@ async function sendReply(
   else await interaction.reply(payload);
 }
 
+/** A command's reply, as `sendReply` sends it; a public one gives back its message. */
+async function sendCommandReply(
+  interaction: ChatInputCommandInteraction,
+  { ephemeral, ...message }: ReplyMessage,
+): Promise<{ messageId: string } | null> {
+  const payload = toDiscordMessage(message);
+  // A deferred reply was announced as public and can only be completed, not made private.
+  if (interaction.deferred) return { messageId: (await interaction.editReply(payload)).id };
+  if (ephemeral) {
+    await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
+    return null;
+  }
+  const sent = await interaction.reply({ ...payload, withResponse: true });
+  const id = sent.resource?.message?.id;
+  return id ? { messageId: id } : null;
+}
+
 /**
  * The gateway client. Guild Members is a privileged intent: it must be enabled in the Developer
  * Portal (docs/setup.md), and the reconciler will need it to read role membership.
@@ -216,7 +233,7 @@ export function createDiscordClient(deps: {
       async defer() {
         await interaction.deferReply();
       },
-      reply: (message) => sendReply(interaction, message),
+      reply: (message) => sendCommandReply(interaction, message),
     };
 
     routeCommand(commands, adapter, contextNow(), logger).catch((error: unknown) => {

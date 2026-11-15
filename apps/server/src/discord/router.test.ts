@@ -12,9 +12,9 @@ const command = (name: string, execute: Command['execute']): Command => ({
 describe('routeCommand', () => {
   it('runs the command named by the interaction', async () => {
     const logger = { error: vi.fn() };
-    const hello = command('hello', (interaction) =>
-      interaction.reply({ content: 'hi', ephemeral: false }),
-    );
+    const hello = command('hello', async (interaction) => {
+      await interaction.reply({ content: 'hi', ephemeral: false });
+    });
     const other = command('other', () => Promise.reject(new Error('must not run')));
     const interaction = fakeInteraction('hello');
 

@@ -862,7 +862,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     return c.body(new Uint8Array(shown.data), 200, {
       'Content-Type': shown.type,
       'Content-Disposition': 'inline',
-      // Staff only: no shared cache, and the browser does not keep it either.
+      // Staff and the match's teams only: no shared cache, and the browser does not keep it.
       'Cache-Control': 'private, no-store',
     });
   });
