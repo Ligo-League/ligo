@@ -5,7 +5,14 @@ import {
   type RoleHeld,
   type TeamRole,
 } from '@ligo/core';
-import { findGuildLeague, schema, type Db, type GuildLeague, type LeagueMatch } from '@ligo/db';
+import {
+  findGuildLeague,
+  listLeagueMatches,
+  schema,
+  type Db,
+  type GuildLeague,
+  type LeagueMatch,
+} from '@ligo/db';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 /** Who is acting, as Discord reports it for the interaction being handled. */
@@ -83,9 +90,10 @@ export function highestRole(held: readonly TeamRoleHeld[], teamId: number): Team
 }
 
 /**
- * The roles a player holds in a season's matches: their officials' roles, and the captaincy of
- * the roster they play for that season (M-19). The captain acts in matches only: requests about
- * the team's officials read `teamsOfPlayer`, which leaves the captain out.
+ * The roles a player holds in a season's matches: their officials' roles, the captaincy of the
+ * roster they play for that season (M-19), and each captaincy for one match of that season
+ * (O-30b), which counts in that match only (`matchId`). The captain acts in matches only:
+ * requests about the team's officials read `teamsOfPlayer`, which leaves the captain out.
  */
 export function matchRolesOf(
   db: Pick<Db, 'select'>,
@@ -109,7 +117,23 @@ export function matchRolesOf(
     )
     .all()
     .map((row): MatchRoleHeld => ({ ...row, role: 'captain' }));
-  return [...officials, ...captaincies];
+  const forOneMatch = db
+    .select({ matchId: schema.matchCaptain.matchId, side: schema.matchCaptain.side })
+    .from(schema.matchCaptain)
+    .where(eq(schema.matchCaptain.playerId, playerId))
+    .all()
+    .flatMap(({ matchId, side }): MatchRoleHeld[] => {
+      const [found] = listLeagueMatches(db, { matchId });
+      if (found?.seasonId !== seasonId) return [];
+      const teamId = found[side].teamId;
+      const clubId = db
+        .select({ clubId: team.clubId })
+        .from(team)
+        .where(eq(team.id, teamId))
+        .get()?.clubId;
+      return clubId === undefined ? [] : [{ teamId, clubId, role: 'captain', matchId }];
+    });
+  return [...officials, ...captaincies, ...forOneMatch];
 }
 
 /** `matchRolesOf` for a Discord user: who may act in that season's matches, and for which side. */

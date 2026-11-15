@@ -8,7 +8,15 @@ import {
   type SubjectError,
   type TeamRole,
 } from '@ligo/core';
-import { listSeasonTeams, schema, type Db, type League, type SeasonTeam, type Tx } from '@ligo/db';
+import {
+  listLeagueMatches,
+  listSeasonTeams,
+  schema,
+  type Db,
+  type League,
+  type SeasonTeam,
+  type Tx,
+} from '@ligo/db';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { requireStaff, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
@@ -402,8 +410,14 @@ export function filterTeams(
  * The Discord users told about a team's match, such as a time proposed to it: its officials and
  * its captain for the match's season (M-19), once each.
  */
-export function teamMentions(db: Pick<Db, 'select'>, teamId: number, seasonId: number): string[] {
-  const { rosterEntry } = schema;
+export function teamMentions(
+  db: Pick<Db, 'select'>,
+  teamId: number,
+  seasonId: number,
+  /** The match it is about: its captain for that match, if named, is mentioned too (O-30b). */
+  matchId?: number,
+): string[] {
+  const { matchCaptain, rosterEntry } = schema;
   const captains = db
     .select({ discordUserId: player.discordUserId })
     .from(rosterEntry)
@@ -417,19 +431,31 @@ export function teamMentions(db: Pick<Db, 'select'>, teamId: number, seasonId: n
       ),
     )
     .all();
-  const ids = [...listTeamStaff(db, teamId), ...captains].flatMap((row) => row.discordUserId ?? []);
+  const standIns =
+    matchId === undefined
+      ? []
+      : db
+          .select({ discordUserId: player.discordUserId, side: matchCaptain.side })
+          .from(matchCaptain)
+          .innerJoin(player, eq(matchCaptain.playerId, player.id))
+          .where(eq(matchCaptain.matchId, matchId))
+          .all()
+          .filter(({ side }) => listLeagueMatches(db, { matchId })[0]?.[side].teamId === teamId);
+  const ids = [...listTeamStaff(db, teamId), ...captains, ...standIns].flatMap(
+    (row) => row.discordUserId ?? [],
+  );
   return [...new Set(ids)];
 }
 
 /** `teamMentions` for both sides of a match, such as when its veto starts. */
 export function matchMentions(
   db: Pick<Db, 'select'>,
-  found: { seasonId: number; a: { teamId: number }; b: { teamId: number } },
+  found: { id: number; seasonId: number; a: { teamId: number }; b: { teamId: number } },
 ): string[] {
   return [
     ...new Set([
-      ...teamMentions(db, found.a.teamId, found.seasonId),
-      ...teamMentions(db, found.b.teamId, found.seasonId),
+      ...teamMentions(db, found.a.teamId, found.seasonId, found.id),
+      ...teamMentions(db, found.b.teamId, found.seasonId, found.id),
     ]),
   ];
 }

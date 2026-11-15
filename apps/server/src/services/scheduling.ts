@@ -130,7 +130,7 @@ export function proposeTime(
       proposalId,
       side,
       at: request.at,
-      opponentIds: teamMentions(tx, found[other(side)].teamId, found.seasonId),
+      opponentIds: teamMentions(tx, found[other(side)].teamId, found.seasonId, found.id),
       scheduleChannelId: league.guild.scheduleChannelId,
     };
   });

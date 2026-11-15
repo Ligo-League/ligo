@@ -303,7 +303,7 @@ export async function reportResult(
       })
       .run();
 
-    const opponentIds = teamMentions(tx, found[other(side)].teamId, found.seasonId);
+    const opponentIds = teamMentions(tx, found[other(side)].teamId, found.seasonId, found.id);
     return {
       ok: true,
       match: found,
