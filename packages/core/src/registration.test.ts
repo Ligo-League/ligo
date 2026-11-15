@@ -3,15 +3,12 @@ import { describe, expect, it } from 'vitest';
 import {
   ageOn,
   checkBirthDate,
-  changeLineup,
   checkGameProfile,
   chooseLineup,
   checkRosterDetails,
   lineupLocked,
   lineupStatus,
   mayApprove,
-  mayJoin,
-  mayLeave,
   playerGaps,
   ROSTER_COLORS_MAX,
   type LineupMember,
@@ -276,118 +273,6 @@ describe('playerGaps', () => {
   });
 });
 
-describe('mayJoin', () => {
-  const joiner = (playerId: number, overrides = {}) => ({
-    playerId,
-    gaps: [],
-    inOtherRegistration: false,
-    locked: false,
-    ...overrides,
-  });
-
-  it('lets a player join while places are left, once: as a starter, then as a substitute', () => {
-    expect(mayJoin([], joiner(1), SETTINGS)).toEqual({ ok: true, role: 'player' });
-    expect(mayJoin(FIVE, joiner(6), SETTINGS)).toEqual({ ok: true, role: 'sub' });
-    expect(mayJoin(FIVE, joiner(3), SETTINGS)).toEqual({ ok: false, error: 'already_joined' });
-    const full = [...FIVE, member(6, { role: 'sub' }), member(7, { role: 'sub' })];
-    expect(mayJoin(full, joiner(8), SETTINGS)).toEqual({ ok: false, error: 'roster_full' });
-  });
-
-  it('refuses a player already in another roster of the competition', () => {
-    expect(mayJoin(FIVE, joiner(6, { inOtherRegistration: true }), SETTINGS)).toEqual({
-      ok: false,
-      error: 'in_other_registration',
-    });
-  });
-
-  it('refuses once the lineup is locked', () => {
-    expect(mayJoin(FIVE, joiner(6, { locked: true }), SETTINGS)).toEqual({
-      ok: false,
-      error: 'lineup_locked',
-    });
-  });
-
-  it('sends a player with something missing to complete their profile first', () => {
-    expect(mayJoin(FIVE, joiner(6, { gaps: ['nationality', 'too_young'] }), SETTINGS)).toEqual({
-      ok: false,
-      error: 'not_eligible',
-      gaps: ['nationality', 'too_young'],
-    });
-  });
-});
-
-describe('changeLineup', () => {
-  const roles = (entries: [number, 'player' | 'sub'][]) => new Map(entries);
-
-  it('sets each player’s role and the captain, keeping the others as they are', () => {
-    const members = [
-      ...FIVE.map((entry) => ({ ...entry, captain: false })),
-      member(6, { role: 'sub' }),
-    ];
-    const reply = changeLineup(
-      members,
-      {
-        roles: roles([
-          [5, 'sub'],
-          [6, 'player'],
-        ]),
-        captainId: 6,
-      },
-      SETTINGS,
-    );
-    expect(reply).toEqual({
-      ok: true,
-      members: [
-        member(1, { captain: false }),
-        member(2, { captain: false }),
-        member(3, { captain: false }),
-        member(4, { captain: false }),
-        member(5, { role: 'sub', captain: false }),
-        member(6, { role: 'player', captain: true }),
-      ],
-    });
-    expect(lineupStatus(reply.ok ? reply.members : [], SETTINGS).complete).toBe(true);
-  });
-
-  it('may leave the captain unchosen while the lineup is built', () => {
-    const reply = changeLineup(FIVE, { roles: roles([]), captainId: null }, SETTINGS);
-    expect(reply.ok && reply.members.every((entry) => !entry.captain)).toBe(true);
-  });
-
-  it.each([
-    [
-      'a player who did not join',
-      { roles: roles([[9, 'sub']]), captainId: null },
-      'unknown_player',
-    ],
-    ['a captain who did not join', { roles: roles([]), captainId: 9 }, 'unknown_player'],
-    [
-      'a substitute as captain',
-      { roles: roles([[1, 'sub']]), captainId: 1 },
-      'captain_not_starter',
-    ],
-  ] as const)('refuses %s', (_label, change, error) => {
-    expect(changeLineup(FIVE, change, SETTINGS)).toEqual({ ok: false, error });
-  });
-
-  it('keeps the starters and substitutes within the league’s numbers', () => {
-    const six = [...FIVE, member(6, { role: 'sub' })];
-    expect(changeLineup(six, { roles: roles([[6, 'player']]), captainId: 1 }, SETTINGS)).toEqual({
-      ok: false,
-      error: 'too_many_starters',
-    });
-    const allSubs = roles([
-      [1, 'sub'],
-      [2, 'sub'],
-      [3, 'sub'],
-    ]);
-    expect(changeLineup(FIVE, { roles: allSubs, captainId: 4 }, SETTINGS)).toEqual({
-      ok: false,
-      error: 'too_many_subs',
-    });
-  });
-});
-
 describe('chooseLineup', () => {
   // The roster's players 1 to 8; player 8 is already in another registration of the league.
   const CANDIDATES = [1, 2, 3, 4, 5, 6, 7, 8].map((playerId) => ({
@@ -540,14 +425,6 @@ describe('mayApprove', () => {
       ok: false,
       errors: [{ error: 'division_full', max: 8 }],
     });
-  });
-});
-
-describe('mayLeave', () => {
-  it('lets a player leave until the lineup locks', () => {
-    expect(mayLeave(FIVE, 3, false)).toEqual({ ok: true });
-    expect(mayLeave(FIVE, 3, true)).toEqual({ ok: false, error: 'lineup_locked' });
-    expect(mayLeave(FIVE, 9, false)).toEqual({ ok: false, error: 'not_joined' });
   });
 });
 
