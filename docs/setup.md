@@ -515,6 +515,17 @@ section 10).
    lists its players, and the filer's registration page says where it plays.
 4. **Refuser** needs a reason; the filer reads it on the registration's page.
 
+## 25. Phase 3e-1: managing a team on the website
+
+No restart or seed needed beyond `pnpm dev` picking up the change.
+
+1. As a team's owner, open `http://localhost:3000/me` and click **gérer** next to the team.
+2. **Ajouter un responsable**: type the person's exact Discord username (not their display name)
+   on the league's server, pick the role, **Demander**. The request appears in the staff queue
+   channel and on `/staff`, as with `/team member add`.
+3. **Retirer la demande** withdraws it; the staff queue post says so.
+4. With the staff role, the same page changes the team at once.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
@@ -526,6 +537,6 @@ section 10).
 | `/standings` answers "Ce serveur n'est relié à aucune ligue."                     | The server is not linked. Redo step 9: `DISCORD_STAFF_ROLE_ID` in `.env`, then `pnpm seed`.                 |
 | `/match` answers "Cette commande est réservée au staff de la ligue."              | You do not hold the role whose ID is in `DISCORD_STAFF_ROLE_ID`. Give yourself the `Staff` role (step 9.1). |
 | `/match report` answers "La ligue n'a pas encore choisi son salon de validation." | The staff queue channel is not set. Run `/league channel` (step 10.2).                                      |
-| `/match report` suggests only "Tu n'es responsable d'aucune équipe…"              | You are not an official of any team. Run `/team owner` (step 10.3).                                         |
+| `/match report` suggests only "Tu n'es ni capitaine ni responsable d'une équipe…" | You are not an official of any team. Run `/team owner` (step 10.3).                                         |
 | `/ping` does not appear when typing `/`                                           | Run `pnpm discord:register` again, then reload Discord (Ctrl+R).                                            |
 | `/ping` appears but answers "The application did not respond"                     | `pnpm dev` is not running, or it stopped with an error. Look at its terminal.                               |
