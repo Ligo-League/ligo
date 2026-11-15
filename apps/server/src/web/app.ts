@@ -39,6 +39,7 @@ import { errorPage, messagePage, notFoundPage } from './pages/errors.ts';
 import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
 import { ME_ERRORS, mePage, type MeFlash } from './pages/me.ts';
+import { matchTimeRoutes } from './match-time.ts';
 import { teamManageRoutes } from './team-manage.ts';
 import {
   EMPTY_REGISTER_VALUES,
@@ -809,10 +810,15 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     const page = clubPage(db, c.req.param('slug'));
     return page.ok ? render(c, clubPageView(locale, page)) : notFound(c);
   });
-  app.get('/matches/:id', (c) => {
+  const matchTime = matchTimeRoutes(app, { deps, render, notFound, forbidden, guard });
+  app.get('/matches/:id', async (c) => {
     const id = c.req.param('id');
     const page = MATCH_ID.test(id) ? matchPage(db, Number(id)) : null;
-    return page?.ok ? render(c, matchPageView(locale, page)) : notFound(c);
+    if (!page?.ok) return notFound(c);
+    // What the viewer's own team may do: the page is then theirs, kept by no shared cache.
+    const panel = await matchTime.panel(c, Number(id));
+    if (panel !== '') c.header('Cache-Control', 'private, no-store');
+    return render(c, matchPageView(locale, page, panel));
   });
 
   // -------------------------------------------------------------------------------------------

@@ -14,8 +14,8 @@ import {
 import { rosterPlayers } from '../services/site.ts';
 import { rosterToManage, type ManagedRoster } from '../services/team-manage.ts';
 import { listTeamStaff, type MemberRef } from '../services/team-staff.ts';
-import type { Env, Viewer, WebDeps } from './app.ts';
-import type { Page } from './layout.ts';
+import type { Env, Viewer } from './app.ts';
+import type { RouteKit } from './route-kit.ts';
 import {
   isManageError,
   MANAGE_DONE,
@@ -29,15 +29,6 @@ import { webActor } from './roles.ts';
 // `/teams/:slug/manage`: the website's `/team` for one roster. Each POST is checked by `guard`
 // (origin, login, CSRF), then by the same services as the bot, with the roles Discord gives the
 // viewer now. What Discord shows of a request is done by the same helper as the command's.
-
-/** What the app lends its routes. */
-export interface RouteKit {
-  deps: WebDeps;
-  render: (c: Context<Env>, page: Page) => Response | Promise<Response>;
-  notFound: (c: Context<Env>) => Response | Promise<Response>;
-  forbidden: (c: Context<Env>) => Response | Promise<Response>;
-  guard: (c: Context<Env>) => Promise<{ viewer: Viewer; form: Record<string, unknown> } | Response>;
-}
 
 const SNOWFLAKE = /^[1-9]\d{16,19}$/;
 const ROW_ID = /^[1-9]\d{0,9}$/;
