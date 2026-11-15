@@ -436,3 +436,9 @@ dl.facts {
 dl.facts dd {
   margin: 0;
 }
+
+/* A one-button form inside a line of a list, such as removing an official. */
+form.inline {
+  display: inline;
+  margin-left: 8px;
+}

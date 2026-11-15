@@ -39,6 +39,7 @@ import { errorPage, messagePage, notFoundPage } from './pages/errors.ts';
 import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
 import { ME_ERRORS, mePage, type MeFlash } from './pages/me.ts';
+import { teamManageRoutes } from './team-manage.ts';
 import {
   EMPTY_REGISTER_VALUES,
   gameProfileForm,
@@ -136,12 +137,12 @@ export async function loadStaticFiles(): Promise<StaticFiles> {
   return { css, htmx, colors };
 }
 
-interface Viewer extends WebUser {
+export interface Viewer extends WebUser {
   session: Session;
   csrf: string;
 }
 
-type Env = { Variables: { viewer: Viewer | null } };
+export type Env = { Variables: { viewer: Viewer | null } };
 
 const LOGO_FILE = /^([a-z0-9][a-z0-9_-]{0,63})\.png$/;
 const MATCH_ID = /^[1-9]\d{0,9}$/;
@@ -1129,6 +1130,8 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       reply.logoLost ? 'done=registration_approved_logo_lost' : 'done=registration_approved',
     );
   });
+
+  teamManageRoutes(app, { deps, render, notFound, forbidden, guard });
 
   app.notFound(notFound);
   app.onError((error, c) => {

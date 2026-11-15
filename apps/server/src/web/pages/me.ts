@@ -115,6 +115,7 @@ export function mePage(locale: Locale, data: MeData): Page {
                 html`<li>
                   <a href="/teams/${team.slug}">${team.name}</a>
                   <span class="muted">· ${t(locale, ROLE_KEYS[team.role])}</span>
+                  · <a href="/teams/${team.slug}/manage">${t(locale, 'web.me.manage')}</a>
                 </li>`,
             )}
           </ul>`
