@@ -89,8 +89,9 @@ M-xx : mainteneur).
   Les limites sont des réglages. Le capitaine de l'effectif validé pour la saison agit dans les
   matchs de cette saison, et il est mentionné avec les responsables quand un horaire est proposé,
   un résultat signalé ou un veto lancé. Il ne demande aucun changement de responsables : `/team`
-  reste réservé aux responsables. Le capitaine de remplacement pour un match viendra avec les
-  pages de match.
+  reste réservé aux responsables. Le capitaine de remplacement pour un match est nommé sur la
+  page du match par les responsables ou le capitaine habituel ; il agit dans ce match seulement
+  et y est mentionné, mais ne nomme personne.
 
 ### 2.3 Effectifs
 

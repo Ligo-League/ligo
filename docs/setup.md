@@ -598,6 +598,16 @@ channel`), mentioning the other side, with **Accepter** and **Refuser**.
 4. Each choice made on the website edits the Discord message; once the veto is over, the page
    stops asking for updates.
 
+## 32. Phase 3e-5: the captain for one match
+
+1. Restart `pnpm dev` if it was not running: migration 0021 (`match_captain`) runs at start-up.
+2. On the page of a match still to play, as an official or the usual captain of a team with an
+   approved lineup, **Capitaine du match** lists the lineup's starters and substitutes. Pick one
+   and **Enregistrer**; **Personne** goes back to the usual captain alone.
+3. Log in as that player: the match page offers them the result, time and veto actions for that
+   match only, and the bot mentions them for it. They cannot name another captain.
+4. Once the result is reported, the captain can no longer be changed.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
