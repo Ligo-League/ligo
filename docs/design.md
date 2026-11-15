@@ -366,7 +366,7 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 
 **Map veto**
 
-The veto runs on the website at `/matches/:id/veto`, linked from the match channel's control message. It uses the official competitive map pool and the standard competitive ban sequences. Until the website exists (phase 3), it runs in Discord: `/match veto` posts a message with one button per remaining map, then Attack and Defense for the side steps, and every step edits that message. The website page will use the same engine.
+The veto runs on the website at `/matches/:id/veto`, linked from the match page (and later from the match channel's control message), and in Discord. It uses the official competitive map pool and the standard competitive ban sequences. `/match veto` posts a message with one button per remaining map, then Attack and Defense for the side steps, and every step edits that message. The page (phase 3e) uses the same engine: the two sides (officials and captain), the players of their season lineup and league staff follow it; a side or staff starts it, which posts the Discord message in the schedule channel (M-32); the team whose turn it is chooses there too, and each choice edits the Discord message. The page asks the server every 3 seconds (htmx) and gets nothing back (204) until the veto moves; it stops asking once the veto is over.
 
 - **Map pool:** stored per season in `season.settings_json`; staff update it when Ubisoft rotates maps. The current pool has 9 maps.
 - **Team A** is the team that bans first. Without a coin toss it is also the team with side selection; after a coin toss in a BO1 the two can differ (section above).

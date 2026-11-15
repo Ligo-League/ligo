@@ -224,8 +224,9 @@ M-xx : mainteneur).
   décisive. Côtés comme en BO3.
 - **4 minutes par étape.** Sans choix à temps, le bot choisit au hasard et le note.
 - **Statut** : Décidée.
-- **Appliquée par** : `/match veto` ; seule l'équipe dont c'est le tour peut cliquer. La carte
-  et les bans sont enregistrés avec le match.
+- **Appliquée par** : `/match veto`, ou la page du veto sur le site (`/matches/:id/veto`, pour
+  les deux équipes et le staff) ; seule l'équipe dont c'est le tour peut choisir. La carte et les
+  bans sont enregistrés avec le match.
 
 ### 4.3 Re-host
 

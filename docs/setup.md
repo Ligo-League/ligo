@@ -584,6 +584,19 @@ channel`), mentioning the other side, with **Accepter** and **Refuser**.
    the screenshot, **Confirmer**, and a form to contest with a reason. Answering on the website
    removes the buttons from the Discord post.
 5. A report made with `/match report` can be answered on the website too.
+6. When staff validate or refuse a report (queue button, `/staff match`, or `/staff` on the
+   website), or annul the match, the report's public post loses its buttons too.
+
+## 31. Phase 3e-4: the map veto on the website
+
+1. On the page of a match still to play, as an official or the captain of one of its teams, open
+   **Veto des cartes** (`/matches/<id>/veto`). League staff can open it by its address.
+2. **Lancer le veto**. The veto is posted in the schedule channel with the bot's buttons,
+   mentioning both teams.
+3. The team whose turn it is clicks a map (then a side) on the page or in Discord. Keep the page
+   open in a second browser as the other team: it updates within 3 seconds, without reloading.
+4. Each choice made on the website edits the Discord message; once the veto is over, the page
+   stops asking for updates.
 
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
