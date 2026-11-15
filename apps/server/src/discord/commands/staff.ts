@@ -18,6 +18,7 @@ import {
 } from '../../services/sanctions.ts';
 import { searchTeams } from '../../services/team-staff.ts';
 import { suggestDays } from '../day-suggestions.ts';
+import { announceReportDecision } from '../staff-decisions.ts';
 import {
   discordTime,
   impossibleScore,
@@ -333,15 +334,11 @@ export const staffCommand: Command = {
         await privately(t(locale, `match.error.${reply.error}`));
         return;
       }
-      const line = storedLine(locale, reply.match);
-      await privately(t(locale, 'staff.match.validated', { line }));
-      await announceWithCard(
-        context,
-        reply.resultsChannelId,
-        { content: t(locale, 'result.announce', { line }) },
-        reply.match.id,
-        'result',
+      await privately(
+        t(locale, 'staff.match.validated', { line: storedLine(locale, reply.match) }),
       );
+      // The report's posts close, and the result is announced, as from the queue's button.
+      await announceReportDecision(context, reply, interaction.user.id);
       return;
     }
 
@@ -353,6 +350,7 @@ export const staffCommand: Command = {
           ? t(locale, 'staff.match.voided', { fixture: matchFixture(locale, reply.match) })
           : t(locale, `match.error.${reply.error}`),
       );
+      if (reply.ok) await announceReportDecision(context, reply, interaction.user.id);
       return;
     }
 

@@ -83,6 +83,8 @@ export const en: Record<MessageKey, string> = {
   'queue.validatedByOpponent':
     '**{line}** — confirmed by the other team ({member}): result validated, nothing to do.',
   'queue.rejected': '**{line}** — rejected by {member}. The match is to be reported again.',
+  'queue.voided': '**{line}** — match annulled by {member}.',
+  'queue.outcome.voided': '🚫 Match annulled by {member}.',
   'queue.outcome.validated': '✅ Result validated by {member}.',
   'queue.outcome.rejected': '❌ Report rejected by {member}. The match is to be reported again.',
   'result.announce': 'Result validated — {line}.',

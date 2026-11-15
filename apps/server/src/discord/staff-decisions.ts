@@ -13,16 +13,19 @@ import { announceDecision } from './request-text.ts';
 type Announcer = Pick<CommandContext, 'db' | 'gateway' | 'assets' | 'locale'>;
 type Decided = Extract<StaffStepReply, { ok: true }>;
 
-/** A report's post once staff validated it, or refused it (the match back to `scheduled`). */
+const DECIDED = { validated: 'validated', scheduled: 'rejected', void: 'voided' } as const;
+
+/**
+ * A report's posts once staff validated it, refused it (the match back to `scheduled`) or
+ * annulled the match: the decision, without buttons.
+ */
 export function reportDecisionMessage(
   locale: Locale,
   reply: Decided,
   staffUserId: string,
 ): OutgoingMessage {
   const values = { line: storedLine(locale, reply.match), member: mention(staffUserId) };
-  return {
-    content: t(locale, reply.status === 'validated' ? 'queue.validated' : 'queue.rejected', values),
-  };
+  return { content: t(locale, `queue.${DECIDED[reply.status]}`, values) };
 }
 
 async function edit(context: Announcer, post: PostRef, message: OutgoingMessage): Promise<void> {
@@ -34,9 +37,9 @@ async function edit(context: Announcer, post: PostRef, message: OutgoingMessage)
 }
 
 /**
- * After staff validate or refuse a report: every queue post about it says so and loses its
- * buttons, the disputes' posts keep the team's words with the decision added, and a validated
- * result is announced.
+ * After staff validate or refuse a report, or annul the match: every queue post about it and
+ * its public post say so and lose their buttons, the disputes' posts keep the team's words with
+ * the decision added, and a validated result is announced.
  */
 export async function announceReportDecision(
   context: Announcer,
@@ -46,12 +49,11 @@ export async function announceReportDecision(
   const { locale } = context;
   const marked = reportDecisionMessage(locale, reply, staffUserId);
   for (const post of reply.posts) await edit(context, post, marked);
+  if (reply.post) await edit(context, reply.post, marked);
   const line = storedLine(locale, reply.match);
-  const outcome = t(
-    locale,
-    reply.status === 'validated' ? 'queue.outcome.validated' : 'queue.outcome.rejected',
-    { member: mention(staffUserId) },
-  );
+  const outcome = t(locale, `queue.outcome.${DECIDED[reply.status]}`, {
+    member: mention(staffUserId),
+  });
   for (const dispute of reply.disputes) {
     const message = disputeQueueMessage(locale, line, dispute.raisedBy, dispute, outcome);
     for (const post of dispute.posts) await edit(context, post, message);

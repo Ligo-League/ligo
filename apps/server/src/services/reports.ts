@@ -347,6 +347,15 @@ export async function reportResult(
   return { ...stored, queued, kept };
 }
 
+/** Where a report's public post is, when it is known. */
+function publicPostOf(
+  report: { postChannelId: string | null; postMessageId: string | null } | undefined,
+): PostRef | null {
+  return report?.postChannelId && report.postMessageId
+    ? { channelId: report.postChannelId, messageId: report.postMessageId }
+    : null;
+}
+
 /** Keeps where the report's public post is, with the other team's buttons, so an answer edits it. */
 export function recordReportPost(db: Db, evidenceId: number, post: PostRef): void {
   db.update(evidence)
@@ -591,10 +600,7 @@ export function answerReport(
       match: found,
       status,
       dispute: dispute && disputeId !== null ? { ...dispute, id: disputeId } : null,
-      post:
-        report?.postChannelId && report.postMessageId
-          ? { channelId: report.postChannelId, messageId: report.postMessageId }
-          : null,
+      post: publicPostOf(report),
       posts:
         status === 'validated'
           ? queuePostsOf(tx, { entity: 'match', entityId: found.id }, report?.at ?? 0)
@@ -630,6 +636,8 @@ export type StaffStepReply =
        * decided: in Discord or on the website. Posts about older reports were marked already.
        */
       posts: PostRef[];
+      /** The report's public post, whose buttons for the other team no longer apply. */
+      post: PostRef | null;
       disputes: SettledDispute[];
     }
   | { ok: false; error: StaffStepError };
@@ -709,8 +717,9 @@ function handledPosts(
   tx: Tx,
   league: GuildLeague,
   matchId: number,
-): { posts: PostRef[]; disputes: SettledDispute[] } {
-  const since = latestScoreEvidence(tx, matchId)?.at ?? 0;
+): { posts: PostRef[]; post: PostRef | null; disputes: SettledDispute[] } {
+  const report = latestScoreEvidence(tx, matchId);
+  const since = report?.at ?? 0;
   const reasons = league.competition.rulesetJson.dispute_reasons;
   const open = tx
     .select({ dispute: disputeTable, raisedBy: player.discordUserId })
@@ -720,6 +729,7 @@ function handledPosts(
     .all();
   return {
     posts: queuePostsOf(tx, { entity: 'match', entityId: matchId }, since),
+    post: publicPostOf(report),
     disputes: open.map(({ dispute: row, raisedBy }) => ({
       id: row.id,
       reason: row.reason,

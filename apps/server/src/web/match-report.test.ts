@@ -35,7 +35,11 @@ function site({ scheduleChannel = true } = {}) {
       scheduleChannelId: scheduleChannel ? SCHEDULE : null,
     })
     .run();
-  const browser = testSite({ db, users: { 'code-ben': BEN, 'code-stranger': STRANGER } });
+  const browser = testSite({
+    db,
+    users: { 'code-ben': BEN, 'code-stranger': STRANGER, 'code-lea': LEA },
+  });
+  browser.setRoles([TEST_STAFF_ROLE], LEA.id);
   const status = () => db.select().from(schema.match).where(eq(schema.match.id, 3)).get()?.status;
   const report = (file: File | null = png(), scores = { score_a: '7', score_b: '5' }) =>
     browser.postFile('/matches/3/report', scores, file ? { screenshot: file } : {});
@@ -219,4 +223,23 @@ describe('answering a report on the match page', () => {
     );
     expect(status()).toBe('reported');
   });
+});
+
+describe('staff deciding a report made on the match page', () => {
+  for (const [decision, word] of [
+    ['validate', 'validé'],
+    ['reject', 'refusé'],
+  ] as const) {
+    it(`closes its public post when staff ${decision} it: no buttons left for the other side`, async () => {
+      const { logIn, post, report, gateway, jar } = site();
+      await logIn('/matches/3');
+      await report();
+      jar.clear();
+      await logIn('/staff', 'code-lea');
+      await post(`/staff/matches/3/${decision}`, { evidence: '1' });
+      const publicPost = gateway.posted.find((entry) => entry.channelId === SCHEDULE);
+      expect(publicPost?.message.content).toContain(`${word} par <@${LEA.id}>`);
+      expect(publicPost?.message.buttons).toBeUndefined();
+    });
+  }
 });

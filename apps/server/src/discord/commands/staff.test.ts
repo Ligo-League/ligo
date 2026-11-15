@@ -3,6 +3,8 @@ import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { setAutoExclusion } from '../../services/exclusions.ts';
+import { ensurePlayer } from '../../services/players.ts';
+import { recordQueuePost } from '../../services/queue-posts.ts';
 import type { Actor } from '../../services/permissions.ts';
 import { setTeamOwner } from '../../services/team-staff.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../../testing.ts';
@@ -296,6 +298,65 @@ describe('/staff match validate and void', () => {
         message: { content: 'Résultat validé — Ligue 1, semaine 3 : Bravo 7–5 Charlie.' },
       },
     ]);
+  });
+
+  /** The report's public post and its staff queue post, with their buttons, as the bot made them. */
+  async function withPosts() {
+    const setup = reported();
+    const { db, gateway } = setup;
+    const buttons = [{ customId: 'x', label: 'x', style: 'success' as const }];
+    const shown = await gateway.postMessage('800000000000000004', { content: 'Signalé', buttons });
+    const queued = await gateway.postMessage('800000000000000001', {
+      content: 'À valider',
+      buttons,
+    });
+    const reporter = ensurePlayer(
+      db,
+      { orgId: 1, discordUserId: '700000000000000001', displayName: 'Ana' },
+      1,
+    );
+    db.insert(schema.evidence)
+      .values({
+        matchId: 3,
+        kind: 'score_screenshot',
+        url: queued.url,
+        uploadedBy: reporter.id,
+        visibility: 'teams',
+        at: 1,
+        postChannelId: '800000000000000004',
+        postMessageId: shown.messageId,
+      })
+      .run();
+    recordQueuePost(
+      db,
+      { entity: 'match', entityId: 3 },
+      { channelId: '800000000000000001', messageId: queued.messageId },
+      1,
+    );
+    return setup;
+  }
+
+  it('closes the report: its public post and its queue post lose their buttons', async () => {
+    const { context, gateway } = await withPosts();
+    await run(staffMatch('validate', { match: 3 }), context);
+    const marked = '**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — validé par <@222222222222222222>.';
+    for (const post of gateway.posted.slice(0, 2)) {
+      expect(post).toMatchObject({ edits: 1, message: { content: marked } });
+      expect(post.message.buttons).toBeUndefined();
+    }
+  });
+
+  it('closes the report when it annuls the match too', async () => {
+    const { context, gateway } = await withPosts();
+    await run(staffMatch('void', { match: 3, reason: 'Joueur non inscrit' }), context);
+    for (const post of gateway.posted.slice(0, 2)) {
+      expect(post.message.content).toBe(
+        '**Ligue 1, semaine 3 : Bravo 7–5 Charlie** — match annulé par <@222222222222222222>.',
+      );
+      expect(post.message.buttons).toBeUndefined();
+    }
+    // An annulled match is not announced as a result.
+    expect(gateway.posted).toHaveLength(2);
   });
 
   it('still validates when the results channel cannot be reached', async () => {
