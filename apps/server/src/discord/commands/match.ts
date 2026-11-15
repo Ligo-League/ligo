@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
 import { ApplicationCommandOptionType, InteractionContextType } from 'discord.js';
-import { t, type Locale } from '../../i18n/index.ts';
+import { t } from '../../i18n/index.ts';
 import {
   checkReport,
   reportResult,
@@ -10,16 +10,10 @@ import {
 import { proposeTime, readMatchTime, searchSchedulableMatches } from '../../services/scheduling.ts';
 import { setVetoMessage, startVeto } from '../../services/veto.ts';
 import { vetoMessage } from '../veto-message.ts';
+import { postProposal, proposalMessage } from '../schedule-posts.ts';
 import { suggestDays } from '../day-suggestions.ts';
 import { buttonId } from '../button-id.ts';
-import {
-  discordTime,
-  impossibleScore,
-  matchFixture,
-  matchLabel,
-  matchLine,
-  mention,
-} from '../match-text.ts';
+import { impossibleScore, matchLabel, matchLine, mention } from '../match-text.ts';
 import { described, MAX_CHOICE_LENGTH, MAX_CHOICES } from './describe.ts';
 import type { Command, CommandContext, CommandInteraction, MessageButton } from './types.ts';
 
@@ -40,22 +34,6 @@ export function reportButtons(
   return audience === 'opponent'
     ? [button('confirm', 'success'), button('dispute', 'danger')]
     : [button('validate', 'success'), button('reject', 'danger')];
-}
-
-/** Accept and Decline, under a proposed time: for the other team. */
-export function proposalButtons(locale: Locale, matchId: number, proposalId: number) {
-  return [
-    {
-      customId: buttonId('time-accept', matchId, proposalId),
-      label: t(locale, 'schedule.button.accept'),
-      style: 'success' as const,
-    },
-    {
-      customId: buttonId('time-decline', matchId, proposalId),
-      label: t(locale, 'schedule.button.decline'),
-      style: 'danger' as const,
-    },
-  ];
 }
 
 async function proposeTimeCommand(
@@ -84,21 +62,18 @@ async function proposeTimeCommand(
     await privately(t(locale, `schedule.error.${reply.error}`));
     return;
   }
-  const { opponentIds } = reply;
-  const text = {
-    proposer: mention(interaction.user.id),
-    team: reply.match[reply.side].name,
-    fixture: matchFixture(locale, reply.match),
-    when: discordTime(reply.at),
-  };
+  // Posted rather than replied, so that an answer given on the website can edit it.
+  if (
+    interaction.channelId !== null &&
+    (await postProposal(context, interaction.channelId, reply, interaction.user.id))
+  ) {
+    await interaction.reply({ content: t(locale, 'schedule.posted'), ephemeral: true });
+    return;
+  }
+  // The bot cannot post here: the reply still carries the buttons; only later edits are lost.
   await interaction.reply({
-    content:
-      opponentIds.length > 0
-        ? t(locale, 'schedule.proposed', { ...text, opponents: opponentIds.map(mention).join(' ') })
-        : t(locale, 'schedule.proposedNoOpponent', text),
+    ...proposalMessage(locale, reply, interaction.user.id),
     ephemeral: false,
-    buttons: proposalButtons(locale, reply.match.id, reply.proposalId),
-    mentionUserIds: opponentIds,
   });
 }
 

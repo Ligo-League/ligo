@@ -14,6 +14,7 @@ import {
   fakeContext,
   fakeGateway,
   fakeInteraction,
+  FAKE_CHANNEL,
   type FakeInput,
 } from './testing.ts';
 
@@ -67,18 +68,45 @@ function session(now = NOW) {
 }
 
 describe('/match propose-time', () => {
-  it('posts the proposal in public, with buttons for the other team, and pings it', async () => {
-    const { propose } = session();
+  it('posts the proposal in the channel, with buttons for the other team, and pings it', async () => {
+    const { propose, gateway, db } = session();
     const interaction = await propose(BRAVO);
     expect(interaction.replies).toEqual([
       {
-        content: `<@700000000000000001> propose pour Bravo : **Ligue 1, semaine 3 : Bravo – Charlie** le ${at(THURSDAY_21H)}. <@700000000000000002>, acceptez ou refusez.`,
+        content: 'Proposition publiée : l’autre équipe peut l’accepter ou la refuser.',
+        ephemeral: true,
+      },
+    ]);
+    expect(gateway.posted).toEqual([
+      {
+        channelId: FAKE_CHANNEL,
+        messageId: expect.any(String) as string,
+        edits: 0,
+        message: {
+          content: `<@700000000000000001> propose pour Bravo : **Ligue 1, semaine 3 : Bravo – Charlie** le ${at(THURSDAY_21H)}. <@700000000000000002>, acceptez ou refusez.`,
+          buttons: [
+            { customId: 'time-accept:3:1', label: 'Accepter', style: 'success' },
+            { customId: 'time-decline:3:1', label: 'Refuser', style: 'danger' },
+          ],
+          mentionUserIds: ['700000000000000002'],
+        },
+      },
+    ]);
+    // Kept, so that an answer given on the website edits it.
+    expect(db.select().from(schema.matchProposal).get()).toMatchObject({
+      channelId: FAKE_CHANNEL,
+      messageId: gateway.posted[0]?.messageId,
+    });
+  });
+
+  it('replies with the proposal when the bot cannot post in the channel', async () => {
+    const { propose, gateway } = session();
+    gateway.failing = true;
+    const interaction = await propose(BRAVO);
+    expect(interaction.replies).toMatchObject([
+      {
         ephemeral: false,
-        buttons: [
-          { customId: 'time-accept:3:1', label: 'Accepter', style: 'success' },
-          { customId: 'time-decline:3:1', label: 'Refuser', style: 'danger' },
-        ],
-        mentionUserIds: ['700000000000000002'],
+        buttons: [{ customId: 'time-accept:3:1' }, { customId: 'time-decline:3:1' }],
       },
     ]);
   });
@@ -130,7 +158,9 @@ describe('proposal buttons', () => {
       },
     ]);
     expect(stored()?.scheduledAt).toBe(THURSDAY_21H);
+    // The proposal's own post (clicked), then the announcement.
     expect(gateway.posted).toMatchObject([
+      { channelId: FAKE_CHANNEL },
       {
         channelId: SCHEDULE,
         message: {
@@ -138,8 +168,10 @@ describe('proposal buttons', () => {
         },
       },
     ]);
+    expect(gateway.posted[0]?.message.content).toContain('accepté par <@700000000000000002>');
+    expect(gateway.posted[0]?.message.buttons).toBeUndefined();
     // The picture for social networks rides along with the announcement.
-    expect(gateway.posted[0]?.message.files?.map((file) => file.name)).toEqual([
+    expect(gateway.posted[1]?.message.files?.map((file) => file.name)).toEqual([
       'match-3-time.png',
     ]);
   });

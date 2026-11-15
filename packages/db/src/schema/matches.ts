@@ -261,6 +261,10 @@ export const matchProposal = sqliteTable(
     status: text('status', { enum: PROPOSAL_STATUSES }).notNull().default('pending'),
     answeredBy: integer('answered_by').references(() => player.id),
     answeredAt: integer('answered_at'),
+    // The proposal's post in Discord, with its Accept and Decline buttons, when one was posted:
+    // an answer given anywhere edits it (phase 3e).
+    channelId: text('channel_id'),
+    messageId: text('message_id'),
   },
   (t) => [
     index('match_proposal_match_idx').on(t.matchId),

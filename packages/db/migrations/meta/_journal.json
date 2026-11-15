@@ -120,6 +120,13 @@
       "when": 1794703613333,
       "tag": "0016_roster_captain",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1794707951211,
+      "tag": "0017_proposal_post",
+      "breakpoints": true
     }
   ]
 }

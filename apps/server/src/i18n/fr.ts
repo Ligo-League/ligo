@@ -288,6 +288,7 @@ export const fr = {
     '{proposer} propose pour {team} : **{fixture}** le {when}. {opponents}, acceptez ou refusez.',
   'schedule.proposedNoOpponent':
     "{proposer} propose pour {team} : **{fixture}** le {when}. L'équipe adverse n'a aucun responsable : le staff de la ligue peut fixer l'horaire.",
+  'schedule.posted': 'Proposition publiée : l’autre équipe peut l’accepter ou la refuser.',
   'schedule.button.accept': 'Accepter',
   'schedule.button.decline': 'Refuser',
   'schedule.accepted': '**{fixture}** — le {when}, accepté par {member}.',
@@ -807,6 +808,22 @@ export const fr = {
   'web.me.registration.approved': 'validée',
   'web.me.registration.rejected': 'refusée par le staff',
   'web.me.registration.withdrawn': 'retirée',
+  'web.time.title': 'Horaire du match',
+  'web.time.none': 'Aucune proposition en attente.',
+  'web.time.proposal': '{team} propose le {when} (par {name})',
+  'web.time.waiting': 'en attente de l’autre équipe',
+  'web.time.date': 'Jour',
+  'web.time.time': 'Heure (heure de la ligue)',
+  'web.time.propose': 'Proposer cet horaire',
+  'web.time.posted':
+    'L’autre équipe est prévenue sur Discord, dans le salon des horaires, et peut répondre ici ou là-bas.',
+  'web.time.notPosted':
+    'La ligue n’a pas de salon des horaires : l’autre équipe voit la proposition sur cette page.',
+  'web.time.done.proposed': 'Horaire proposé : l’autre équipe est prévenue sur Discord.',
+  'web.time.done.proposed_unposted':
+    'Horaire proposé. Il n’a pas pu être publié sur Discord : l’autre équipe le voit sur cette page.',
+  'web.time.done.accepted': 'Horaire accepté : le match est fixé.',
+  'web.time.done.declined': 'Proposition refusée.',
   'web.manage.title': 'Gérer {team}',
   'web.manage.intro':
     'Ce que fait la commande /team, sur le site : chaque changement part au staff de la ligue, ou s’applique tout de suite quand la ligue le prévoit.',

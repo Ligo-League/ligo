@@ -1,8 +1,7 @@
 import { t } from '../../i18n/index.ts';
-import { announceWithCard } from '../match-card.ts';
 import { answerProposal } from '../../services/scheduling.ts';
 import type { ButtonHandler } from '../commands/types.ts';
-import { discordTime, matchFixture, mention } from '../match-text.ts';
+import { announceAnswer, answeredMessage } from '../schedule-posts.ts';
 
 // The buttons under a proposed time. The custom ID names the match and, as nonce, the proposal;
 // the service re-checks who clicks, the proposal's state and the match's.
@@ -26,22 +25,9 @@ const answer = (action: 'accept' | 'decline'): ButtonHandler => ({
       });
       return;
     }
-    const text = {
-      fixture: matchFixture(locale, reply.match),
-      when: discordTime(reply.at),
-      member: mention(interaction.user.id),
-    };
-    // The buttons go once the proposal is answered.
-    await interaction.update({ content: t(locale, `schedule.${reply.status}`, text) });
-    if (reply.status === 'accepted') {
-      await announceWithCard(
-        context,
-        reply.scheduleChannelId,
-        { content: t(locale, 'schedule.announce', text) },
-        reply.match.id,
-        'time',
-      );
-    }
+    // The buttons go once the proposal is answered; the rest is as from the website.
+    await interaction.update(answeredMessage(locale, reply, interaction.user.id));
+    await announceAnswer(context, reply, interaction.user.id);
   },
 });
 

@@ -18,7 +18,8 @@ import {
   type GuildLeague,
   type LeagueMatch,
 } from '@ligo/db';
-import { and, eq, isNotNull } from 'drizzle-orm';
+import { and, asc, eq, isNotNull } from 'drizzle-orm';
+import type { PostRef } from './queue-posts.ts';
 import { hasExcludedTeam } from './exclusions.ts';
 import { matchQuery } from './match-search.ts';
 import { actsFor, matchActorOf, requireStaff, sideOf, type Actor } from './permissions.ts';
@@ -57,9 +58,10 @@ export type ProposeReply =
       proposalId: number;
       side: Side;
       at: number;
-      /** Who may accept or decline: the other team's manager and staff. */
       /** The other side's officials and captain, to mention (Discord IDs). */
       opponentIds: string[];
+      /** Where a proposal made on the website is posted, when the league has set it (M-32). */
+      scheduleChannelId: string | null;
     }
   | { ok: false; error: ProposeError };
 
@@ -129,6 +131,7 @@ export function proposeTime(
       side,
       at: request.at,
       opponentIds: teamMentions(tx, found[other(side)].teamId, found.seasonId),
+      scheduleChannelId: league.guild.scheduleChannelId,
     };
   });
 }
@@ -156,6 +159,8 @@ export type AnswerProposalReply =
       side: Side;
       /** Where an agreed time is announced, when the league has set it. */
       scheduleChannelId: string | null;
+      /** The proposal's post in Discord, to show the answer on; null when none was kept. */
+      post: PostRef | null;
     }
   | { ok: false; error: AnswerProposalError };
 
@@ -232,8 +237,43 @@ export function answerProposal(
       at: proposal.at,
       side: proposal.side,
       scheduleChannelId: league.guild.scheduleChannelId,
+      post:
+        proposal.channelId !== null && proposal.messageId !== null
+          ? { channelId: proposal.channelId, messageId: proposal.messageId }
+          : null,
     };
   });
+}
+
+/** Keeps where a proposal was posted in Discord, so that an answer given anywhere edits it. */
+export function recordProposalPost(db: Pick<Db, 'update'>, proposalId: number, post: PostRef) {
+  db.update(matchProposal)
+    .set({ channelId: post.channelId, messageId: post.messageId })
+    .where(eq(matchProposal.id, proposalId))
+    .run();
+}
+
+export interface PendingProposal {
+  id: number;
+  side: Side;
+  at: number;
+  proposedBy: string;
+}
+
+/** A match's proposals waiting for an answer, oldest first: at most one per side. */
+export function pendingProposals(db: Pick<Db, 'select'>, matchId: number): PendingProposal[] {
+  return db
+    .select({
+      id: matchProposal.id,
+      side: matchProposal.side,
+      at: matchProposal.at,
+      proposedBy: schema.player.displayName,
+    })
+    .from(matchProposal)
+    .innerJoin(schema.player, eq(matchProposal.proposedBy, schema.player.id))
+    .where(and(eq(matchProposal.matchId, matchId), eq(matchProposal.status, 'pending')))
+    .orderBy(asc(matchProposal.id))
+    .all();
 }
 
 // ---------------------------------------------------------------------------------------------

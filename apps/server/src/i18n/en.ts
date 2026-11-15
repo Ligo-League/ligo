@@ -270,6 +270,7 @@ export const en: Record<MessageKey, string> = {
     '{proposer} proposes for {team}: **{fixture}** on {when}. {opponents}, accept or decline.',
   'schedule.proposedNoOpponent':
     '{proposer} proposes for {team}: **{fixture}** on {when}. The other team has no official: league staff can set the time.',
+  'schedule.posted': 'Proposal posted: the other team can accept or decline it.',
   'schedule.button.accept': 'Accept',
   'schedule.button.decline': 'Decline',
   'schedule.accepted': '**{fixture}** — on {when}, accepted by {member}.',
@@ -770,6 +771,22 @@ export const en: Record<MessageKey, string> = {
   'web.me.registration.approved': 'approved',
   'web.me.registration.rejected': 'refused by staff',
   'web.me.registration.withdrawn': 'withdrawn',
+  'web.time.title': 'Match time',
+  'web.time.none': 'No proposal waiting.',
+  'web.time.proposal': '{team} proposes {when} (by {name})',
+  'web.time.waiting': 'waiting for the other team',
+  'web.time.date': 'Day',
+  'web.time.time': 'Time (league time)',
+  'web.time.propose': 'Propose this time',
+  'web.time.posted':
+    'The other team is told on Discord, in the schedule channel, and can answer here or there.',
+  'web.time.notPosted':
+    'The league has no schedule channel: the other team sees the proposal on this page.',
+  'web.time.done.proposed': 'Time proposed: the other team is told on Discord.',
+  'web.time.done.proposed_unposted':
+    'Time proposed. It could not be posted on Discord: the other team sees it on this page.',
+  'web.time.done.accepted': 'Time accepted: the match is set.',
+  'web.time.done.declined': 'Proposal declined.',
   'web.manage.title': 'Manage {team}',
   'web.manage.intro':
     'What the /team command does, on the website: each change goes to league staff, or applies at once where the league allows it.',
