@@ -147,19 +147,13 @@ describe('joinRoster', () => {
     expect(joinRoster(db, person(2), link, NOW)).toEqual({ ok: false, error: 'roster_full' });
   });
 
-  it('is closed while the roster plays in a season under way', async () => {
+  it('stays open while the roster plays a season under way: it prepares the next one (M-35)', async () => {
     const { db, owner, teamId, person, link } = await setup();
     const divisionId = db.select().from(schema.division).get()?.id ?? 0;
     // Season 3 of the league database is under way.
     db.insert(schema.slot).values({ divisionId, teamId }).run();
-    expect(rosterJoinView(db, person(1), link, NOW)).toMatchObject({
-      verdict: { ok: false, error: 'roster_closed' },
-    });
-    expect(joinRoster(db, person(1), link, NOW)).toEqual({ ok: false, error: 'roster_closed' });
-    expect(rosterInviteFor(db, { playerId: owner }, teamId, { renew: true }, NOW)).toEqual({
-      ok: false,
-      error: 'roster_closed',
-    });
+    expect(joinRoster(db, person(1), link, NOW).ok).toBe(true);
+    expect(rosterInviteFor(db, { playerId: owner }, teamId, { renew: true }, NOW).ok).toBe(true);
   });
 });
 
@@ -174,7 +168,7 @@ describe('removeFromRoster', () => {
       ok: false,
       error: 'not_allowed',
     });
-    expect(rostersOf(db, ana)).toMatchObject([{ slug: 'kairos', canLeave: true }]);
+    expect(rostersOf(db, ana)).toMatchObject([{ slug: 'kairos' }]);
     expect(removeFromRoster(db, { playerId: ana }, teamId, ana, NOW)).toEqual({ ok: true });
     expect(removeFromRoster(db, { playerId: owner }, teamId, ben, NOW)).toEqual({ ok: true });
     expect(rosterMembers(db, teamId, 'r6')).toEqual([]);

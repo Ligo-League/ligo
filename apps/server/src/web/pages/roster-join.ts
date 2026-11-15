@@ -11,7 +11,6 @@ type JoinData = Extract<RosterJoinView, { ok: true }>;
 
 const REFUSED_KEYS = {
   already_on_roster: 'web.rosterJoin.already',
-  roster_closed: 'web.rosterJoin.closed',
   roster_full: 'web.rosterJoin.full',
   incomplete_profile: 'web.join.complete',
 } as const satisfies Record<RosterJoinError, MessageKey>;

@@ -44,7 +44,6 @@ const ERROR_KEYS = {
   member_not_found: 'web.manage.error.member_not_found',
   discord_unreachable: 'web.manage.error.discord_unreachable',
   invalid_role: 'web.manage.error.invalid_role',
-  roster_closed: 'web.rosterJoin.closed',
 } as const satisfies Record<string, MessageKey>;
 export type ManageError = keyof typeof ERROR_KEYS;
 export const isManageError = (value: string | undefined): value is ManageError =>
@@ -55,11 +54,12 @@ export type ManageFlash = { done: ManageDone } | { error: ManageError; max: numb
 export interface TeamManageData {
   team: { name: string; tag: string; slug: string; clubSlug: string };
   members: TeamMember[];
-  /** The season's lineup, starters first, shown while the roster plays in a season under way. */
+  /** The season's lineup, starters first, shown closed while the roster plays a season under way. */
   players: { name: string; role: string; captain: boolean }[];
-  /** The roster's own players, while they may change (M-33). */
+  /** The roster's own players, open all year (M-33, M-35). */
   roster: {
-    open: boolean;
+    /** It plays a season under way: that season's lineup is the mercato's. */
+    inPlay: boolean;
     members: RosterMember[];
     max: number;
     /** Whether the viewer manages the players: an official who may add officials. */
@@ -116,7 +116,7 @@ const PLAYER_GAP_KEYS = {
 } as const satisfies Record<string, MessageKey>;
 
 /**
- * A roster whose players may change (M-33): its players, each with what they still have to
+ * The roster's own players, open all year (M-33, M-35): each with what they still have to
  * complete, its invitation link for the officials who manage them, and removal.
  */
 function openPlayers(locale: Locale, data: TeamManageData, base: string): Html {
@@ -181,12 +181,12 @@ function openPlayers(locale: Locale, data: TeamManageData, base: string): Html {
 }
 
 /**
- * A roster playing in a season under way: its lineup changes only during a mercato window
- * (M-29), which comes with the mercato (3f). The forms are shown closed, with the reason.
+ * The lineup of the season under way: it changes only during a mercato window (M-29), which
+ * comes with the mercato (3f). The forms are shown closed, with the reason.
  */
 function closedPlayers(locale: Locale, data: TeamManageData): Html {
   const closed = t(locale, 'web.manage.mercatoClosed');
-  return html`<h2 id="players">${t(locale, 'web.team.players')}</h2>
+  return html`<h2>${t(locale, 'web.manage.seasonLineup')}</h2>
     ${
       data.players.length === 0
         ? html`<p class="muted">${t(locale, 'web.manage.noPlayers')}</p>`
@@ -257,7 +257,8 @@ export function teamManagePage(locale: Locale, data: TeamManageData): Page {
     )}
   </ul>`;
 
-  const players = data.roster.open ? openPlayers(locale, data, base) : closedPlayers(locale, data);
+  const players = html`${openPlayers(locale, data, base)}
+  ${data.roster.inPlay ? closedPlayers(locale, data) : ''}`;
 
   const addForm =
     addRoles.length > 0

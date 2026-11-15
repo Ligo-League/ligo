@@ -3,7 +3,7 @@ import {
   mayJoinRoster,
   mayManagePlayers,
   rosterGaps,
-  rosterOpen,
+  playsSeasonUnderWay,
   type PlayerGap,
   type RosterJoinError,
 } from '@ligo/core';
@@ -13,10 +13,10 @@ import { inviteTokenMatches } from './invites.ts';
 import { highestRole, teamsOfPlayer } from './permissions.ts';
 import { profilesOf } from './registrations.ts';
 
-// A roster's own players, before any competition (M-33, M-34, maintainer, 15 November 2026).
-// Each joins from the roster's invitation link with their own account and completes their own
-// profile; they leave when they want, and the officials who may add officials remove them. Not
-// while the roster plays in a season under way: its lineup is then the mercato's (3f).
+// A roster's own players (M-33, M-34, maintainer, 15 November 2026). Each joins from the
+// roster's invitation link with their own account and completes their own profile; they leave
+// when they want, and the officials who may add officials remove them. The list stays open all
+// year, as a preparation; a season's lineup (`roster_entry`) follows the mercato (M-35).
 
 const { auditLog, division, org, player, rosterInvite, rosterPlayer, season, slot, team } = schema;
 
@@ -58,7 +58,8 @@ export function rosterState(db: Reader, teamId: number) {
   return {
     team: ref,
     orgId: row.team.orgId,
-    open: rosterOpen(statuses),
+    /** It plays a season under way: that season's lineup is the mercato's. */
+    inPlay: playsSeasonUnderWay(statuses),
     max: row.settings.rosters.players_max,
     inviteDays: row.settings.rosters.invite_days,
   };
@@ -122,7 +123,7 @@ export function currentRosterInvite(db: Reader, teamId: number, now: number) {
 
 export type InviteReply =
   | { ok: true; invite: { id: number; nonce: string; expiresAt: number } }
-  | { ok: false; error: 'not_found' | 'not_allowed' | 'roster_closed' };
+  | { ok: false; error: 'not_found' | 'not_allowed' };
 
 /**
  * The roster's invitation for its officials to share: the one in force, or a new one. `renew`
@@ -138,7 +139,6 @@ export function rosterInviteFor(
   const state = rosterState(db, teamId);
   if (!state) return { ok: false, error: 'not_found' };
   if (!managesPlayers(db, by.playerId, teamId)) return { ok: false, error: 'not_allowed' };
-  if (!state.open) return { ok: false, error: 'roster_closed' };
   return db.transaction((tx): InviteReply => {
     const current = currentRosterInvite(tx, teamId, now);
     if (current && !options.renew) return { ok: true, invite: current };
@@ -207,7 +207,6 @@ function verdictFor(
     gaps,
     count: members.length,
     max: state.max,
-    open: state.open,
   });
   return { verdict, gaps };
 }
@@ -255,13 +254,9 @@ export function joinRoster(
   });
 }
 
-export type RosterLeaveReply =
-  { ok: true } | { ok: false; error: 'not_found' | 'not_allowed' | 'roster_closed' };
+export type RosterLeaveReply = { ok: true } | { ok: false; error: 'not_found' | 'not_allowed' };
 
-/**
- * A player leaves a roster, or one of the officials who manage its players removes them. Not
- * while the roster plays in a season under way.
- */
+/** A player leaves a roster, or one of the officials who manage its players removes them. */
 export function removeFromRoster(
   db: Db,
   by: { playerId: number },
@@ -273,7 +268,6 @@ export function removeFromRoster(
   if (!state) return { ok: false, error: 'not_found' };
   const self = by.playerId === playerId;
   if (!self && !managesPlayers(db, by.playerId, teamId)) return { ok: false, error: 'not_allowed' };
-  if (!state.open) return { ok: false, error: 'roster_closed' };
   return db.transaction((tx): RosterLeaveReply => {
     const current = tx
       .select()
@@ -303,8 +297,8 @@ export function removeFromRoster(
   });
 }
 
-/** The rosters a player plays for now, for their own page, with whether they may leave. */
-export function rostersOf(db: Reader, playerId: number): (RosterRef & { canLeave: boolean })[] {
+/** The rosters a player plays for now, for their own page. */
+export function rostersOf(db: Reader, playerId: number): RosterRef[] {
   return db
     .select({ teamId: rosterPlayer.teamId })
     .from(rosterPlayer)
@@ -313,6 +307,6 @@ export function rostersOf(db: Reader, playerId: number): (RosterRef & { canLeave
     .all()
     .flatMap((row) => {
       const state = rosterState(db, row.teamId);
-      return state ? [{ ...state.team, canLeave: state.open }] : [];
+      return state ? [state.team] : [];
     });
 }

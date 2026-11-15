@@ -71,7 +71,7 @@ function registrationsView(locale: Locale, data: MeData): Html | string {
     </ul>`;
 }
 
-/** The rosters the player plays for, each with a way to leave while it may change. */
+/** The rosters the player plays for, each with a way to leave. */
 function rostersView(locale: Locale, data: MeData): Html | string {
   if (data.rosters.length === 0) return '';
   return html`<h2>${t(locale, 'web.me.rosters')}</h2>
@@ -80,18 +80,10 @@ function rostersView(locale: Locale, data: MeData): Html | string {
         (roster) =>
           html`<li>
             <a href="/teams/${roster.slug}">${roster.name}</a>
-            ${
-              roster.canLeave
-                ? html`<form
-                    method="post"
-                    action="/teams/${roster.slug}/roster/leave"
-                    class="inline"
-                  >
-                    ${csrfField(data.csrf)}
-                    <button type="submit">${t(locale, 'web.me.registration.leave')}</button>
-                  </form>`
-                : ''
-            }
+            <form method="post" action="/teams/${roster.slug}/roster/leave" class="inline">
+              ${csrfField(data.csrf)}
+              <button type="submit">${t(locale, 'web.me.registration.leave')}</button>
+            </form>
           </li>`,
       )}
     </ul>`;

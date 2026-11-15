@@ -452,6 +452,16 @@ section 16.
 
 ## Answered
 
+#### M-35 · A roster's players during a season under way
+
+- **Question:** a roster playing a season under way changes its lineup only in a mercato window
+  (M-29). Is its own list of players, which prepares its next registration, closed too? Closed,
+  a Season 3 roster could not gather its Season 4 players before Season 3 ends.
+- **Answer (decided by Claude at the maintainer's request, 15 November 2026; open to change):**
+  the roster's own players stay open all year: the list is a preparation and changes nothing
+  being played. Only a season's lineup (`roster_entry`), who may play its matches, follows the
+  mercato. A player joining a roster during a season does not play for it that season.
+
 #### M-34 · How many players a roster in no competition may have
 
 - **Question:** a roster in no competition has no league setting for its size. How many players

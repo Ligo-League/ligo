@@ -117,7 +117,8 @@ M-xx : mainteneur).
   compétition, ses responsables la changent eux-mêmes, sans validation. Ses joueurs la rejoignent
   par son lien d'invitation, avec leur propre compte, une fois leur compte R6 et leur nationalité
   renseignés ; 10 joueurs au plus (réglage du groupe). Ils la quittent quand ils veulent ; les
-  responsables (hors coach) peuvent en retirer. Pendant une saison en cours, l'effectif ne change
+  responsables (hors coach) peuvent en retirer. Cette liste reste ouverte toute l'année : elle
+  prépare une inscription. Seul l'effectif d'une saison en cours, qui joue ses matchs, ne change
   qu'en fenêtre de mercato.
 - **Inscription sur le site** : le responsable inscrit le club (ou une nouvelle équipe d'un club
   qu'il dirige) et l'équipe, et accepte le règlement en vigueur, dont la version est enregistrée.

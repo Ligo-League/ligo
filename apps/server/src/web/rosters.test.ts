@@ -138,7 +138,7 @@ describe('a roster’s invitation link', () => {
 });
 
 describe('a roster playing a season under way', () => {
-  it('shows its lineup closed until a mercato window opens', async () => {
+  it('keeps its players open, and shows the season’s lineup closed until a mercato window', async () => {
     const { db, request, logIn } = await site();
     const kairos = db.select().from(schema.team).where(eq(schema.team.slug, 'kairos')).get();
     const divisionId = db.select().from(schema.division).get()?.id ?? 0;
@@ -147,7 +147,8 @@ describe('a roster playing a season under way', () => {
       .run();
     await logIn('/teams/kairos/manage');
     const page = await (await request('/teams/kairos/manage')).text();
+    expect(page).toContain('Effectif de la saison en cours');
     expect(page).toContain('<fieldset disabled>');
-    expect(page).not.toContain('Créer un lien d’invitation');
+    expect(page).toContain('Créer un lien d’invitation');
   });
 });

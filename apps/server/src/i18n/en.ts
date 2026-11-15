@@ -811,10 +811,9 @@ export const en: Record<MessageKey, string> = {
     'You are invited to join {roster} [{tag}] with your own account. The team picks its starters and substitutes when it registers in a league.',
   'web.rosterJoin.submit': 'Join {roster}',
   'web.rosterJoin.already': 'You are already on this team:',
-  'web.rosterJoin.closed':
-    'This team plays a season under way: its lineup changes only during a mercato window.',
   'web.rosterJoin.full': 'This team already has the most players it may have:',
   'web.manage.playersCount': '{count} player(s), {max} at most.',
+  'web.manage.seasonLineup': 'Lineup of the season under way',
   'web.manage.playerGaps': 'to complete:',
   'web.manage.inviteShare':
     'Share this link with your players: each joins with their own Discord account.',

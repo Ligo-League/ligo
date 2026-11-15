@@ -88,6 +88,7 @@ export function rosterRoutes(app: Hono<Env>, kit: RouteKit): void {
     const { playerId } = guarded.viewer;
     const reply = removeFromRoster(db, { playerId }, roster.teamId, playerId, deps.now());
     if (reply.ok) return c.redirect('/me?left=1', 303);
-    return c.redirect('/me?error=lineup_locked', 303);
+    // Already gone: their page shows the rosters as they are.
+    return c.redirect('/me', 303);
   });
 }

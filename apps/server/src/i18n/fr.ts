@@ -849,10 +849,9 @@ export const fr = {
     'Tu es invité à rejoindre {roster} [{tag}] avec ton propre compte. L’équipe choisira ses titulaires et ses remplaçants quand elle s’inscrira dans une ligue.',
   'web.rosterJoin.submit': 'Rejoindre {roster}',
   'web.rosterJoin.already': 'Tu fais déjà partie de cette équipe :',
-  'web.rosterJoin.closed':
-    'Cette équipe joue une saison en cours : son effectif ne change que pendant une fenêtre de mercato.',
   'web.rosterJoin.full': 'Cette équipe a déjà le nombre maximum de joueurs :',
   'web.manage.playersCount': '{count} joueur(s) sur {max} au plus.',
+  'web.manage.seasonLineup': 'Effectif de la saison en cours',
   'web.manage.playerGaps': 'à compléter :',
   'web.manage.inviteShare':
     'Partage ce lien avec tes joueurs : chacun rejoint avec son propre compte Discord.',

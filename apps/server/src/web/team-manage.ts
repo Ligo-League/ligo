@@ -112,12 +112,11 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
     const myRole = highestRole(teamsOfPlayer(db, viewer.playerId), roster.teamId);
     const state = rosterState(db, roster.teamId);
     const canManage = managesPlayers(db, viewer.playerId, roster.teamId);
-    const invite =
-      state?.open && canManage ? currentRosterInvite(db, roster.teamId, deps.now()) : null;
+    const invite = state && canManage ? currentRosterInvite(db, roster.teamId, deps.now()) : null;
     // The link holds the invitation's secret: the page is then kept by no cache.
     if (invite) c.header('Cache-Control', 'no-store');
     const rosterData = {
-      open: state?.open ?? false,
+      inPlay: state?.inPlay ?? false,
       members: state ? rosterMembers(db, roster.teamId, state.team.title) : [],
       max: state?.max ?? 0,
       canManage,

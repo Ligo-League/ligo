@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { mayJoinRoster, mayManagePlayers, rosterGaps, rosterOpen } from './rosters.ts';
+import { mayJoinRoster, mayManagePlayers, playsSeasonUnderWay, rosterGaps } from './rosters.ts';
 import { TEAM_ROLES } from './team-roles.ts';
 
 // A roster's own players, before any competition (M-33, M-34, maintainer, 15 November 2026):
@@ -9,7 +9,7 @@ import { TEAM_ROLES } from './team-roles.ts';
 // one roster per competition) are checked when the roster registers.
 
 const PROFILE = { gameAccount: true, nationality: 'FR', statsConsent: false, birthDate: null };
-const JOINER = { onRoster: false, gaps: [], count: 4, max: 10, open: true };
+const JOINER = { onRoster: false, gaps: [], count: 4, max: 10 };
 
 describe('rosterGaps', () => {
   it('asks for the player’s own game account and nationality only', () => {
@@ -22,18 +22,14 @@ describe('rosterGaps', () => {
 });
 
 describe('mayJoinRoster', () => {
-  it('lets a player with a complete profile join an open roster with room', () => {
+  it('lets a player with a complete profile join a roster with room, even one playing a season', () => {
     expect(mayJoinRoster(JOINER)).toEqual({ ok: true });
   });
 
-  it('refuses, in this order: already on it, closed, full, profile to complete', () => {
-    expect(mayJoinRoster({ ...JOINER, onRoster: true, open: false })).toEqual({
+  it('refuses, in this order: already on it, full, profile to complete', () => {
+    expect(mayJoinRoster({ ...JOINER, onRoster: true, count: 10 })).toEqual({
       ok: false,
       error: 'already_on_roster',
-    });
-    expect(mayJoinRoster({ ...JOINER, open: false, count: 10 })).toEqual({
-      ok: false,
-      error: 'roster_closed',
     });
     expect(mayJoinRoster({ ...JOINER, count: 10, gaps: ['nationality'] })).toEqual({
       ok: false,
@@ -55,12 +51,12 @@ describe('mayJoinRoster', () => {
   });
 });
 
-describe('rosterOpen', () => {
-  it('closes a roster’s players while it plays in a season under way (mercato, 3f)', () => {
-    expect(rosterOpen([])).toBe(true);
-    expect(rosterOpen(['registration', 'closed'])).toBe(true);
-    expect(rosterOpen(['closed', 'active'])).toBe(false);
-    expect(rosterOpen(['cup'])).toBe(false);
+describe('playsSeasonUnderWay', () => {
+  it('names a roster with a place in a season under way, whose lineup is the mercato’s', () => {
+    expect(playsSeasonUnderWay([])).toBe(false);
+    expect(playsSeasonUnderWay(['registration', 'closed'])).toBe(false);
+    expect(playsSeasonUnderWay(['closed', 'active'])).toBe(true);
+    expect(playsSeasonUnderWay(['cup'])).toBe(true);
   });
 });
 
