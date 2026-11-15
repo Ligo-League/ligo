@@ -37,7 +37,19 @@ export interface DiscordGateway {
   guildRoles(guildId: string): Promise<{ id: string; name: string }[] | null>;
   /** Where an invitation leads, and when it expires; null for one Discord does not know. */
   resolveInvite(url: string): Promise<{ guildId: string; expiresAt: number | null } | null>;
+  /**
+   * The member of a server whose Discord username is exactly `username`, ignoring case; null
+   * when nobody is. The website names a team's official this way, as `/team` does with Discord's
+   * user picker. Rejects when Discord is unreachable.
+   */
+  findMember(
+    guildId: string,
+    username: string,
+  ): Promise<{ id: string; displayName: string } | null>;
 }
+
+// Enough to find one exact username among the names that start with it.
+const MEMBER_SEARCH_LIMIT = 25;
 
 // Discord's error codes for a user who is not a member, a server the bot is not in, and an
 // invitation that does not exist.
@@ -151,6 +163,16 @@ export function createDiscordGateway(client: Client): DiscordGateway {
         if (isDiscordError(error, UNKNOWN_GUILD)) return null;
         throw error;
       }
+    },
+
+    async findMember(guildId, username) {
+      const wanted = username.trim().toLowerCase();
+      if (wanted === '') return null;
+      const guild = await client.guilds.fetch(guildId);
+      // Discord matches names starting with the query; only the exact username is taken.
+      const found = await guild.members.search({ query: wanted, limit: MEMBER_SEARCH_LIMIT });
+      const member = [...found.values()].find((one) => one.user.username.toLowerCase() === wanted);
+      return member ? { id: member.id, displayName: member.displayName } : null;
     },
 
     async resolveInvite(url) {

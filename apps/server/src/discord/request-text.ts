@@ -1,6 +1,6 @@
 import { t, type Locale } from '../i18n/index.ts';
-import type { PostRef } from '../services/queue-posts.ts';
-import type { PersonRef, RequestView } from '../services/requests.ts';
+import { recordQueuePost, type PostRef } from '../services/queue-posts.ts';
+import type { FileReply, PersonRef, RequestView } from '../services/requests.ts';
 import { buttonId } from './button-id.ts';
 import type { CommandContext, OutgoingMessage } from './commands/types.ts';
 import { discordTime, mention } from './match-text.ts';
@@ -141,6 +141,50 @@ export async function announceDecision(
     }
   }
   return failed;
+}
+
+/**
+ * After a team filed a request, from `/team` or the website: the staff queue gets the request
+ * to decide, or a notice of a change that applied at once, and a member removed at once is told
+ * directly. The request is stored first; nothing here can undo it.
+ */
+export async function announceFiled(
+  context: Pick<CommandContext, 'db' | 'gateway' | 'locale'>,
+  reply: Extract<FileReply, { ok: true }>,
+  now: number,
+): Promise<void> {
+  const { locale } = context;
+  const { request } = reply;
+  if (reply.queueChannelId) {
+    try {
+      const message = reply.applied
+        ? appliedNotice(locale, request)
+        : requestQueueMessage(locale, request);
+      const post = await context.gateway.postMessage(reply.queueChannelId, message);
+      if (!reply.applied) {
+        recordQueuePost(
+          context.db,
+          { entity: 'request', entityId: request.id },
+          { channelId: reply.queueChannelId, messageId: post.messageId },
+          now,
+        );
+      }
+    } catch {
+      // The request is stored: `/team requests` lists it, and the reminder posts it again.
+    }
+  }
+  const removed = request.subject;
+  if (!reply.applied || request.kind !== 'team_member_remove' || removed.discordUserId === null) {
+    return;
+  }
+  if (removed.playerId === request.requester.playerId) return;
+  try {
+    await context.gateway.sendDirectMessage(removed.discordUserId, {
+      content: t(locale, 'request.dm.removed', { team: request.team.name }),
+    });
+  } catch {
+    // Closed direct messages are the member's choice; the change is made.
+  }
 }
 
 /** One line per request in a list: number, team, what, and by when staff answer. */

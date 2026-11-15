@@ -258,6 +258,8 @@ export interface FakeGateway extends DiscordGateway {
   guilds: Map<string, { name: string; roles: { id: string; name: string }[]; managers: string[] }>;
   /** Invitations Discord knows, by address. */
   invites: Map<string, { guildId: string; expiresAt: number | null }>;
+  /** Members found by username, by `guildId:username` (lower case). */
+  usernames: Map<string, { id: string; displayName: string }>;
 }
 
 /** An in-memory Discord: messages are kept in a list, downloads return `downloadData`. */
@@ -272,6 +274,7 @@ export function fakeGateway(): FakeGateway {
     downloadData: PNG_HEADER_FOR_TESTS,
     guilds: new Map(),
     invites: new Map(),
+    usernames: new Map(),
     postMessage(channelId, message) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       const messageId = String(900_000_000_000_000_000n + BigInt(gateway.posted.length + 1));
@@ -324,6 +327,11 @@ export function fakeGateway(): FakeGateway {
     resolveInvite(url) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       return Promise.resolve(gateway.invites.get(url) ?? null);
+    },
+    findMember(guildId, username) {
+      if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
+      const key = `${guildId}:${username.trim().toLowerCase()}`;
+      return Promise.resolve(gateway.usernames.get(key) ?? null);
     },
   };
   return gateway;

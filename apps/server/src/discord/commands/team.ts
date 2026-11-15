@@ -2,7 +2,6 @@ import { ADDABLE_TEAM_ROLES, type AddableTeamRole } from '@ligo/core';
 import type { SeasonTeam } from '@ligo/db';
 import { ApplicationCommandOptionType, InteractionContextType } from 'discord.js';
 import { catalogs, t, type Locale } from '../../i18n/index.ts';
-import { recordQueuePost } from '../../services/queue-posts.ts';
 import {
   listRequests,
   REQUEST_NOTE_MAX_LENGTH,
@@ -15,7 +14,7 @@ import {
 import type { TeamMember, TeamStaffReply } from '../../services/team-staff.ts';
 import { buttonId } from '../button-id.ts';
 import { discordTime } from '../match-text.ts';
-import { appliedNotice, requestLine, requestQueueMessage, requestWhat } from '../request-text.ts';
+import { announceFiled, requestLine, requestWhat } from '../request-text.ts';
 import { described, english, MAX_CHOICE_LENGTH, MAX_CHOICES } from './describe.ts';
 import type { Command, CommandContext, CommandInteraction, MessageButton } from './types.ts';
 
@@ -107,11 +106,8 @@ function inputOf(interaction: CommandInteraction, action: string): RequestInput 
   return null;
 }
 
-/**
- * A request was filed: the team is told privately, then the staff queue gets the request to
- * decide, or a notice of a change that applied at once.
- */
-async function announceFiled(
+/** A request was filed: the team is told privately, then Discord as from the website. */
+async function replyFiled(
   interaction: CommandInteraction,
   reply: Extract<FileReply, { ok: true }>,
   context: CommandContext,
@@ -119,49 +115,17 @@ async function announceFiled(
   const { locale } = context;
   const { request } = reply;
   const what = requestWhat(locale, request);
-  if (reply.applied) {
-    await interaction.reply({
-      content: `${t(locale, 'request.applied', { what })}\n${teamSummary(locale, reply.team, reply.members)}`,
-      ephemeral: true,
-    });
-  } else {
-    await interaction.reply({
-      content: t(locale, 'request.filed', {
-        id: request.id,
-        what,
-        deadline: discordTime(request.deadline ?? request.requestedAt),
-      }),
-      ephemeral: true,
-    });
-  }
-  if (!reply.queueChannelId) return;
-  try {
-    const message = reply.applied
-      ? appliedNotice(locale, request)
-      : requestQueueMessage(locale, request);
-    const post = await context.gateway.postMessage(reply.queueChannelId, message);
-    if (!reply.applied) {
-      recordQueuePost(
-        context.db,
-        { entity: 'request', entityId: request.id },
-        { channelId: reply.queueChannelId, messageId: post.messageId },
-        context.now(),
-      );
-    }
-  } catch {
-    // The request is stored: `/team requests` lists it, and the reminder posts it again.
-  }
-  const removed = request.subject;
-  if (reply.applied && request.kind === 'team_member_remove' && removed.discordUserId !== null) {
-    if (removed.playerId === request.requester.playerId) return;
-    try {
-      await context.gateway.sendDirectMessage(removed.discordUserId, {
-        content: t(locale, 'request.dm.removed', { team: request.team.name }),
-      });
-    } catch {
-      // Closed direct messages are the member's choice; the change is made.
-    }
-  }
+  await interaction.reply({
+    content: reply.applied
+      ? `${t(locale, 'request.applied', { what })}\n${teamSummary(locale, reply.team, reply.members)}`
+      : t(locale, 'request.filed', {
+          id: request.id,
+          what,
+          deadline: discordTime(request.deadline ?? request.requestedAt),
+        }),
+    ephemeral: true,
+  });
+  await announceFiled(context, reply, context.now());
 }
 
 /** The requests waiting: every team's for league staff, with Withdraw buttons for a team's own. */
@@ -275,7 +239,7 @@ export const teamCommand: Command = {
     if (!submitted.reply.ok) {
       await privately(refusal(locale, submitted.reply));
     } else if (submitted.mode === 'request') {
-      await announceFiled(interaction, submitted.reply, context);
+      await replyFiled(interaction, submitted.reply, context);
     } else {
       await privately(teamSummary(locale, submitted.reply.team, submitted.reply.members));
     }
