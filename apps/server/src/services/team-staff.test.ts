@@ -1,5 +1,5 @@
 import { promotionSchema, registrationSchema, requestsSchema, vetoSchema } from '@ligo/core';
-import { schema } from '@ligo/db';
+import { orgSettingsSchema, schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
@@ -61,7 +61,7 @@ describe('two levels: the club, and each roster', () => {
   it('keeps club managers within the group’s limit', () => {
     const db = oneClub();
     db.update(schema.org)
-      .set({ settingsJson: { club_roles: { managers_max: 1 } } })
+      .set({ settingsJson: orgSettingsSchema.parse({ club_roles: { managers_max: 1 } }) })
       .run();
     addTeamMember(db, STAFF, { teamId: ALPHA, member: member(1), role: 'club_manager' }, 5000);
     expect(

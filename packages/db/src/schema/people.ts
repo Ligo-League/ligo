@@ -1,5 +1,15 @@
 import { TITLES } from '@ligo/titles';
-import { check, integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
+import {
+  check,
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  unique,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core';
 import { jsonText, oneOf } from '../columns.ts';
 import { orgSettingsSchema, teamColorsSchema, teamSocialsSchema } from '../json.ts';
 import { CLUB_STAFF_ROLES, LEGAL_STATUSES, LOCALES, TEAM_STAFF_ROLES } from './enums.ts';
@@ -160,4 +170,46 @@ export const teamStaff = sqliteTable(
     primaryKey({ columns: [t.teamId, t.playerId, t.since] }),
     check('team_staff_role_check', oneOf(t.role, TEAM_STAFF_ROLES)),
   ],
+);
+
+// A roster's own players, in no season (M-33, maintainer, 15 November 2026): who joined it from
+// its invitation link, until they leave or are removed. A season's lineup is `roster_entry`;
+// a registration picks its lineup among these players.
+export const rosterPlayer = sqliteTable(
+  'roster_player',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    teamId: integer('team_id')
+      .notNull()
+      .references(() => team.id),
+    playerId: integer('player_id')
+      .notNull()
+      .references(() => player.id),
+    joinedAt: integer('joined_at').notNull(),
+    leftAt: integer('left_at'),
+  },
+  (t) => [
+    // Once at a time on a roster; the rows of earlier stays are kept.
+    uniqueIndex('roster_player_current_unique')
+      .on(t.teamId, t.playerId)
+      .where(sql`${t.leftAt} is null`),
+    index('roster_player_player_idx').on(t.playerId),
+  ],
+);
+
+// A roster's invitation link. As for a registration's, the link's secret is computed from
+// `nonce` with the server's secret, never stored; a new link revokes the one before.
+export const rosterInvite = sqliteTable(
+  'roster_invite',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    teamId: integer('team_id')
+      .notNull()
+      .references(() => team.id),
+    nonce: text('nonce').notNull(),
+    createdAt: integer('created_at').notNull(),
+    expiresAt: integer('expires_at').notNull(),
+    revokedAt: integer('revoked_at'),
+  },
+  (t) => [index('roster_invite_team_idx').on(t.teamId)],
 );

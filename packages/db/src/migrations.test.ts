@@ -37,6 +37,8 @@ const SCHEMA_TABLES = [
   'registration_player',
   'request',
   'roster_entry',
+  'roster_invite',
+  'roster_player',
   'rules_version',
   'sanction',
   'season',

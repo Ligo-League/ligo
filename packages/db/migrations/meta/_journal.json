@@ -127,6 +127,13 @@
       "when": 1794707951211,
       "tag": "0017_proposal_post",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1794710265665,
+      "tag": "0018_roster_players",
+      "breakpoints": true
     }
   ]
 }

@@ -21,6 +21,14 @@ export const orgSettingsSchema = z.strictObject({
   club_roles: z
     .strictObject({ managers_max: z.int().min(0).default(3) })
     .default({ managers_max: 3 }),
+  // A roster's own players before any competition (M-34): how many, and how long its
+  // invitation link lasts.
+  rosters: z
+    .strictObject({
+      players_max: z.int().min(1).max(50).default(10),
+      invite_days: z.int().min(1).max(60).default(7),
+    })
+    .default({ players_max: 10, invite_days: 7 }),
 });
 export type OrgSettings = z.infer<typeof orgSettingsSchema>;
 
