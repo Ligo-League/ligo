@@ -277,6 +277,31 @@ export const matchProposal = sqliteTable(
   ],
 );
 
+// The captain of one side for one match only, when its usual captain cannot play (O-30, O-30b):
+// a starter or substitute of the season's lineup, named by the side's officials or its usual
+// captain until the result is reported. The usual captain keeps acting too. One per side.
+export const matchCaptain = sqliteTable(
+  'match_captain',
+  {
+    matchId: integer('match_id')
+      .notNull()
+      .references(() => match.id),
+    side: text('side', { enum: SIDES }).notNull(),
+    playerId: integer('player_id')
+      .notNull()
+      .references(() => player.id),
+    namedBy: integer('named_by')
+      .notNull()
+      .references(() => player.id),
+    namedAt: integer('named_at').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.matchId, t.side] }),
+    index('match_captain_player_idx').on(t.playerId),
+    check('match_captain_side_check', oneOf(t.side, SIDES)),
+  ],
+);
+
 // One step of a map veto, in order. The steps are the veto's whole state (packages/core veto.ts);
 // the primary key makes a second click on the same step fail instead of playing twice.
 export const vetoStep = sqliteTable(
