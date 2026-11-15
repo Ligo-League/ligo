@@ -176,6 +176,8 @@ section 16.
 - **Until answered:** the roadmap assumes late December or early January at the earliest.
 - **Answer:**
 
+### Team tools
+
 #### O-22 · Recruitment board
 
 - **Question:** may a player who is on a roster post that they are looking for a team? Does the
@@ -447,6 +449,47 @@ section 16.
 - **Until answered:** the request belongs to the competition of the server where it is filed,
   and its staff answer it, with the approval settings of club changes being those of team changes.
 - **Answer:**
+
+## Answered
+
+#### M-32 · Telling the other team about what is done on the website
+
+- **Question:** when a team acts on the website (proposes a time, reports a result, starts a
+  veto), there is no Discord channel to reply in, as there is for a bot command. How does the
+  other team hear about it on Discord, until phase 4 brings match channels?
+- **Answer (maintainer, 15 November 2026):** a post in the league's schedule channel, mentioning
+  the other side's officials and captain, with the same buttons as the bot's own messages.
+
+#### O-30b · The captain for one match
+
+- **Question:** when a team's captain cannot play a match, another player is captain for that
+  match (O-30). Who names that player, and does the usual captain keep acting for that match?
+- **Answer (maintainer, 15 November 2026):** the team's officials or its usual captain name a
+  starter or a substitute of the roster, until the result is reported. The usual captain keeps
+  acting too; the stand-in is added for that match only.
+
+#### O-32 · When lineups lock before the season
+
+- **Question:** how many days before Season 4 starts are LFR lineups locked? From then on, a
+  lineup changes only during a mercato window.
+- **Answer (maintainer, 15 November 2026):** 0 days: lineups may change until the season starts
+  (`lineup_lock_days`, a setting).
+
+#### O-33 · How the minimum age is checked
+
+- **Question:** LFR requires players to be 16 or older (O-31). On which date must they be 16, and
+  is a birth date needed, or is a declaration enough?
+- **Answer (maintainer, 15 November 2026):** each player gives their birth date on `/me`; nobody
+  else sees it (staff see only whether the player is old enough); the age counts on the season's
+  first day.
+
+#### M-31 · Eligibility settings other leagues need
+
+- **Question:** the Benelux league needs players aged 18 or older, at least 3 starters living in
+  the Benelux, PC only, and a club based in the Benelux (O-31). Are these built with LFR's age
+  check, or when the Benelux league comes to Ligo?
+- **Answer (maintainer, 15 November 2026):** only the minimum age is built now, as a setting; the
+  design document lists the others as settings to come.
 
 #### O-29 · One player in two registrations
 

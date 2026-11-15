@@ -95,8 +95,9 @@ M-xx : mainteneur).
 ### 2.3 Effectifs
 
 - 5 joueurs et jusqu'à 2 remplaçants, dont **un capitaine**, qui est forcément un titulaire.
-  Quand le capitaine ne peut pas jouer un match, un autre joueur du match est capitaine pour ce
-  match.
+  Quand le capitaine ne peut pas jouer un match, les responsables ou le capitaine nomment un
+  autre titulaire ou un remplaçant capitaine pour ce match, jusqu'au signalement du résultat. Le
+  capitaine habituel continue d'agir aussi.
 - **Un joueur, une équipe par compétition** : un joueur peut figurer dans plusieurs équipes
   seulement si elles ne jouent pas la même compétition. Ligue 1 et Ligue 2 comptent comme une
   seule compétition, puisque montées et descentes les relient. Une inscription qui ne respecte pas
