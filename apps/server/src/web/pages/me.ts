@@ -16,6 +16,8 @@ export interface MeData {
   flash: MeFlash | null;
   /** The game account form, filled with what is stored or what was just typed. */
   game: Html;
+  /** The competitions whose Discord server the player may manage. */
+  adminOf: { name: string; slug: string }[];
   /** The waiting registrations the player filed or joined. */
   registrations: ReturnType<typeof registrationsOf>;
 }
@@ -84,6 +86,19 @@ export function mePage(locale: Locale, data: MeData): Page {
         ? html`<p>
             ${t(locale, 'web.me.staff', { list: data.staffOf.join(', ') })} ·
             <a href="/staff">${t(locale, 'web.me.staffQueue')}</a>
+          </p>`
+        : ''
+    }
+    ${
+      data.adminOf.length > 0
+        ? html`<p>
+            ${t(locale, 'web.me.discordSettings')}
+            ${data.adminOf.map(
+              (competition, index) =>
+                html`${index > 0 ? ', ' : ''}<a href="/c/${competition.slug}/discord"
+                    >${competition.name}</a
+                  >`,
+            )}
           </p>`
         : ''
     }

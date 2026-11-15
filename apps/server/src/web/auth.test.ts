@@ -250,6 +250,7 @@ describe('without login settings', () => {
       login: null,
       roles: () => Promise.resolve([]),
       gateway: fakeGateway(),
+      botInstallUrl: null,
       now: () => NOW,
     });
     expect(await (await app.request('/')).text()).not.toContain('/auth/login');

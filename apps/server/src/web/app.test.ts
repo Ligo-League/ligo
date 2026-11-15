@@ -26,6 +26,7 @@ function site(overrides: Partial<WebDeps> = {}) {
     login: null,
     roles: () => Promise.resolve([]),
     gateway: fakeGateway(),
+    botInstallUrl: null,
     now: () => 1_800_000_000_000,
     ...overrides,
   });

@@ -831,6 +831,37 @@ export const fr = {
   'web.join.invalid.title': 'Lien d’invitation invalide',
   'web.join.invalid.body':
     'Ce lien n’est plus valable : il a expiré, a été remplacé, ou l’inscription est close. Demande un nouveau lien à la personne qui a inscrit l’équipe.',
+  'web.me.discordSettings': 'Serveur Discord de la ligue :',
+  'web.discord.title': 'Serveur Discord — {competition}',
+  'web.discord.intro':
+    'Chaque ligue a son propre serveur Discord. Celles et ceux qui peuvent le gérer (son propriétaire, ou la permission « Gérer le serveur ») choisissent ici son rôle de staff et son lien d’invitation, ou déplacent la ligue vers un autre serveur qu’ils gèrent.',
+  'web.discord.server': 'Serveur',
+  'web.discord.current': 'actuel',
+  'web.discord.choose': 'Afficher ce serveur',
+  'web.discord.missingServer': 'Ton serveur n’est pas dans la liste ?',
+  'web.discord.addBot': 'Ajoute le bot, puis recharge cette page.',
+  'web.discord.moving':
+    'La ligue quittera son serveur actuel : ses salons (file de validation, résultats) seront à choisir à nouveau avec /league channel.',
+  'web.discord.staffRole': 'Rôle du staff de la ligue',
+  'web.discord.invite': 'Lien d’invitation du serveur',
+  'web.discord.inviteHint':
+    'Un lien qui n’expire jamais (Paramètres du serveur > Invitations, « Expire après : jamais ») : un joueur qui n’est pas sur le serveur le suit avant de rejoindre une équipe.',
+  'web.discord.save': 'Enregistrer',
+  'web.discord.saved': 'Réglages enregistrés.',
+  'web.discord.unavailable.title': 'Discord ne répond pas',
+  'web.discord.unavailable.body':
+    'Le bot ne peut pas joindre Discord pour l’instant : réessaie dans un moment.',
+  'web.discord.error.discord_unavailable':
+    'Discord ne répond pas pour l’instant : rien n’a changé.',
+  'web.discord.error.server_not_managed': 'Tu ne peux pas gérer ce serveur, ou le bot n’y est pas.',
+  'web.discord.error.server_taken': 'Ce serveur est déjà celui d’une autre compétition.',
+  'web.discord.error.invalid_role': 'Choisis un rôle de ce serveur.',
+  'web.discord.error.invite_required': 'Le lien d’invitation est obligatoire.',
+  'web.discord.error.invalid_invite': 'Ce lien n’est pas une invitation Discord valable.',
+  'web.discord.error.invite_other_server': 'Ce lien invite sur un autre serveur.',
+  'web.discord.error.invite_expires': 'Ce lien expire : crée-en un qui n’expire jamais.',
+  'web.discord.error.not_found': 'Compétition introuvable.',
+  'web.discord.error.not_admin': 'Tu ne peux pas gérer le serveur de cette ligue.',
   'web.me.error.invalid_nationality': 'Choisis un pays dans la liste.',
   'web.me.staffQueue': 'Ouvrir la file du staff',
   'web.staff.title': 'File du staff',

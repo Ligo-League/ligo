@@ -48,6 +48,7 @@ export function testSite(options: { db?: Db; users?: Record<string, DiscordUser>
     login: { oauth, secret: 'x'.repeat(40), publicUrl: new URL(TEST_ORIGIN) },
     roles: (_guildId, userId) => Promise.resolve(roles.get(userId) ?? []),
     gateway,
+    botInstallUrl: 'https://discord.com/oauth2/authorize?client_id=1',
     now: () => now,
   });
   // A browser: keeps the cookies the site sets, sends them back.

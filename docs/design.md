@@ -637,6 +637,8 @@ Every setting of a league, Discord included, can be changed on the website; the 
 
 Each phase adds its own settings to the panel as it adds them to the bot. Who may open each level is open (M-20).
 
+**The league's Discord server** (maintainer, 15 November 2026). Every league has its own Discord server, and the bot must be in it. `/c/:competition/discord` sets the server, its staff role and its public invitation link. Rights come from Discord: whoever may manage the league's current server (its owner, or the Manage Server permission, Administrator included) changes them, or moves the league to another server they also manage, where the bot is; the page links to the bot's install address for that. The invitation is checked with Discord: it leads to that server and never expires, since players follow it all season (M-30). The owner provides it; the bot does not create invitations, which would need one more permission. Moving to another server forgets the channels of the old one. A competition created on the website (the admin panel) will be linked there by its creator as its first step; until then `pnpm seed` gives LFR its first server, once.
+
 **Registration** (replaces the rulebook's form posted in the registration channel)
 
 - **Team:** name, city, status (association, association 1901, company, amateur), transparent PNG logo, 2 to 5 colours (each chosen with a colour picker), manager, up to 3 staff, social links, team Discord, whether the team can stream on its own.
@@ -644,7 +646,7 @@ Each phase adds its own settings to the panel as it adds them to the bot. Who ma
 - **One competition, one roster:** a player may be on rosters of several teams only if those rosters play in different competitions; every division of a competition counts as one, since promotion and relegation join them. This is a hard rule, not a setting: joining a registration is refused for it, and staff refuse a team's entry for it (O-29).
 - **Captain:** a starter, chosen by the filer. When the captain cannot play a match, another player of the match's lineup is captain for that match (O-30, with M-19).
 - **Who may play:** `registration.min_age`, counted on the season's first day (16 in LFR; O-31). Each player gives their birth date on `/me`; nobody else sees it, and staff see only whether the player is old enough (O-33). Other leagues need more conditions as settings, to build when they come (M-31): the Benelux league asks for players aged 18 or older, at least 3 starters living in the Benelux, PC only, and a club based in the Benelux.
-- **Discord server:** a player joins only as a member of the league's Discord server; until then, Ligo shows the server's invitation link (M-30).
+- **Discord server:** a player joins only as a member of the league's Discord server; until then, Ligo shows the server's invitation link, set on the league's Discord page (M-30).
 - **Lineup changes:** allowed until `registration.lineup_lock_days` before the season starts, then only during mercato windows. A league without windows changes lineups only between seasons (M-29; 0 days in LFR for now, O-32).
 - **Invitation link:** `/join/<invitation>/<token>`, where the token is an HMAC of the invitation's row and a random nonce under the server's secret. It is never stored: the filer can see it again on `/registrations/:id`, and a new nonce voids the old link. It expires after `invite_days` (7).
 - **Rules acceptance:** the manager accepts the current rulebook version ("lu et approuvé"), stored with `rules_version_id` and a timestamp, replacing the signed page.

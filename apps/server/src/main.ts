@@ -19,6 +19,7 @@ import { createLogger } from './logger.ts';
 import { createWebApp, loadStaticFiles } from './web/app.ts';
 import { createDiscordOAuth } from './web/oauth.ts';
 import { createRoleReader } from './web/roles.ts';
+import { botInstallUrl } from './discord/install.ts';
 
 // Server entry point (`pnpm dev`): the database, the Discord bot and the website.
 const loaded = loadConfig(process.env);
@@ -74,6 +75,7 @@ const web = createWebApp({
   login,
   roles: createRoleReader(gateway),
   gateway,
+  botInstallUrl: botInstallUrl(config.discordClientId),
   now: () => Date.now(),
 });
 const server = serve(

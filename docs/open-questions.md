@@ -345,6 +345,10 @@ section 16.
   staff open their division, competition staff their competition and its divisions, group staff
   everything. Teams likewise: roster officials their roster, club officials the club and every
   roster. Still open: who holds group staff first, so that someone can set the other roles.
+- **Answer (partial, maintainer, 15 November 2026):** a league's Discord settings (its server,
+  staff role and invitation link) are changed by whoever may manage its current server in
+  Discord: the owner, or the Manage Server permission. A competition created on the website is
+  linked to a server by its creator first, so the bot must be installed before.
 
 #### M-22 · Rosters of one club in the same league
 

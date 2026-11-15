@@ -55,6 +55,13 @@ import {
 } from '../services/joining.ts';
 import { joinPageView } from './pages/join.ts';
 import {
+  adminCompetitions,
+  discordSettings,
+  saveDiscordSettings,
+  type SaveDiscordError,
+} from '../services/league-discord.ts';
+import { discordSettingsPage } from './pages/league-discord.ts';
+import {
   removeFromRegistration,
   renewInvite,
   setLineup,
@@ -109,6 +116,8 @@ export interface WebDeps {
   roles: RoleReader;
   /** The bot's Discord: decisions taken here mark its posts in the staff queue. */
   gateway: DiscordGateway;
+  /** The address that adds the bot to a server; null when the application is unknown. */
+  botInstallUrl: string | null;
   now: () => number;
 }
 
@@ -337,6 +346,76 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     const canPublish = (await staffOf(c.get('viewer'), page.competition.id)) !== null;
     return render(c, rulesPageView(locale, page, { now, canPublish }));
   };
+  // The league's Discord server, for whoever may manage it (maintainer, 15 November 2026).
+  // Registered before `/c/:competition/:season`, which would read `discord` as a season.
+  const showDiscord = async (
+    c: Context<Env>,
+    viewer: Viewer,
+    chosen: string | null,
+    state: { values?: { staffRoleId: string; inviteUrl: string }; error?: SaveDiscordError },
+  ) => {
+    const user = { playerId: viewer.playerId, discordUserId: viewer.discordUserId };
+    const data = await discordSettings(
+      db,
+      deps.gateway,
+      user,
+      c.req.param('competition') ?? '',
+      chosen,
+    );
+    if (!data.ok) {
+      if (data.error === 'not_found') return notFound(c);
+      if (data.error === 'not_admin') return forbidden(c);
+      return message(c, 502, 'web.discord.unavailable.title', 'web.discord.unavailable.body');
+    }
+    const same = data.chosen.id === data.current.guildId;
+    const flash: { error: boolean; key: MessageKey } | null = state.error
+      ? { error: true, key: `web.discord.error.${state.error}` }
+      : c.req.query('saved') === '1'
+        ? { error: false, key: 'web.discord.saved' }
+        : null;
+    c.header('Cache-Control', 'no-store');
+    return render(
+      c,
+      discordSettingsPage(locale, data, {
+        csrf: viewer.csrf,
+        installUrl: deps.botInstallUrl,
+        values: state.values ?? {
+          staffRoleId: same ? data.current.staffRoleId : '',
+          inviteUrl: same ? (data.current.inviteUrl ?? '') : '',
+        },
+        flash,
+      }),
+      state.error ? 400 : 200,
+    );
+  };
+  app.get('/c/:competition/discord', async (c) => {
+    if (!login) return notFound(c);
+    const viewer = c.get('viewer');
+    if (!viewer) return c.redirect(`/auth/login?next=${encodeURIComponent(c.req.path)}`, 303);
+    return showDiscord(c, viewer, c.req.query('server') ?? null, {});
+  });
+  app.post('/c/:competition/discord', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const text = (key: string) => (typeof form[key] === 'string' ? form[key] : '');
+    const change = {
+      guildId: text('guild_id'),
+      staffRoleId: text('staff_role'),
+      inviteUrl: text('invite_url'),
+    };
+    const slug = c.req.param('competition');
+    const user = { playerId: viewer.playerId, discordUserId: viewer.discordUserId };
+    const reply = await saveDiscordSettings(db, deps.gateway, user, slug, change, deps.now());
+    if (reply.ok) return c.redirect(`/c/${slug}/discord?saved=1`, 303);
+    if (reply.error === 'not_found') return notFound(c);
+    if (reply.error === 'not_admin') return forbidden(c);
+    return showDiscord(c, viewer, change.guildId, {
+      values: { staffRoleId: change.staffRoleId, inviteUrl: change.inviteUrl },
+      error: reply.error,
+    });
+  });
+
   app.get('/c/:competition/rules', (c) => showRules(c, null));
   app.get('/c/:competition/rules/new', async (c) => {
     if (!login) return notFound(c);
@@ -813,6 +892,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
         flash: state.flash,
         game,
         registrations: registrationsOf(db, viewer.playerId, deps.now()),
+        adminOf: await adminCompetitions(db, deps.gateway, viewer.discordUserId),
       }),
       status,
     );

@@ -467,11 +467,9 @@ section 10).
 
 ## 21. Phase 3d-4a, second part: joining a team
 
-1. Optional: put the staging server's public invitation in `.env` as
-   `DISCORD_INVITE_URL=https://discord.gg/...` (Server Settings > Invites, or right-click a
-   channel > **Invite People**, with **Expire After: Never**).
+1. Set the staging server's invitation link on the website (section 23).
 2. Restart `pnpm dev`: migration 0015 runs at start-up. Then `pnpm seed`: it sets LFR's minimum
-   age (16) and, if set, the invitation link.
+   age (16).
 3. On `/me`, fill in your **Date de naissance**. Nobody else sees it.
 4. Open the invitation link from `/registrations/1` while logged in with a **second Discord
    account** (another browser, or a private window): it is the one that joins. The page lists
@@ -490,6 +488,20 @@ section 10).
 4. **Retirer l'inscription**, with its box ticked, withdraws the registration: its players are
    free to join another team.
 5. From the season's first day (lineups locked), the page only shows the lineup.
+
+## 23. Phase 3d-6: the league's Discord server on the website
+
+1. Log in with the account that owns the staging server (or holds **Manage Server** there).
+   `/me` shows **Serveur Discord de la ligue : LFR**; open it (`/c/lfr/discord`).
+2. In the staging server, make an invitation that never expires: Server Settings > Invites, or
+   right-click a channel > **Invite People** > **Edit invite link** > **Expire After: Never**.
+3. On the page, check the staff role, paste the invitation, and click **Enregistrer**. The bot
+   checks that the link leads to this server and never expires.
+4. To move LFR to another server, add the bot there with the page's **Ajoute le bot** link,
+   reload, choose the server, then its staff role and its invitation. Its channels must then be
+   chosen again with `/league channel`, and `pnpm discord:register` must register the commands
+   there (with `DISCORD_GUILD_ID` set to the new server).
+5. `pnpm seed` no longer changes LFR's server once it has one: the website is where it changes.
 
 ## If something goes wrong
 
