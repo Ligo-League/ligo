@@ -164,6 +164,10 @@ export const evidence = sqliteTable(
     kind: text('kind', { enum: EVIDENCE_KINDS }).notNull(),
     objectKey: text('object_key'),
     url: text('url'),
+    // A score report's public post, with the other team's buttons: its answer edits it, wherever
+    // it was given (phase 3e).
+    postChannelId: text('post_channel_id'),
+    postMessageId: text('post_message_id'),
     uploadedBy: integer('uploaded_by')
       .notNull()
       .references(() => player.id),

@@ -141,6 +141,13 @@
       "when": 1794717284847,
       "tag": "0019_withdraw_old_registrations",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1794720318653,
+      "tag": "0020_evidence_post",
+      "breakpoints": true
     }
   ]
 }
