@@ -556,6 +556,20 @@ channel`), mentioning the other side, with **Accepter** and **Refuser**.
 3. The roster's page lists its players (10 at most, a group setting); **Retirer** removes one,
    and **Nouveau lien** voids the old link. A player leaves from **Équipes où je joue** on `/me`.
 
+## 29. Phase 3d-11: registering a roster
+
+1. Restart `pnpm dev` if it was not running: migration 0019 marks a registration still pending
+   from before (one that carried its club and roster) as withdrawn, with an audit row. Its filer
+   registers the roster again.
+2. With your roster's players on it (section 28), open `http://localhost:3000/c/lfr/register`:
+   pick the roster, accept the rulebook, **Envoyer l'inscription**.
+3. On the registration's page, give each player a role (titulaire, remplaçant, or hors effectif)
+   and pick the captain among the starters. The page says what a player still lacks, whether one
+   is already in another team of the league, and whether one is not on the league's Discord
+   server.
+4. On `/staff`, **Valider** into a division gives the roster its place and the season's lineup;
+   the club and roster already exist.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

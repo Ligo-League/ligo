@@ -120,20 +120,22 @@ M-xx : mainteneur).
   responsables (hors coach) peuvent en retirer. Cette liste reste ouverte toute l'année : elle
   prépare une inscription. Seul l'effectif d'une saison en cours, qui joue ses matchs, ne change
   qu'en fenêtre de mercato.
-- **Inscription sur le site** : le responsable inscrit le club (ou une nouvelle équipe d'un club
-  qu'il dirige) et l'équipe, et accepte le règlement en vigueur, dont la version est enregistrée.
-  Il partage ensuite un lien d'invitation : chaque joueur rejoint avec son propre compte Discord.
-  Personne ne renseigne les données d'un autre : chaque joueur indique lui-même, sur sa page, son
-  nom Ubisoft, son profileID s'il l'a, son rang (qu'il tient à jour), sa nationalité et son accord
-  sur les statistiques. Le staff voit l'inscription dès son dépôt et la valide une fois l'équipe
-  au complet.
+- **Inscription sur le site** : un responsable qui gère les joueurs de l'équipe l'inscrit et
+  accepte le règlement en vigueur, dont la version est enregistrée. Il choisit ensuite, parmi les
+  joueurs de l'équipe, les titulaires, les remplaçants et le capitaine. Personne ne renseigne les
+  données d'un autre : chaque joueur indique lui-même, sur sa page, son nom Ubisoft, son
+  profileID s'il l'a, son rang (qu'il tient à jour), sa nationalité, sa date de naissance et son
+  accord sur les statistiques. Le staff voit l'inscription dès son dépôt et la valide une fois
+  l'équipe au complet, chaque joueur sur le serveur Discord de la ligue et les responsables dans
+  les limites de la ligue.
 - **Statut** : Règlement S3 ; capitaine (article 2.2), accord sur les statistiques, inscription,
   capitaine titulaire, une équipe par compétition, âge, serveur Discord et verrouillage des
   effectifs décidés (mainteneur, 14 et 15 novembre 2026).
-- **Appliquée par** : `/c/lfr/register` et `/me` ; les joueurs rejoignent par le lien
-  d'invitation ; le responsable compose l'effectif sur la page de l'inscription ; le staff valide
-  sur `/staff`, en choisissant la division (12 équipes au plus), ou refuse avec une raison. La
-  validation crée le club, l'équipe, sa place et son effectif. Le mercato viendra ensuite.
+- **Appliquée par** : `/clubs/new`, la page de l'équipe et `/me` ; les joueurs rejoignent
+  l'équipe par son lien d'invitation ; `/c/lfr/register` inscrit l'équipe ; le responsable
+  compose l'effectif sur la page de l'inscription ; le staff valide sur `/staff`, en choisissant
+  la division (12 équipes au plus), ou refuse avec une raison. La validation donne à l'équipe sa
+  place et l'effectif de la saison. Le mercato viendra ensuite.
 
 ### 2.4 Demandes des équipes
 
