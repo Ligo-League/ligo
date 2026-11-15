@@ -38,6 +38,7 @@ import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
 import { ME_ERRORS, mePage, type MeFlash } from './pages/me.ts';
 import { clubRoutes } from './clubs.ts';
+import { matchCaptainRoutes } from './match-captain.ts';
 import { matchReportRoutes } from './match-report.ts';
 import { matchTimeRoutes } from './match-time.ts';
 import { vetoRoutes } from './veto.ts';
@@ -650,6 +651,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   const matchTime = matchTimeRoutes(app, { deps, render, notFound, forbidden, guard });
   const matchReport = matchReportRoutes(app, { deps, render, notFound, forbidden, guard });
   const veto = vetoRoutes(app, { deps, render, notFound, forbidden, guard });
+  const matchCaptain = matchCaptainRoutes(app, { deps, render, notFound, forbidden, guard });
   rosterRoutes(app, { deps, render, notFound, forbidden, guard });
   app.get('/matches/:id', async (c) => {
     const id = c.req.param('id');
@@ -660,6 +662,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       veto.link(c, Number(id)),
       await matchReport.panel(c, Number(id)),
       await matchTime.panel(c, Number(id)),
+      matchCaptain.panel(c, Number(id)),
     ].filter((panel) => panel !== '');
     if (panels.length > 0) c.header('Cache-Control', 'private, no-store');
     return render(c, matchPageView(locale, page, panels));

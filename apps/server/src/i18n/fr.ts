@@ -828,6 +828,25 @@ export const fr = {
     'Horaire proposé. Il n’a pas pu être publié sur Discord : l’autre équipe le voit sur cette page.',
   'web.time.done.accepted': 'Horaire accepté : le match est fixé.',
   'web.time.done.declined': 'Proposition refusée.',
+  'web.captain.title': 'Capitaine du match',
+  'web.captain.intro':
+    'Si le capitaine ne peut pas jouer ce match, nomme un titulaire ou un remplaçant capitaine pour ce match seulement. Le capitaine habituel garde la main.',
+  'web.captain.usual': 'Capitaine habituel : {name}',
+  'web.captain.noUsual': 'Pas de capitaine habituel dans l’effectif de la saison.',
+  'web.captain.standIn': 'Capitaine pour ce match : {name}',
+  'web.captain.pick': 'Capitaine pour ce match',
+  'web.captain.none': 'Personne : le capitaine habituel seul',
+  'web.captain.role.player': 'titulaire',
+  'web.captain.role.sub': 'remplaçant',
+  'web.captain.save': 'Enregistrer',
+  'web.captain.done.named': 'Capitaine pour ce match enregistré.',
+  'web.captain.done.cleared': 'Plus de capitaine pour ce match : le capitaine habituel seul.',
+  'web.captain.error.not_allowed':
+    'Seuls les responsables de l’équipe et son capitaine habituel nomment le capitaine d’un match.',
+  'web.captain.error.match_closed': 'Le résultat de ce match est déjà signalé.',
+  'web.captain.error.not_in_lineup':
+    'Ce joueur n’est ni titulaire ni remplaçant dans l’effectif de la saison.',
+  'web.captain.error.usual_captain': 'C’est déjà le capitaine habituel.',
   'web.veto.title': 'Veto des cartes',
   'web.veto.match': '{a} – {b} (BO{bestOf})',
   'web.veto.coin':
