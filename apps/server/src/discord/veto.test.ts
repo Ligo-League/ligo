@@ -107,7 +107,9 @@ describe('/match veto', () => {
     const { start, context } = session();
     const outsider = await start(member(5));
     expect(outsider.replies[0]).toMatchObject({ ephemeral: true });
-    expect(outsider.replies[0]?.content).toContain("Tu n'es responsable d'aucune équipe");
+    expect(outsider.replies[0]?.content).toContain(
+      "Tu n'es ni capitaine ni responsable d'une équipe",
+    );
 
     const suggest = fakeAutocomplete(
       'match',

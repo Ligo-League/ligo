@@ -25,10 +25,10 @@ import { imageTypeOf, keepEvidence } from './evidence.ts';
 import { matchQuery } from './match-search.ts';
 import {
   actsFor,
+  matchActorOf,
+  matchRolesOf,
   requireStaff,
   sideOf,
-  teamsActedFor,
-  teamsOfPlayer,
   type Actor,
 } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
@@ -37,7 +37,7 @@ import { hasExcludedTeam } from './exclusions.ts';
 import { ensurePlayer } from './players.ts';
 import { queuePostsOf, recordQueuePost, type PostRef } from './queue-posts.ts';
 import { isAcceptableScreenshot, SCREENSHOT_MAX_BYTES, type Screenshot } from './results.ts';
-import { listTeamStaff, type TeamMember } from './team-staff.ts';
+import { teamMentions } from './team-staff.ts';
 
 const { auditLog, dispute: disputeTable, evidence, game, match, player } = schema;
 
@@ -49,7 +49,9 @@ const other = (side: Side): Side => (side === 'a' ? 'b' : 'a');
 
 /** The side whose official reported the match's current result; null with no report. */
 export function reportingSide(db: Pick<Db, 'select'>, found: LeagueMatch): Side | null {
-  return found.reportedBy === null ? null : sideOf(teamsOfPlayer(db, found.reportedBy), found);
+  return found.reportedBy === null
+    ? null
+    : sideOf(matchRolesOf(db, found.reportedBy, found.seasonId), found);
 }
 
 /** The match of that ID if it belongs to the league of the server, else nothing. */
@@ -117,12 +119,13 @@ export function checkReport(
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
   if (!league) return { ok: false, error: 'not_linked' };
   // Checked before the match: someone who manages no team needs to hear that, whatever they picked.
-  const { teams } = teamsActedFor(db, actor);
-  if (teams.length === 0) return { ok: false, error: 'no_team' };
+  if (matchActorOf(db, actor, league.season?.id ?? null).teams.length === 0) {
+    return { ok: false, error: 'no_team' };
+  }
   const found = leagueMatch(db, league, request.matchId);
   if (!found) return { ok: false, error: 'match_not_found' };
 
-  const side = sideOf(teams, found);
+  const side = sideOf(matchActorOf(db, actor, found.seasonId).teams, found);
   if (side === null) return { ok: false, error: 'not_your_match' };
   const { rulesetJson } = league.competition;
   const step = nextMatchStatus({
@@ -162,7 +165,8 @@ export interface ReportDetails {
   /** Marks this report: the nonce of its buttons. */
   evidenceId: number;
   /** The people who may confirm or dispute: the other team's manager and staff. */
-  opponents: TeamMember[];
+  /** The other side's officials and captain, to mention (Discord IDs). */
+  opponentIds: string[];
   screenshot: CommandFile;
 }
 
@@ -261,8 +265,8 @@ export async function reportResult(
       })
       .run();
 
-    const opponents = listTeamStaff(tx, found[other(side)].teamId);
-    return { ok: true, match: found, scoreA, scoreB, side, evidenceId, opponents, screenshot };
+    const opponentIds = teamMentions(tx, found[other(side)].teamId, found.seasonId);
+    return { ok: true, match: found, scoreA, scoreB, side, evidenceId, opponentIds, screenshot };
   });
   if (!stored.ok) return stored;
   const kept = await keepEvidence(
@@ -308,7 +312,7 @@ export function searchReportableMatches(
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
   if (!league) return { ok: false, error: 'not_linked' };
   if (!league.season) return { ok: false, error: 'no_season' };
-  const { teams } = teamsActedFor(db, actor);
+  const { teams } = matchActorOf(db, actor, league.season.id);
   if (teams.length === 0) return { ok: false, error: 'no_team' };
   const matches = listLeagueMatches(db, { seasonId: league.season.id })
     .filter((found) => found.status === 'scheduled' && found.bestOf === 1)
@@ -391,7 +395,7 @@ function checkAnswer(
     return { ok: false, error: 'stale' };
   }
 
-  const acting = teamsActedFor(db, actor);
+  const acting = matchActorOf(db, actor, found.seasonId);
   if (acting.playerId === null || sideOf(acting.teams, found) === null) {
     return { ok: false, error: 'not_your_match' };
   }

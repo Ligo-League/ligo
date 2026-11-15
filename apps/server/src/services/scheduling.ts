@@ -21,10 +21,10 @@ import {
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { hasExcludedTeam } from './exclusions.ts';
 import { matchQuery } from './match-search.ts';
-import { actsFor, requireStaff, sideOf, teamsActedFor, type Actor } from './permissions.ts';
+import { actsFor, matchActorOf, requireStaff, sideOf, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { leagueMatch } from './reports.ts';
-import { listTeamStaff, type TeamMember } from './team-staff.ts';
+import { matchMentions, teamMentions } from './team-staff.ts';
 
 // When a match is played: teams propose and accept a time; without one, the clock starts the
 // extension and sets the automatic time (design doc section 5, "Scheduling").
@@ -58,7 +58,8 @@ export type ProposeReply =
       side: Side;
       at: number;
       /** Who may accept or decline: the other team's manager and staff. */
-      opponents: TeamMember[];
+      /** The other side's officials and captain, to mention (Discord IDs). */
+      opponentIds: string[];
     }
   | { ok: false; error: ProposeError };
 
@@ -73,13 +74,14 @@ export function proposeTime(
   if (!league) return { ok: false, error: 'not_linked' };
 
   return db.transaction((tx): ProposeReply => {
-    const acting = teamsActedFor(tx, actor);
+    const acting = matchActorOf(tx, actor, league.season?.id ?? null);
     if (acting.playerId === null || acting.teams.length === 0) {
       return { ok: false, error: 'no_team' };
     }
     const found = leagueMatch(tx, league, request.matchId);
     if (!found) return { ok: false, error: 'match_not_found' };
-    const side = sideOf(acting.teams, found);
+    // The captain acts for their roster in that match's season only.
+    const side = sideOf(matchActorOf(tx, actor, found.seasonId).teams, found);
     if (side === null) return { ok: false, error: 'not_your_match' };
     if (found.status !== 'scheduled') return { ok: false, error: 'not_schedulable' };
     if (hasExcludedTeam(tx, found)) return { ok: false, error: 'team_excluded' };
@@ -126,7 +128,7 @@ export function proposeTime(
       proposalId,
       side,
       at: request.at,
-      opponents: listTeamStaff(tx, found[other(side)].teamId),
+      opponentIds: teamMentions(tx, found[other(side)].teamId, found.seasonId),
     };
   });
 }
@@ -181,7 +183,7 @@ export function answerProposal(
     }
     const found = leagueMatch(tx, league, proposal.matchId);
     if (!found) return { ok: false, error: 'match_not_found' };
-    const acting = teamsActedFor(tx, actor);
+    const acting = matchActorOf(tx, actor, found.seasonId);
     if (acting.playerId === null || sideOf(acting.teams, found) === null) {
       return { ok: false, error: 'not_your_match' };
     }
@@ -347,9 +349,7 @@ export function runSchedulingTick(db: Db, now: number): SchedulingNotice[] {
         )
         .all()
         .flatMap((row) => row.id ?? []);
-      const mentionUserIds = [found.a.teamId, found.b.teamId]
-        .flatMap((teamId) => listTeamStaff(tx, teamId))
-        .flatMap((member) => member.discordUserId ?? []);
+      const mentionUserIds = matchMentions(tx, found);
       return { match: found, at, extensionEnd: period.extensionEnd, channelIds, mentionUserIds };
     });
     if (notice) notices.push(notice);
@@ -376,7 +376,7 @@ export function proposalDays(
   // Today and the thirteen days after it.
   let until = zonedMidnight(zonedDate(now, zone).date, zone, 14);
   const found = league && matchId !== null ? leagueMatch(db, league, matchId) : undefined;
-  if (league && found && sideOf(teamsActedFor(db, actor).teams, found) !== null) {
+  if (league && found && sideOf(matchActorOf(db, actor, found.seasonId).teams, found) !== null) {
     const period = periodOf(league, found);
     from = Math.max(now, period.start);
     until = period.extensionEnd;

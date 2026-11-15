@@ -84,7 +84,7 @@ async function proposeTimeCommand(
     await privately(t(locale, `schedule.error.${reply.error}`));
     return;
   }
-  const opponentIds = reply.opponents.flatMap((member) => member.discordUserId ?? []);
+  const { opponentIds } = reply;
   const text = {
     proposer: mention(interaction.user.id),
     team: reply.match[reply.side].name,
@@ -305,7 +305,7 @@ export const matchCommand: Command = {
       return;
     }
 
-    const opponentIds = reply.opponents.flatMap((member) => member.discordUserId ?? []);
+    const { opponentIds } = reply;
     const text = {
       reporter,
       team: reply.match[reply.side].name,

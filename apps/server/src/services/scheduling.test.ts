@@ -65,7 +65,7 @@ describe('proposeTime', () => {
       side: 'a',
       at: THURSDAY_21H,
       match: { id: 3 },
-      opponents: [{ discordUserId: CHARLIE.user.id }, { discordUserId: CHARLIE_STAFF.user.id }],
+      opponentIds: [CHARLIE.user.id, CHARLIE_STAFF.user.id],
     });
     expect(proposals()).toMatchObject([
       { matchId: 3, side: 'a', at: THURSDAY_21H, createdAt: NOW, status: 'pending' },

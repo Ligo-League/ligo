@@ -86,8 +86,11 @@ M-xx : mainteneur).
 - **Statut** : Décidée (remplace « un manager et 3 membres de staff » du formulaire S3).
 - **Appliquée par** : chaque commande vérifie, au moment du clic, que la personne est responsable
   de l'équipe concernée, à son niveau ou à celui de son club. Les rôles Discord ne suffisent pas.
-  Les limites sont des réglages. Le capitaine agira dès que les effectifs seront enregistrés
-  (inscriptions sur le site, phase 3).
+  Les limites sont des réglages. Le capitaine de l'effectif validé pour la saison agit dans les
+  matchs de cette saison, et il est mentionné avec les responsables quand un horaire est proposé,
+  un résultat signalé ou un veto lancé. Il ne demande aucun changement de responsables : `/team`
+  reste réservé aux responsables. Le capitaine de remplacement pour un match viendra avec les
+  pages de match.
 
 ### 2.3 Effectifs
 

@@ -486,7 +486,7 @@ Who acts for a team (maintainer, 13 November 2026), in `team_staff`:
 - **Owner:** one, answerable to the league. Hands the team over, removes its officials.
 - **Managers:** up to `ruleset.team_roles.managers_max` (3, the rulebook's three staff).
 - **Coach:** up to `coaches_max` (1, as R6 lobbies have one coach slot per team).
-- **Captain and players** come with rosters in phase 3: one captain, who must be a player. The captain acts in matches like the officials (propose and accept a time, run the veto, report and confirm a result); it is the captain's job by default, and the officials can always do it too (M-19).
+- **Captain and players** come with rosters in phase 3: one captain, who must be a player. The captain acts in matches like the officials (propose and accept a time, run the veto, report and confirm a result); it is the captain's job by default, and the officials can always do it too (M-19). The captaincy counts in the matches of its roster entry's season only, and gives no say over the team's officials (`/team` requests). The captain is mentioned with the officials when a time is proposed, a result reported or a veto started.
 
 Owner, managers and coach all act in matches (propose a time, run the veto, report and confirm a result). One person may be an official of several teams.
 

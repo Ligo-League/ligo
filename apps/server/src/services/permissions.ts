@@ -1,4 +1,10 @@
-import { actsForSide, TEAM_ROLES, type RoleHeld, type TeamRole } from '@ligo/core';
+import {
+  actsForSide,
+  TEAM_ROLES,
+  type MatchRoleHeld,
+  type RoleHeld,
+  type TeamRole,
+} from '@ligo/core';
 import { findGuildLeague, schema, type Db, type GuildLeague, type LeagueMatch } from '@ligo/db';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
@@ -76,14 +82,59 @@ export function highestRole(held: readonly TeamRoleHeld[], teamId: number): Team
   return TEAM_ROLES.find((role) => roles.includes(role)) ?? null;
 }
 
+/**
+ * The roles a player holds in a season's matches: their officials' roles, and the captaincy of
+ * the roster they play for that season (M-19). The captain acts in matches only: requests about
+ * the team's officials read `teamsOfPlayer`, which leaves the captain out.
+ */
+export function matchRolesOf(
+  db: Pick<Db, 'select'>,
+  playerId: number,
+  seasonId: number | null,
+): MatchRoleHeld[] {
+  const officials: MatchRoleHeld[] = teamsOfPlayer(db, playerId);
+  if (seasonId === null) return officials;
+  const { rosterEntry, team } = schema;
+  const captaincies = db
+    .select({ teamId: rosterEntry.teamId, clubId: team.clubId })
+    .from(rosterEntry)
+    .innerJoin(team, eq(rosterEntry.teamId, team.id))
+    .where(
+      and(
+        eq(rosterEntry.playerId, playerId),
+        eq(rosterEntry.seasonId, seasonId),
+        eq(rosterEntry.captain, true),
+        isNull(rosterEntry.validTo),
+      ),
+    )
+    .all()
+    .map((row): MatchRoleHeld => ({ ...row, role: 'captain' }));
+  return [...officials, ...captaincies];
+}
+
+/** `matchRolesOf` for a Discord user: who may act in that season's matches, and for which side. */
+export function matchActorOf(
+  db: Pick<Db, 'select'>,
+  actor: Pick<Actor, 'user'>,
+  seasonId: number | null,
+): { playerId: number | null; teams: MatchRoleHeld[] } {
+  const found = db
+    .select({ id: schema.player.id })
+    .from(schema.player)
+    .where(eq(schema.player.discordUserId, actor.user.id))
+    .get();
+  if (!found) return { playerId: null, teams: [] };
+  return { playerId: found.id, teams: matchRolesOf(db, found.id, seasonId) };
+}
+
 type Side = 'a' | 'b';
 
 /** Whether the roles let someone act for that side of the match (core `actsForSide`). */
-export const actsFor = (held: readonly TeamRoleHeld[], found: LeagueMatch, side: Side) =>
+export const actsFor = (held: readonly MatchRoleHeld[], found: LeagueMatch, side: Side) =>
   actsForSide(held, found, side);
 
 /** The side someone acts for, side A first when they act for both. */
-export const sideOf = (held: readonly TeamRoleHeld[], found: LeagueMatch): Side | null =>
+export const sideOf = (held: readonly MatchRoleHeld[], found: LeagueMatch): Side | null =>
   actsFor(held, found, 'a') ? 'a' : actsFor(held, found, 'b') ? 'b' : null;
 
 /**

@@ -397,3 +397,39 @@ export function filterTeams(
     })
     .slice(0, limit);
 }
+
+/**
+ * The Discord users told about a team's match, such as a time proposed to it: its officials and
+ * its captain for the match's season (M-19), once each.
+ */
+export function teamMentions(db: Pick<Db, 'select'>, teamId: number, seasonId: number): string[] {
+  const { rosterEntry } = schema;
+  const captains = db
+    .select({ discordUserId: player.discordUserId })
+    .from(rosterEntry)
+    .innerJoin(player, eq(rosterEntry.playerId, player.id))
+    .where(
+      and(
+        eq(rosterEntry.teamId, teamId),
+        eq(rosterEntry.seasonId, seasonId),
+        eq(rosterEntry.captain, true),
+        isNull(rosterEntry.validTo),
+      ),
+    )
+    .all();
+  const ids = [...listTeamStaff(db, teamId), ...captains].flatMap((row) => row.discordUserId ?? []);
+  return [...new Set(ids)];
+}
+
+/** `teamMentions` for both sides of a match, such as when its veto starts. */
+export function matchMentions(
+  db: Pick<Db, 'select'>,
+  found: { seasonId: number; a: { teamId: number }; b: { teamId: number } },
+): string[] {
+  return [
+    ...new Set([
+      ...teamMentions(db, found.a.teamId, found.seasonId),
+      ...teamMentions(db, found.b.teamId, found.seasonId),
+    ]),
+  ];
+}

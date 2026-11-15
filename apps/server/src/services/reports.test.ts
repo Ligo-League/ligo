@@ -145,12 +145,9 @@ describe('reportResult', () => {
 
   it('names the other team as the ones who may confirm', async () => {
     const reply = await league().report();
-    expect(reply.ok && reply.opponents.map((entry) => [entry.displayName, entry.role])).toEqual([
-      ['Member 2', 'owner'],
-      ['Member 3', 'manager'],
-    ]);
+    expect(reply.ok && reply.opponentIds).toEqual([CHARLIE_MANAGER.user.id, CHARLIE_STAFF.user.id]);
     const fromB = await league().report(CHARLIE_STAFF);
-    expect(fromB).toMatchObject({ ok: true, side: 'b', opponents: [{ displayName: 'Member 1' }] });
+    expect(fromB).toMatchObject({ ok: true, side: 'b', opponentIds: [BRAVO_MANAGER.user.id] });
   });
 
   it('posts the screenshot in the staff queue and keeps that post as the evidence', async () => {

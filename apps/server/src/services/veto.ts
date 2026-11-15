@@ -21,10 +21,10 @@ import {
 } from '@ligo/db';
 import { and, asc, eq, isNotNull } from 'drizzle-orm';
 import { hasExcludedTeam } from './exclusions.ts';
-import { actsFor, teamsActedFor, type Actor } from './permissions.ts';
+import { actsFor, matchActorOf, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { leagueMatch } from './reports.ts';
-import { listTeamStaff } from './team-staff.ts';
+import { matchMentions } from './team-staff.ts';
 
 // The map veto (design doc section 5): who leads it is frozen when it starts, from live
 // standings or a coin toss between equal ranks (O-12); each step is a `veto_step` row, replayed
@@ -252,10 +252,12 @@ export function startVeto(
   // League staff may start any veto, for teams that wait; only the teams choose.
   const isStaff = actor.memberRoleIds.includes(league.guild.staffRoleId);
   return db.transaction((tx): StartVetoReply => {
-    const acting = teamsActedFor(tx, actor);
-    if (!isStaff && acting.teams.length === 0) return { ok: false, error: 'no_team' };
+    if (!isStaff && matchActorOf(tx, actor, league.season?.id ?? null).teams.length === 0) {
+      return { ok: false, error: 'no_team' };
+    }
     const found = leagueMatch(tx, league, request.matchId);
     if (!found) return { ok: false, error: 'match_not_found' };
+    const acting = matchActorOf(tx, actor, found.seasonId);
     if (!isStaff && !actsFor(acting.teams, found, 'a') && !actsFor(acting.teams, found, 'b')) {
       return { ok: false, error: 'not_your_match' };
     }
@@ -308,9 +310,7 @@ export function startVeto(
     // An empty sequence has its decider due at once.
     const view = vetoState(stored.config, stored.records);
     if (!view.ok) return { ok: false, error: 'pool_size' };
-    const mentionUserIds = [found.a.teamId, found.b.teamId]
-      .flatMap((teamId) => listTeamStaff(tx, teamId))
-      .flatMap((member) => member.discordUserId ?? []);
+    const mentionUserIds = matchMentions(tx, found);
     return {
       ok: true,
       view: viewOf(stored, view.state),
@@ -401,7 +401,7 @@ export function chooseVetoStep(
     if (found.status !== 'scheduled') return { ok: false, error: 'not_schedulable' };
     if (hasExcludedTeam(tx, found)) return { ok: false, error: 'team_excluded' };
 
-    const acting = teamsActedFor(tx, actor);
+    const acting = matchActorOf(tx, actor, found.seasonId);
     if (!actsFor(acting.teams, found, 'a') && !actsFor(acting.teams, found, 'b')) {
       return { ok: false, error: 'not_your_match' };
     }

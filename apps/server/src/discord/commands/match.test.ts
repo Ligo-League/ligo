@@ -147,9 +147,18 @@ describe('/match report', () => {
   });
 
   it.each([
-    [report(OUTSIDER), "Tu n'es responsable d'aucune équipe. Le staff peut te nommer avec /team."],
-    [report(STAFF), "Tu n'es responsable d'aucune équipe. Le staff peut te nommer avec /team."],
-    [report(BRAVO, { match: 4 }), "Tu n'es responsable d'aucune des deux équipes de ce match."],
+    [
+      report(OUTSIDER),
+      "Tu n'es ni capitaine ni responsable d'une équipe. Le staff peut te nommer responsable avec /team.",
+    ],
+    [
+      report(STAFF),
+      "Tu n'es ni capitaine ni responsable d'une équipe. Le staff peut te nommer responsable avec /team.",
+    ],
+    [
+      report(BRAVO, { match: 4 }),
+      "Tu n'es ni capitaine ni responsable d'une des deux équipes de ce match.",
+    ],
     [report(BRAVO, { match: 1 }), 'Ce match a déjà un résultat signalé ou validé.'],
     [
       report(BRAVO, { match: 99 }),
@@ -200,7 +209,7 @@ describe('/match report', () => {
     };
     expect(await suggest(OUTSIDER)).toEqual([
       {
-        name: "Tu n'es responsable d'aucune équipe. Le staff peut te nommer avec /team.",
+        name: "Tu n'es ni capitaine ni responsable d'une équipe. Le staff peut te nommer responsable avec /team.",
         value: 0,
       },
     ]);
@@ -218,7 +227,8 @@ describe('/match report', () => {
     const interaction = await run(report(OUTSIDER, { match: 0 }));
     expect(interaction.replies).toEqual([
       {
-        content: "Tu n'es responsable d'aucune équipe. Le staff peut te nommer avec /team.",
+        content:
+          "Tu n'es ni capitaine ni responsable d'une équipe. Le staff peut te nommer responsable avec /team.",
         ephemeral: true,
       },
     ]);
@@ -454,8 +464,16 @@ describe('report buttons', () => {
       BRAVO,
       "Seule l'équipe adverse peut confirmer ou contester ce résultat.",
     ],
-    ['report-confirm:3:1', OUTSIDER, "Tu n'es responsable d'aucune des deux équipes de ce match."],
-    ['report-confirm:3:1', STAFF, "Tu n'es responsable d'aucune des deux équipes de ce match."],
+    [
+      'report-confirm:3:1',
+      OUTSIDER,
+      "Tu n'es ni capitaine ni responsable d'une des deux équipes de ce match.",
+    ],
+    [
+      'report-confirm:3:1',
+      STAFF,
+      "Tu n'es ni capitaine ni responsable d'une des deux équipes de ce match.",
+    ],
     ['report-validate:3:1', CHARLIE, 'Cette commande est réservée au staff de la ligue.'],
     ['report-reject:3:1', BRAVO, 'Cette commande est réservée au staff de la ligue.'],
     ['report-validate:3:1', OUTSIDER, 'Cette commande est réservée au staff de la ligue.'],

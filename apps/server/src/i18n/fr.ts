@@ -118,7 +118,8 @@ export const fr = {
   'sanction.error.points_required':
     'Indique un nombre de points non nul, entre -100 et 100 (négatif pour en retirer).',
   'sanction.error.points_not_allowed': 'Un avertissement ne porte pas de points.',
-  'match.error.no_team': "Tu n'es responsable d'aucune équipe. Le staff peut te nommer avec /team.",
+  'match.error.no_team':
+    "Tu n'es ni capitaine ni responsable d'une équipe. Le staff peut te nommer responsable avec /team.",
   'match.error.no_season': "Cette ligue n'a pas de saison en cours.",
   'report.hint.nothingLeft': 'Aucun match à signaler : ceux de tes équipes ont déjà un résultat.',
   'report.hint.noMatch': 'Aucun de tes matchs à signaler ne correspond à « {query} ».',
@@ -137,7 +138,8 @@ export const fr = {
   'match.error.details_too_long':
     'Les détails dépassent {max} caractères. Clique de nouveau sur Contester.',
   'match.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
-  'match.error.not_your_match': "Tu n'es responsable d'aucune des deux équipes de ce match.",
+  'match.error.not_your_match':
+    "Tu n'es ni capitaine ni responsable d'une des deux équipes de ce match.",
   'match.error.not_reportable': 'Ce match a déjà un résultat signalé ou validé.',
   'match.error.screenshot_required': "La capture d'écran du tableau des scores est obligatoire.",
   'match.error.screenshot_unreadable': "Je n'ai pas pu récupérer la capture. Réessaie.",
@@ -301,10 +303,11 @@ export const fr = {
   'schedule.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'schedule.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
   'schedule.error.no_team':
-    "Tu n'es responsable d'aucune équipe. Le staff peut te nommer avec /team.",
+    "Tu n'es ni capitaine ni responsable d'une équipe. Le staff peut te nommer responsable avec /team.",
   'schedule.error.match_not_found':
     'Match introuvable dans cette ligue. Choisis-le dans la liste proposée.',
-  'schedule.error.not_your_match': "Tu n'es responsable d'aucune des deux équipes de ce match.",
+  'schedule.error.not_your_match':
+    "Tu n'es ni capitaine ni responsable d'une des deux équipes de ce match.",
   'schedule.error.not_schedulable':
     "Ce match a déjà un résultat : il n'y a plus d'horaire à fixer.",
   'schedule.error.in_past': 'Cet horaire est déjà passé.',
@@ -347,14 +350,14 @@ export const fr = {
   'help.page.standings':
     "**`/standings`** — le classement de la saison en cours\nOuvert à tous.\n\n• `division` (facultatif) : « Ligue 1 » ou « L1 », par exemple. Sans elle, toutes les divisions.\n• `format` (facultatif) : Image (par défaut) ou Texte.\n\nSeuls comptent les résultats validés et les forfaits, avec les points des sanctions. Un résultat signalé mais pas encore validé n'apparaît pas.\nColonnes : MJ matchs joués, W victoires, L défaites, RW manches gagnées, RL manches perdues, Diff (RW − RL), PTS points. Les égalités sont départagées selon le règlement de la ligue.",
   'help.page.match':
-    "**`/match report`** — signaler le résultat d'un match\nPour les responsables des deux équipes (propriétaire, managers, coach). Le staff de la ligue les désigne avec `/team`.\n\n• `match` : choisis-le dans la liste. Elle ne montre que les matchs de tes équipes encore à jouer ; tape un nom, un tag ou « s3 » (semaine 3) pour la filtrer.\n• `score_a` et `score_b` : les manches gagnées par la première et la seconde équipe citées, dans l'ordre du match, pas forcément la tienne d'abord.\n• `screenshot` : la capture du tableau des scores, obligatoire. PNG, JPEG ou WebP, {maxMb} Mo au plus.\n\nUn score impossible selon le règlement (7–6, par exemple) est refusé. Un forfait ne se signale pas : préviens le staff de la ligue.",
+    "**`/match report`** — signaler le résultat d'un match\nPour le capitaine et les responsables des deux équipes (propriétaire, managers, coach). Le staff de la ligue désigne les responsables avec `/team` ; le capitaine est choisi à l'inscription de l'équipe.\n\n• `match` : choisis-le dans la liste. Elle ne montre que les matchs de tes équipes encore à jouer ; tape un nom, un tag ou « s3 » (semaine 3) pour la filtrer.\n• `score_a` et `score_b` : les manches gagnées par la première et la seconde équipe citées, dans l'ordre du match, pas forcément la tienne d'abord.\n• `screenshot` : la capture du tableau des scores, obligatoire. PNG, JPEG ou WebP, {maxMb} Mo au plus.\n\nUn score impossible selon le règlement (7–6, par exemple) est refusé. Un forfait ne se signale pas : préviens le staff de la ligue.",
   'help.match.steps.staff':
     "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** ou **Contester**. Pour contester, elle choisit un motif et peut ajouter des détails, lus par le staff seulement.\n3. Le staff clique **Valider** ou **Refuser**. Refusé, le match peut être signalé de nouveau.\n4. Validé, le résultat est annoncé dans le salon des résultats et compte au classement.",
   'help.match.steps.opponent':
     "**Ensuite**\n1. Le bot publie le résultat avec la capture et mentionne l'équipe adverse.\n2. L'équipe adverse clique **Confirmer** : le résultat est validé, annoncé dans le salon des résultats et compte au classement. **Contester** demande un motif et des détails, lus par le staff de la ligue, qui tranche.",
   'help.choice.match-time': '/match propose-time',
   'help.page.matchTime':
-    "**`/match propose-time`** — proposer un horaire\nPour les responsables des deux équipes (propriétaire, managers, coach).\n\n• `match` : choisis-le dans la liste, parmi les matchs de tes équipes encore à jouer.\n• `date` : le jour, choisi dans la liste (les jours restants de la semaine du match et de sa prolongation) ou tapé comme AAAA-MM-JJ.\n• `time` : l'heure, comme 21:00, à l'heure de la ligue. Le message l'affiche ensuite à l'heure de chacun.\n\nL'équipe adverse clique **Accepter** ou **Refuser**. Une nouvelle proposition de ton équipe remplace la précédente. Un horaire hors de la semaine et de sa prolongation se demande au staff de la ligue.\n\n**Sans accord**",
+    "**`/match propose-time`** — proposer un horaire\nPour le capitaine et les responsables des deux équipes (propriétaire, managers, coach).\n\n• `match` : choisis-le dans la liste, parmi les matchs de tes équipes encore à jouer.\n• `date` : le jour, choisi dans la liste (les jours restants de la semaine du match et de sa prolongation) ou tapé comme AAAA-MM-JJ.\n• `time` : l'heure, comme 21:00, à l'heure de la ligue. Le message l'affiche ensuite à l'heure de chacun.\n\nL'équipe adverse clique **Accepter** ou **Refuser**. Une nouvelle proposition de ton équipe remplace la précédente. Un horaire hors de la semaine et de sa prolongation se demande au staff de la ligue.\n\n**Sans accord**",
   'help.matchTime.autoSlot':
     'Sans horaire convenu à la fin de la semaine, le bot accorde {weeks} semaine(s) de prolongation et fixe aussitôt le match au dernier {day} de la prolongation, à {time}. Un horaire convenu ensuite le remplace.',
   'help.matchTime.noAutoSlot':
@@ -370,7 +373,7 @@ export const fr = {
   'help.page.staffSanction':
     "**`/staff sanction`** — les sanctions d'équipe, réservé au staff de la ligue\n• `add` — `team`, `kind`, `reason`, et `points` pour une sanction en points.\n  – Avertissement : gardé dans la liste, sans effet sur le classement.\n  – Points au classement : `points:-1` retire un point, `points:2` en ajoute deux. Le classement suit aussitôt.\n• `list` — les sanctions d'une équipe cette saison, avec date et motif. Les avertissements automatiques des forfaits y figurent.\n\nUne sanction ne se supprime pas : pour en annuler une, ajoute la sanction inverse (`points:1` après `points:-1`) avec son motif.",
   'help.page.team':
-    "**`/team`** — qui agit pour chaque équipe\nLes responsables d'une équipe (son propriétaire, ses managers et son coach) signalent ses résultats, proposent ses horaires et font son veto.\n\n**Pour les équipes** — le propriétaire et les managers demandent, le staff de la ligue approuve ou refuse avec une raison :\n• `/team member add` — ajouter un manager ou un coach (`member`, `role`).\n• `/team owner` — confier l'équipe à quelqu'un ; réservé au propriétaire, qui quitte alors l'équipe.\n• `/team member remove` — retirer un responsable ; réservé au propriétaire, sans validation.\n• `/team leave` — quitter l'équipe, sans validation ; le propriétaire la confie d'abord.\n• `/team requests` — tes demandes en attente, pour les retirer.\n• `/team list` — les responsables de ton équipe.\n`team` ne sert que si tu es responsable de plusieurs équipes ; `note` est un mot pour le staff. La réponse arrive en message privé.\n\n**Pour le staff de la ligue** — les mêmes commandes changent l'équipe directement, sans demande (`team` obligatoire). Les demandes arrivent dans la file de validation avec **Approuver** et **Refuser** ; `/team requests` les liste toutes.",
+    "**`/team`** — qui agit pour chaque équipe\nLe capitaine d'une équipe et ses responsables (son propriétaire, ses managers et son coach) signalent ses résultats, proposent ses horaires et font son veto. Les changements ci-dessous restent réservés aux responsables.\n\n**Pour les équipes** — le propriétaire et les managers demandent, le staff de la ligue approuve ou refuse avec une raison :\n• `/team member add` — ajouter un manager ou un coach (`member`, `role`).\n• `/team owner` — confier l'équipe à quelqu'un ; réservé au propriétaire, qui quitte alors l'équipe.\n• `/team member remove` — retirer un responsable ; réservé au propriétaire, sans validation.\n• `/team leave` — quitter l'équipe, sans validation ; le propriétaire la confie d'abord.\n• `/team requests` — tes demandes en attente, pour les retirer.\n• `/team list` — les responsables de ton équipe.\n`team` ne sert que si tu es responsable de plusieurs équipes ; `note` est un mot pour le staff. La réponse arrive en message privé.\n\n**Pour le staff de la ligue** — les mêmes commandes changent l'équipe directement, sans demande (`team` obligatoire). Les demandes arrivent dans la file de validation avec **Approuver** et **Refuser** ; `/team requests` les liste toutes.",
   'help.team.max':
     "Le club d'une équipe a un propriétaire et {clubManagers} managers au plus, qui agissent pour toutes ses équipes ; chaque équipe a {managers} managers et {coaches} coach au plus. Le staff répond aux demandes en {hours} h.",
   'help.choice.register': '/register',
@@ -419,7 +422,7 @@ export const fr = {
   'veto.started': 'Veto lancé : le message est juste en dessous.',
   'veto.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'veto.error.no_team':
-    "Tu n'es responsable d'aucune équipe de cette ligue. Demande au staff de la ligue de t'ajouter avec /team.",
+    "Tu n'es ni capitaine ni responsable d'une équipe de cette ligue. Le staff de la ligue peut te nommer responsable avec /team.",
   'veto.error.match_not_found': "Ce match n'existe pas dans cette ligue. Choisis-le dans la liste.",
   'veto.error.not_your_match': "Ce match n'est pas celui de ton équipe.",
   'veto.error.not_schedulable':
@@ -441,7 +444,7 @@ export const fr = {
   'veto.hint.noMatch': 'Aucun de tes matchs à jouer ne correspond à « {query} ».',
   'help.choice.match-veto': '/match veto',
   'help.page.matchVeto':
-    "**`/match veto`** — le veto des cartes\nPour les responsables des deux équipes ; le staff de la ligue peut aussi le lancer.\n\n• `match` : choisis-le dans la liste.\n\nAu lancement, le bot fige qui choisit quoi d'après le classement du moment : l'équipe la moins bien classée choisit le côté de départ et commence le veto, l'autre choisit le côté en prolongation, la mieux classée héberge. À égalité de classement, le bot tire à pile ou face, comme sur le circuit BLAST : en BO1, le gagnant prend le choix du côté ou décide qui bannit en premier, et l'autre équipe prend l'autre décision ; l'hôte est alors à convenir entre les équipes.\n\nLe bot poste un message avec un bouton par carte : chaque équipe clique à son tour pour bannir ou choisir, puis Attaque ou Défense. Le message se met à jour à chaque choix. Chaque tour a un temps limité ; sans choix à temps, le bot choisit au hasard et le note.\nÀ la fin, la carte est enregistrée avec le match : `/match report` la reprend.",
+    "**`/match veto`** — le veto des cartes\nPour le capitaine et les responsables des deux équipes ; le staff de la ligue peut aussi le lancer.\n\n• `match` : choisis-le dans la liste.\n\nAu lancement, le bot fige qui choisit quoi d'après le classement du moment : l'équipe la moins bien classée choisit le côté de départ et commence le veto, l'autre choisit le côté en prolongation, la mieux classée héberge. À égalité de classement, le bot tire à pile ou face, comme sur le circuit BLAST : en BO1, le gagnant prend le choix du côté ou décide qui bannit en premier, et l'autre équipe prend l'autre décision ; l'hôte est alors à convenir entre les équipes.\n\nLe bot poste un message avec un bouton par carte : chaque équipe clique à son tour pour bannir ou choisir, puis Attaque ou Défense. Le message se met à jour à chaque choix. Chaque tour a un temps limité ; sans choix à temps, le bot choisit au hasard et le note.\nÀ la fin, la carte est enregistrée avec le match : `/match report` la reprend.",
   'card.eyebrow': '{competition} · {season}',
   'card.title': '{division} · Semaine {week}',
   'card.label.time': 'Match programmé',
