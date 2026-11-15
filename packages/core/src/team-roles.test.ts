@@ -4,6 +4,7 @@ import {
   actsForSide,
   checkTeamChange,
   roleLevel,
+  type MatchRoleHeld,
   type RoleCounts,
   type RoleHeld,
 } from './team-roles.ts';
@@ -89,6 +90,10 @@ describe('roleLevel', () => {
     expect(roleLevel('manager')).toBe('roster');
     expect(roleLevel('coach')).toBe('roster');
   });
+
+  it('puts the captain on their roster (M-19)', () => {
+    expect(roleLevel('captain')).toBe('roster');
+  });
 });
 
 describe('actsForSide', () => {
@@ -123,6 +128,25 @@ describe('actsForSide', () => {
     ];
     expect(actsForSide(both, GREED_V_NOVA, 'a')).toBe(true);
     expect(actsForSide(both, GREED_V_NOVA, 'b')).toBe(true);
+  });
+
+  // The captain acts in matches for their roster like its officials (M-19, maintainer,
+  // 14 November 2026).
+  it('lets a captain act for their roster only', () => {
+    const captain: MatchRoleHeld[] = [{ teamId: 1, clubId: 10, role: 'captain' }];
+    expect(actsForSide(captain, GREED_V_NOVA, 'a')).toBe(true);
+    expect(actsForSide(captain, GREED_V_NOVA, 'b')).toBe(false);
+    expect(actsForSide(captain, GREED_V_GREED, 'a')).toBe(true);
+    expect(actsForSide(captain, GREED_V_GREED, 'b')).toBe(false);
+  });
+
+  it('lets the club’s owner, captain of one roster, act for that roster when two of the club meet', () => {
+    const ownerCaptain: MatchRoleHeld[] = [
+      ...greedOwner,
+      { teamId: 2, clubId: 10, role: 'captain' },
+    ];
+    expect(actsForSide(ownerCaptain, GREED_V_GREED, 'a')).toBe(false);
+    expect(actsForSide(ownerCaptain, GREED_V_GREED, 'b')).toBe(true);
   });
 });
 

@@ -12,10 +12,16 @@ export type TeamRole = (typeof TEAM_ROLES)[number];
 export const ADDABLE_TEAM_ROLES = ['club_manager', 'manager', 'coach'] as const;
 export type AddableTeamRole = (typeof ADDABLE_TEAM_ROLES)[number];
 
+/**
+ * The roles that act in matches: the officials', and the roster's captain, a starter who acts
+ * like its officials in matches only (M-19) and has no say over the team's officials.
+ */
+export type MatchRole = TeamRole | 'captain';
+
 export type RoleLevel = 'club' | 'roster';
 
 /** Where a role is held: at the club, for all its rosters, or on one roster. */
-export function roleLevel(role: TeamRole): RoleLevel {
+export function roleLevel(role: MatchRole): RoleLevel {
   return role === 'owner' || role === 'club_manager' ? 'club' : 'roster';
 }
 
@@ -69,6 +75,13 @@ export interface RoleHeld {
   role: TeamRole;
 }
 
+/** A role someone holds for a roster in matches: an official's, or the captain's. */
+export interface MatchRoleHeld {
+  teamId: number;
+  clubId: number;
+  role: MatchRole;
+}
+
 type Side = 'a' | 'b';
 
 /**
@@ -76,7 +89,7 @@ type Side = 'a' | 'b';
  * side of a match between two rosters of their club: each roster's own officials do (M-22).
  */
 export function actsForSide(
-  held: readonly RoleHeld[],
+  held: readonly MatchRoleHeld[],
   match: { a: { teamId: number }; b: { teamId: number } },
   side: Side,
 ): boolean {
