@@ -546,6 +546,16 @@ channel`), mentioning the other side, with **Accepter** and **Refuser**.
    by Discord username (on LFR's server) apply at once, without the staff queue.
 3. **ajouter une équipe au club** adds another roster with its own colours and logo.
 
+## 28. Phase 3d-10: a roster's own players
+
+1. Restart `pnpm dev` if it was not running: migration 0018 (a roster's players and its
+   invitation links) runs at start-up.
+2. On a roster in no competition (`/teams/<slug>/manage`), **Créer un lien d'invitation** and
+   share it. Each player opens it logged in with their own Discord account, completes their R6
+   account and nationality on `/me` if asked, then **Rejoindre**.
+3. The roster's page lists its players (10 at most, a group setting); **Retirer** removes one,
+   and **Nouveau lien** voids the old link. A player leaves from **Équipes où je joue** on `/me`.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
