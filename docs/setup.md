@@ -571,6 +571,20 @@ channel`), mentioning the other side, with **Accepter** and **Refuser**.
 4. On `/staff`, **Valider** into a division gives the roster its place and the season's lineup;
    the club and roster already exist.
 
+## 30. Phase 3e-3: reporting a result on the website
+
+1. Restart `pnpm dev` if it was not running: migration 0020 (where a report's public post is)
+   runs at start-up.
+2. Log in as an official or the captain of a team with a match still to play, and open the
+   match's page (`/matches/<id>`). Under **Résultat du match**, type each team's rounds, pick the
+   scoreboard screenshot (PNG, JPEG or WebP, 20 MB at most) and **Déclarer le résultat**.
+3. The staff queue gets the report with its buttons. The schedule channel gets it for the other
+   team, with **Confirmer** and **Contester**, mentioning its officials and captain.
+4. Log in as the other team (or use the buttons in Discord): the match page shows the score and
+   the screenshot, **Confirmer**, and a form to contest with a reason. Answering on the website
+   removes the buttons from the Discord post.
+5. A report made with `/match report` can be answered on the website too.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

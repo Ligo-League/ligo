@@ -241,7 +241,9 @@ M-xx : mainteneur).
 - Après le match, un responsable d'une des deux équipes signale le score avec une
   **capture d'écran du tableau des scores**. Sans capture, pas de signalement.
 - **Statut** : Règlement S3.
-- **Appliquée par** : `/match report` exige la capture et refuse un score impossible.
+- **Appliquée par** : `/match report`, ou la page du match sur le site (capture envoyée depuis
+  l'ordinateur), exige la capture et refuse un score impossible. Les deux équipes et le staff
+  voient la capture sur le site ; personne d'autre.
 
 ### 5.2 Confirmation ou contestation
 
@@ -250,7 +252,8 @@ M-xx : mainteneur).
   technique ou re-host, ou « autre » avec une explication obligatoire (1 000 caractères au plus).
 - La raison n'est montrée qu'au staff : elle peut mettre en cause un joueur.
 - **Statut** : Décidée (la liste des raisons est un réglage).
-- **Appliquée par** : boutons sous le signalement ; seule l'équipe adverse peut répondre.
+- **Appliquée par** : boutons sous le signalement, ou la page du match sur le site ; seule
+  l'équipe adverse peut répondre.
 
 ### 5.3 Validation
 
