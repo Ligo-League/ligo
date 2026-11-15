@@ -4,9 +4,17 @@ import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import type { Actor } from './permissions.ts';
 import { setTeamOwner } from './team-staff.ts';
-import { chooseVetoStep, readVeto, runVetoTick, startVeto, type VetoView } from './veto.ts';
+import { ensurePlayer } from './players.ts';
+import {
+  chooseVetoStep,
+  readVeto,
+  runVetoTick,
+  startVeto,
+  vetoAudience,
+  type VetoView,
+} from './veto.ts';
 import { leagueMatch } from './reports.ts';
-import { findGuildLeague } from '@ligo/db';
+import { findGuildLeague, listLeagueMatches } from '@ligo/db';
 
 const { auditLog, game, match, season, vetoStep } = schema;
 
@@ -233,3 +241,30 @@ describe('runVetoTick', () => {
 function fail(): never {
   throw new Error('Missing test data');
 }
+
+describe('vetoAudience', () => {
+  it('lets the sides, their season lineup’s players and league staff follow, nobody else', () => {
+    const { db } = league();
+    const [found] = listLeagueMatches(db, { matchId: 3 });
+    if (!found) throw new Error('no match 3');
+    const PLAYER = member(6);
+    const id = ensurePlayer(
+      db,
+      { orgId: 1, discordUserId: PLAYER.user.id, displayName: PLAYER.user.displayName },
+      100,
+    ).id;
+    db.insert(schema.rosterEntry)
+      .values({ seasonId: found.seasonId, teamId: 3, playerId: id, role: 'sub', validFrom: 100 })
+      .run();
+    expect(vetoAudience(db, BRAVO, found)).toEqual({ sides: ['a'], staff: false, follows: true });
+    expect(vetoAudience(db, STAFF, found)).toEqual({ sides: [], staff: true, follows: true });
+    expect(vetoAudience(db, PLAYER, found)).toEqual({ sides: [], staff: false, follows: true });
+    expect(vetoAudience(db, OUTSIDER, found)).toEqual({ sides: [], staff: false, follows: false });
+    // A player who left the lineup no longer follows it.
+    db.update(schema.rosterEntry)
+      .set({ validTo: 200 })
+      .where(eq(schema.rosterEntry.playerId, id))
+      .run();
+    expect(vetoAudience(db, PLAYER, found).follows).toBe(false);
+  });
+});

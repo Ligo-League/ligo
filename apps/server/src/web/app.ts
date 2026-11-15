@@ -40,6 +40,7 @@ import { ME_ERRORS, mePage, type MeFlash } from './pages/me.ts';
 import { clubRoutes } from './clubs.ts';
 import { matchReportRoutes } from './match-report.ts';
 import { matchTimeRoutes } from './match-time.ts';
+import { vetoRoutes } from './veto.ts';
 import { rosterRoutes } from './rosters.ts';
 import { rostersOf } from '../services/rosters.ts';
 import { teamManageRoutes } from './team-manage.ts';
@@ -648,6 +649,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   });
   const matchTime = matchTimeRoutes(app, { deps, render, notFound, forbidden, guard });
   const matchReport = matchReportRoutes(app, { deps, render, notFound, forbidden, guard });
+  const veto = vetoRoutes(app, { deps, render, notFound, forbidden, guard });
   rosterRoutes(app, { deps, render, notFound, forbidden, guard });
   app.get('/matches/:id', async (c) => {
     const id = c.req.param('id');
@@ -655,6 +657,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     if (!page?.ok) return notFound(c);
     // What the viewer's own team may do: the page is then theirs, kept by no shared cache.
     const panels = [
+      veto.link(c, Number(id)),
       await matchReport.panel(c, Number(id)),
       await matchTime.panel(c, Number(id)),
     ].filter((panel) => panel !== '');

@@ -19,7 +19,7 @@ import {
   type LeagueMatch,
   type MatchVeto,
 } from '@ligo/db';
-import { and, asc, eq, isNotNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { hasExcludedTeam } from './exclusions.ts';
 import { actsFor, matchActorOf, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
@@ -30,7 +30,7 @@ import { matchMentions } from './team-staff.ts';
 // standings or a coin toss between equal ranks (O-12); each step is a `veto_step` row, replayed
 // through packages/core on every click.
 
-const { auditLog, game, match, vetoStep } = schema;
+const { auditLog, game, match, rosterEntry, vetoStep } = schema;
 
 type Side = 'a' | 'b';
 const other = (side: Side): Side => (side === 'a' ? 'b' : 'a');
@@ -478,4 +478,38 @@ export function runVetoTick(db: Db, now: number, random: (below: number) => numb
 export function readVeto(db: Pick<Db, 'select'>, found: LeagueMatch): VetoView | null {
   const stored = loadVeto(db, found);
   return stored && viewOf(stored, stateOf(stored));
+}
+
+/**
+ * Who follows a match's veto on the website (design doc section 7: match players and staff): the
+ * sides the actor acts for (officials and captain), whether they are staff of the match's league,
+ * and whether they follow it at all, a player of either team's season lineup included.
+ */
+export function vetoAudience(
+  db: Pick<Db, 'select'>,
+  actor: Actor,
+  found: LeagueMatch,
+): { sides: Side[]; staff: boolean; follows: boolean } {
+  const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
+  const staff =
+    league !== undefined &&
+    league.competition.id === found.competitionId &&
+    actor.memberRoleIds.includes(league.guild.staffRoleId);
+  const acting = matchActorOf(db, actor, found.seasonId);
+  const sides = (['a', 'b'] as const).filter((side) => actsFor(acting.teams, found, side));
+  const plays =
+    acting.playerId !== null &&
+    db
+      .select({ playerId: rosterEntry.playerId })
+      .from(rosterEntry)
+      .where(
+        and(
+          eq(rosterEntry.seasonId, found.seasonId),
+          eq(rosterEntry.playerId, acting.playerId),
+          inArray(rosterEntry.teamId, [found.a.teamId, found.b.teamId]),
+          isNull(rosterEntry.validTo),
+        ),
+      )
+      .get() !== undefined;
+  return { sides, staff, follows: staff || sides.length > 0 || plays };
 }
