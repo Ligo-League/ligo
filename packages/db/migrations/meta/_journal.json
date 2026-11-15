@@ -134,6 +134,13 @@
       "when": 1794710265665,
       "tag": "0018_roster_players",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1794717284847,
+      "tag": "0019_withdraw_old_registrations",
+      "breakpoints": true
     }
   ]
 }
