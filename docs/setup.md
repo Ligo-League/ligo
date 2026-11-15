@@ -526,6 +526,18 @@ No restart or seed needed beyond `pnpm dev` picking up the change.
 3. **Retirer la demande** withdraws it; the staff queue post says so.
 4. With the staff role, the same page changes the team at once.
 
+## 26. Phase 3e-2: match times on the website
+
+1. Restart `pnpm dev` if it was not running: migration 0017 (where a proposal was posted) runs at
+   start-up.
+2. As an official or the captain of one side, open a match still to play,
+   `http://localhost:3000/matches/<id>`: **Horaire du match** lists the proposals waiting and
+   offers the days left in the match's week and extension.
+3. **Proposer cet horaire** posts the proposal in the league's schedule channel (`/league
+channel`), mentioning the other side, with **Accepter** and **Refuser**.
+4. The other side answers on the page or with the buttons; either way the Discord post shows the
+   answer, and an agreed time is announced.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
