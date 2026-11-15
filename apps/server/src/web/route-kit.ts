@@ -7,7 +7,11 @@ import type { Page } from './layout.ts';
 /** What the app lends its routes. */
 export interface RouteKit {
   deps: WebDeps;
-  render: (c: Context<Env>, page: Page) => Response | Promise<Response>;
+  render: (
+    c: Context<Env>,
+    page: Page,
+    status?: 200 | 400 | 403 | 404 | 413 | 500 | 502,
+  ) => Response | Promise<Response>;
   notFound: (c: Context<Env>) => Response | Promise<Response>;
   forbidden: (c: Context<Env>) => Response | Promise<Response>;
   guard: (c: Context<Env>) => Promise<{ viewer: Viewer; form: Record<string, unknown> } | Response>;

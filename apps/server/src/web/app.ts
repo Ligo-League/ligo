@@ -39,6 +39,7 @@ import { errorPage, messagePage, notFoundPage } from './pages/errors.ts';
 import { homePage } from './pages/home.ts';
 import { matchPageView } from './pages/match.ts';
 import { ME_ERRORS, mePage, type MeFlash } from './pages/me.ts';
+import { clubRoutes } from './clubs.ts';
 import { matchTimeRoutes } from './match-time.ts';
 import { teamManageRoutes } from './team-manage.ts';
 import {
@@ -806,6 +807,8 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     const page = teamPage(db, c.req.param('slug'));
     return page.ok ? render(c, teamPageView(locale, page)) : notFound(c);
   });
+  // Before `/clubs/:slug`, which would read "new" as a club's name.
+  clubRoutes(app, { deps, render, notFound, forbidden, guard });
   app.get('/clubs/:slug', (c) => {
     const page = clubPage(db, c.req.param('slug'));
     return page.ok ? render(c, clubPageView(locale, page)) : notFound(c);

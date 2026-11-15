@@ -121,6 +121,7 @@ export function mePage(locale: Locale, data: MeData): Page {
           </ul>`
         : html`<p class="muted">${t(locale, 'web.me.noTeams')}</p>`
     }
+    <p><a href="/clubs/new">${t(locale, 'web.me.createClub')}</a></p>
     ${registrationsView(locale, data)}
     <h2>${t(locale, 'web.me.game')}</h2>
     ${data.game}

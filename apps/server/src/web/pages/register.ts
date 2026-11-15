@@ -80,6 +80,92 @@ function colorPickers(locale: Locale, colors: readonly string[]): Html[] {
   });
 }
 
+type FieldErrorView = (...fields: string[]) => Html | string;
+
+/** A new club's fields: name, city, legal status, links, Discord invitation. */
+export function clubFields(
+  locale: Locale,
+  values: Pick<
+    RegisterValues,
+    'clubName' | 'clubCity' | 'clubLegalStatus' | 'clubSocials' | 'clubDiscord'
+  >,
+  fieldError: FieldErrorView,
+): Html {
+  return html`<label for="club_name">${t(locale, 'web.register.club.name')}</label>
+    <input id="club_name" name="club_name" type="text" maxlength="40" value="${values.clubName}" />
+    <p class="muted">${t(locale, 'web.register.club.nameHint')}</p>
+    ${fieldError('club.name')}
+    <label for="club_city">${t(locale, 'web.register.club.city')}</label>
+    <input id="club_city" name="club_city" type="text" maxlength="60" value="${values.clubCity}" />
+    ${fieldError('club.city')}
+    <label for="club_legal_status">${t(locale, 'web.register.club.legalStatus')}</label>
+    <select id="club_legal_status" name="club_legal_status">
+      <option value="">${t(locale, 'web.register.club.legalStatus.none')}</option>
+      ${LEGAL_STATUSES.map(
+        (status) =>
+          html`<option value="${status}" ${values.clubLegalStatus === status ? 'selected' : ''}>
+            ${t(locale, `web.register.legal.${status}`)}
+          </option>`,
+      )}
+    </select>
+    ${fieldError('club.legalStatus')}
+    <label for="club_socials">${t(locale, 'web.register.club.socials')}</label>
+    <textarea id="club_socials" name="club_socials" rows="3">${values.clubSocials}</textarea>
+    <p class="muted">${t(locale, 'web.register.club.socialsHint')}</p>
+    ${fieldError('club.socials')}
+    <label for="club_discord">${t(locale, 'web.register.club.discord')}</label>
+    <input id="club_discord" name="club_discord" type="url" value="${values.clubDiscord}" />
+    ${fieldError('club.discordUrl')}`;
+}
+
+/** A roster's fields: name, tag, colours (2 to 5), logo, whether it may stream. */
+export function rosterFields(
+  locale: Locale,
+  values: Pick<RegisterValues, 'rosterName' | 'tag' | 'colors' | 'canStream'>,
+  fieldError: FieldErrorView,
+): Html {
+  const checked = (on: boolean) => (on ? 'checked' : '');
+  return html`<label for="roster_name">${t(locale, 'web.register.roster.name')}</label>
+    <input
+      id="roster_name"
+      name="roster_name"
+      type="text"
+      maxlength="40"
+      required
+      value="${values.rosterName}"
+    />
+    ${fieldError('rosterName')}
+    <label for="roster_tag">${t(locale, 'web.register.roster.tag')}</label>
+    <input
+      id="roster_tag"
+      name="roster_tag"
+      type="text"
+      maxlength="12"
+      required
+      value="${values.tag}"
+    />
+    <p class="muted">${t(locale, 'web.register.roster.tagHint')}</p>
+    ${fieldError('tag')}
+    <label>${t(locale, 'web.register.roster.colors')}</label>
+    <p class="colors" data-colors>
+      ${colorPickers(locale, values.colors)}
+      <button type="button" data-add-color hidden>
+        ${t(locale, 'web.register.roster.addColor')}
+      </button>
+    </p>
+    <script src="/static/colors.js" defer></script>
+    <p class="muted">${t(locale, 'web.register.roster.colorsHint')}</p>
+    ${fieldError('colors')}
+    <label for="logo">${t(locale, 'web.register.roster.logo')}</label>
+    <input id="logo" name="logo" type="file" accept="image/png" />
+    <p class="muted">${t(locale, 'web.register.roster.logoHint')}</p>
+    ${fieldError('logo')}
+    <label>
+      <input type="checkbox" name="can_stream" value="1" ${checked(values.canStream)} />
+      ${t(locale, 'web.register.roster.canStream')}
+    </label>`;
+}
+
 const errorKey = (error: RegistrationFieldError): MessageKey => `web.register.error.${error}`;
 
 /** `/c/:competition/register`: the club, the roster, the rulebook accepted. */
@@ -159,84 +245,10 @@ export function registerFormView(
               </label>`
           : html`<input type="hidden" name="club_kind" value="new" />`
       }
-      <label for="club_name">${t(locale, 'web.register.club.name')}</label>
-      <input
-        id="club_name"
-        name="club_name"
-        type="text"
-        maxlength="40"
-        value="${values.clubName}"
-      />
-      <p class="muted">${t(locale, 'web.register.club.nameHint')}</p>
-      ${fieldError('club.name')}
-      <label for="club_city">${t(locale, 'web.register.club.city')}</label>
-      <input
-        id="club_city"
-        name="club_city"
-        type="text"
-        maxlength="60"
-        value="${values.clubCity}"
-      />
-      ${fieldError('club.city')}
-      <label for="club_legal_status">${t(locale, 'web.register.club.legalStatus')}</label>
-      <select id="club_legal_status" name="club_legal_status">
-        <option value="">${t(locale, 'web.register.club.legalStatus.none')}</option>
-        ${LEGAL_STATUSES.map(
-          (status) =>
-            html`<option value="${status}" ${values.clubLegalStatus === status ? 'selected' : ''}>
-              ${t(locale, `web.register.legal.${status}`)}
-            </option>`,
-        )}
-      </select>
-      ${fieldError('club.legalStatus')}
-      <label for="club_socials">${t(locale, 'web.register.club.socials')}</label>
-      <textarea id="club_socials" name="club_socials" rows="3">${values.clubSocials}</textarea>
-      <p class="muted">${t(locale, 'web.register.club.socialsHint')}</p>
-      ${fieldError('club.socials')}
-      <label for="club_discord">${t(locale, 'web.register.club.discord')}</label>
-      <input id="club_discord" name="club_discord" type="url" value="${values.clubDiscord}" />
-      ${fieldError('club.discordUrl')}
+      ${clubFields(locale, values, fieldError)}
 
       <h2>${t(locale, 'web.register.roster')}</h2>
-      <label for="roster_name">${t(locale, 'web.register.roster.name')}</label>
-      <input
-        id="roster_name"
-        name="roster_name"
-        type="text"
-        maxlength="40"
-        required
-        value="${values.rosterName}"
-      />
-      ${fieldError('rosterName')}
-      <label for="roster_tag">${t(locale, 'web.register.roster.tag')}</label>
-      <input
-        id="roster_tag"
-        name="roster_tag"
-        type="text"
-        maxlength="12"
-        required
-        value="${values.tag}"
-      />
-      <p class="muted">${t(locale, 'web.register.roster.tagHint')}</p>
-      ${fieldError('tag')}
-      <label>${t(locale, 'web.register.roster.colors')}</label>
-      <p class="colors" data-colors>
-        ${colorPickers(locale, values.colors)}
-        <button type="button" data-add-color hidden>
-          ${t(locale, 'web.register.roster.addColor')}
-        </button>
-      </p>
-      <script src="/static/colors.js" defer></script>
-      <p class="muted">${t(locale, 'web.register.roster.colorsHint')}</p>
-      ${fieldError('colors')}
-      <label for="logo">${t(locale, 'web.register.roster.logo')}</label>
-      <input id="logo" name="logo" type="file" accept="image/png" />
-      <p class="muted">${t(locale, 'web.register.roster.logoHint')}</p>
-      ${fieldError('logo')}
-      <label>
-        <input type="checkbox" name="can_stream" value="1" ${checked(values.canStream)} />
-        ${t(locale, 'web.register.roster.canStream')}
-      </label>
+      ${rosterFields(locale, values, fieldError)}
 
       <h2>${t(locale, 'web.register.rules')}</h2>
       <p>

@@ -10,7 +10,7 @@ import { csrfField, formatWhen, pageOf, type Html, type Page } from '../layout.t
 // rule (`mayFile`); the services check it again on every POST.
 
 /** What a form sends back with, read back from the address: anything else shows nothing. */
-export const MANAGE_DONE = ['filed', 'applied', 'changed', 'withdrawn'] as const;
+export const MANAGE_DONE = ['created', 'filed', 'applied', 'changed', 'withdrawn'] as const;
 export type ManageDone = (typeof MANAGE_DONE)[number];
 
 const ERROR_KEYS = {
@@ -43,7 +43,7 @@ export const isManageError = (value: string | undefined): value is ManageError =
 export type ManageFlash = { done: ManageDone } | { error: ManageError; max: number | null } | null;
 
 export interface TeamManageData {
-  team: { name: string; tag: string; slug: string };
+  team: { name: string; tag: string; slug: string; clubSlug: string };
   members: TeamMember[];
   /** The roster's players, starters first. */
   players: { name: string; role: string; captain: boolean }[];
@@ -51,6 +51,8 @@ export interface TeamManageData {
   requests: RequestView[];
   /** League staff change the team directly, without a request. */
   staff: boolean;
+  /** A roster in no competition yet (M-33): its officials change it at once. */
+  free: boolean;
   /** The viewer's highest role for the roster, when they hold one. */
   myRole: TeamRole | null;
   csrf: string;
@@ -90,7 +92,9 @@ const usernameField = (locale: Locale) =>
 
 /** The roster's officials, and the forms to change them, as `/team` offers them. */
 export function teamManagePage(locale: Locale, data: TeamManageData): Page {
-  const { team, staff, myRole } = data;
+  const { team, staff, myRole, free } = data;
+  // Changes apply at once for league staff and for a roster in no competition.
+  const direct = staff || free;
   const base = `/teams/${team.slug}/manage`;
   const may = (kind: 'team_owner' | 'team_member_remove') =>
     staff || (myRole !== null && mayFile(kind, myRole, false).ok);
@@ -98,7 +102,11 @@ export function teamManagePage(locale: Locale, data: TeamManageData): Page {
     (role) => staff || (myRole !== null && mayFile('team_member_add', myRole, false, role).ok),
   );
   const canRemove = may('team_member_remove');
-  const intro = staff ? 'web.manage.introStaff' : 'web.manage.intro';
+  const intro = free
+    ? 'web.manage.introFree'
+    : staff
+      ? 'web.manage.introStaff'
+      : 'web.manage.intro';
 
   const members = html`<ul class="card">
     ${data.members.map(
@@ -122,7 +130,7 @@ export function teamManagePage(locale: Locale, data: TeamManageData): Page {
 
   // Lineups change only during a mercato window (M-29); none opens before the mercato (3f), so
   // the forms are shown closed, with the reason, rather than missing.
-  const closed = t(locale, 'web.manage.mercatoClosed');
+  const closed = t(locale, free ? 'web.manage.playersSoon' : 'web.manage.mercatoClosed');
   const players = html`<h2>${t(locale, 'web.team.players')}</h2>
     ${
       data.players.length === 0
@@ -175,9 +183,9 @@ export function teamManagePage(locale: Locale, data: TeamManageData): Page {
                 )}
               </select></label
             >
-            ${staff ? '' : noteField(locale)}
+            ${direct ? '' : noteField(locale)}
             <button type="submit">
-              ${t(locale, staff ? 'web.manage.apply' : 'web.manage.ask')}
+              ${t(locale, direct ? 'web.manage.apply' : 'web.manage.ask')}
             </button>
           </form>`
       : '';
@@ -187,8 +195,10 @@ export function teamManagePage(locale: Locale, data: TeamManageData): Page {
         <form class="card" method="post" action="${base}/owner">
           ${csrfField(data.csrf)}
           <p class="muted">${t(locale, 'web.manage.ownerHelp')}</p>
-          ${usernameField(locale)} ${staff ? '' : noteField(locale)}
-          <button type="submit">${t(locale, staff ? 'web.manage.apply' : 'web.manage.ask')}</button>
+          ${usernameField(locale)} ${direct ? '' : noteField(locale)}
+          <button type="submit">
+            ${t(locale, direct ? 'web.manage.apply' : 'web.manage.ask')}
+          </button>
         </form>`
     : '';
 
@@ -240,10 +250,20 @@ export function teamManagePage(locale: Locale, data: TeamManageData): Page {
   return pageOf(
     t(locale, 'web.manage.title', { team: team.name }),
     html`<h1>${t(locale, 'web.manage.title', { team: team.name })}</h1>
-      <p><a href="/teams/${team.slug}">${team.name} [${team.tag}]</a></p>
+      <p>
+        <a href="/teams/${team.slug}">${team.name} [${team.tag}]</a>
+        ${
+          myRole === 'owner' || myRole === 'club_manager'
+            ? html` ·
+                <a href="/clubs/${team.clubSlug}/rosters/new"
+                  >${t(locale, 'web.manage.addRoster')}</a
+                >`
+            : ''
+        }
+      </p>
       ${flashView(locale, data.flash)}
       <p>${t(locale, intro)}</p>
       <h2>${t(locale, 'web.manage.officials')}</h2>
-      ${members} ${addForm} ${ownerForm} ${players} ${requests} ${leaveForm}`,
+      ${members} ${addForm} ${ownerForm} ${players} ${free ? '' : requests} ${leaveForm}`,
   );
 }

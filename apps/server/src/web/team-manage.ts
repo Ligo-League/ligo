@@ -12,7 +12,7 @@ import {
   type RequestInput,
 } from '../services/requests.ts';
 import { rosterPlayers } from '../services/site.ts';
-import { rosterToManage, type ManagedRoster } from '../services/team-manage.ts';
+import { changeFreeRoster, rosterToManage, type ManagedRoster } from '../services/team-manage.ts';
 import { listTeamStaff, type MemberRef } from '../services/team-staff.ts';
 import type { Env, Viewer } from './app.ts';
 import type { RouteKit } from './route-kit.ts';
@@ -28,7 +28,8 @@ import { webActor } from './roles.ts';
 
 // `/teams/:slug/manage`: the website's `/team` for one roster. Each POST is checked by `guard`
 // (origin, login, CSRF), then by the same services as the bot, with the roles Discord gives the
-// viewer now. What Discord shows of a request is done by the same helper as the command's.
+// viewer now. What Discord shows of a request is done by the same helper as the command's. A
+// roster in no competition yet (M-33) has no league staff: its officials change it at once.
 
 const SNOWFLAKE = /^[1-9]\d{16,19}$/;
 const ROW_ID = /^[1-9]\d{0,9}$/;
@@ -50,14 +51,36 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
   const { db, locale } = deps;
   const discord = { db, gateway: deps.gateway, locale };
 
-  /** The roster and the viewer as the services know them, or the refusal to send. */
+  /**
+   * The roster and the viewer as the services know them, or the refusal to send. A roster in no
+   * competition has no league actor: its own officials only, read from the database.
+   */
   const acting = async (c: Context<Env>, viewer: Viewer) => {
     const roster = rosterToManage(db, c.req.param('slug') ?? '');
     if (!roster) return notFound(c);
+    if (roster.competitionId === null) {
+      const myRole = highestRole(teamsOfPlayer(db, viewer.playerId), roster.teamId);
+      return myRole ? { roster, actor: null } : forbidden(c);
+    }
     const actor = await webActor(db, deps.roles, viewer, roster.competitionId, deps.now());
     if (!actor) return forbidden(c);
     return { roster, actor };
   };
+
+  /** The Discord servers a username is looked for in: the league's, or every league's of the group. */
+  const serversFor = (roster: ManagedRoster, guildId: string | null): string[] =>
+    guildId !== null
+      ? [guildId]
+      : db
+          .select({ guildId: schema.leagueGuild.guildId })
+          .from(schema.leagueGuild)
+          .innerJoin(
+            schema.competition,
+            eq(schema.leagueGuild.competitionId, schema.competition.id),
+          )
+          .where(eq(schema.competition.orgId, roster.orgId))
+          .all()
+          .map((row) => row.guildId);
   const back = (c: Context<Env>, roster: ManagedRoster, query: string) =>
     c.redirect(`/teams/${roster.slug}/manage?${query}`, 303);
   const done = (c: Context<Env>, roster: ManagedRoster, what: ManageDone) =>
@@ -79,6 +102,24 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
     const found = await acting(c, viewer);
     if (found instanceof Response) return found;
     const { roster, actor } = found;
+    const myRole = highestRole(teamsOfPlayer(db, viewer.playerId), roster.teamId);
+    if (actor === null) {
+      return render(
+        c,
+        teamManagePage(locale, {
+          team: roster,
+          members: listTeamStaff(db, roster.teamId),
+          players: rosterPlayers(db, roster.teamId),
+          requests: [],
+          staff: false,
+          free: true,
+          myRole,
+          csrf: viewer.csrf,
+          timeZone: 'Europe/Paris',
+          flash: flashOf(c),
+        }),
+      );
+    }
     // The roster's officials and league staff only; anyone else is refused like a stranger.
     const officials = teamOfficials(db, actor, roster.teamId);
     if (!officials.ok) return forbidden(c);
@@ -86,7 +127,7 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
     const competition = db
       .select({ scheduling: schema.competition.schedulingJson })
       .from(schema.competition)
-      .where(eq(schema.competition.id, roster.competitionId))
+      .where(eq(schema.competition.id, roster.competitionId ?? 0))
       .get();
     return render(
       c,
@@ -96,7 +137,8 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
         players: rosterPlayers(db, roster.teamId),
         requests: requests.ok ? requests.requests : [],
         staff: requireStaff(db, actor).ok,
-        myRole: highestRole(teamsOfPlayer(db, viewer.playerId), roster.teamId),
+        free: false,
+        myRole,
         csrf: viewer.csrf,
         timeZone: competition?.scheduling.time_zone ?? 'Europe/Paris',
         flash: flashOf(c),
@@ -109,6 +151,20 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
     const found = await acting(c, viewer);
     if (found instanceof Response) return found;
     const { roster, actor } = found;
+    if (actor === null) {
+      const change =
+        input.kind === 'team_member_add'
+          ? { kind: input.kind, member: input.member, role: input.role }
+          : input.kind === 'team_owner'
+            ? { kind: input.kind, member: input.member }
+            : { kind: input.kind, member: input.member };
+      const reply = changeFreeRoster(db, viewer, roster, change, deps.now());
+      if (!reply.ok) return failed(c, roster, reply);
+      if (input.kind === 'team_member_remove' && input.member === null) {
+        return c.redirect('/me?left=1', 303);
+      }
+      return done(c, roster, 'changed');
+    }
     const submitted = submitTeamChange(db, actor, { ...input, teamId: roster.teamId }, deps.now());
     if (!submitted.reply.ok) return failed(c, roster, submitted.reply);
     if (submitted.mode === 'direct') return done(c, roster, 'changed');
@@ -120,7 +176,7 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
     return done(c, roster, reply.applied ? 'applied' : 'filed');
   };
 
-  /** The member of the league's Discord server a username names, or the refusal to show. */
+  /** The member of the league's Discord server (or the group's) a username names, or the refusal. */
   const memberNamed = async (
     c: Context<Env>,
     viewer: Viewer,
@@ -129,13 +185,17 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
     const found = await acting(c, viewer);
     if (found instanceof Response) return found;
     const { roster, actor } = found;
-    // Asked before Discord is: nobody else can use the form to learn who is on the server.
-    if (actor.guildId === null || !teamOfficials(db, actor, roster.teamId).ok) return forbidden(c);
+    // Asked before Discord is: nobody else can use the form to learn who is on the server. A
+    // roster in no competition was checked by `acting` (its own officials only).
+    if (actor !== null && (actor.guildId === null || !teamOfficials(db, actor, roster.teamId).ok)) {
+      return forbidden(c);
+    }
     try {
-      const member = await deps.gateway.findMember(actor.guildId, username);
-      return member
-        ? { member: { id: member.id, displayName: member.displayName } }
-        : failed(c, roster, { error: 'member_not_found' });
+      for (const guildId of serversFor(roster, actor?.guildId ?? null)) {
+        const member = await deps.gateway.findMember(guildId, username);
+        if (member) return { member: { id: member.id, displayName: member.displayName } };
+      }
+      return failed(c, roster, { error: 'member_not_found' });
     } catch {
       return failed(c, roster, { error: 'discord_unreachable' });
     }
@@ -212,7 +272,7 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
     if (found instanceof Response) return found;
     const { roster, actor } = found;
     const id = c.req.param('id');
-    if (!ROW_ID.test(id)) return notFound(c);
+    if (!ROW_ID.test(id) || actor === null) return notFound(c);
     const reply = withdrawRequest(db, actor, { requestId: Number(id) }, deps.now());
     if (!reply.ok) return failed(c, roster, reply);
     await announceDecision(discord, reply);
