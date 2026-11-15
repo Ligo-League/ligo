@@ -10,6 +10,7 @@ export * from './settings.ts';
 export * from './sides.ts';
 export * from './slug.ts';
 export * from './standings.ts';
+export * from './rosters.ts';
 export * from './team-roles.ts';
 export * from './time.ts';
 export * from './veto.ts';
