@@ -762,6 +762,10 @@ export const en: Record<MessageKey, string> = {
   'web.me.registration': '{roster} — {competition}, {season}',
   'web.me.registration.filed': 'filed by you',
   'web.me.registration.leave': 'Leave the team',
+  'web.me.registration.pending': 'waiting for staff',
+  'web.me.registration.approved': 'approved',
+  'web.me.registration.rejected': 'refused by staff',
+  'web.me.registration.withdrawn': 'withdrawn',
   'web.me.error.lineup_locked': 'Lineups are locked: you can no longer leave this team.',
   'web.join.title': 'Join {roster}',
   'web.join.intro':

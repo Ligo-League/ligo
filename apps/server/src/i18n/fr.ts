@@ -800,6 +800,10 @@ export const fr = {
   'web.me.registration': '{roster} — {competition}, {season}',
   'web.me.registration.filed': 'inscrite par toi',
   'web.me.registration.leave': 'Quitter l’équipe',
+  'web.me.registration.pending': 'en attente du staff',
+  'web.me.registration.approved': 'validée',
+  'web.me.registration.rejected': 'refusée par le staff',
+  'web.me.registration.withdrawn': 'retirée',
   'web.me.error.lineup_locked':
     'Les effectifs sont verrouillés : tu ne peux plus quitter cette équipe.',
   'web.join.title': 'Rejoindre {roster}',

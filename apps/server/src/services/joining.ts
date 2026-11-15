@@ -5,9 +5,10 @@ import {
   type JoinError,
   type PlayerGap,
   type RegistrationRole,
+  type RequestStatus,
 } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
-import { and, asc, eq, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, ne } from 'drizzle-orm';
 import { inviteTokenMatches } from './invites.ts';
 import { lineupOf, lockedNow, profilesOf, waitingRegistration } from './registrations.ts';
 
@@ -315,9 +316,13 @@ export interface RegistrationEntry {
   roster: string;
   competition: string;
   season: string;
+  status: RequestStatus;
 }
 
-/** The waiting registrations a player filed, and those they joined, for their own page. */
+/**
+ * The registrations a player filed, and those they joined, for their own page, newest first.
+ * Answered ones stay listed: the filer finds staff's answer, and its reason, from there.
+ */
 export function registrationsOf(
   db: Reader,
   playerId: number,
@@ -326,7 +331,7 @@ export function registrationsOf(
   filed: RegistrationEntry[];
   joined: (RegistrationEntry & { role: RegistrationRole; canLeave: boolean })[];
 } {
-  const waiting = and(eq(request.kind, 'registration'), eq(request.status, 'pending'));
+  const registrations = eq(request.kind, 'registration');
   const entryOf = (row: {
     request: typeof request.$inferSelect;
     competition: typeof competition.$inferSelect;
@@ -340,6 +345,7 @@ export function registrationsOf(
             roster: payload.roster.name,
             competition: row.competition.name,
             season: row.season.name,
+            status: row.request.status,
           },
         ]
       : [];
@@ -349,8 +355,8 @@ export function registrationsOf(
     .from(request)
     .innerJoin(competition, eq(request.competitionId, competition.id))
     .innerJoin(season, eq(request.seasonId, season.id))
-    .where(and(waiting, eq(request.requestedBy, playerId)))
-    .orderBy(asc(request.id))
+    .where(and(registrations, eq(request.requestedBy, playerId)))
+    .orderBy(desc(request.id))
     .all()
     .flatMap(entryOf);
   const joined = db
@@ -359,14 +365,14 @@ export function registrationsOf(
     .innerJoin(request, eq(registrationPlayer.requestId, request.id))
     .innerJoin(competition, eq(request.competitionId, competition.id))
     .innerJoin(season, eq(request.seasonId, season.id))
-    .where(and(waiting, eq(registrationPlayer.playerId, playerId)))
-    .orderBy(asc(request.id))
+    .where(and(registrations, eq(registrationPlayer.playerId, playerId)))
+    .orderBy(desc(request.id))
     .all()
     .flatMap((row) =>
       entryOf(row).map((entry) => ({
         ...entry,
         role: row.entry.role,
-        canLeave: !lockedNow(row, now),
+        canLeave: row.request.status === 'pending' && !lockedNow(row, now),
       })),
     );
   return { filed, joined };

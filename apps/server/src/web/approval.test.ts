@@ -116,6 +116,10 @@ describe('registrations on /staff', () => {
     const filer = await (await request('/registrations/1')).text();
     expect(filer).toContain('Inscription refusée par le staff :');
     expect(filer).toContain('<blockquote>Logo non conforme</blockquote>');
+    // The filer reaches that page from their own, without knowing its address.
+    const me = await (await request('/me')).text();
+    expect(me).toMatch(/<a href="\/registrations\/1">Kairos — LFR, Saison 4<\/a>/);
+    expect(me).toContain('refusée par le staff');
   });
 
   it('says why an incomplete registration cannot be approved yet', async () => {

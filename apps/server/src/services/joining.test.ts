@@ -321,18 +321,30 @@ describe('leaveRegistration', () => {
 });
 
 describe('registrationsOf', () => {
-  it('lists the registrations a player filed and those they joined, while they wait', async () => {
+  it('lists the registrations a player filed and those they joined, with their status', async () => {
     const { db, memberOf, link, player, filer } = await setup();
     const ana = player(1);
     await joinRegistration(db, memberOf, ana, link, NOW);
-    const entry = { requestId: 1, roster: 'Kairos', competition: 'LFR', season: 'Saison 4' };
+    const entry = {
+      requestId: 1,
+      roster: 'Kairos',
+      competition: 'LFR',
+      season: 'Saison 4',
+      status: 'pending',
+    };
     expect(registrationsOf(db, filer, NOW)).toEqual({ filed: [entry], joined: [] });
     expect(registrationsOf(db, ana.id, NOW)).toEqual({
       filed: [],
       joined: [{ ...entry, role: 'player', canLeave: true }],
     });
     expect(registrationsOf(db, ana.id, SEASON_START).joined[0]?.canLeave).toBe(false);
-    db.update(schema.request).set({ status: 'withdrawn', decidedAt: NOW }).run();
-    expect(registrationsOf(db, ana.id, NOW)).toEqual({ filed: [], joined: [] });
+    // An answered registration stays listed, so the filer finds staff's answer from their page.
+    db.update(schema.request).set({ status: 'rejected', reason: 'Logo', decidedAt: NOW }).run();
+    const rejected = { ...entry, status: 'rejected' };
+    expect(registrationsOf(db, filer, NOW)).toEqual({ filed: [rejected], joined: [] });
+    expect(registrationsOf(db, ana.id, NOW)).toEqual({
+      filed: [],
+      joined: [{ ...rejected, role: 'player', canLeave: false }],
+    });
   });
 });

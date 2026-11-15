@@ -1,6 +1,6 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
-import type { registrationsOf } from '../../services/joining.ts';
+import type { RegistrationEntry, registrationsOf } from '../../services/joining.ts';
 import type { Profile } from '../../services/me.ts';
 import { csrfField, pageOf, type Html, type Page } from '../layout.ts';
 
@@ -18,7 +18,7 @@ export interface MeData {
   game: Html;
   /** The competitions whose Discord server the player may manage. */
   adminOf: { name: string; slug: string }[];
-  /** The waiting registrations the player filed or joined. */
+  /** The registrations the player filed or joined, answered ones included. */
   registrations: ReturnType<typeof registrationsOf>;
 }
 
@@ -34,6 +34,8 @@ function registrationsView(locale: Locale, data: MeData): Html | string {
   if (filed.length === 0 && joined.length === 0) return '';
   const what = (entry: { roster: string; competition: string; season: string }) =>
     t(locale, 'web.me.registration', entry);
+  const status = (entry: RegistrationEntry) =>
+    html`<span class="muted">· ${t(locale, `web.me.registration.${entry.status}`)}</span>`;
   return html`<h2>${t(locale, 'web.me.registrations')}</h2>
     <ul class="card">
       ${filed.map(
@@ -41,6 +43,7 @@ function registrationsView(locale: Locale, data: MeData): Html | string {
           html`<li>
             <a href="/registrations/${entry.requestId}">${what(entry)}</a>
             <span class="muted">· ${t(locale, 'web.me.registration.filed')}</span>
+            ${status(entry)}
           </li>`,
       )}
       ${joined.map(
@@ -51,6 +54,7 @@ function registrationsView(locale: Locale, data: MeData): Html | string {
               >·
               ${t(locale, entry.role === 'player' ? 'web.registration.starter' : 'web.registration.sub')}</span
             >
+            ${status(entry)}
             ${
               entry.canLeave
                 ? html`<form method="post" action="/registrations/${entry.requestId}/leave">
