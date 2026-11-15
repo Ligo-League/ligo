@@ -152,6 +152,8 @@ export const rosterEntry = sqliteTable(
       .notNull()
       .references(() => player.id),
     role: text('role', { enum: ROSTER_ROLES }).notNull(),
+    // The roster's captain, a starter (O-30), who acts in matches like its officials (M-19).
+    captain: integer('captain', { mode: 'boolean' }).notNull().default(false),
     validFrom: integer('valid_from').notNull(),
     validTo: integer('valid_to'),
   },

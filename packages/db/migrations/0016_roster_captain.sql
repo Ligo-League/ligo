@@ -1,0 +1,1 @@
+ALTER TABLE `roster_entry` ADD `captain` integer DEFAULT false NOT NULL;

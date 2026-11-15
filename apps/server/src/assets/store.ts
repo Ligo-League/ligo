@@ -1,5 +1,5 @@
-import { readFile, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 
 // Images the bot draws with, such as team logos, found by a storage key like "logos/rck.png".
 // Until R2 (phase 5) they are files on disk under the assets folder; the keys stay the same.
@@ -22,6 +22,8 @@ export interface StoredImage {
 export interface AssetStore {
   /** The image under `key`, or null when the key is not a logo's, the file is missing or not a PNG. */
   read(key: string): Promise<StoredImage | null>;
+  /** Keeps a logo under `key`, such as an approved roster's. Rejects a key that is no logo's. */
+  write(key: string, data: Uint8Array): Promise<void>;
 }
 
 const isPng = (data: Uint8Array) => PNG_SIGNATURE.every((byte, index) => data[index] === byte);
@@ -41,15 +43,31 @@ export function createLocalAssetStore(root: string): AssetStore {
         return null;
       }
     },
+    async write(key, data) {
+      if (!LOGO_KEY.test(key) || !isPng(data) || data.length > MAX_ASSET_BYTES) {
+        throw new Error('Not a logo key, or not a prepared logo');
+      }
+      const path = join(root, key);
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, data);
+    },
   };
 }
 
-/** An in-memory store for tests. */
-export function fakeAssetStore(files: Record<string, Uint8Array> = {}): AssetStore {
+/** An in-memory store for tests; what is written lands in `files`. */
+export function fakeAssetStore(
+  files: Record<string, Uint8Array> = {},
+): AssetStore & { files: Record<string, Uint8Array> } {
   return {
+    files,
     read(key) {
       const data = files[key];
       return Promise.resolve(data && isPng(data) ? { type: 'image/png', data } : null);
+    },
+    write(key, data) {
+      if (!LOGO_KEY.test(key)) return Promise.reject(new Error('Not a logo key'));
+      files[key] = data;
+      return Promise.resolve();
     },
   };
 }

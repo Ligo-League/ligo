@@ -7,8 +7,6 @@ import { crc32, deflateSync } from 'node:zlib';
 // content's hash, so the same file is stored once.
 
 export const LOGO_MAX_BYTES = 1024 * 1024;
-/** The side of the square a logo is kept at: the size images and pages use. */
-export const LOGO_SIZE = 128;
 const MIN_SIDE = 64;
 const MAX_SIDE = 4096;
 const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];

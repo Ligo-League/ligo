@@ -11,6 +11,7 @@ describe('loadLogos', () => {
         reads.push(key);
         return store.read(key);
       },
+      write: (key, data) => store.write(key, data),
     };
     const logos = await loadLogos(counting, [
       'logos/rck.png',

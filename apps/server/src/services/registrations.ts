@@ -16,7 +16,8 @@ import { schema, type Db, type RegistrationPayload } from '@ligo/db';
 import { and, desc, eq, inArray, isNull, lte } from 'drizzle-orm';
 import type { EvidenceStore } from '../assets/evidence-store.ts';
 import { squareLogo } from '@ligo/render';
-import { checkLogo, LOGO_SIZE, logoKeyOf, type LogoError } from './logo.ts';
+import { LOGO_SIZE } from '../assets/store.ts';
+import { checkLogo, logoKeyOf, type LogoError } from './logo.ts';
 
 // Registering a roster (design doc section 7, "Registration"; maintainer, 14 November 2026). A
 // logged-in member files the club and roster details, with the rulebook in force accepted; the
