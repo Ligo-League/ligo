@@ -55,8 +55,12 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
     promotion: promotionSchema.parse({}),
     // 5 players and up to 2 substitutes; public stats accepted at registration from Season 4
     // (maintainer, 14 November 2026, O-20); players 16 or older (O-31); lineups change until the
-    // season starts (O-32).
-    registration: registrationSchema.parse({ stats_consent_required: true, min_age: 16 }),
+    // season starts (O-32); 12 teams at most in a division (O-16).
+    registration: registrationSchema.parse({
+      stats_consent_required: true,
+      min_age: 16,
+      division_max: 12,
+    }),
   },
   // 3 points per win in Season 3, as the league's score7 tables are configured.
   pointsJson: {

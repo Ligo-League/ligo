@@ -40,6 +40,7 @@ const LFR_S3 = {
       invite_days: 7,
       min_age: 16,
       lineup_lock_days: 0,
+      division_max: 12,
     },
   },
   scheduling: {
@@ -387,6 +388,7 @@ describe('JSON round trip', () => {
           invite_days: fc.integer({ min: 1, max: 60 }),
           min_age: fc.option(fc.integer({ min: 1, max: 99 }), { nil: null }),
           lineup_lock_days: fc.integer({ min: 0, max: 60 }),
+          division_max: fc.integer({ min: 2, max: 64 }),
         }),
       }),
     ],

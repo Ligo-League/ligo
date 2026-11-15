@@ -8,6 +8,7 @@ import {
   checkRosterDetails,
   lineupLocked,
   lineupStatus,
+  mayApprove,
   mayJoin,
   mayLeave,
   playerGaps,
@@ -385,6 +386,38 @@ describe('changeLineup', () => {
   });
 });
 
+describe('mayApprove', () => {
+  const complete = lineupStatus(FIVE, SETTINGS);
+
+  it('approves a complete lineup into a division with room, its players on no other roster', () => {
+    expect(
+      mayApprove({ lineup: complete, onOtherRoster: [], divisionTeams: 11 }, SETTINGS),
+    ).toEqual({ ok: true });
+  });
+
+  it('says every reason to wait, all at once', () => {
+    const incomplete = lineupStatus(FIVE.slice(0, 4), SETTINGS);
+    expect(
+      mayApprove({ lineup: incomplete, onOtherRoster: [3, 4], divisionTeams: 12 }, SETTINGS),
+    ).toEqual({
+      ok: false,
+      errors: [
+        { error: 'lineup_incomplete' },
+        { error: 'player_on_other_roster', playerIds: [3, 4] },
+        { error: 'division_full', max: 12 },
+      ],
+    });
+  });
+
+  it('takes the division maximum from the settings', () => {
+    const small = registrationSchema.parse({ division_max: 8 });
+    expect(mayApprove({ lineup: complete, onOtherRoster: [], divisionTeams: 8 }, small)).toEqual({
+      ok: false,
+      errors: [{ error: 'division_full', max: 8 }],
+    });
+  });
+});
+
 describe('mayLeave', () => {
   it('lets a player leave until the lineup locks', () => {
     expect(mayLeave(FIVE, 3, false)).toEqual({ ok: true });
@@ -402,6 +435,7 @@ describe('registration settings', () => {
       invite_days: 7,
       min_age: null,
       lineup_lock_days: 0,
+      division_max: 12,
     });
     expect(registrationSchema.safeParse({ min_age: -1 }).success).toBe(false);
     expect(registrationSchema.safeParse({ starters: 0 }).success).toBe(false);

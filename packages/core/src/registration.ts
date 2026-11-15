@@ -280,3 +280,34 @@ export function changeLineup<M extends LineupMember>(
   if (next.length - starters > settings.subs_max) return { ok: false, error: 'too_many_subs' };
   return { ok: true, members: next };
 }
+
+export type ApprovalError =
+  | { error: 'lineup_incomplete' }
+  | { error: 'player_on_other_roster'; playerIds: number[] }
+  | { error: 'division_full'; max: number };
+
+/**
+ * Whether staff may approve a registration into a division: its lineup complete, none of its
+ * players on another roster of the competition (O-29), and room left in the division (O-16).
+ * Every reason is given at once.
+ */
+export function mayApprove(
+  input: {
+    lineup: { complete: boolean };
+    /** The registration's players already on another roster of the competition this season. */
+    onOtherRoster: readonly number[];
+    /** The teams the division already holds. */
+    divisionTeams: number;
+  },
+  settings: RegistrationSettings,
+): { ok: true } | { ok: false; errors: ApprovalError[] } {
+  const errors: ApprovalError[] = [];
+  if (!input.lineup.complete) errors.push({ error: 'lineup_incomplete' });
+  if (input.onOtherRoster.length > 0) {
+    errors.push({ error: 'player_on_other_roster', playerIds: [...input.onOtherRoster] });
+  }
+  if (input.divisionTeams >= settings.division_max) {
+    errors.push({ error: 'division_full', max: settings.division_max });
+  }
+  return errors.length > 0 ? { ok: false, errors } : { ok: true };
+}

@@ -209,6 +209,8 @@ export const registrationSchema = z.strictObject({
   min_age: z.int().min(1).max(99).nullable().default(null),
   /** Lineups lock this many days before the season starts, then change in mercato windows. */
   lineup_lock_days: z.int().min(0).max(60).default(0),
+  /** A division holds at most this many teams (O-16): staff approve no roster beyond it. */
+  division_max: z.int().min(2).max(64).default(12),
 });
 export type RegistrationSettings = z.infer<typeof registrationSchema>;
 
