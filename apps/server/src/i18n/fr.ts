@@ -803,7 +803,7 @@ export const fr = {
   'web.me.left': 'Tu as quitté l’équipe.',
   'web.me.registrations': 'Mes inscriptions',
   'web.me.registration': '{roster} — {competition}, {season}',
-  'web.me.registration.filed': 'inscrite par toi',
+  'web.me.registration.filed': 'en tant qu’officiel de l’équipe',
   'web.me.registration.leave': 'Quitter l’équipe',
   'web.me.registration.pending': 'en attente du staff',
   'web.me.registration.approved': 'validée',

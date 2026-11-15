@@ -482,7 +482,9 @@ section 16.
   through an invitation link and complete their own profile, as today. No mercato limit applies
   to a roster in no competition. The registration form then offers the rosters the filer leads
   (or a new one); the roster's players are the registration's lineup, checked as today, and the
-  filer sets starters and the captain. Approval adds the slot and the season's roster entries; it
+  filer sets starters and the captain. Any official who may register the roster (not the
+  coach) may change the lineup or withdraw the registration, not the filer only (maintainer,
+  15 November 2026). Approval adds the slot and the season's roster entries; it
   no longer creates the club and roster. Built right after 3e-2.
 
 #### M-32 · Telling the other team about what is done on the website

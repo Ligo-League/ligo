@@ -1,6 +1,7 @@
 import type { RegistrationRole, RequestStatus } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
-import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne, or } from 'drizzle-orm';
+import { managesPlayers, rostersManagedBy } from './rosters.ts';
 
 // The checks a registration's players go through beyond their own profile (design doc section 7;
 // maintainer, 14 and 15 November 2026): each is a member of the league's Discord server (M-30)
@@ -110,6 +111,22 @@ export function unavailablePlayers(
   return playerIds.filter((id) => taken.has(id));
 }
 
+/**
+ * Whether the player leads a registration: its filer, or any official who may register the
+ * roster (owner, club managers, managers; maintainer, 15 November 2026). A registration filed
+ * with its club before M-33 stays its filer's only.
+ */
+export function leadsRegistration(
+  db: Reader,
+  playerId: number,
+  row: Pick<typeof request.$inferSelect, 'requestedBy' | 'teamId' | 'payloadJson'>,
+): boolean {
+  if (row.requestedBy === playerId) return true;
+  return !('roster' in row.payloadJson) && row.teamId !== null
+    ? managesPlayers(db, playerId, row.teamId)
+    : false;
+}
+
 export interface RegistrationEntry {
   requestId: number;
   roster: string;
@@ -132,8 +149,8 @@ export function rosterNameOf(
 }
 
 /**
- * The registrations a player filed, and those whose lineup they are in, for their own page,
- * newest first. Answered ones stay listed: the filer finds staff's answer, and its reason, there.
+ * The registrations a player leads (`leadsRegistration`), and those whose lineup they are in,
+ * for their own page, newest first. Answered ones stay listed: the filer finds staff's answer, and its reason, there.
  */
 export function registrationsOf(
   db: Reader,
@@ -143,6 +160,8 @@ export function registrationsOf(
   joined: (RegistrationEntry & { role: RegistrationRole })[];
 } {
   const registrations = eq(request.kind, 'registration');
+  const teams = rostersManagedBy(db, playerId);
+  const managed = teams.length === 0 ? undefined : inArray(request.teamId, teams);
   const entryOf = (row: {
     request: typeof request.$inferSelect;
     competition: typeof competition.$inferSelect;
@@ -166,9 +185,10 @@ export function registrationsOf(
     .from(request)
     .innerJoin(competition, eq(request.competitionId, competition.id))
     .innerJoin(season, eq(request.seasonId, season.id))
-    .where(and(registrations, eq(request.requestedBy, playerId)))
+    .where(and(registrations, or(eq(request.requestedBy, playerId), managed)))
     .orderBy(desc(request.id))
     .all()
+    .filter((row) => leadsRegistration(db, playerId, row.request))
     .flatMap(entryOf);
   const joined = db
     .select({ entry: registrationPlayer, request, competition, season })

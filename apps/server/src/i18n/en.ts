@@ -766,7 +766,7 @@ export const en: Record<MessageKey, string> = {
   'web.me.left': 'You left the team.',
   'web.me.registrations': 'My registrations',
   'web.me.registration': '{roster} — {competition}, {season}',
-  'web.me.registration.filed': 'filed by you',
+  'web.me.registration.filed': 'as one of the team’s officials',
   'web.me.registration.leave': 'Leave the team',
   'web.me.registration.pending': 'waiting for staff',
   'web.me.registration.approved': 'approved',

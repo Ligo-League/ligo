@@ -115,6 +115,15 @@ export function managesPlayers(db: Reader, playerId: number, teamId: number): bo
   return role !== null && mayManagePlayers(role);
 }
 
+/** The rosters whose players the player manages. */
+export function rostersManagedBy(db: Reader, playerId: number): number[] {
+  const held = teamsOfPlayer(db, playerId);
+  return [...new Set(held.map((entry) => entry.teamId))].filter((teamId) => {
+    const role = highestRole(held, teamId);
+    return role !== null && mayManagePlayers(role);
+  });
+}
+
 /** The roster's invitation in force, if any: not revoked, not expired. */
 export function currentRosterInvite(db: Reader, teamId: number, now: number) {
   return (

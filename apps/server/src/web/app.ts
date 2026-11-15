@@ -561,7 +561,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       .from(schema.competition)
       .where(eq(schema.competition.slug, status.competition.slug))
       .get();
-    // The filer's own page, about other players: kept by no cache.
+    // The roster's officials' page, about other players: kept by no cache.
     c.header('Cache-Control', 'no-store');
     const offServer =
       status.status === 'pending'
@@ -584,7 +584,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     );
   });
 
-  // The filer's changes to their registration: each answer goes back to its page.
+  // The officials' changes to the registration: each answer goes back to its page.
   const backToRegistration = (
     c: Context<Env>,
     id: string,

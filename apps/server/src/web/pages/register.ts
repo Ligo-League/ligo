@@ -260,7 +260,7 @@ const PLAYER_GAP_KEYS = {
   too_young: 'web.registration.tooYoung',
 } as const satisfies Record<PlayerGap, MessageKey>;
 
-/** `/registrations/:id`: the filer follows the registration and picks its lineup. */
+/** `/registrations/:id`: the roster's officials follow the registration and pick its lineup. */
 export function registrationView(
   locale: Locale,
   data: StatusData,
@@ -277,7 +277,7 @@ export function registrationView(
 ): Page {
   const title = t(locale, 'web.registration.title', { roster: data.roster.name });
   const waiting = data.status === 'pending';
-  // While the lineup is open, the filer changes it; otherwise the page only shows it.
+  // While the lineup is open, the officials change it; otherwise the page only shows it.
   const open = waiting && !data.locked;
   const base = `/registrations/${String(data.id)}`;
   const date = (at: number) =>

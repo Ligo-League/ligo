@@ -14,7 +14,12 @@ import { schema, type Db } from '@ligo/db';
 import { and, asc, desc, eq, inArray, lte } from 'drizzle-orm';
 import { teamsOfPlayer } from './permissions.ts';
 import { profilesOf } from './profiles.ts';
-import { clubNameOf, rosterNameOf, unavailablePlayers } from './registration-players.ts';
+import {
+  clubNameOf,
+  leadsRegistration,
+  rosterNameOf,
+  unavailablePlayers,
+} from './registration-players.ts';
 import { rosterMembers } from './rosters.ts';
 
 // Registering a roster (design doc section 7, "Registration"; maintainer, 14 and 15 November
@@ -405,8 +410,8 @@ export type RegistrationStatus =
   | { ok: false; error: 'not_found' };
 
 /**
- * A registration as its filer follows it. Anyone else finds nothing: staff see registrations in
- * their own list.
+ * A registration as the roster's officials follow it (`leadsRegistration`). Anyone else finds
+ * nothing: staff see registrations in their own list.
  */
 export function registrationStatus(
   db: Reader,
@@ -422,7 +427,7 @@ export function registrationStatus(
     .where(and(eq(request.id, requestId), eq(request.kind, 'registration')))
     .get();
   const rosterName = row ? rosterNameOf(db, row.request) : null;
-  if (!row || row.request.requestedBy !== playerId || rosterName === null) {
+  if (!row || !leadsRegistration(db, playerId, row.request) || rosterName === null) {
     return { ok: false, error: 'not_found' };
   }
   const settings = row.competition.rulesetJson.registration;

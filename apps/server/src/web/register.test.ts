@@ -128,7 +128,7 @@ describe('the registration’s page', () => {
     expect(page).toContain('pas sur le serveur Discord de la ligue');
   });
 
-  it('is the filer’s only', async () => {
+  it('is hidden from a member who is not one of the roster’s officials', async () => {
     const { request, logIn, jar } = await filed();
     jar.clear();
     await logIn('/registrations/1', 'code-ben');

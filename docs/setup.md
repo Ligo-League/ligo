@@ -566,7 +566,8 @@ channel`), mentioning the other side, with **Accepter** and **Refuser**.
 3. On the registration's page, give each player a role (titulaire, remplaçant, or hors effectif)
    and pick the captain among the starters. The page says what a player still lacks, whether one
    is already in another team of the league, and whether one is not on the league's Discord
-   server.
+   server. Any other manager of the roster finds the registration on their `/me` and may change
+   the lineup or withdraw it too; a coach may not.
 4. On `/staff`, **Valider** into a division gives the roster its place and the season's lineup;
    the club and roster already exist.
 
