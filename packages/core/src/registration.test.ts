@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ageOn,
   checkBirthDate,
+  changeLineup,
   checkGameProfile,
   checkRosterDetails,
   lineupLocked,
@@ -308,6 +309,78 @@ describe('mayJoin', () => {
       ok: false,
       error: 'not_eligible',
       gaps: ['nationality', 'too_young'],
+    });
+  });
+});
+
+describe('changeLineup', () => {
+  const roles = (entries: [number, 'player' | 'sub'][]) => new Map(entries);
+
+  it('sets each player’s role and the captain, keeping the others as they are', () => {
+    const members = [
+      ...FIVE.map((entry) => ({ ...entry, captain: false })),
+      member(6, { role: 'sub' }),
+    ];
+    const reply = changeLineup(
+      members,
+      {
+        roles: roles([
+          [5, 'sub'],
+          [6, 'player'],
+        ]),
+        captainId: 6,
+      },
+      SETTINGS,
+    );
+    expect(reply).toEqual({
+      ok: true,
+      members: [
+        member(1, { captain: false }),
+        member(2, { captain: false }),
+        member(3, { captain: false }),
+        member(4, { captain: false }),
+        member(5, { role: 'sub', captain: false }),
+        member(6, { role: 'player', captain: true }),
+      ],
+    });
+    expect(lineupStatus(reply.ok ? reply.members : [], SETTINGS).complete).toBe(true);
+  });
+
+  it('may leave the captain unchosen while the lineup is built', () => {
+    const reply = changeLineup(FIVE, { roles: roles([]), captainId: null }, SETTINGS);
+    expect(reply.ok && reply.members.every((entry) => !entry.captain)).toBe(true);
+  });
+
+  it.each([
+    [
+      'a player who did not join',
+      { roles: roles([[9, 'sub']]), captainId: null },
+      'unknown_player',
+    ],
+    ['a captain who did not join', { roles: roles([]), captainId: 9 }, 'unknown_player'],
+    [
+      'a substitute as captain',
+      { roles: roles([[1, 'sub']]), captainId: 1 },
+      'captain_not_starter',
+    ],
+  ] as const)('refuses %s', (_label, change, error) => {
+    expect(changeLineup(FIVE, change, SETTINGS)).toEqual({ ok: false, error });
+  });
+
+  it('keeps the starters and substitutes within the league’s numbers', () => {
+    const six = [...FIVE, member(6, { role: 'sub' })];
+    expect(changeLineup(six, { roles: roles([[6, 'player']]), captainId: 1 }, SETTINGS)).toEqual({
+      ok: false,
+      error: 'too_many_starters',
+    });
+    const allSubs = roles([
+      [1, 'sub'],
+      [2, 'sub'],
+      [3, 'sub'],
+    ]);
+    expect(changeLineup(FIVE, { roles: allSubs, captainId: 4 }, SETTINGS)).toEqual({
+      ok: false,
+      error: 'too_many_subs',
     });
   });
 });

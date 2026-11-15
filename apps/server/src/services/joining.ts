@@ -1,9 +1,7 @@
 import {
-  lineupLocked,
   mayJoin,
   mayLeave,
   playerGaps,
-  zonedDate,
   type JoinError,
   type PlayerGap,
   type RegistrationRole,
@@ -11,7 +9,7 @@ import {
 import { schema, type Db } from '@ligo/db';
 import { and, asc, eq, ne } from 'drizzle-orm';
 import { inviteTokenMatches } from './invites.ts';
-import { lineupOf, profilesOf } from './registrations.ts';
+import { lineupOf, lockedNow, profilesOf, waitingRegistration } from './registrations.ts';
 
 // Joining a registration from its invitation link (design doc section 7; maintainer, 14 and 15
 // November 2026). Each player joins with their own account: their profile complete, old enough on
@@ -94,16 +92,6 @@ function openInvite(db: Reader, link: InviteLink, now: number) {
 }
 
 type Opened = NonNullable<ReturnType<typeof openInvite>>;
-
-/** Whether the season's lineups are locked today, in the league's time zone. */
-function lockedNow(found: Pick<Opened, 'competition' | 'season'>, now: number): boolean {
-  const today = zonedDate(now, found.competition.schedulingJson.time_zone).date;
-  return lineupLocked(
-    today,
-    found.season.startsOn,
-    found.competition.rulesetJson.registration.lineup_lock_days,
-  );
-}
 
 /**
  * Whether the player plays in another roster of the competition, every division together
@@ -277,25 +265,6 @@ export async function joinRegistration(
       .run();
     return { ok: true, requestId: opened.request.id, role: decided.role };
   });
-}
-
-/** A waiting registration with its competition and season, or nothing. */
-function waitingRegistration(db: Reader, requestId: number) {
-  const row = db
-    .select({ request, competition, season })
-    .from(request)
-    .innerJoin(competition, eq(request.competitionId, competition.id))
-    .innerJoin(season, eq(request.seasonId, season.id))
-    .where(
-      and(
-        eq(request.id, requestId),
-        eq(request.kind, 'registration'),
-        eq(request.status, 'pending'),
-      ),
-    )
-    .get();
-  const payload = row?.request.payloadJson;
-  return row && payload && 'roster' in payload ? { ...row, payload } : null;
 }
 
 /** The player leaves a registration they joined, until its lineup locks. */

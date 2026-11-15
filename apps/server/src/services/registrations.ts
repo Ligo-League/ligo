@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import {
   checkRosterDetails,
+  lineupLocked,
   lineupStatus,
   playerGaps,
   slugify,
@@ -9,6 +10,7 @@ import {
   type PlayerProfile,
   type RegistrationSettings,
   type RosterDetailsError,
+  zonedDate,
 } from '@ligo/core';
 import { schema, type Db, type RegistrationPayload } from '@ligo/db';
 import { and, desc, eq, inArray, isNull, lte } from 'drizzle-orm';
@@ -372,6 +374,41 @@ export async function fileRegistration(
   });
 }
 
+/** Whether a season's lineups are locked now, in the league's time zone (M-29). */
+export function lockedNow(
+  found: {
+    competition: Pick<typeof competition.$inferSelect, 'schedulingJson' | 'rulesetJson'>;
+    season: Pick<typeof season.$inferSelect, 'startsOn'>;
+  },
+  now: number,
+): boolean {
+  const today = zonedDate(now, found.competition.schedulingJson.time_zone).date;
+  return lineupLocked(
+    today,
+    found.season.startsOn,
+    found.competition.rulesetJson.registration.lineup_lock_days,
+  );
+}
+
+/** A registration still waiting for staff, with its competition and season; nothing otherwise. */
+export function waitingRegistration(db: Reader, requestId: number) {
+  const row = db
+    .select({ request, competition, season })
+    .from(request)
+    .innerJoin(competition, eq(request.competitionId, competition.id))
+    .innerJoin(season, eq(request.seasonId, season.id))
+    .where(
+      and(
+        eq(request.id, requestId),
+        eq(request.kind, 'registration'),
+        eq(request.status, 'pending'),
+      ),
+    )
+    .get();
+  const payload = row?.request.payloadJson;
+  return row && payload && 'roster' in payload ? { ...row, payload } : null;
+}
+
 /** What each player declared, for whether they may play: see `playerGaps`. */
 export function profilesOf(
   db: Reader,
@@ -464,6 +501,8 @@ export type RegistrationStatus =
       invite: { id: number; nonce: string; expiresAt: number; active: boolean } | null;
       players: RegistrationPlayerView[];
       lineup: { complete: boolean; gaps: LineupGap[] };
+      /** Lineups are locked: no player joins, leaves or changes role (M-29). */
+      locked: boolean;
     }
   | { ok: false; error: 'not_found' };
 
@@ -535,5 +574,6 @@ export function registrationStatus(
       : null,
     players,
     lineup: lineupStatus(players, settings),
+    locked: lockedNow(row, now),
   };
 }

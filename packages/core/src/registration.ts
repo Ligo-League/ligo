@@ -246,3 +246,37 @@ export function mayLeave(
   if (locked) return { ok: false, error: 'lineup_locked' };
   return { ok: true };
 }
+
+export type LineupChangeError =
+  'unknown_player' | 'captain_not_starter' | 'too_many_starters' | 'too_many_subs';
+
+/**
+ * The filer sets roles and the captain: each role given is applied, the others stay. The captain
+ * is a starter (O-30), or nobody while the lineup is built; the starters and substitutes stay
+ * within the league's numbers.
+ */
+export function changeLineup<M extends LineupMember>(
+  members: readonly M[],
+  change: { roles: ReadonlyMap<number, RegistrationRole>; captainId: number | null },
+  settings: RegistrationSettings,
+): { ok: true; members: M[] } | { ok: false; error: LineupChangeError } {
+  const known = (playerId: number) => members.some((entry) => entry.playerId === playerId);
+  if ([...change.roles.keys()].some((playerId) => !known(playerId))) {
+    return { ok: false, error: 'unknown_player' };
+  }
+  if (change.captainId !== null && !known(change.captainId)) {
+    return { ok: false, error: 'unknown_player' };
+  }
+  const next = members.map((entry) => ({
+    ...entry,
+    role: change.roles.get(entry.playerId) ?? entry.role,
+    captain: entry.playerId === change.captainId,
+  }));
+  if (next.some((entry) => entry.captain && entry.role !== 'player')) {
+    return { ok: false, error: 'captain_not_starter' };
+  }
+  const starters = next.filter((entry) => entry.role === 'player').length;
+  if (starters > settings.starters) return { ok: false, error: 'too_many_starters' };
+  if (next.length - starters > settings.subs_max) return { ok: false, error: 'too_many_subs' };
+  return { ok: true, members: next };
+}
