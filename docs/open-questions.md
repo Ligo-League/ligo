@@ -452,6 +452,12 @@ section 16.
 
 ## Answered
 
+#### M-34 · How many players a roster in no competition may have
+
+- **Question:** a roster in no competition has no league setting for its size. How many players
+  may it have before registering (the filer then picks the lineup among them)?
+- **Answer (maintainer, 15 November 2026):** a setting of the group, 10 players by default.
+
 #### M-33 · A club and its rosters before any competition
 
 - **Question:** people must be able to create a club and a roster that belong to no competition,
