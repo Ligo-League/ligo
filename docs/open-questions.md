@@ -192,6 +192,28 @@ section 16.
 
 ## For the maintainer
 
+#### M-37 · The MVP of a round
+
+- **Question:** how is a round's MVP chosen?
+- **Options:** (a) most kills, ties broken by the opening kill, then a plant or defuse, then
+  survival; (b) a weighted score of kills, opening kill, clutch won, plant or defuse and trades;
+  (c) the impact rating of design doc section 9 (win probability added), once it exists.
+- **Until answered:** the design mockups use (b) as a stand-in, to be replaced by (c) when the
+  impact rating exists. Nothing is built.
+
+#### M-36 · Stats in the Privacy Policy: the edge cases
+
+- **Decided (16 November 2026):** sharing player stats is in Ligo's Privacy Policy and terms of
+  use, which every account must accept. It is a hard requirement, not a per-player setting.
+- **Questions left:** (1) can a player withdraw it, and does that close the account or only hide
+  the stats (GDPR treats consent as withdrawable; another legal basis, such as the contract, may
+  fit better, to check with whoever writes the policy); (2) players seen in a replay or a lineup
+  who have no account yet: are their stats stored and hidden until they sign up, or not stored;
+  (3) accounts created before the policy: asked to accept at next login, stats hidden until then;
+  (4) does a new policy version need a new acceptance.
+- **Until answered:** `stats_consent_at` keeps its role, set when the policy is accepted; a player
+  without it shows no stats; nothing is withdrawn automatically.
+
 #### M-02 · Forcing an unusual score
 
 - **Question:** should staff be able to force a score the rules make impossible, for example a

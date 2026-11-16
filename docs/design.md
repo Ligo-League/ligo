@@ -269,6 +269,8 @@ segment_round  segment_id, local_n, canonical_file_id, complete, winner_idx NULL
                site, roles_json, pov_count, PRIMARY KEY (segment_id, local_n)
 round_player   segment_id, local_n, account_id, side_idx, operator, kills, died, left, assists, headshots,
                opening_kill, opening_death, trade_kills, traded, plant, defuse, survived, clutch_vs, clutch_won
+               -- operator is the one played at round end; operator_swaps_json NULL lists the swaps
+               -- r6-dissect reports during the round (maintainer, 16 November 2026; added with phase 5)
 kill_event     segment_id, local_n, seq, elapsed_s, killer_account NULL, victim_account, headshot
 game_round     game_id, n NULL, kind ('replay'|'awarded'|'void'), segment_id NULL, local_n NULL,
                winner_side NULL, reason NULL, decided_by NULL
@@ -295,7 +297,7 @@ image_cache    key PK, object_key, created_at
 - A player can be on one roster per competition at a time, and staff members cannot be on any roster in a competition they staff.
 - Every staff mutation writes `audit_log` in the same transaction.
 - Every stored metric is additive. Averages such as Valorant ACS are converted to totals at entry (ACS × rounds = combat score).
-- Players without `stats_consent_at` appear in rosters and results, but their stat pages and leaderboard rows stay hidden.
+- Sharing a player's stats is part of Ligo's Privacy Policy and terms of use, which every account accepts before using the platform (maintainer, 16 November 2026; a hard Privacy Policy requirement, not a per-player choice). `stats_consent_at` records that acceptance. Players without it appear in rosters and results, but their stat pages and leaderboard rows stay hidden; which players can still lack it is M-36.
 
 The team development tools add tables and change three existing ones (practice matches, playbook, listings, external results, awards). Those additions are listed in section 17 and are not part of schema v1.
 
@@ -604,6 +606,21 @@ The website is the main tool of the platform (section 3): the public face of eve
 - Session: signed, `httpOnly`, `SameSite=Lax` cookie holding the player ID; 30-day expiry. POST forms also carry a CSRF token.
 - Roles are read on the server, never taken from the client. Team roles come from the database (`team_staff`, roster entries). League staff are the members holding the staff role in the league's Discord server: the server asks the bot, and caches the answer for about a minute, so Discord stays the only staff list and the website and the bot always agree (maintainer, 14 November 2026).
 
+**A platform, not one group's site** (maintainer, 16 November 2026)
+
+Ligo is a tool for esport leagues with divisions that happens to host MBL Group and its four leagues first; other organisations, leagues and teams that only record scrims will use the same instance. The website is built for that from the start:
+
+- `/` is Ligo's home: one tab per game, each listing its running public competitions and today's and live matches; a logged-in user also sees their own teams and matches at the top. A game's home lists running competitions (organisation, status, size), today's and live matches, latest results and recruitment; it ranks no teams across leagues.
+- The game is an entry point and a filter, not a level of the hierarchy: breadcrumbs read Ligo › organisation › competition › season › division › match, with the game shown as a label.
+- Competition routes carry the organisation, `/:org/:comp/:season`, since two groups may pick the same competition slug; a custom domain later drops the `/:org` part. Clubs, teams and players stay global (`/clubs/:slug`, `/teams/:slug`, `/players/:slug`): a club may play in several groups' leagues, or in none. The routes below still show the older `/c/:comp` form; they move when phase 3's routes are next touched.
+- Every competition belongs to an organisation; a league on its own is an organisation with one competition. Creating a league only asks for the organisation's name, logo and description.
+- Every public competition is listed, ordered by activity; a "verified" mark for organisations comes later.
+- Ligo's logo is at the top left of every page and its name and logo are always in the footer. A competition's identity (logo, theme colours) shows in its own bar; custom domains and themes (section 18) come later.
+- The global header holds the game switcher, search, today's matches, recruitment, language and login. Side columns show only what belongs to the page they sit on.
+- Light theme first; a dark theme following the system setting comes later.
+- **Player photos:** optional, uploaded by the player on `/me`, shown on the player page and rosters; a default image stands in otherwise. Only Ligo's own staff remove a photo; a league's staff cannot, but anyone can report one to Ligo's staff.
+- **Game art:** Ubisoft allows its map and operator images on a site that reports matches, paid or not; it forbids them on merchandise sold and for AI training (checked by the maintainer, 16 November 2026). R6 uses them for map cards in the veto, the map banner of a played match, operator icons in rounds, and the player and team pages; each title supplies its images in `packages/titles`, with a text fallback.
+
 **Pages**
 
 | Route                          | Who                     | Content                                                                                                                        |
@@ -653,7 +670,7 @@ Each phase adds its own settings to the panel as it adds them to the bot. Who ma
 - **Lineup changes:** allowed until `registration.lineup_lock_days` before the season starts, then only during mercato windows. A league without windows changes lineups only between seasons (M-29; 0 days in LFR for now, O-32).
 - **Invitation link:** the roster's, `/invite/<invitation>/<token>`, where the token is an HMAC of the invitation's row and a random nonce under the server's secret, with its own purpose. It is never stored: its officials see it again on the roster's page, and a new nonce voids the old link. It expires after the group's `rosters.invite_days` (7). Registrations filed before M-33 had their own link (`/join/…`), withdrawn by migration 0019.
 - **Rules acceptance:** the manager accepts the current rulebook version ("lu et approuvé"), stored with `rules_version_id` and a timestamp, replacing the signed page.
-- **Stats consent:** each player gives it on `/me`; it can be made mandatory by competition setting, and is mandatory in LFR from Season 4 (O-20).
+- **Stats consent:** no longer a separate choice (maintainer, 16 November 2026). Ligo's Privacy Policy and terms of use say that the platform publishes players' stats, and accepting them is required to create an account, so every registered player has accepted it. The acceptance is stored with the policy version and a timestamp, like the rulebook's. Withdrawal, players seen in replays without an account, and players who joined before the policy are M-36.
 - **Division:** a new roster usually starts in Ligue 2; when places are free in Ligue 1, because teams left, staff may place it there. A roster that does not come back loses its place and registers again like a new one (O-26). Staff choose the division when they approve.
 - **Status:** a registration is a `registration` request, which staff see as soon as it is filed, without a notification (M-29). Incomplete submissions are frozen until fixed, as the rulebook says; staff approve, which gives the roster its slot and the season's roster entries (the club and roster exist already, M-33), or refuse with a reason. Approval also checks the roster's officials against the league's limits.
 
@@ -675,7 +692,7 @@ Each phase adds its own settings to the panel as it adds them to the bot. Who ma
 **Performance and privacy**
 
 - Public pages render on request and are cached by a data version counter (ETag), invalidated on validated results.
-- The rulebook's image-rights clause covers results, standings, team names and logos, but not individual player stats. Publish player stats only with `stats_consent_at`, and honour deletion or anonymisation requests from `/me` (GDPR).
+- The rulebook's image-rights clause covers results, standings, team names and logos, but not individual player stats. Player stats are covered by Ligo's Privacy Policy and terms of use, which every account accepts (maintainer, 16 November 2026; M-36). Publish player stats only with `stats_consent_at`, and honour deletion or anonymisation requests from `/me` (GDPR).
 
 ## 8. Replay pipeline
 
@@ -840,6 +857,12 @@ Derived metrics are computed in TypeScript from these totals.
 - Metrics with `requiresRounds` are computed only over games with `stats_source = 'replay'`. Their denominator is that subset's `rounds_played`, never the player's total rounds.
 - Leaderboards show coverage ("KOST: 14/18 maps") and hide players below a threshold (default 60% of their maps).
 - Minimum sample to appear on a leaderboard: 30% of the team's rounds (configurable).
+
+**Rounds on the match page** (maintainer, 16 November 2026)
+
+- A validated game with replays shows each round on its own: both teams' operators (with any operator swap), the kill feed in feed order, plant or defuse, the win condition, and the round's MVP. The kill feed is public, like the rest of a validated game's stats.
+- The round overview on the match page will be redesigned by the maintainer when the round stats are built; the alive counts per side are not shown.
+- How the round MVP is chosen is M-37.
 
 **Later: impact rating**
 
@@ -1312,6 +1335,8 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Mercato               | Announced windows only, 3 moves per team, 1-day block for a transferred player                                                            | Rulebook      |
 | MOSS                  | Mandatory for every match                                                                                                                 | Rulebook      |
 | Replays | Mandatory from Season 4, at least one team per match; accepting public player stats is required at registration | You |
+| Platform structure    | Ligo's own home at `/`, games as entry points, `/:org/:comp/:season`, global clubs and teams, a league alone is an organisation with one competition, Ligo's mark always in the footer (section 7) | You |
+| Player stats and privacy | Sharing player stats is in Ligo's Privacy Policy and terms of use, accepted by every account; a hard requirement, not a setting (16 November 2026) | You |
 | Staff                 | 3–5 people; staff cannot play in the championship                                                                                         | You, rulebook |
 | Discord               | One server per league: LFR, LFV, FRFL, LFRL                                                                                               | You           |
 | Cheating              | A ban covers LFR, LFV and LFRL                                                                                                            | Rulebook      |

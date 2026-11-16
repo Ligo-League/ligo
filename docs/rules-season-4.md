@@ -110,8 +110,9 @@ M-xx : mainteneur).
   une équipe.
 - **Changements d'effectif** : libres jusqu'au début de la saison, puis uniquement pendant les
   fenêtres de mercato annoncées : 3 mouvements par équipe, un joueur transféré est bloqué un jour.
-- À l'inscription, chaque joueur **accepte la publication de ses statistiques**. Sans cet
-  accord, il ne peut pas figurer dans un effectif.
+- La publication des statistiques des joueurs fait partie de la **politique de confidentialité
+  et des conditions d'utilisation de Ligo**, que chaque joueur accepte en créant son compte. Sans
+  compte, et donc sans cet accord, un joueur ne peut pas figurer dans un effectif.
 - **Clubs avant toute compétition** : chacun peut créer sur le site un club et sa première équipe,
   sans compétition, et en est propriétaire ; les responsables du club y ajoutent des équipes. Les
   noms et les tags sont réservés dès la création. Tant qu'une équipe ne joue dans aucune
