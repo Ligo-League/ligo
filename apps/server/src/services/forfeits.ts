@@ -7,7 +7,6 @@ import {
 } from '@ligo/core';
 import { listLeagueMatches, loadStandingsInput, schema, type Db, type LeagueMatch } from '@ligo/db';
 import { eq } from 'drizzle-orm';
-import { matchQuery } from './match-search.ts';
 import { requireStaff, type Actor } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
@@ -192,26 +191,4 @@ export function recordForfeit(
       resultsChannelId: resultsChannelFor(league, found),
     };
   });
-}
-
-/** The matches staff can record a forfeit on, narrowed by `query`; those to play come first. */
-export function searchForfeitableMatches(
-  db: Pick<Db, 'select'>,
-  actor: Pick<Actor, 'guildId' | 'memberRoleIds'>,
-  query: string,
-  limit: number,
-): LeagueMatch[] {
-  const staff = requireStaff(db, actor);
-  if (!staff.ok || !staff.league.season) return [];
-  const validation = staff.league.competition.rulesetJson.result_validation;
-  const played = (found: LeagueMatch) => (found.status === 'validated' ? 1 : 0);
-  return listLeagueMatches(db, { seasonId: staff.league.season.id })
-    .filter(
-      (found) =>
-        found.bestOf === 1 &&
-        nextMatchStatus({ status: found.status, action: 'forfeit', actor: 'staff', validation }).ok,
-    )
-    .filter(matchQuery(query))
-    .sort((x, y) => played(x) - played(y))
-    .slice(0, limit);
 }

@@ -3,7 +3,6 @@ import {
   answerRequest,
   checkAnswer,
   REQUEST_REASON_MAX_LENGTH,
-  withdrawRequest,
   type AnswerReply,
 } from '../../services/requests.ts';
 import { buttonId } from '../button-id.ts';
@@ -14,11 +13,12 @@ import type {
   FormHandler,
   FormSubmitInteraction,
 } from '../commands/types.ts';
-import { announceDecision, requestQueueMessage } from '../request-text.ts';
+import { requestQueueMessage } from '../request-text.ts';
 import { announceRequestDecision } from '../staff-decisions.ts';
 
-// The buttons under a team request: Approve and Refuse in the staff queue, Withdraw in the team's
-// own list. The custom ID names the request; the services re-check who clicks and its state.
+// The buttons under a team request in the staff queue: Approve and Refuse. A team withdraws its
+// request on the website. The custom ID names the request; the services re-check who clicks and its
+// state.
 
 type Failure = Extract<AnswerReply, { ok: false }>;
 
@@ -102,28 +102,5 @@ const rejectSent: FormHandler = {
   },
 };
 
-/** Withdraw, under the team's own list of its requests. */
-const withdraw: ButtonHandler = {
-  action: 'request-withdraw',
-  async execute(interaction, target, context) {
-    const { locale } = context;
-    const reply = withdrawRequest(
-      context.db,
-      interaction,
-      { requestId: target.entityId },
-      context.now(),
-    );
-    if (!reply.ok) {
-      await interaction.reply({ content: refusal(locale, reply), ephemeral: true });
-      return;
-    }
-    await interaction.reply({
-      content: t(locale, 'request.withdrawn', { id: reply.request.id }),
-      ephemeral: true,
-    });
-    await announceDecision(context, reply);
-  },
-};
-
-export const requestButtonHandlers: readonly ButtonHandler[] = [approve, reject, withdraw];
+export const requestButtonHandlers: readonly ButtonHandler[] = [approve, reject];
 export const requestFormHandlers: readonly FormHandler[] = [rejectSent];

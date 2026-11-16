@@ -1,34 +1,22 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
+import { proposeTime } from '../services/scheduling.ts';
 import { setTeamOwner } from '../services/team-staff.ts';
+import type { Actor } from '../services/permissions.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { buttons } from './buttons/index.ts';
 import { tick } from './clock.ts';
-import { matchCommand } from './commands/match.ts';
-import { staffCommand } from './commands/staff.ts';
+import { postProposal } from './schedule-posts.ts';
 import { routeButton } from './router.ts';
-import {
-  fakeAutocomplete,
-  fakeButton,
-  fakeContext,
-  fakeGateway,
-  fakeInteraction,
-  FAKE_CHANNEL,
-  type FakeInput,
-} from './testing.ts';
+import { fakeButton, fakeContext, fakeGateway, FAKE_CHANNEL, type FakeInput } from './testing.ts';
 
 // Match 3 is Bravo (side A, managed by member 1) v Charlie (member 2), Ligue 1 week 3:
 // Monday 2 to Sunday 8 November 2026, extension until Sunday 15 November.
 const STAFF_USER = { id: '222222222222222222', displayName: 'Léa Staff' };
-const STAFF: FakeInput = {
-  guildId: TEST_GUILD,
-  user: STAFF_USER,
-  memberRoleIds: [TEST_STAFF_ROLE],
-};
 const BRAVO_ID = '700000000000000001';
 const CHARLIE_ID = '700000000000000002';
-const member = (n: number): FakeInput => ({
+const member = (n: number): Actor => ({
   guildId: TEST_GUILD,
   user: { id: `70000000000000000${n}`, displayName: `Member ${n}` },
   memberRoleIds: [],
@@ -40,23 +28,21 @@ const THURSDAY_21H = Date.parse('2026-11-05T20:00:00Z');
 const SCHEDULE = '800000000000000004';
 const logger = { error: vi.fn() };
 const at = (ms: number) => `<t:${String(ms / 1000)}:F>`;
+const SITE = new URL('http://localhost:3000');
 
 function session(now = NOW) {
   const db = leagueDatabase();
-  const staff = { guildId: TEST_GUILD, user: STAFF_USER, memberRoleIds: [TEST_STAFF_ROLE] };
+  const staff: Actor = { guildId: TEST_GUILD, user: STAFF_USER, memberRoleIds: [TEST_STAFF_ROLE] };
   setTeamOwner(db, staff, { teamId: 2, member: { id: BRAVO_ID, displayName: 'Member 1' } }, 100);
   setTeamOwner(db, staff, { teamId: 3, member: { id: CHARLIE_ID, displayName: 'Member 2' } }, 100);
   db.update(schema.leagueGuild).set({ scheduleChannelId: SCHEDULE }).run();
   const gateway = fakeGateway();
   const context = fakeContext({ db, gateway, now: () => now });
-  const propose = async (who: FakeInput, date = '2026-11-05', time = '21:00') => {
-    const interaction = fakeInteraction('match', {
-      ...who,
-      subcommand: 'propose-time',
-      options: { match: 3, date, time },
-    });
-    await matchCommand.execute(interaction, context);
-    return interaction;
+  // Proposed on the match page, which posts it as the website does.
+  const propose = async (who: Actor) => {
+    const reply = proposeTime(db, who, { matchId: 3, at: THURSDAY_21H }, now);
+    if (!reply.ok) throw new Error(reply.error);
+    await postProposal(context, FAKE_CHANNEL, reply, who.user.id);
   };
   const click = async (customId: string, who: FakeInput) => {
     const interaction = fakeButton(customId, who);
@@ -67,23 +53,17 @@ function session(now = NOW) {
   return { db, gateway, context, propose, click, stored };
 }
 
-describe('/match propose-time', () => {
-  it('posts the proposal in the channel, with buttons for the other team, and pings it', async () => {
+describe('the proposal post', () => {
+  it('carries buttons for the other team, pings it, links the match page, and is kept', async () => {
     const { propose, gateway, db } = session();
-    const interaction = await propose(BRAVO);
-    expect(interaction.replies).toEqual([
-      {
-        content: 'Proposition publiée : l’autre équipe peut l’accepter ou la refuser.',
-        ephemeral: true,
-      },
-    ]);
+    await propose(BRAVO);
     expect(gateway.posted).toEqual([
       {
         channelId: FAKE_CHANNEL,
         messageId: expect.any(String) as string,
         edits: 0,
         message: {
-          content: `<@700000000000000001> propose pour Bravo : **Ligue 1, semaine 3 : Bravo – Charlie** le ${at(THURSDAY_21H)}. <@700000000000000002>, acceptez ou refusez.`,
+          content: `<@700000000000000001> propose pour Bravo : **Ligue 1, semaine 3 : Bravo – Charlie** le ${at(THURSDAY_21H)}. <@700000000000000002>, acceptez ou refusez.\nPage du match : <http://localhost:3000/matches/3>`,
           buttons: [
             { customId: 'time-accept:3:1', label: 'Accepter', style: 'success' },
             { customId: 'time-decline:3:1', label: 'Refuser', style: 'danger' },
@@ -97,53 +77,6 @@ describe('/match propose-time', () => {
       channelId: FAKE_CHANNEL,
       messageId: gateway.posted[0]?.messageId,
     });
-  });
-
-  it('replies with the proposal when the bot cannot post in the channel', async () => {
-    const { propose, gateway } = session();
-    gateway.failing = true;
-    const interaction = await propose(BRAVO);
-    expect(interaction.replies).toMatchObject([
-      {
-        ephemeral: false,
-        buttons: [{ customId: 'time-accept:3:1' }, { customId: 'time-decline:3:1' }],
-      },
-    ]);
-  });
-
-  it.each([
-    [{ date: '05/11/2026' }, 'Date illisible : choisis un jour dans la liste ou tape AAAA-MM-JJ.'],
-    [{ time: '21h' }, 'Heure illisible : tape-la comme 21:00.'],
-    [{ date: '2026-11-02' }, 'Cet horaire est déjà passé.'],
-    [
-      { date: '2026-11-20' },
-      'Cet horaire tombe hors de la semaine du match et de sa prolongation. Le staff de la ligue peut fixer un autre horaire.',
-    ],
-  ])('refuses privately: %j', async (change, content) => {
-    const { propose } = session();
-    const options = { date: '2026-11-05', time: '21:00', ...change };
-    const interaction = await propose(BRAVO, options.date, options.time);
-    expect(interaction.replies).toEqual([{ content, ephemeral: true }]);
-  });
-
-  it("suggests the days left in the match's week and extension", async () => {
-    const { context } = session();
-    const suggest = async (value: string) => {
-      const interaction = fakeAutocomplete(
-        'match',
-        { name: 'date', value },
-        { ...BRAVO, subcommand: 'propose-time', options: { match: 3 } },
-      );
-      await matchCommand.autocomplete?.(interaction, context);
-      return interaction.responses[0] ?? [];
-    };
-    const days = await suggest('');
-    expect(days[0]).toEqual({ name: 'mar. 3 nov.', value: '2026-11-03' });
-    expect(days.at(-1)).toEqual({ name: 'dim. 15 nov.', value: '2026-11-15' });
-    expect(await suggest('jeu')).toEqual([
-      { name: 'jeu. 5 nov.', value: '2026-11-05' },
-      { name: 'jeu. 12 nov.', value: '2026-11-12' },
-    ]);
   });
 });
 
@@ -192,35 +125,20 @@ describe('proposal buttons', () => {
   });
 });
 
-describe('/staff match schedule', () => {
-  it('sets any time, announces it and confirms privately', async () => {
-    const { context, gateway, stored } = session();
-    const interaction = fakeInteraction('staff', {
-      ...STAFF,
-      subcommandGroup: 'match',
-      subcommand: 'schedule',
-      options: { match: 3, date: '2026-12-20', time: '18:30' },
-    });
-    await staffCommand.execute(interaction, context);
-    const when = Date.parse('2026-12-20T17:30:00Z');
-    expect(interaction.replies).toEqual([
-      {
-        content: `Horaire fixé : Ligue 1, semaine 3 : Bravo – Charlie, ${at(when)}.`,
-        ephemeral: true,
-      },
-    ]);
-    expect(stored()).toMatchObject({ scheduledAt: when, autoScheduled: false });
-    expect(gateway.posted[0]?.channelId).toBe(SCHEDULE);
-  });
-});
-
 describe('the clock', () => {
   const WEEK_END = Date.parse('2026-11-08T23:00:00Z');
   const AUTO_SLOT = Date.parse('2026-11-15T20:00:00Z');
 
   it('starts the extension and pings both teams in the schedule channel, once', async () => {
     const { db, gateway, stored } = session();
-    const deps = { db, gateway, logger, locale: 'fr' as const, now: () => WEEK_END };
+    const deps = {
+      db,
+      gateway,
+      logger,
+      locale: 'fr' as const,
+      publicUrl: SITE,
+      now: () => WEEK_END,
+    };
     await tick(deps);
     await tick(deps);
     expect(stored()).toMatchObject({ scheduledAt: AUTO_SLOT, autoScheduled: true });
@@ -230,7 +148,7 @@ describe('the clock', () => {
         messageId: expect.any(String) as string,
         edits: 0,
         message: {
-          content: `Prolongation — **Ligue 1, semaine 3 : Bravo – Charlie** : aucun horaire convenu pendant la semaine. Le match est fixé au ${at(AUTO_SLOT)}. Vous pouvez encore convenir d'un autre horaire jusqu'au <t:${String((Date.parse('2026-11-15T23:00:00Z') - 60_000) / 1000)}:D> avec /match propose-time. <@700000000000000001> <@700000000000000002>`,
+          content: `Prolongation — **Ligue 1, semaine 3 : Bravo – Charlie** : aucun horaire convenu pendant la semaine. Le match est fixé au ${at(AUTO_SLOT)}. Vous pouvez encore convenir d'un autre horaire jusqu'au <t:${String((Date.parse('2026-11-15T23:00:00Z') - 60_000) / 1000)}:D> sur la page du match, sur le site. <@700000000000000001> <@700000000000000002>`,
           mentionUserIds: ['700000000000000001', '700000000000000002'],
         },
       },
@@ -241,7 +159,7 @@ describe('the clock', () => {
     const { db, gateway, stored } = session();
     gateway.failing = true;
     const errors = { error: vi.fn() };
-    await tick({ db, gateway, logger: errors, locale: 'fr', now: () => WEEK_END });
+    await tick({ db, gateway, logger: errors, locale: 'fr', publicUrl: SITE, now: () => WEEK_END });
     expect(stored()?.autoScheduled).toBe(true);
     expect(errors.error).toHaveBeenCalledOnce();
   });

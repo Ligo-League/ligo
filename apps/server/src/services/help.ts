@@ -1,28 +1,13 @@
-import type {
-  ForfeitThresholds,
-  RoleLimits,
-  RulesetSettings,
-  SchedulingSettings,
-} from '@ligo/core';
+import type { RulesetSettings } from '@ligo/core';
 import { findGuildLeague, type Db } from '@ligo/db';
 import { requireStaff, type Actor } from './permissions.ts';
-import { roleLimits } from './team-staff.ts';
 
 /** What `/help` needs to explain the commands as this league runs them. */
 export interface HelpFacts {
   /** Staff commands are listed in the overview for staff only; teams don't need them. */
   staff: boolean;
-  /** Null on a server linked to no league: the explanations then name no league rule. */
-  rules: {
-    validation: RulesetSettings['result_validation'];
-    teamRoles: RoleLimits;
-    /** How long league staff have to answer a team's request. */
-    requestHours: number;
-    /** Null before a season starts: thresholds are a season setting. */
-    forfeits: ForfeitThresholds | null;
-    extensionWeeks: number;
-    autoSlot: SchedulingSettings['auto_slot'];
-  } | null;
+  /** How a reported result is validated; null on a server linked to no league. */
+  validation: RulesetSettings['result_validation'] | null;
 }
 
 export function helpFacts(
@@ -30,18 +15,10 @@ export function helpFacts(
   actor: Pick<Actor, 'guildId' | 'memberRoleIds'>,
 ): HelpFacts {
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
-  if (!league) return { staff: false, rules: null };
-  const { rulesetJson } = league.competition;
+  if (!league) return { staff: false, validation: null };
   return {
     // The same check as every staff action, so the overview lists what this member can use.
     staff: requireStaff(db, actor).ok,
-    rules: {
-      validation: rulesetJson.result_validation,
-      teamRoles: roleLimits(league),
-      requestHours: rulesetJson.requests.answer_within_hours,
-      forfeits: league.season?.settingsJson.forfeits ?? null,
-      extensionWeeks: league.competition.schedulingJson.extension_weeks,
-      autoSlot: league.competition.schedulingJson.auto_slot,
-    },
+    validation: league.competition.rulesetJson.result_validation,
   };
 }

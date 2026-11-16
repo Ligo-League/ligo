@@ -2,9 +2,7 @@ import { createHash } from 'node:crypto';
 import { listLeagueMatches, schema, type Db } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import type { EvidenceStore } from '../assets/evidence-store.ts';
-import type { DiscordGateway } from '../discord/gateway.ts';
 import { matchActorOf, requireStaff, sideOf, type Actor } from './permissions.ts';
-import { SCREENSHOT_MAX_BYTES } from './results.ts';
 
 // The server keeps its own copy of each score screenshot (maintainer, 14 November 2026), so the
 // website can show it: the address Discord gives for an upload expires within a day.
@@ -61,23 +59,6 @@ export async function keepEvidence(
   }
   db.update(evidence).set({ objectKey: key }).where(eq(evidence.id, target.evidenceId)).run();
   return true;
-}
-
-/** Downloads a screenshot attached to a command, then keeps it as `keepEvidence` does. */
-export async function fetchAndKeepEvidence(
-  db: Db,
-  gateway: Pick<DiscordGateway, 'downloadAttachment'>,
-  store: EvidenceStore,
-  target: { evidenceId: number; matchId: number },
-  url: string,
-): Promise<boolean> {
-  let data: Uint8Array;
-  try {
-    data = await gateway.downloadAttachment(url, SCREENSHOT_MAX_BYTES);
-  } catch {
-    return false;
-  }
-  return keepEvidence(db, store, target, data);
 }
 
 /** The competition an evidence row belongs to, through its match; null for an unknown row. */

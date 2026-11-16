@@ -186,17 +186,3 @@ export async function announceFiled(
     // Closed direct messages are the member's choice; the change is made.
   }
 }
-
-/** One line per request in a list: number, team, what, and by when staff answer. */
-export function requestLine(locale: Locale, request: RequestView, now: number): string {
-  const what = requestWhat(locale, request);
-  const base = t(locale, 'request.list.line', {
-    id: request.id,
-    tag: request.team.tag,
-    what,
-    at: discordTime(request.requestedAt, 'R'),
-  });
-  if (request.deadline === null) return base;
-  const key = request.deadline < now ? 'request.list.overdue' : 'request.list.deadline';
-  return `${base} ${t(locale, key, { deadline: discordTime(request.deadline, 'R') })}`;
-}

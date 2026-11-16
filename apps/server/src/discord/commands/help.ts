@@ -7,42 +7,18 @@ import type { Command } from './types.ts';
 
 // Discord gives a command one short sentence of description; /help says the rest.
 
-/** The pages of /help, one per command, or per group of /staff. */
-export const HELP_TOPICS = [
-  'standings',
-  'match',
-  'match-time',
-  'match-veto',
-  'staff-match',
-  'staff-sanction',
-  'staff-exclusion',
-  'team',
-  'league',
-  'register',
-] as const;
+/** The pages of /help, one per command. */
+export const HELP_TOPICS = ['standings', 'match', 'league', 'register'] as const;
 export type HelpTopic = (typeof HELP_TOPICS)[number];
 
 const PAGES: Record<HelpTopic, MessageKey> = {
   standings: 'help.page.standings',
   match: 'help.page.match',
-  'match-time': 'help.page.matchTime',
-  'match-veto': 'help.page.matchVeto',
-  'staff-match': 'help.page.staffMatch',
-  'staff-sanction': 'help.page.staffSanction',
-  'staff-exclusion': 'help.page.staffExclusion',
-  team: 'help.page.team',
   league: 'help.page.league',
   register: 'help.page.register',
 };
 
-/** A weekday from 1 (Monday) to 7 (Sunday), by name. 1 January 2024 was a Monday. */
-const weekdayName = (locale: Locale, weekday: number) =>
-  new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {
-    weekday: 'long',
-    timeZone: 'UTC',
-  }).format(Date.UTC(2024, 0, weekday));
-
-/** The list of commands: staff commands only for staff, who also get the order of setup. */
+/** The list of commands: staff commands only for staff. */
 export function helpOverview(locale: Locale, facts: HelpFacts): string {
   const parts = [t(locale, 'help.overview')];
   if (facts.staff) parts.push(t(locale, 'help.overview.staff'));
@@ -51,50 +27,14 @@ export function helpOverview(locale: Locale, facts: HelpFacts): string {
 
 /** One command explained, with the league's own settings where the explanation depends on them. */
 export function helpPage(locale: Locale, topic: HelpTopic, facts: HelpFacts): string {
-  const { rules } = facts;
   if (topic === 'match') {
     // Without a linked league, the steps of a league whose staff validate are the usual case.
     const steps =
-      rules?.validation === 'opponent' ? 'help.match.steps.opponent' : 'help.match.steps.staff';
+      facts.validation === 'opponent' ? 'help.match.steps.opponent' : 'help.match.steps.staff';
     return [
       t(locale, PAGES.match, { maxMb: Math.floor(SCREENSHOT_MAX_BYTES / (1024 * 1024)) }),
       t(locale, steps),
     ].join('\n\n');
-  }
-  if (topic === 'staff-match') {
-    const thresholds = [
-      rules?.forfeits?.warning_at &&
-        t(locale, 'help.forfeit.warning', { count: rules.forfeits.warning_at }),
-      rules?.forfeits?.exclusion_at &&
-        t(locale, 'help.forfeit.exclusion', { count: rules.forfeits.exclusion_at }),
-    ].filter((line): line is string => typeof line === 'string');
-    // The thresholds hang under the `forfeit` line they belong to.
-    const page = [t(locale, PAGES['staff-match']), ...thresholds.map((line) => `  – ${line}`)];
-    return [page.join('\n'), t(locale, 'help.staffMatch.footer')].join('\n\n');
-  }
-  if (topic === 'match-time') {
-    const rule = !rules
-      ? null
-      : rules.autoSlot
-        ? t(locale, 'help.matchTime.autoSlot', {
-            weeks: rules.extensionWeeks,
-            day: weekdayName(locale, rules.autoSlot.weekday),
-            time: rules.autoSlot.time,
-          })
-        : t(locale, 'help.matchTime.noAutoSlot', { weeks: rules.extensionWeeks });
-    const page = t(locale, PAGES['match-time']);
-    return rule ? `${page}\n${rule}` : page;
-  }
-  if (topic === 'team') {
-    const page = t(locale, PAGES.team);
-    return rules
-      ? `${page}\n${t(locale, 'help.team.max', {
-          clubManagers: rules.teamRoles.club_managers_max,
-          managers: rules.teamRoles.managers_max,
-          coaches: rules.teamRoles.coaches_max,
-          hours: rules.requestHours,
-        })}`
-      : page;
   }
   return t(locale, PAGES[topic]);
 }

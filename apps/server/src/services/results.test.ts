@@ -5,10 +5,10 @@ import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import type { Actor } from './permissions.ts';
 import { requireStaff } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
-import { recordResult, searchMatches } from './results.ts';
+import { recordResult } from './results.ts';
 import { getStandings } from './standings.ts';
 
-const { auditLog, competition, division, evidence, game, match, player, season, stage } = schema;
+const { auditLog, competition, evidence, game, match, player } = schema;
 
 const STAFF: Actor = {
   guildId: TEST_GUILD,
@@ -313,46 +313,5 @@ describe('recordResult', () => {
     expect(() => recordResult(db, STAFF, request, 9000)).toThrow(/audit down/);
     expect(db.select().from(match).all()[OPEN_MATCH - 1]?.status).toBe('scheduled');
     expect(db.select().from(player).all()).toEqual([]);
-  });
-});
-
-describe('searchMatches', () => {
-  const ids = (db: ReturnType<typeof leagueDatabase>, query: string, actor: Actor = STAFF) =>
-    searchMatches(db, actor, query, 25).map((found) => found.id);
-
-  it('lists the matches that can take a result, those still to play first', () => {
-    // Match 2 is a forfeit: it is not offered.
-    expect(ids(leagueDatabase(), '')).toEqual([3, 1, 4]);
-  });
-
-  it.each([
-    ['brv', [3, 1]],
-    ['BRV cha', [3]],
-    ['l2', [4]],
-    ['ligue 1', [3, 1]],
-    ['s3', [3]],
-    ['alpha esport', [1]],
-    ['1', [3, 1]],
-    ['s1 ligue', [1, 4]],
-    ['nobody', []],
-  ])('narrows by %j', (query, expected) => {
-    expect(ids(leagueDatabase(), query)).toEqual(expected);
-  });
-
-  it('respects the limit', () => {
-    expect(searchMatches(leagueDatabase(), STAFF, '', 2)).toHaveLength(2);
-  });
-
-  it('offers nothing to a member who is not staff, or outside a linked server', () => {
-    expect(ids(leagueDatabase(), '', MEMBER)).toEqual([]);
-    expect(ids(leagueDatabase(), '', { ...STAFF, guildId: null })).toEqual([]);
-  });
-
-  it('offers nothing while no season has left registration', () => {
-    const db = leagueDatabase();
-    db.update(season).set({ status: 'registration' }).run();
-    expect(ids(db, '')).toEqual([]);
-    expect(db.select().from(division).all()).toHaveLength(2);
-    expect(db.select().from(stage).all()).toHaveLength(2);
   });
 });

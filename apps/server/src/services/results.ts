@@ -3,7 +3,6 @@ import { listLeagueMatches, schema, type Db, type LeagueMatch } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { isDiscordAttachmentUrl } from './attachments.ts';
 import { requireStaff, type Actor } from './permissions.ts';
-import { matchQuery } from './match-search.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
 import { settleDisputes } from './disputes.ts';
@@ -186,26 +185,3 @@ const pickScore = (stored: { scoreA: number; scoreB: number }) => ({
   scoreA: stored.scoreA,
   scoreB: stored.scoreB,
 });
-
-/**
- * The current season's matches a staff member can pick for a result, narrowed by what they have
- * typed so far (a team, a division prefix, "s3" for a week). Matches still to play come first.
- */
-export function searchMatches(
-  db: Pick<Db, 'select'>,
-  actor: Pick<Actor, 'guildId' | 'memberRoleIds'>,
-  query: string,
-  limit: number,
-): LeagueMatch[] {
-  const staff = requireStaff(db, actor);
-  if (!staff.ok || !staff.league.season) return [];
-
-  const matches = matchQuery(query);
-  const toPlay = (candidate: LeagueMatch) => (candidate.status === 'validated' ? 1 : 0);
-
-  return listLeagueMatches(db, { seasonId: staff.league.season.id })
-    .filter((candidate) => OPEN_STATUSES.includes(candidate.status) && candidate.bestOf === 1)
-    .filter(matches)
-    .sort((x, y) => toPlay(x) - toPlay(y))
-    .slice(0, limit);
-}

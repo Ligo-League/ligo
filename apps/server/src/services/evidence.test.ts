@@ -2,12 +2,10 @@ import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { PNG_HEADER_FOR_TESTS } from '../assets/store.ts';
-import { fakeGateway } from '../discord/testing.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import {
   evidenceCompetition,
   evidenceKeyOf,
-  fetchAndKeepEvidence,
   imageTypeOf,
   keepEvidence,
   openEvidence,
@@ -87,17 +85,6 @@ describe('keepEvidence', () => {
     expect(await keepEvidence(db, store, { evidenceId, matchId: 3 }, PNG)).toBe(false);
     expect(store.files.size).toBe(0);
     expect(objectKey()).toBeNull();
-  });
-
-  it('downloads a command’s attachment first, and gives up when Discord fails', async () => {
-    const { db, store, evidenceId, objectKey } = withEvidence();
-    const gateway = fakeGateway();
-    const target = { evidenceId, matchId: 3 };
-    gateway.failing = true;
-    expect(await fetchAndKeepEvidence(db, gateway, store, target, 'https://x')).toBe(false);
-    gateway.failing = false;
-    expect(await fetchAndKeepEvidence(db, gateway, store, target, 'https://x')).toBe(true);
-    expect(objectKey()).toMatch(/\.png$/);
   });
 });
 

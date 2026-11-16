@@ -1,4 +1,4 @@
-import { slugify, type ForfeitSide } from '@ligo/core';
+import type { ForfeitSide } from '@ligo/core';
 import {
   findClub,
   findLeague,
@@ -10,6 +10,7 @@ import {
   type LeagueMatch,
 } from '@ligo/db';
 import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { seasonSlug } from './paths.ts';
 import { leagueStandings, type StandingsTable } from './standings.ts';
 import { listTeamStaff } from './team-staff.ts';
 
@@ -30,12 +31,6 @@ export interface SeasonLink {
 export interface LeagueLinks {
   competition: { name: string; slug: string };
   seasons: SeasonLink[];
-}
-
-/** A season's URL part: its name as a slug, or its ID for a name with no Latin letter. */
-export function seasonSlug(row: { id: number; name: string }): string {
-  const slug = slugify(row.name);
-  return slug.ok ? slug.slug : `season-${String(row.id)}`;
 }
 
 const seasonLink = (row: typeof season.$inferSelect): SeasonLink => ({

@@ -9,6 +9,7 @@ import {
   type StandingsRow,
 } from '@ligo/core';
 import { findGuildLeague, loadStandingsInput, type Db, type League, type Theme } from '@ligo/db';
+import { seasonPath } from './paths.ts';
 
 export interface StandingsTableRow extends Omit<StandingsRow, 'entry'> {
   team: { name: string; tag: string; colors: string[]; logoKey: string | null };
@@ -32,6 +33,8 @@ export type StandingsReply =
       ok: true;
       competition: string;
       season: string;
+      /** The season's page on the website. */
+      path: string;
       /** The league's image colours, where it set any. */
       theme: Theme;
       tables: StandingsTable[];
@@ -115,6 +118,7 @@ export function leagueStandings(
     ok: true,
     competition: league.competition.name,
     season: league.season.name,
+    path: seasonPath(league.competition.slug, league.season),
     theme: league.competition.themeJson,
     tables,
   };

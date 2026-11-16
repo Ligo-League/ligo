@@ -60,7 +60,14 @@ export function matchReportRoutes(
 ): { panel: (c: Context<Env>, matchId: number) => Promise<Html | string> } {
   const { deps, render, notFound, forbidden, guard } = kit;
   const { db, locale } = deps;
-  const discord = { db, gateway: deps.gateway, assets: deps.assets, locale, now: deps.now };
+  const discord = {
+    db,
+    gateway: deps.gateway,
+    assets: deps.assets,
+    locale,
+    now: deps.now,
+    publicUrl: deps.login?.publicUrl,
+  };
 
   /**
    * The result panel for the viewer, when they act for a side of a best-of-1 match still to be

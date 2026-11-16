@@ -22,7 +22,13 @@ describe('/standings', () => {
   it('posts one image per division by default, after telling Discord it is coming', async () => {
     const interaction = await interact({ guildId: TEST_GUILD });
     expect(interaction.deferred).toBe(true);
-    expect(interaction.replies).toMatchObject([{ content: '', ephemeral: false }]);
+    expect(interaction.replies).toMatchObject([
+      {
+        content:
+          'Le classement, le calendrier et les résultats sur le site : <http://localhost:3000/c/lfr/saison-3>',
+        ephemeral: false,
+      },
+    ]);
     const files = interaction.replies[0]?.files ?? [];
     expect(files.map((file) => file.name)).toEqual([
       'standings-ligue-1.png',
@@ -83,6 +89,7 @@ describe('/standings', () => {
           '1  XRA      1  1  0   8   6    +2    3',
           '2  YAN      1  0  1   6   8    -2    0',
           '```',
+          'Le classement, le calendrier et les résultats sur le site : <http://localhost:3000/c/lfr/saison-3>',
         ].join('\n'),
       },
     ]);
@@ -102,6 +109,7 @@ describe('/standings', () => {
         '1  XRA    1  1  0   8   6    +2    3',
         '2  YAN    1  0  1   6   8    -2    0',
         '```',
+        'Standings, fixtures and results on the website: <http://localhost:3000/c/lfr/saison-3>',
       ].join('\n'),
     );
   });

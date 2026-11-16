@@ -8,13 +8,22 @@ import {
 import { buttonId } from './button-id.ts';
 import type { CommandContext, MessageButton, OutgoingMessage } from './commands/types.ts';
 import { announceWithCard } from './match-card.ts';
-import { disputeQueueMessage, matchLine, mention, notifyQueue, storedLine } from './match-text.ts';
+import {
+  disputeQueueMessage,
+  matchLine,
+  mention,
+  notifyQueue,
+  pageLink,
+  storedLine,
+} from './match-text.ts';
 
 // What Discord shows of a result report, the same wherever the team acted: `/match report` and
 // its buttons, or the match page (phase 3e, M-32). The report or answer is stored first; nothing
 // here can undo it.
 
-type Poster = Pick<CommandContext, 'db' | 'gateway' | 'assets' | 'locale' | 'now'>;
+type Poster = Pick<CommandContext, 'db' | 'gateway' | 'assets' | 'locale' | 'now'> & {
+  publicUrl?: URL;
+};
 type Reported = Extract<ReportReply, { ok: true }>;
 type Answered = Extract<AnswerReply, { ok: true }>;
 type ButtonKind = 'confirm' | 'dispute' | 'validate' | 'reject';
@@ -56,6 +65,7 @@ export function reportPostMessage(
   locale: Locale,
   reply: Reported,
   reporterUserId: string,
+  publicUrl: URL | undefined,
 ): OutgoingMessage {
   const { opponentIds } = reply;
   const text = {
@@ -67,8 +77,17 @@ export function reportPostMessage(
     opponentIds.length > 0
       ? t(locale, 'report.posted', { ...text, opponents: opponentIds.map(mention).join(' ') })
       : t(locale, 'report.postedNoOpponent', text);
+  const lines = [posted];
+  if (!reply.queued) lines.push(t(locale, 'report.notQueued'));
+  if (publicUrl) {
+    lines.push(
+      t(locale, 'match.pageLink', {
+        url: pageLink(publicUrl, `/matches/${String(reply.match.id)}`),
+      }),
+    );
+  }
   return {
-    content: reply.queued ? posted : `${posted}\n${t(locale, 'report.notQueued')}`,
+    content: lines.join('\n'),
     files: [reply.screenshot],
     buttons: reportButtons(locale, reply, 'opponent'),
     mentionUserIds: opponentIds,
@@ -85,7 +104,7 @@ export async function postReport(
   try {
     const post = await context.gateway.postMessage(
       channelId,
-      reportPostMessage(context.locale, reply, reporterUserId),
+      reportPostMessage(context.locale, reply, reporterUserId, context.publicUrl),
     );
     recordReportPost(context.db, reply.evidenceId, { channelId, messageId: post.messageId });
     return true;

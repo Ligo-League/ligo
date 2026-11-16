@@ -7,12 +7,12 @@ import {
 import { buttonId } from './button-id.ts';
 import type { CommandContext, OutgoingMessage } from './commands/types.ts';
 import { announceWithCard } from './match-card.ts';
-import { discordTime, matchFixture, mention } from './match-text.ts';
+import { discordTime, matchFixture, mention, pageLink } from './match-text.ts';
 
 // What Discord shows of a proposed time, the same wherever the team acted: `/match propose-time`
 // or the match page (M-32). The proposal is stored first; nothing here can undo it.
 
-type Poster = Pick<CommandContext, 'db' | 'gateway' | 'assets' | 'locale'>;
+type Poster = Pick<CommandContext, 'db' | 'gateway' | 'assets' | 'locale'> & { publicUrl?: URL };
 type Proposed = Extract<ProposeReply, { ok: true }>;
 type Answered = Extract<AnswerProposalReply, { ok: true }>;
 
@@ -32,10 +32,11 @@ export function proposalButtons(locale: Locale, matchId: number, proposalId: num
 }
 
 /** The proposal, mentioning the other side's officials and captain, with their two buttons. */
-export function proposalMessage(
+function proposalMessage(
   locale: Locale,
   reply: Proposed,
   proposerUserId: string,
+  publicUrl: URL | undefined,
 ): OutgoingMessage {
   const { opponentIds } = reply;
   const text = {
@@ -44,11 +45,20 @@ export function proposalMessage(
     fixture: matchFixture(locale, reply.match),
     when: discordTime(reply.at),
   };
+  const lines = [
+    opponentIds.length > 0
+      ? t(locale, 'schedule.proposed', { ...text, opponents: opponentIds.map(mention).join(' ') })
+      : t(locale, 'schedule.proposedNoOpponent', text),
+  ];
+  if (publicUrl) {
+    lines.push(
+      t(locale, 'match.pageLink', {
+        url: pageLink(publicUrl, `/matches/${String(reply.match.id)}`),
+      }),
+    );
+  }
   return {
-    content:
-      opponentIds.length > 0
-        ? t(locale, 'schedule.proposed', { ...text, opponents: opponentIds.map(mention).join(' ') })
-        : t(locale, 'schedule.proposedNoOpponent', text),
+    content: lines.join('\n'),
     buttons: proposalButtons(locale, reply.match.id, reply.proposalId),
     mentionUserIds: opponentIds,
   };
@@ -64,7 +74,7 @@ export async function postProposal(
   try {
     const post = await context.gateway.postMessage(
       channelId,
-      proposalMessage(context.locale, reply, proposerUserId),
+      proposalMessage(context.locale, reply, proposerUserId, context.publicUrl),
     );
     recordProposalPost(context.db, reply.proposalId, { channelId, messageId: post.messageId });
     return true;

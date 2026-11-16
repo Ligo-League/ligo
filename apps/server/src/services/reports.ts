@@ -815,23 +815,3 @@ export function voidMatch(
     now,
   );
 }
-
-/** Matches league staff can pick for a step, narrowed by `query`. */
-export function searchMatchesForStaff(
-  db: Pick<Db, 'select'>,
-  actor: Pick<Actor, 'guildId' | 'memberRoleIds'>,
-  purpose: 'validate' | 'void',
-  query: string,
-  limit: number,
-): LeagueMatch[] {
-  const staff = requireStaff(db, actor);
-  if (!staff.ok || !staff.league.season) return [];
-  const validation = staff.league.competition.rulesetJson.result_validation;
-  return listLeagueMatches(db, { seasonId: staff.league.season.id })
-    .filter(
-      (found) =>
-        nextMatchStatus({ status: found.status, action: purpose, actor: 'staff', validation }).ok,
-    )
-    .filter(matchQuery(query))
-    .slice(0, limit);
-}

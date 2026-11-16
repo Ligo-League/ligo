@@ -19,6 +19,8 @@ export interface ClockDeps {
   gateway: DiscordGateway;
   logger: ErrorLogger;
   locale: Locale;
+  /** The website's address, for the links in the bot's posts. */
+  publicUrl: URL;
   now(): number;
   /** A whole number from 0 to `below` − 1, for a veto step that ran out; crypto by default. */
   random?: (below: number) => number;
@@ -88,10 +90,10 @@ async function vetoTick(deps: ClockDeps): Promise<void> {
       await deps.gateway.editMessage(
         view.channelId,
         view.messageId,
-        vetoMessage(deps.locale, view),
+        vetoMessage(deps.locale, view, deps.publicUrl),
       );
     } catch (error) {
-      // The step is stored; the next click or tick shows it.
+      // The step is stored; the next step or tick shows it.
       deps.logger.error({ err: error, matchId: view.match.id }, 'Could not update a veto');
     }
   }

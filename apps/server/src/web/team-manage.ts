@@ -167,7 +167,7 @@ export function teamManageRoutes(app: Hono<Env>, kit: RouteKit): void {
     );
   });
 
-  /** Files the change, or makes it for league staff, then tells Discord as `/team` does. */
+  /** Files the change, or makes it for league staff, then tells the staff queue on Discord. */
   const submit = async (c: Context<Env>, viewer: Viewer, input: RequestInput) => {
     const found = await acting(c, viewer);
     if (found instanceof Response) return found;

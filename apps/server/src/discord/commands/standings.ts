@@ -10,6 +10,7 @@ import {
   type StandingsTable,
 } from '../../services/standings.ts';
 import { loadLogos } from '../../services/logos.ts';
+import { pageLink } from '../match-text.ts';
 import { formatStandingsTable } from '../standings-table.ts';
 import { described, english } from './describe.ts';
 import type { Command, CommandFile } from './types.ts';
@@ -123,13 +124,15 @@ export const standingsCommand: Command = {
       return;
     }
 
+    // The page under the picture or the table, for whoever wants the fixtures and results too.
+    const link = t(locale, 'standings.link', { url: pageLink(context.publicUrl, standings.path) });
     if (interaction.options.getString('format') !== 'text') {
       // Rendering can take longer than the 3 seconds Discord waits for a reply.
       await interaction.defer();
       const files = await Promise.all(
         standings.tables.map((table) => renderTable(locale, standings, table, context.assets)),
       );
-      await interaction.reply({ content: '', ephemeral: false, files });
+      await interaction.reply({ content: link, ephemeral: false, files });
       return;
     }
 
@@ -142,6 +145,7 @@ export const standingsCommand: Command = {
         });
         return `**${title}**\n\`\`\`\n${formatStandingsTable(locale, table)}\n\`\`\``;
       })
+      .concat(link)
       .join('\n');
     if (content.length > MESSAGE_LIMIT) {
       const divisions = standings.tables.map((table) => table.division).join(', ');

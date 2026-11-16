@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { setAutoExclusion } from './exclusions.ts';
-import { recordForfeit, searchForfeitableMatches } from './forfeits.ts';
+import { recordForfeit } from './forfeits.ts';
 import type { Actor } from './permissions.ts';
 import { voidMatch } from './reports.ts';
 import { getStandings } from './standings.ts';
@@ -226,16 +226,5 @@ describe('recordForfeit', () => {
     expect(() => forfeit(db, 3, 'b')).toThrow(/audit down/);
     expect(db.select().from(match).all()[2]?.status).toBe('scheduled');
     expect(db.select().from(sanction).all()).toEqual([]);
-  });
-});
-
-describe('searchForfeitableMatches', () => {
-  it('offers staff every match that is neither a forfeit nor annulled, those to play first', () => {
-    const db = leagueDatabase();
-    const ids = (query = '', actor: Actor = STAFF) =>
-      searchForfeitableMatches(db, actor, query, 25).map((found) => found.id);
-    expect(ids()).toEqual([3, 1, 4]);
-    expect(ids('cha')).toEqual([3]);
-    expect(ids('', MEMBER)).toEqual([]);
   });
 });

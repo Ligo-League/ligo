@@ -58,14 +58,17 @@ describe('the veto page', () => {
     expect(response.headers.get('cache-control')).toBe('private, no-store');
   });
 
-  it('starts the veto, posted in the schedule channel with the bot’s buttons', async () => {
+  it('starts the veto, posted in the schedule channel with the page’s link', async () => {
     const { db, request, logIn, gateway, start } = site();
     await logIn('/matches/3/veto');
     expect(where(await start())).toBe('/matches/3/veto?veto=started');
     expect(gateway.posted).toMatchObject([
       { channelId: SCHEDULE, message: { mentionUserIds: [ANA.id, BEN.id] } },
     ]);
-    expect(gateway.posted[0]?.message.buttons?.[0]?.customId).toBe('veto:3:0x0');
+    expect(gateway.posted[0]?.message.buttons).toBeUndefined();
+    expect(gateway.posted[0]?.message.content).toContain(
+      'Les choix se font sur la page du veto : <http://localhost:3000/matches/3/veto>',
+    );
     expect(db.select().from(schema.match).where(eq(schema.match.id, 3)).get()).toMatchObject({
       vetoChannelId: SCHEDULE,
       vetoMessageId: gateway.posted[0]?.messageId,

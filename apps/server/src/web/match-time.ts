@@ -49,7 +49,13 @@ export function matchTimeRoutes(
 ): { panel: (c: Context<Env>, matchId: number) => Promise<Html | string> } {
   const { deps, notFound, forbidden, guard } = kit;
   const { db, locale } = deps;
-  const discord = { db, gateway: deps.gateway, assets: deps.assets, locale };
+  const discord = {
+    db,
+    gateway: deps.gateway,
+    assets: deps.assets,
+    locale,
+    publicUrl: deps.login?.publicUrl,
+  };
 
   /**
    * The time panel for the viewer, when they act for a side of a match still to play; nothing

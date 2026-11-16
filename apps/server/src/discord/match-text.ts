@@ -85,6 +85,12 @@ export function dayLabel(locale: Locale, date: string): string {
 /** A mention of a Discord user. It pings only when the message names them in `mentionUserIds`. */
 export const mention = (discordUserId: string) => `<@${discordUserId}>`;
 
+/**
+ * A page of the website, written so that Discord shows it without an embed (design doc section 6):
+ * the bot's replies stay short, and the link is there to jump to the page.
+ */
+export const pageLink = (publicUrl: URL, path: string) => `<${new URL(path, publicUrl).href}>`;
+
 /** The reason in the member's language; "other" is worded by the bot, not the league. */
 export function reasonLabel(locale: Locale, dispute: Pick<DisputeDetails, 'label'>): string {
   if (!dispute.label) return t(locale, 'dispute.reason.other');

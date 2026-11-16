@@ -93,7 +93,7 @@ describe('/match report', () => {
       {
         ephemeral: false,
         content:
-          '<@700000000000000001> signale pour Bravo : **Ligue 1, semaine 3 : Bravo 7–5 Charlie**. <@700000000000000002>, confirmez ou contestez ce résultat.',
+          '<@700000000000000001> signale pour Bravo : **Ligue 1, semaine 3 : Bravo 7–5 Charlie**. <@700000000000000002>, confirmez ou contestez ce résultat.\nPage du match : <http://localhost:3000/matches/3>',
         files: [{ name: 'score-3.png' }],
         buttons: [
           { customId: 'report-confirm:3:1', label: 'Confirmer', style: 'success' },
@@ -145,7 +145,7 @@ describe('/match report', () => {
     setTeamOwner(first.db, STAFF, { teamId: 2, member: BRAVO.user }, 300);
     expect((await first.run(report(BRAVO))).replies[0]).toMatchObject({
       content:
-        "<@700000000000000001> signale pour Bravo : **Ligue 1, semaine 3 : Bravo 7–5 Charlie**. L'équipe adverse n'a pas encore de responsable enregistré : le staff validera.",
+        "<@700000000000000001> signale pour Bravo : **Ligue 1, semaine 3 : Bravo 7–5 Charlie**. L'équipe adverse n'a pas encore de responsable enregistré : le staff validera.\nPage du match : <http://localhost:3000/matches/3>",
       mentionUserIds: [],
     });
 
@@ -160,11 +160,11 @@ describe('/match report', () => {
   it.each([
     [
       report(OUTSIDER),
-      "Tu n'es ni capitaine ni responsable d'une équipe. Le staff peut te nommer responsable avec /team.",
+      "Tu n'es ni capitaine ni responsable d'une équipe. Son propriétaire peut t'ajouter sur le site.",
     ],
     [
       report(STAFF),
-      "Tu n'es ni capitaine ni responsable d'une équipe. Le staff peut te nommer responsable avec /team.",
+      "Tu n'es ni capitaine ni responsable d'une équipe. Son propriétaire peut t'ajouter sur le site.",
     ],
     [
       report(BRAVO, { match: 4 }),
@@ -220,7 +220,7 @@ describe('/match report', () => {
     };
     expect(await suggest(OUTSIDER)).toEqual([
       {
-        name: "Tu n'es ni capitaine ni responsable d'une équipe. Le staff peut te nommer responsable avec /team.",
+        name: "Tu n'es ni capitaine ni responsable d'une équipe. Son propriétaire peut t'ajouter sur le site.",
         value: 0,
       },
     ]);
@@ -239,7 +239,7 @@ describe('/match report', () => {
     expect(interaction.replies).toEqual([
       {
         content:
-          "Tu n'es ni capitaine ni responsable d'une équipe. Le staff peut te nommer responsable avec /team.",
+          "Tu n'es ni capitaine ni responsable d'une équipe. Son propriétaire peut t'ajouter sur le site.",
         ephemeral: true,
       },
     ]);

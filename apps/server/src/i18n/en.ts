@@ -32,36 +32,10 @@ export const en: Record<MessageKey, string> = {
     "Report the result of one of your team's matches, with the screenshot.",
   'command.match.report.option.match': 'The match: pick it from the list.',
   'command.match.report.option.screenshot': 'Screenshot of the scoreboard.',
-  'command.staff.description': 'Actions for league staff only.',
-  'command.staff.match.description': 'Results and matches.',
-  'command.staff.match.validate.description': 'Validate a result reported by a team.',
-  'command.staff.match.void.description': 'Annul a match, with a reason.',
-  'command.staff.match.void.option.reason': 'The reason, kept in the log.',
-  'command.staff.match.forfeit.description': "Record a team's forfeit on a match.",
-  'command.staff.match.forfeit.option.team': 'The team that forfeits.',
-  'command.staff.match.forfeit.side.a': 'The first team named',
-  'command.staff.match.forfeit.side.b': 'The second team named',
-  'command.staff.match.forfeit.side.both': 'Both teams (neither showed up)',
-  'command.staff.sanction.description': 'Sanctions.',
-  'command.staff.sanction.add.description': 'Give a team a sanction.',
-  'command.staff.sanction.list.description': "Show a team's sanctions this season.",
-  'command.staff.sanction.option.kind': 'The kind of sanction.',
-  'command.staff.sanction.option.reason': 'The reason for the sanction.',
-  'command.staff.sanction.option.points':
-    'Points to add to the standings: a negative number takes some away (for example -1).',
-  'command.staff.match.result.description': 'Record or correct the result of a match.',
-  'command.staff.match.option.match':
-    'The match: type a team, a division or a week (s3), then pick from the list.',
   'command.match.option.scoreA': 'Rounds won by the first team named.',
   'command.match.option.scoreB': 'Rounds won by the second team named.',
-  'command.staff.match.result.option.screenshot':
-    'Screenshot of the scoreboard (optional for staff).',
   'match.label': '{division} · W{week} · {teamA} – {teamB}',
   'match.labelWithResult': '{division} · W{week} · {teamA} {scoreA}–{scoreB} {teamB}',
-  'match.result.recorded':
-    'Result recorded: {division}, week {week}, {teamA} {scoreA}–{scoreB} {teamB}.',
-  'match.result.corrected':
-    'Result corrected: {division}, week {week}, {teamA} {scoreA}–{scoreB} {teamB} (was {previousA}–{previousB}).',
   'match.line': '{division}, week {week}: {teamA} {scoreA}–{scoreB} {teamB}',
   'match.fixture': '{division}, week {week}: {teamA} – {teamB}',
   'report.posted':
@@ -92,22 +66,11 @@ export const en: Record<MessageKey, string> = {
   'result.announceForfeit': 'Forfeit — {fixture}. {team} forfeits.',
   'result.announceForfeitBoth':
     'Forfeit — {fixture}. Neither team showed up: a forfeit loss for {teamA} and for {teamB}.',
-  'staff.match.validated': 'Result validated: {line}.',
-  'staff.match.voided': 'Match annulled: {fixture}.',
-  'staff.match.forfeit': 'Forfeit recorded: {fixture}. {team} forfeits ({count} this season).',
-  'staff.match.forfeitBoth': 'Forfeit by both teams recorded: {fixture}.',
-  'staff.match.forfeitBoth.count': '{team} forfeits ({count} this season).',
-  'staff.match.forfeit.warning': 'A warning was added automatically to {team}.',
-  'staff.match.forfeit.exclusion': '{team} has {count} forfeits and stays excluded.',
   'queue.exclusion': '{team} has {count} forfeits ({fixture}) and stays excluded.',
   'sanction.reason.forfeits': 'Automatic warning: {count} forfeits this season.',
   'sanction.kind.warning': 'Warning',
   'sanction.kind.points': 'Standings points',
   'sanction.kindPoints': '{points} standings point(s)',
-  'sanction.line': '{date} — {kind} — {reason}',
-  'sanction.added': 'Sanction recorded for {team}: {sanction}',
-  'sanction.list.title': "{team}'s sanctions this season:",
-  'sanction.list.none': 'No sanction for {team} this season.',
   'sanction.error.not_linked': 'This server is not linked to a league.',
   'sanction.error.not_staff': 'This command is for league staff only.',
   'sanction.error.no_season': 'No season is in progress.',
@@ -118,7 +81,7 @@ export const en: Record<MessageKey, string> = {
     'Give a number of points other than zero, between -100 and 100 (negative to take some away).',
   'sanction.error.points_not_allowed': 'A warning carries no points.',
   'match.error.no_team':
-    'You are neither captain nor official of any team. Staff can name you an official with /team.',
+    'You are neither captain nor official of any team. Its owner can add you on the website.',
   'match.error.no_season': 'This league has no season in progress.',
   'report.hint.nothingLeft': "No match to report: your teams' matches all have a result.",
   'report.hint.noMatch': 'None of your matches to report matches "{query}".',
@@ -158,26 +121,11 @@ export const en: Record<MessageKey, string> = {
     'That score cannot happen under the league rules: a map ends between {widest} and {closest}, or in overtime ({overtime}).',
   'match.error.invalid_screenshot':
     'The screenshot must be a PNG, JPEG or WebP image under 20 MB, attached to the command.',
-  'command.team.description': "Teams' officials: change them, or ask for a change.",
-  'command.team.owner.description': "Hand a team's club over to a new owner.",
-  'command.team.member.description': "A team's managers and coach, its club's managers.",
-  'command.team.member.add.description': 'Add a club manager, a manager or a coach to a team.',
-  'command.team.member.remove.description': 'Remove an official from a team.',
-  'command.team.list.description': "Show a team's officials.",
-  'command.team.option.role': 'The role on the team.',
   'team.role.owner': 'Club owner',
   'team.role.club_manager': 'Club manager',
   'team.role.manager': 'Manager',
   'team.role.coach': 'Coach',
-  'command.team.option.team': 'The team: type its name or tag, then pick from the list.',
-  'command.team.option.member': 'The Discord member concerned.',
-  'command.team.leave.description': 'Leave a team you are an official of.',
-  'command.team.requests.description': "Teams' requests waiting for an answer from staff.",
-  'command.team.option.teamOptional':
-    'The team, picked from the list; not needed if you are an official of only one.',
-  'command.team.option.note': 'A word for the league staff, optional.',
   'team.error.not_official': 'You are not an official of that team, or of any team this season.',
-  'team.error.team_required': 'Pick the team with the `team` option.',
   'team.error.not_allowed': 'A coach cannot ask for this: ask the owner or a manager.',
   'team.error.owner_only': "Only the team's owner can ask for this.",
   'team.error.queue_not_set': 'League staff have not chosen their validation queue yet: tell them.',
@@ -206,7 +154,6 @@ export const en: Record<MessageKey, string> = {
   'request.queue.applied': 'ℹ️ {team} ({tag}): {what} By {requester}, no approval needed.',
   'request.button.approve': 'Approve',
   'request.button.reject': 'Refuse',
-  'request.button.withdraw': 'Withdraw #{id}',
   'request.form.title': 'Refuse request #{id}',
   'request.form.reason': 'Reason for refusing',
   'request.form.reasonHint': 'The team reads it in a direct message.',
@@ -215,20 +162,8 @@ export const en: Record<MessageKey, string> = {
     'Request #{id} for {team} is refused by the league staff: {what}\nReason: {reason}',
   'request.dm.removed': 'You are no longer an official of {team}: its owner removed you.',
   'request.dmFailed': 'Request #{id}: {count} member(s) could not be told by direct message.',
-  'request.withdrawn': 'Request #{id} withdrawn.',
-  'request.applied': 'Done: {what}',
-  'request.filed':
-    'Request #{id} sent to the league staff: {what}\nAnswer expected by {deadline}. You can withdraw it with `/team requests`.',
-  'request.list.title': '**Requests waiting**',
-  'request.list.empty': 'No request waiting.',
-  'request.list.line': '• #{id} · {tag} · {what} · {at}',
-  'request.list.deadline': '· answer due {deadline}',
-  'request.list.overdue': '· ⚠️ overdue ({deadline})',
   'request.reminder':
     '⏰ {role} Request #{id} ({team}) is waiting for an answer, due {deadline}. {link}',
-  'team.summary':
-    '{team} ({tag}): club owner {owner}; club managers {clubManagers}; managers {managers}; coach {coach}.',
-  'team.none': 'none',
   'team.error.not_linked': 'This server is not linked to a league.',
   'team.error.not_staff': 'This command is for league staff only.',
   'team.error.no_season': 'No season is in progress.',
@@ -266,30 +201,23 @@ export const en: Record<MessageKey, string> = {
   'league.error.division_not_found': 'Unknown division. Pick it from the suggested list.',
   'league.error.queue_per_division':
     'Only the results channel can belong to one division: set this one without a division.',
-  'command.match.proposeTime.description': 'Proposes a match time to the other team.',
-  'command.match.option.date': 'The day: pick it from the list or type YYYY-MM-DD.',
-  'command.match.option.time': "The time, for example 21:00, in the league's time zone.",
-  'command.staff.match.schedule.description': 'Sets a match time, whatever the week.',
   'schedule.proposed':
     '{proposer} proposes for {team}: **{fixture}** on {when}. {opponents}, accept or decline.',
   'schedule.proposedNoOpponent':
     '{proposer} proposes for {team}: **{fixture}** on {when}. The other team has no official: league staff can set the time.',
-  'schedule.posted': 'Proposal posted: the other team can accept or decline it.',
   'schedule.button.accept': 'Accept',
   'schedule.button.decline': 'Decline',
   'schedule.accepted': '**{fixture}** — on {when}, accepted by {member}.',
   'schedule.declined':
-    '**{fixture}** — on {when}, declined by {member}. Propose another time with /match propose-time.',
+    '**{fixture}** — on {when}, declined by {member}. Propose another time on the match page, on the website.',
   'schedule.announce': 'Time set — {fixture}: {when}.',
   'schedule.autoSlot':
-    'Extension — **{fixture}**: no time was agreed during the week. The match is set to {when}. You can still agree another time until {deadline} with /match propose-time. {mentions}',
-  'staff.match.scheduled': 'Time set: {fixture}, {when}.',
+    'Extension — **{fixture}**: no time was agreed during the week. The match is set to {when}. You can still agree another time until {deadline} on the match page, on the website. {mentions}',
   'schedule.hint.nothingLeft': "No match to schedule: your teams' matches all have a result.",
-  'schedule.hint.noMatch': 'None of your matches to schedule matches "{query}".',
   'schedule.error.not_linked': 'This server is not linked to a league.',
   'schedule.error.not_staff': 'This command is for league staff only.',
   'schedule.error.no_team':
-    'You are neither captain nor official of any team. Staff can name you an official with /team.',
+    'You are neither captain nor official of any team. Its owner can add you on the website.',
   'schedule.error.match_not_found':
     'Match not found in this league. Pick it from the suggested list.',
   'schedule.error.not_your_match':
@@ -323,48 +251,24 @@ export const en: Record<MessageKey, string> = {
   'command.help.option.command': 'The command to explain. Without it, the list of commands.',
   'help.choice.standings': '/standings',
   'help.choice.match': '/match report',
-  'help.choice.staff-match': '/staff match',
-  'help.choice.staff-sanction': '/staff sanction',
-  'help.choice.team': '/team',
   'help.choice.league': '/league channel',
   'help.overview':
-    "**Ligo's commands**\n• `/standings` — the season's standings, as an image or as text.\n• `/match propose-time` — propose a match time to the other team.\n• `/match veto` — the map veto, before the match.\n• `/match report` — report the result of your team's match, with a screenshot of the scoreboard.\n• `/team` — your team's officials, and your requests to staff to change them.\n• `/register` — the link to register a team, while registration is open.\n• `/help` — this help. `/help command:` explains one command in detail.",
+    "**Ligo's commands**\n• `/standings` — the season's standings, as an image or as text.\n• `/match report` — report the result of your team's match, with a screenshot of the scoreboard.\n• `/register` — the link to register a team, while registration is open.\n• `/help` — this help. `/help command:` explains one command in detail.\n\nEverything else is done on the website: match times, the veto, your team's officials and its requests. The bot links there in its messages.",
   'help.overview.staff':
-    "**League staff**\n• `/staff match` — validate, enter, correct or annul a result; record a forfeit.\n• `/staff sanction` — a warning or points for a team, and the list of its sanctions.\n• `/staff exclusion` — exclude a team, reinstate it after an appeal, set its automatic exclusion.\n• `/team` — each team's officials, and the teams' requests.\n• `/league channel` — the bot's channels: validation queue and results.\n\n**Setting up**\n1. `/league channel` twice: the staff validation queue, then the results channel.\n2. `/team owner` for each team.\nTeams can then report their results with `/match report`.",
+    "**League staff**\n• `/league channel` — the bot's channels: validation queue, schedule and results.\n• The **Validate** and **Refuse** buttons under the validation queue's messages.\n\nThe rest is done on the website: the staff queue (`/staff`), results, forfeits, sanctions and exclusions.\n\n**Setting up**\n1. `/league channel`: the staff validation queue, the schedule, then the results channel.\n2. The teams' owners, on the website.\nTeams can then report their results with `/match report`.",
   'help.page.standings':
     '**`/standings`** — the current season\'s standings\nOpen to everyone.\n\n• `division` (optional): "Ligue 1" or "L1", for example. Without it, every division.\n• `format` (optional): Image (the default) or Text.\n\nOnly validated results and forfeits count, with sanction points. A result reported but not yet validated does not appear.\nColumns: MP matches played, W wins, L losses, RW rounds won, RL rounds lost, Diff (RW − RL), PTS points. Ties are broken as the league\'s rulebook says.',
   'help.page.match':
-    '**`/match report`** — report the result of a match\nFor the captain and the officials of both teams (owner, managers, coach). League staff name the officials with `/team`; the captain is chosen when the team registers.\n\n• `match`: pick it from the list. It shows only your teams\' matches still to play; type a name, a tag or "s3" (week 3) to narrow it.\n• `score_a` and `score_b`: rounds won by the first and the second team named, in the match\'s order, not necessarily yours first.\n• `screenshot`: the scoreboard screenshot, required. PNG, JPEG or WebP, {maxMb} MB at most.\n\nA score the rulebook makes impossible (7–6, for example) is refused. A forfeit is not reported here: tell the league staff.\n\nYou can also report on the match page, on the website; the other team confirms or disputes there too.',
+    "**`/match report`** — report the result of a match\nFor the captain and the officials of both teams (owner, managers, coach). Officials are managed on the team's page, on the website; the captain is chosen when the team registers.\n\n• `match`: pick it from the list. It shows only your teams' matches still to play; type a name, a tag or \"s3\" (week 3) to narrow it.\n• `score_a` and `score_b`: rounds won by the first and the second team named, in the match's order, not necessarily yours first.\n• `screenshot`: the scoreboard screenshot, required. PNG, JPEG or WebP, {maxMb} MB at most.\n\nA score the rulebook makes impossible (7–6, for example) is refused. A forfeit is not reported here: tell the league staff.\n\nThe reply links to the match page, where you can also report; the other team confirms or disputes there too.",
   'help.match.steps.staff':
     '**Then**\n1. The bot posts the result with the screenshot and mentions the other team.\n2. The other team clicks **Confirmer** (confirm) or **Contester** (dispute). To dispute, it picks a reason and can add details, read by staff only.\n3. Staff click **Valider** (validate) or **Refuser** (reject). Once rejected, the match can be reported again.\n4. Once validated, the result is announced in the results channel and counts in the standings.',
   'help.match.steps.opponent':
     '**Then**\n1. The bot posts the result with the screenshot and mentions the other team.\n2. The other team clicks **Confirmer** (confirm): the result is validated, announced in the results channel and counts in the standings. **Contester** (dispute) asks for a reason and details, read by the league staff, who decide.',
-  'help.choice.match-time': '/match propose-time',
-  'help.page.matchTime':
-    "**`/match propose-time`** — propose a time\nFor the captain and the officials of both teams (owner, managers, coach).\n\n• `match`: pick it from the list, among your teams' matches still to play.\n• `date`: the day, picked from the list (the days left in the match's week and its extension) or typed as YYYY-MM-DD.\n• `time`: the time, like 21:00, in the league's time zone. The message then shows it in each reader's own time.\n\nThe other team clicks **Accepter** (accept) or **Refuser** (decline). A new proposal from your team replaces the previous one. A time outside the week and its extension is asked of league staff.\n\n**Without an agreement**",
-  'help.matchTime.autoSlot':
-    "With no time agreed by the end of the week, the bot grants {weeks} week(s) of extension and at once sets the match to the extension's last {day}, at {time}. A time agreed afterwards replaces it.",
-  'help.matchTime.noAutoSlot':
-    'With no time agreed by the end of the week, the bot grants {weeks} week(s) of extension; after that, league staff set the time.',
-  'help.page.staffMatch':
-    '**`/staff match`** — results, for league staff only\n`match`: type a team, a division (L1) or a week (s3), then pick from the list.\n\n• `result` — enters or corrects a score (`score_a`, `score_b`, optional `screenshot`). It counts at once, without validation, and is announced in the results channel, a correction too.\n• `schedule` — sets a match time (`date`, `time`), even outside its week. Announced in the schedule channel.\n• `validate` — validates a result reported by a team, like the **Valider** button. The list offers only matches waiting for staff.\n• `void` — annuls a match, with a reason (`reason`) kept in the log. Nothing is deleted; the match stops counting.\n• `forfeit` — records a forfeit by the first or the second team named, or by both when neither showed up (`team`): each then has a forfeit loss, which counts in its forfeits. It is announced in the results channel.',
-  'help.staffMatch.footer':
-    'A forfeit or an annulled match is not corrected with `result`. Every action is logged with its author.',
-  'help.forfeit.warning': 'At {count} forfeits, a warning is added to the team automatically.',
-  'help.forfeit.exclusion':
-    'At {count} forfeits, the team is excluded automatically, unless staff switched that off for it (`/help command:/staff exclusion`).',
-  'help.page.staffSanction':
-    "**`/staff sanction`** — team sanctions, for league staff only\n• `add` — `team`, `kind`, `reason`, and `points` for a points sanction.\n  – Warning: kept in the list, no effect on the standings.\n  – Points: `points:-1` takes a point away, `points:2` adds two. The standings follow at once.\n• `list` — a team's sanctions this season, with date and reason. Automatic forfeit warnings appear there too.\n\nA sanction cannot be deleted: to cancel one, add the opposite sanction (`points:1` after `points:-1`) with its reason.",
-  'help.page.team':
-    "**`/team`** — who acts for each team\nA team's captain and its officials (its owner, managers and coach) report its results, propose its match times and run its veto. The changes below stay with the officials.\n\n**For teams** — the owner and managers ask, league staff approve or refuse with a reason:\n• `/team member add` — add a manager or a coach (`member`, `role`).\n• `/team owner` — hand the team over; the owner only, who then leaves the team.\n• `/team member remove` — remove an official; the owner only, no approval needed.\n• `/team leave` — leave the team, no approval needed; the owner hands it over first.\n• `/team requests` — your requests still waiting, to withdraw them.\n• `/team list` — your team's officials.\n`team` is needed only if you are an official of several teams; `note` is a word for staff. The answer comes by direct message.\n\n**For league staff** — the same commands change the team directly, without a request (`team` required). Requests arrive in the validation queue with **Approve** and **Refuse**; `/team requests` lists them all.",
-  'help.team.max':
-    "A team's club has one owner and at most {clubManagers} managers, who act for all its teams; each team has at most {managers} managers and {coaches} coach. Staff answer requests within {hours} hours.",
   'help.choice.register': '/register',
   'help.page.register':
     '**`/register`** — register a team\nOpen to everyone, while registration is open.\n\nThe bot gives the link to the form on the website. First, your club and team exist on the website ("Create a club" on your page), and your players joined the team from its invitation link, each with their own account and their page filled in (R6 account, rank, nationality, date of birth, stats consent). The form registers the team and records that you accept the rulebook; you then pick among its players the starters, the substitutes and the captain, a starter.',
   'help.page.league':
     "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Match schedule: extensions and agreed times, until each match has its own channel.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
-  'command.match.veto.description': "Start the map veto of one of your team's matches.",
   'veto.title': '**Veto — {fixture}** (BO{bestOf})',
   'veto.roles':
     '{chooser} picks the starting side and starts the veto; {other} picks the overtime side. Host: {host}.',
@@ -398,10 +302,12 @@ export const en: Record<MessageKey, string> = {
   'veto.turn.first_ban': "**{team}**'s turn: decide who bans first. Time runs out {deadline}.",
   'veto.timeoutRule': 'Without a choice in time, the bot picks at random.',
   'veto.done': 'Veto over. Have a good match!',
-  'veto.started': 'Veto started: its message is just below.',
+  'veto.link': 'Choices are made on the veto page: {url}',
+  'match.pageLink': 'Match page: {url}',
+  'standings.link': 'Standings, fixtures and results on the website: {url}',
   'veto.error.not_linked': 'This server is not linked to a league.',
   'veto.error.no_team':
-    'You are neither captain nor official of any team in this league. League staff can name you an official with /team.',
+    'You are neither captain nor official of any team in this league. Its owner can add you on the website.',
   'veto.error.match_not_found': 'This match does not exist in this league. Pick it from the list.',
   'veto.error.not_your_match': "This match is not your team's.",
   'veto.error.not_schedulable':
@@ -419,11 +325,6 @@ export const en: Record<MessageKey, string> = {
   'veto.error.finished': "This match's veto is over.",
   'veto.error.not_your_turn': "It is not your team's turn.",
   'veto.error.invalid_choice': 'This choice is no longer possible.',
-  'veto.hint.nothingLeft': 'No match left to play for your teams.',
-  'veto.hint.noMatch': 'None of your matches to play matches "{query}".',
-  'help.choice.match-veto': '/match veto',
-  'help.page.matchVeto':
-    '**`/match veto`** — the map veto\nFor the captain and the officials of both teams; league staff can start it too.\n\n• `match`: pick it from the list.\n\nWhen it starts, the bot freezes who picks what from the current standings: the lower-ranked team picks the starting side and starts the veto, the other picks the overtime side, the higher-ranked team hosts. On equal rank, the bot tosses a coin, as on the BLAST circuit: in a BO1 the winner takes side selection or decides who bans first, and the other team makes the other decision; the teams then agree on the host.\n\nThe bot posts a message with one button per map: each team clicks in turn to ban or pick, then Attack or Defense. The message updates after each choice. Each turn has a time limit; without a choice in time, the bot picks at random and says so.\nAt the end, the map is stored with the match: `/match report` uses it.\n\nThe veto can also be followed and played on the website, from the match page.',
   'card.eyebrow': '{competition} · {season}',
   'card.title': '{division} · Week {week}',
   'card.label.time': 'Match scheduled',
@@ -447,14 +348,6 @@ export const en: Record<MessageKey, string> = {
   'veto.error.team_excluded':
     'One of the two teams is excluded from the season: this match is no longer played, the 50% rule decides its result.',
   'sanction.reason.exclusion': 'Automatic exclusion: {count} forfeits.',
-  'command.staff.exclusion.description':
-    'Exclude a team, reinstate it, or set its automatic exclusion.',
-  'command.staff.exclusion.exclude.description': 'Excludes a team from the season (50% rule).',
-  'command.staff.exclusion.reinstate.description':
-    "Reverses a team's exclusion, for example after an appeal.",
-  'command.staff.exclusion.auto.description': "Switches a team's automatic exclusion on or off.",
-  'command.staff.exclusion.option.reason': 'The reason: kept in the history and sent to the team.',
-  'command.staff.exclusion.option.enabled': 'Yes: automatic exclusion on. No: off for this team.',
   'exclusion.rule.stand':
     'It played {played} of its {total} matches, at least half: its validated results stand, and its other matches become forfeit wins for its opponents.',
   'exclusion.rule.void':
@@ -463,20 +356,13 @@ export const en: Record<MessageKey, string> = {
   'exclusion.dm':
     "Your team {team} is excluded from the season {season} ({competition}).\nReason: {reason}\n{rule}\nYou can appeal to the league's staff, who can reverse the exclusion.",
   'exclusion.queue.auto':
-    '{team} is excluded automatically: {count} forfeits ({fixture}). {rule} To reverse it on appeal: `/staff exclusion reinstate`.',
+    "{team} is excluded automatically: {count} forfeits ({fixture}). {rule} To reverse it on appeal: the staff's sanctions page, on the website.",
   'exclusion.queue.off':
     '{team} reaches the exclusion threshold with {count} forfeits ({fixture}), but its automatic exclusion is off: {reason}',
-  'staff.match.forfeit.excluded': '{team} is excluded automatically with {count} forfeits.',
-  'staff.match.forfeit.exclusionOff':
-    '{team} reaches the exclusion threshold with {count} forfeits; its automatic exclusion is off.',
-  'exclusion.excluded': '{team} is excluded. {rule}',
   'exclusion.dmFailed':
     'Direct message not delivered to {count} member(s) of {team} (direct messages closed): tell them another way.',
-  'exclusion.reinstated': '{team} is reinstated: its matches count as they are again.',
   'exclusion.announceReinstated': '{team} is reinstated in the season.',
   'exclusion.dmReinstated': 'Your team {team} is reinstated in the season.\nReason: {reason}',
-  'exclusion.autoOff': 'Automatic exclusion switched off for {team}. Reason: {reason}',
-  'exclusion.autoOn': 'Automatic exclusion switched back on for {team}.',
   'exclusion.error.not_linked': 'This server is not linked to a league.',
   'exclusion.error.not_staff': "This command is for the league's staff.",
   'exclusion.error.no_season': 'No season is running.',
@@ -488,9 +374,6 @@ export const en: Record<MessageKey, string> = {
   'exclusion.error.not_excluded': 'This team is not excluded.',
   'exclusion.error.already_set': 'This team already has that setting.',
   'standings.excluded': 'Excluded',
-  'help.choice.staff-exclusion': '/staff exclusion',
-  'help.page.staffExclusion':
-    '**`/staff exclusion`** — excluding a team, for league staff only\n• `exclude` — `team`, `reason`: excludes a team from the season, for its forfeits or any other reason the rulebook gives.\n• `reinstate` — `team`, `reason`: reverses an exclusion, for example after an appeal. Its matches count as they are again.\n• `auto` — `team`, `enabled`, `reason`: switches automatic exclusion off (or back on) for one team. The reason is required.\n\n**Automatic exclusion**: when staff record the forfeit that reaches the season\'s threshold, the team is excluded at once. Its officials get a direct message, the results channel announces it, and the validation queue is told.\n\n**The 50% rule**: only matches really played count (not forfeits), out of all the team\'s matches of the season.\n• At least half played: its validated results stand; its other matches become forfeit wins for its opponents.\n• Less than half: every one of its matches becomes a forfeit win for its opponents, except those the opponent itself forfeited.\nThe excluded team shows last in the standings, marked "Excluded". Its remaining matches are no longer played.',
   'web.title': 'Ligo',
   'web.footer': "Ligo — the group's esports leagues.",
   'web.home.title': 'Leagues',
@@ -894,7 +777,7 @@ export const en: Record<MessageKey, string> = {
   'web.me.joined': 'You joined the team.',
   'web.manage.title': 'Manage {team}',
   'web.manage.intro':
-    'What the /team command does, on the website: each change goes to league staff, or applies at once where the league allows it.',
+    "The team's officials and its requests: each change goes to league staff, or applies at once where the league allows it.",
   'web.manage.introStaff': 'You are league staff: your changes apply at once, without a request.',
   'web.manage.introFree':
     'This team plays in no competition yet: its officials change it at once, without a request.',

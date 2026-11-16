@@ -1,76 +1,62 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
+import type { Actor } from '../services/permissions.ts';
 import { setTeamOwner } from '../services/team-staff.ts';
+import { chooseVetoStep, startVeto } from '../services/veto.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
-import { buttons } from './buttons/index.ts';
 import { tick } from './clock.ts';
-import { matchCommand } from './commands/match.ts';
-import { routeButton } from './router.ts';
-import {
-  FAKE_CHANNEL,
-  fakeAutocomplete,
-  fakeButton,
-  fakeContext,
-  fakeGateway,
-  fakeInteraction,
-  type FakeInput,
-} from './testing.ts';
+import { FAKE_CHANNEL, fakeContext, fakeGateway } from './testing.ts';
+import { postVeto, refreshVeto } from './veto-message.ts';
 
+// The veto's Discord post (design doc section 3, maintainer, 16 November 2026): the choices are
+// made on the veto page; the post shows the steps so far and whose turn it is, links the page,
+// and is edited at each step, taken on the page or by the clock. It has no buttons.
 // Match 3 is Bravo (side A, 3rd) v Charlie (side B, 2nd), Ligue 1 week 3: Bravo picks the
 // starting side and starts the veto; Charlie hosts.
-const STAFF_USER = { id: '222222222222222222', displayName: 'Léa Staff' };
-const STAFF: FakeInput = {
+const STAFF: Actor = {
   guildId: TEST_GUILD,
-  user: STAFF_USER,
+  user: { id: '222222222222222222', displayName: 'Léa Staff' },
   memberRoleIds: [TEST_STAFF_ROLE],
 };
-const member = (n: number): FakeInput => ({
+const member = (n: number): Actor => ({
   guildId: TEST_GUILD,
-  user: { id: `70000000000000000${n}`, displayName: `Member ${n}` },
+  user: { id: `70000000000000000${String(n)}`, displayName: `Member ${String(n)}` },
   memberRoleIds: [],
 });
 const BRAVO = member(1);
 const CHARLIE = member(2);
 const NOW = Date.parse('2026-11-03T12:00:00Z');
+const LINK = 'Les choix se font sur la page du veto : <http://localhost:3000/matches/3/veto>';
 const logger = { error: vi.fn() };
 
 function session() {
   const db = leagueDatabase();
-  const staff = { guildId: TEST_GUILD, user: STAFF_USER, memberRoleIds: [TEST_STAFF_ROLE] };
-  setTeamOwner(db, staff, { teamId: 2, member: BRAVO.user ?? STAFF_USER }, 100);
-  setTeamOwner(db, staff, { teamId: 3, member: CHARLIE.user ?? STAFF_USER }, 100);
+  setTeamOwner(db, STAFF, { teamId: 2, member: BRAVO.user }, 100);
+  setTeamOwner(db, STAFF, { teamId: 3, member: CHARLIE.user }, 100);
   const gateway = fakeGateway();
-  let now = NOW;
-  const context = fakeContext({ db, gateway, now: () => now });
-  const start = async (who: FakeInput = BRAVO, extra: Partial<FakeInput> = {}) => {
-    const interaction = fakeInteraction('match', {
-      ...who,
-      ...extra,
-      subcommand: 'veto',
-      options: { match: 3 },
-    });
-    await matchCommand.execute(interaction, context);
-    return interaction;
+  const context = fakeContext({ db, gateway, now: () => NOW });
+  /** Started on the veto page, which posts it as the website does. */
+  const start = async () => {
+    const reply = startVeto(db, BRAVO, { matchId: 3 }, NOW, () => 'a');
+    if (!reply.ok) throw new Error(reply.error);
+    expect(await postVeto(context, FAKE_CHANNEL, reply)).toBe(true);
+    return reply;
   };
-  const click = async (customId: string, who: FakeInput) => {
-    const interaction = fakeButton(customId, who);
-    await routeButton(buttons, interaction, context, logger);
-    return interaction;
+  /** A choice made on the veto page, by its place among the step's choices. */
+  const choose = async (who: Actor, step: number, choice: number) => {
+    const reply = chooseVetoStep(db, who, { matchId: 3, step, choice }, NOW, () => 'a');
+    if (!reply.ok) throw new Error(reply.error);
+    await refreshVeto(context, reply.view);
+    return gateway.posted[0]?.message;
   };
-  const setNow = (value: number) => {
-    now = value;
-  };
-  return { db, gateway, context, start, click, setNow };
+  return { db, gateway, context, start, choose };
 }
 
-describe('/match veto', () => {
-  it('posts the veto in the channel with a button per map, pings both teams, and confirms', async () => {
+describe('the veto post', () => {
+  it('shows the roles and whose turn it is, pings both teams, links the page, without buttons', async () => {
     const { start, gateway, db } = session();
-    const interaction = await start();
-    expect(interaction.replies).toEqual([
-      { content: 'Veto lancé : le message est juste en dessous.', ephemeral: true },
-    ]);
+    await start();
     const [posted] = gateway.posted;
     expect(posted?.channelId).toBe(FAKE_CHANNEL);
     expect(posted?.message.content).toBe(
@@ -79,160 +65,74 @@ describe('/match veto', () => {
         'Bravo choisit le côté de départ et commence le veto ; Charlie choisit le côté en prolongation. Hôte : Charlie.',
         `Au tour de **Bravo** : bannir une carte. Fin du temps <t:${String((NOW + 240_000) / 1000)}:R>.`,
         'Sans choix à temps, le bot choisit au hasard.',
+        LINK,
         '<@700000000000000001> <@700000000000000002>',
       ].join('\n'),
     );
     expect(posted?.message.mentionUserIds).toEqual(['700000000000000001', '700000000000000002']);
-    expect(posted?.message.buttons?.map((button) => button.label)).toEqual([
-      'Bank',
-      'Chalet',
-      'Clubhouse',
-      'Nighthaven Labs',
-      'Lair',
-      'Villa',
-      'Kafe Dostoyevsky',
-      'Border',
-      'Fortress',
-    ]);
-    expect(posted?.message.buttons?.[0]).toEqual({
-      customId: 'veto:3:0x0',
-      label: 'Bank',
-      style: 'danger',
-    });
+    expect(posted?.message.buttons).toBeUndefined();
     const stored = db.select().from(schema.match).where(eq(schema.match.id, 3)).get();
     expect(stored).toMatchObject({ vetoChannelId: FAKE_CHANNEL, vetoMessageId: posted?.messageId });
   });
 
-  it('refuses privately, and offers league staff every match to play', async () => {
-    const { start, context } = session();
-    const outsider = await start(member(5));
-    expect(outsider.replies[0]).toMatchObject({ ephemeral: true });
-    expect(outsider.replies[0]?.content).toContain(
-      "Tu n'es ni capitaine ni responsable d'une équipe",
-    );
-
-    const suggest = fakeAutocomplete(
-      'match',
-      { name: 'match', value: '' },
-      {
-        ...STAFF,
-        subcommand: 'veto',
-      },
-    );
-    await matchCommand.autocomplete?.(suggest, context);
-    expect(suggest.responses[0]?.map((choice) => choice.value)).toContain(3);
-  });
-
-  it('replies with the veto itself where the bot cannot post', async () => {
-    const { start, gateway } = session();
-    gateway.failing = true;
-    const interaction = await start();
-    expect(interaction.replies[0]).toMatchObject({ ephemeral: false });
-    expect(interaction.replies[0]?.buttons).toHaveLength(9);
-  });
-});
-
-describe('veto buttons', () => {
-  it('lets the team whose turn it is ban, and updates the message', async () => {
-    const { start, click } = session();
+  it('is edited at each step, and ends with the map and the sides', async () => {
+    const { start, choose, gateway } = session();
     await start();
-    const interaction = await click('veto:3:0x0', BRAVO);
-    const [update] = interaction.updates;
-    expect(update?.content).toContain('Bannies : Bank (Bravo)');
-    expect(update?.content).toContain('Au tour de **Charlie** : bannir une carte.');
-    expect(update?.buttons?.map((button) => button.label)).not.toContain('Bank');
-    expect(update?.buttons?.[0]?.customId).toBe('veto:3:1x0');
-  });
-
-  it('refuses a team out of turn and an old button, privately', async () => {
-    const { start, click } = session();
-    await start();
-    const early = await click('veto:3:0x0', CHARLIE);
-    expect(early.replies).toEqual([
-      { content: "Ce n'est pas au tour de ton équipe.", ephemeral: true },
-    ]);
-    await click('veto:3:0x0', BRAVO);
-    const old = await click('veto:3:0x1', BRAVO);
-    expect(old.replies[0]?.content).toBe('Ce choix a déjà été fait : regarde le message à jour.');
-  });
-
-  it('ends with the map and the sides', async () => {
-    const { start, click } = session();
-    await start();
-    for (let step = 0; step < 8; step += 1) {
-      await click(`veto:3:${step}x0`, step % 2 === 0 ? BRAVO : CHARLIE);
+    const first = await choose(BRAVO, 0, 0);
+    expect(first?.content).toContain('Bannies : Bank (Bravo)');
+    expect(first?.content).toContain('Au tour de **Charlie** : bannir une carte.');
+    for (let step = 1; step < 8; step += 1) {
+      await choose(step % 2 === 0 ? BRAVO : CHARLIE, step, 0);
     }
-    const side = await click('veto:3:9x1', BRAVO);
-    expect(side.updates[0]?.content).toContain('Carte 1 : **Fortress**');
-    expect(side.updates[0]?.buttons?.map((button) => button.label)).toEqual(['Attaque', 'Défense']);
-    const done = await click('veto:3:10x0', CHARLIE);
-    expect(done.updates[0]?.content).toContain(
+    const side = await choose(BRAVO, 9, 1);
+    expect(side?.content).toContain('Carte 1 : **Fortress**');
+    const done = await choose(CHARLIE, 10, 0);
+    expect(done?.content).toContain(
       'Carte 1 : **Fortress** — Bravo commence en Défense ; en prolongation, Charlie prend Attaque.',
     );
-    expect(done.updates[0]?.content).toContain('Veto terminé. Bon match !');
-    expect(done.updates[0]?.buttons).toEqual([]);
+    expect(done?.content).toContain('Veto terminé. Bon match !');
+    expect(done?.content).not.toContain('page du veto');
+    expect(gateway.posted).toHaveLength(1);
+    expect(gateway.posted[0]?.edits).toBe(10);
   });
 });
 
 describe('the coin toss between teams of equal rank', () => {
-  it('names the winner and no host, then offers its choice and the other decision', async () => {
-    const { db, gateway, start, click } = session();
+  it('names the winner and no host, and whose choice it is', async () => {
+    const { db, gateway, start } = session();
     // Without results, both teams share first place.
     db.update(schema.match).set({ status: 'void' }).where(eq(schema.match.id, 1)).run();
     db.update(schema.match).set({ status: 'void' }).where(eq(schema.match.id, 2)).run();
     await start();
     const row = db.select().from(schema.match).where(eq(schema.match.id, 3)).get();
-    // The coin comes from the system's random source: either team may win it.
-    const bravoWon = row?.vetoJson?.team_a === 'a';
-    const [winner, loser] = bravoWon ? [BRAVO, CHARLIE] : [CHARLIE, BRAVO];
-    const [winnerName, loserName] = bravoWon ? ['Bravo', 'Charlie'] : ['Charlie', 'Bravo'];
     expect(row).toMatchObject({ hostSide: null, sideChooser: null });
-
     const posted = gateway.posted[0]?.message;
     expect(posted?.content).toContain(
-      `Égalité au classement : pile ou face, gagné par **${winnerName}**. Hôte : à convenir entre les équipes.`,
+      'Égalité au classement : pile ou face, gagné par **Bravo**. Hôte : à convenir entre les équipes.',
     );
     expect(posted?.content).toContain(
-      `Au tour de **${winnerName}** : prendre le choix du côté, ou décider qui bannit en premier.`,
+      'Au tour de **Bravo** : prendre le choix du côté, ou décider qui bannit en premier.',
     );
-    expect(posted?.buttons?.map((button) => button.label)).toEqual([
-      'Choix du côté',
-      'Qui bannit en premier',
-    ]);
-
-    const chosen = await click(posted?.buttons?.[0]?.customId ?? '', winner);
-    const update = chosen.updates[0];
-    expect(update?.content).toContain(`${winnerName} prend le choix du côté.`);
-    expect(update?.content).toContain(
-      `Au tour de **${loserName}** : décider qui bannit en premier.`,
-    );
-    expect(update?.buttons?.map((button) => button.label)).toEqual([
-      `${loserName} bannit en premier`,
-      `${winnerName} bannit en premier`,
-    ]);
-
-    const decided = await click(update?.buttons?.[1]?.customId ?? '', loser);
-    expect(decided.updates[0]?.content).toContain(`${winnerName} bannit en premier.`);
-    expect(decided.updates[0]?.content).toContain(
-      `Au tour de **${winnerName}** : bannir une carte.`,
-    );
+    expect(posted?.content).toContain(LINK);
   });
 });
 
 describe('the clock and the veto', () => {
-  it('plays a random ban for a team out of time and edits the message', async () => {
-    const { db, gateway, start } = session();
+  it('plays a random ban for a team out of time and edits the post', async () => {
+    const { db, gateway, context, start } = session();
     await start();
     await tick({
       db,
       gateway,
       logger,
       locale: 'fr',
+      publicUrl: context.publicUrl,
       now: () => NOW + 240_000,
       random: () => 5,
     });
     const [posted] = gateway.posted;
     expect(posted?.edits).toBe(1);
     expect(posted?.message.content).toContain('Bannies : Villa (Bravo, temps écoulé)');
+    expect(posted?.message.content).toContain(LINK);
   });
 });

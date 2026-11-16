@@ -21,7 +21,6 @@ import {
 import { and, asc, eq, isNotNull } from 'drizzle-orm';
 import type { PostRef } from './queue-posts.ts';
 import { hasExcludedTeam } from './exclusions.ts';
-import { matchQuery } from './match-search.ts';
 import { actsFor, matchActorOf, requireStaff, sideOf, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { leagueMatch } from './reports.ts';
@@ -442,19 +441,4 @@ export function readMatchTime(
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
   const zone = league?.competition.schedulingJson.time_zone ?? 'Europe/Paris';
   return zonedDateTime(date.trim(), time.trim(), zone);
-}
-
-/** The matches still to play that staff can set a time for, narrowed by `query`. */
-export function searchSchedulableMatches(
-  db: Pick<Db, 'select'>,
-  actor: Pick<Actor, 'guildId' | 'memberRoleIds'>,
-  query: string,
-  limit: number,
-): LeagueMatch[] {
-  const staff = requireStaff(db, actor);
-  if (!staff.ok || !staff.league.season) return [];
-  return listLeagueMatches(db, { seasonId: staff.league.season.id })
-    .filter((found) => found.status === 'scheduled')
-    .filter(matchQuery(query))
-    .slice(0, limit);
 }

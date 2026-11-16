@@ -1,22 +1,12 @@
 import type { VetoTeam } from '@ligo/core';
 import { t, type Locale } from '../i18n/index.ts';
 import { setVetoMessage, type StartVetoReply, type VetoView } from '../services/veto.ts';
-import { buttonId } from './button-id.ts';
-import type { CommandContext, MessageButton, OutgoingMessage } from './commands/types.ts';
-import { discordTime, matchFixture, mention } from './match-text.ts';
+import type { CommandContext, OutgoingMessage } from './commands/types.ts';
+import { discordTime, matchFixture, mention, pageLink } from './match-text.ts';
 
-// The veto message: who picks what, the steps so far, and the buttons of the current turn. It is
-// rebuilt from the stored veto after every step, by a click or by the clock.
-
-/** The custom ID of a veto button: the match, the step it belongs to, the choice's place. */
-export const vetoButtonId = (matchId: number, step: number, index: number) =>
-  buttonId('veto', matchId, `${step}x${index}`);
-
-/** The step and choice a veto button carries, or null for a malformed one. */
-export function readVetoNonce(nonce: string): { step: number; index: number } | null {
-  const match = /^(\d{1,4})x(\d{1,2})$/.exec(nonce);
-  return match ? { step: Number(match[1]), index: Number(match[2]) } : null;
-}
+// The veto's Discord post: who picks what, the steps so far, whose turn it is, and the link to the
+// veto page, where the choices are made (design doc section 3, maintainer, 16 November 2026). It is
+// rebuilt from the stored veto after every step, taken on the page or by the clock.
 
 export const sideLabel = (locale: Locale, side: string) =>
   side === 'attack' ? t(locale, 'veto.side.attack') : t(locale, 'veto.side.defense');
@@ -44,7 +34,11 @@ export function vetoChoiceLabel(locale: Locale, view: VetoView, choice: string):
   return choice;
 }
 
-export function vetoMessage(locale: Locale, view: VetoView): OutgoingMessage {
+export function vetoMessage(
+  locale: Locale,
+  view: VetoView,
+  publicUrl: URL | undefined,
+): OutgoingMessage {
   const { match, state } = view;
   const teamName = (team: VetoTeam | null) => vetoTeamName(view, team);
   const lines = [
@@ -117,7 +111,7 @@ export function vetoMessage(locale: Locale, view: VetoView): OutgoingMessage {
 
   if (state.status === 'done') {
     lines.push(t(locale, 'veto.done'));
-    return { content: lines.join('\n'), buttons: [] };
+    return { content: lines.join('\n') };
   }
   lines.push(
     t(locale, `veto.turn.${state.action}`, {
@@ -127,24 +121,24 @@ export function vetoMessage(locale: Locale, view: VetoView): OutgoingMessage {
     }),
     t(locale, 'veto.timeoutRule'),
   );
-  const isSide = state.action === 'side' || state.action === 'ot_side';
-  const isDecision = state.action === 'toss_choice' || state.action === 'first_ban';
-  const style: MessageButton['style'] =
-    isSide || isDecision ? 'primary' : state.action === 'ban' ? 'danger' : 'success';
-  const buttons = state.choices.map((choice, index): MessageButton => ({
-    customId: vetoButtonId(match.id, state.step, index),
-    label: vetoChoiceLabel(locale, view, choice),
-    style,
-  }));
-  return { content: lines.join('\n'), buttons };
+  if (publicUrl) {
+    lines.push(
+      t(locale, 'veto.link', { url: pageLink(publicUrl, `/matches/${String(match.id)}/veto`) }),
+    );
+  }
+  return { content: lines.join('\n') };
 }
 
-type Poster = Pick<CommandContext, 'db' | 'gateway' | 'locale'>;
+type Poster = Pick<CommandContext, 'db' | 'gateway' | 'locale'> & { publicUrl?: URL };
 type Started = Extract<StartVetoReply, { ok: true }>;
 
 /** The veto's first message, mentioning both sides' officials and captains. */
-export function vetoStartMessage(locale: Locale, reply: Started): OutgoingMessage {
-  const message = vetoMessage(locale, reply.view);
+export function vetoStartMessage(
+  locale: Locale,
+  reply: Started,
+  publicUrl: URL | undefined,
+): OutgoingMessage {
+  const message = vetoMessage(locale, reply.view, publicUrl);
   return {
     ...message,
     content: [message.content, reply.mentionUserIds.map(mention).join(' ')]
@@ -166,7 +160,7 @@ export async function postVeto(
   try {
     const posted = await context.gateway.postMessage(
       channelId,
-      vetoStartMessage(context.locale, reply),
+      vetoStartMessage(context.locale, reply, context.publicUrl),
     );
     setVetoMessage(context.db, reply.view.match.id, { channelId, messageId: posted.messageId });
     return true;
@@ -175,16 +169,16 @@ export async function postVeto(
   }
 }
 
-/** Shows a step taken elsewhere (on the website) on the veto's Discord message, if it has one. */
+/** Shows a step taken on the website on the veto's Discord message, if it has one. */
 export async function refreshVeto(context: Poster, view: VetoView): Promise<void> {
   if (view.channelId === null || view.messageId === null) return;
   try {
     await context.gateway.editMessage(
       view.channelId,
       view.messageId,
-      vetoMessage(context.locale, view),
+      vetoMessage(context.locale, view, context.publicUrl),
     );
   } catch {
-    // The step is stored; the next click or tick shows it.
+    // The step is stored; the next step or tick shows it.
   }
 }

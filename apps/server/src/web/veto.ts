@@ -46,7 +46,7 @@ export function vetoRoutes(
 ): { link: (c: Context<Env>, matchId: number) => Html | string } {
   const { deps, render, notFound, forbidden, guard } = kit;
   const { db, locale } = deps;
-  const discord = { db, gateway: deps.gateway, locale };
+  const discord = { db, gateway: deps.gateway, locale, publicUrl: deps.login?.publicUrl };
 
   /** The match's link to its veto, for the sides of a match still to play; the database only. */
   const link = (c: Context<Env>, matchId: number): Html | string => {

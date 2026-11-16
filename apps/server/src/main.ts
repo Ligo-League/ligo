@@ -96,6 +96,7 @@ client.once(Events.ClientReady, () => {
       gateway,
       logger,
       locale: DEFAULT_LOCALE,
+      publicUrl,
       now: () => Date.now(),
     },
     CLOCK_INTERVAL_MS,

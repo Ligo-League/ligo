@@ -1,33 +1,29 @@
 import { schema } from '@ligo/db';
 import { describe, expect, it, vi } from 'vitest';
+import { fileRequest } from '../services/requests.ts';
+import { changeTeamStaff, setTeamOwner } from '../services/team-staff.ts';
+import type { Actor } from '../services/permissions.ts';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { buttons } from './buttons/index.ts';
 import { tick } from './clock.ts';
-import { teamCommand } from './commands/team.ts';
+import { announceFiled } from './request-text.ts';
 import { forms } from './forms.ts';
 import { routeButton, routeForm } from './router.ts';
-import {
-  fakeButton,
-  fakeContext,
-  fakeForm,
-  fakeGateway,
-  fakeInteraction,
-  type FakeInput,
-} from './testing.ts';
+import { fakeButton, fakeContext, fakeForm, fakeGateway, type FakeInput } from './testing.ts';
 
-// A team request from start to end in Discord: filed with /team, answered with the buttons of
-// its post in the staff queue, reminded by the clock.
+// A team request in Discord: filed on the website (`/teams/:slug/manage`), answered with the
+// buttons of its post in the staff queue, reminded by the clock.
 
 const QUEUE = '900000000000000001';
 const HOUR = 3_600_000;
 const NOW = 1_800_000_000_000;
-const STAFF: FakeInput = {
+const STAFF: Actor = {
   guildId: TEST_GUILD,
   user: { id: '222222222222222222', displayName: 'Léa Staff' },
   memberRoleIds: [TEST_STAFF_ROLE],
 };
 const user = (n: number) => ({ id: `70000000000000000${n}`, displayName: `Member ${n}` });
-const member = (n: number): FakeInput => ({
+const member = (n: number): Actor => ({
   guildId: TEST_GUILD,
   user: user(n),
   memberRoleIds: [],
@@ -41,24 +37,22 @@ async function filed() {
   const gateway = fakeGateway();
   let now = NOW;
   const context = fakeContext({ db, gateway, now: () => now });
-  const team = async (
-    who: FakeInput,
-    subcommand: string,
-    options: FakeInput['options'],
-    group?: string,
-  ) => {
-    const interaction = fakeInteraction('team', {
-      ...who,
-      ...(group ? { subcommandGroup: group } : {}),
-      subcommand,
-      options,
-    });
-    await teamCommand.execute(interaction, context);
-    return interaction;
-  };
-  await team(STAFF, 'owner', { team: 1, member: { user: user(1) } });
-  await team(STAFF, 'add', { team: 1, member: { user: user(2) }, role: 'manager' }, 'member');
-  await team(member(2), 'add', { member: { user: user(5) }, role: 'coach' }, 'member');
+  setTeamOwner(db, STAFF, { teamId: 1, member: user(1) }, now);
+  changeTeamStaff(
+    db,
+    STAFF,
+    { teamId: 1, change: { kind: 'team_member_add', member: user(2), role: 'manager' } },
+    now,
+  );
+  const reply = fileRequest(
+    db,
+    member(2),
+    { kind: 'team_member_add', member: user(5), role: 'coach', teamId: null, note: null },
+    now,
+  );
+  if (!reply.ok) throw new Error(reply.error);
+  // As the website does once the request is stored.
+  await announceFiled(context, reply, now);
   const click = async (customId: string, who: FakeInput) => {
     const interaction = fakeButton(customId, who);
     await routeButton(buttons, interaction, context, logger);
@@ -144,27 +138,17 @@ describe('the request post in the staff queue', () => {
   });
 });
 
-describe('Withdraw', () => {
-  it('takes the request back, and marks its post in the queue', async () => {
-    const { gateway, click } = await filed();
-    expect((await click('request-withdraw:1:0', member(5))).replies).toEqual([
-      {
-        content: "Seuls l'auteur de la demande et le propriétaire de l'équipe peuvent la retirer.",
-        ephemeral: true,
-      },
-    ]);
-    expect((await click('request-withdraw:1:0', member(1))).replies).toEqual([
-      { content: 'Demande n°1 retirée.', ephemeral: true },
-    ]);
-    expect(gateway.posted[0]?.message.content).toContain('↩️ Retirée par <@700000000000000001>.');
-    expect(gateway.direct).toEqual([]);
-  });
-});
-
 describe('the reminder', () => {
   it('pings the staff role once, 6 hours before the deadline, with a link to the post', async () => {
     const { db, gateway, context, advance } = await filed();
-    const deps = { db, gateway, logger, locale: 'fr' as const, now: () => context.now() };
+    const deps = {
+      db,
+      gateway,
+      logger,
+      locale: 'fr' as const,
+      publicUrl: context.publicUrl,
+      now: () => context.now(),
+    };
     advance(18 * HOUR - 1);
     await tick(deps);
     expect(gateway.posted).toHaveLength(1);
@@ -185,7 +169,14 @@ describe('the reminder', () => {
     const { db, gateway, context, advance } = await filed();
     db.delete(schema.queuePost).run();
     advance(18 * HOUR);
-    await tick({ db, gateway, logger, locale: 'fr', now: () => context.now() });
+    await tick({
+      db,
+      gateway,
+      logger,
+      locale: 'fr',
+      publicUrl: context.publicUrl,
+      now: () => context.now(),
+    });
     expect(gateway.posted).toHaveLength(3);
     expect(gateway.posted[1]?.message.buttons).toHaveLength(2);
     expect(db.select().from(schema.queuePost).all()).toHaveLength(1);

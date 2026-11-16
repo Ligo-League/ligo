@@ -1,4 +1,3 @@
-import { randomInt } from 'node:crypto';
 import { ApplicationCommandOptionType, InteractionContextType } from 'discord.js';
 import { t } from '../../i18n/index.ts';
 import {
@@ -7,84 +6,14 @@ import {
   reportResult,
   searchReportableMatches,
 } from '../../services/reports.ts';
-import { proposeTime, readMatchTime, searchSchedulableMatches } from '../../services/scheduling.ts';
-import { startVeto } from '../../services/veto.ts';
-import { postVeto, vetoStartMessage } from '../veto-message.ts';
-import { postProposal, proposalMessage } from '../schedule-posts.ts';
-import { suggestDays } from '../day-suggestions.ts';
 import { impossibleScore, matchLabel } from '../match-text.ts';
 import { reportPostMessage, reportQueueMessage } from '../report-posts.ts';
 import { described, MAX_CHOICE_LENGTH, MAX_CHOICES } from './describe.ts';
-import type { Command, CommandContext, CommandInteraction } from './types.ts';
+import type { Command } from './types.ts';
 
-async function proposeTimeCommand(
-  interaction: CommandInteraction,
-  context: CommandContext,
-): Promise<void> {
-  const { locale, db } = context;
-  const privately = (content: string) => interaction.reply({ content, ephemeral: true });
-  const matchId = interaction.options.getInteger('match');
-  if (matchId === null) {
-    await privately(t(locale, 'schedule.error.match_not_found'));
-    return;
-  }
-  const time = readMatchTime(
-    db,
-    interaction,
-    interaction.options.getString('date') ?? '',
-    interaction.options.getString('time') ?? '',
-  );
-  if (!time.ok) {
-    await privately(t(locale, `schedule.error.${time.error}`));
-    return;
-  }
-  const reply = proposeTime(db, interaction, { matchId, at: time.at }, context.now());
-  if (!reply.ok) {
-    await privately(t(locale, `schedule.error.${reply.error}`));
-    return;
-  }
-  // Posted rather than replied, so that an answer given on the website can edit it.
-  if (
-    interaction.channelId !== null &&
-    (await postProposal(context, interaction.channelId, reply, interaction.user.id))
-  ) {
-    await interaction.reply({ content: t(locale, 'schedule.posted'), ephemeral: true });
-    return;
-  }
-  // The bot cannot post here: the reply still carries the buttons; only later edits are lost.
-  await interaction.reply({
-    ...proposalMessage(locale, reply, interaction.user.id),
-    ephemeral: false,
-  });
-}
-
-// The team commands, visible to everyone: the service decides who may use them on which match.
-async function vetoCommand(
-  interaction: CommandInteraction,
-  context: CommandContext,
-): Promise<void> {
-  const { locale, db } = context;
-  const matchId = interaction.options.getInteger('match');
-  const reply =
-    matchId === null
-      ? ({ ok: false, error: 'match_not_found' } as const)
-      : // Equal ranks: a fair coin from the system's random source (O-12).
-        startVeto(db, interaction, { matchId }, context.now(), () =>
-          randomInt(2) === 0 ? 'a' : 'b',
-        );
-  if (!reply.ok) {
-    await interaction.reply({ content: t(locale, `veto.error.${reply.error}`), ephemeral: true });
-    return;
-  }
-  // Posted rather than replied, so that its ID is known and the clock can edit it later.
-  if (interaction.channelId !== null && (await postVeto(context, interaction.channelId, reply))) {
-    await interaction.reply({ content: t(locale, 'veto.started'), ephemeral: true });
-    return;
-  }
-  // The bot cannot post here: the reply still carries the buttons; only the clock's edits of the
-  // message are lost.
-  await interaction.reply({ ...vetoStartMessage(locale, reply), ephemeral: false });
-}
+// `/match report`, for teams in their voice call right after the match: the score and the
+// screenshot every report needs. Everything else a match needs is on its page (design doc
+// section 3, maintainer, 16 November 2026); the reply links to it.
 
 export const matchCommand: Command = {
   data: {
@@ -126,63 +55,12 @@ export const matchCommand: Command = {
           },
         ],
       },
-      {
-        type: ApplicationCommandOptionType.Subcommand,
-        name: 'propose-time',
-        ...described('command.match.proposeTime.description'),
-        options: [
-          {
-            type: ApplicationCommandOptionType.Integer,
-            name: 'match',
-            ...described('command.match.report.option.match'),
-            required: true,
-            autocomplete: true,
-          },
-          {
-            type: ApplicationCommandOptionType.String,
-            name: 'date',
-            ...described('command.match.option.date'),
-            required: true,
-            autocomplete: true,
-            max_length: 10,
-          },
-          {
-            type: ApplicationCommandOptionType.String,
-            name: 'time',
-            ...described('command.match.option.time'),
-            required: true,
-            max_length: 5,
-          },
-        ],
-      },
-      {
-        type: ApplicationCommandOptionType.Subcommand,
-        name: 'veto',
-        ...described('command.match.veto.description'),
-        options: [
-          {
-            type: ApplicationCommandOptionType.Integer,
-            name: 'match',
-            ...described('command.match.report.option.match'),
-            required: true,
-            autocomplete: true,
-          },
-        ],
-      },
     ],
   },
 
   async execute(interaction, context) {
     const { locale } = context;
     const privately = (content: string) => interaction.reply({ content, ephemeral: true });
-    if (interaction.options.getSubcommand() === 'propose-time') {
-      await proposeTimeCommand(interaction, context);
-      return;
-    }
-    if (interaction.options.getSubcommand() === 'veto') {
-      await vetoCommand(interaction, context);
-      return;
-    }
     if (interaction.options.getSubcommand() !== 'report') {
       await privately(t(locale, 'error.unknownCommand'));
       return;
@@ -236,7 +114,7 @@ export const matchCommand: Command = {
     }
 
     const post = await interaction.reply({
-      ...reportPostMessage(locale, reply, interaction.user.id),
+      ...reportPostMessage(locale, reply, interaction.user.id, context.publicUrl),
       ephemeral: false,
     });
     // Kept so that an answer given on the website edits it too.
@@ -249,23 +127,13 @@ export const matchCommand: Command = {
   },
 
   async autocomplete(interaction, context) {
-    if (interaction.focused.name === 'date') {
-      await suggestDays(interaction, context);
-      return;
-    }
     if (interaction.focused.name !== 'match') {
       await interaction.respond([]);
       return;
     }
     const { locale } = context;
     const query = interaction.focused.value.trim();
-    const subcommand = interaction.options.getSubcommand();
-    let found = searchReportableMatches(context.db, interaction, query, MAX_CHOICES);
-    // League staff may start any veto, so they are offered every match still to play.
-    if (subcommand === 'veto' && !found.ok) {
-      const staffMatches = searchSchedulableMatches(context.db, interaction, query, MAX_CHOICES);
-      if (staffMatches.length > 0) found = { ok: true, matches: staffMatches };
-    }
+    const found = searchReportableMatches(context.db, interaction, query, MAX_CHOICES);
     if (found.ok && found.matches.length > 0) {
       await interaction.respond(
         found.matches.map((candidate) => ({
@@ -277,18 +145,11 @@ export const matchCommand: Command = {
     }
     // Discord shows no message in a list of suggestions: one entry says why it is empty. Its
     // value names no match, so picking it ends in the same explanation from the command.
-    // Both subcommands list the same matches, those still to play; only the wording differs.
-    const hints =
-      subcommand === 'propose-time'
-        ? ({ nothingLeft: 'schedule.hint.nothingLeft', noMatch: 'schedule.hint.noMatch' } as const)
-        : subcommand === 'veto'
-          ? ({ nothingLeft: 'veto.hint.nothingLeft', noMatch: 'veto.hint.noMatch' } as const)
-          : ({ nothingLeft: 'report.hint.nothingLeft', noMatch: 'report.hint.noMatch' } as const);
     const reason = !found.ok
       ? t(locale, `match.error.${found.error}`)
       : query === ''
-        ? t(locale, hints.nothingLeft)
-        : t(locale, hints.noMatch, { query });
+        ? t(locale, 'report.hint.nothingLeft')
+        : t(locale, 'report.hint.noMatch', { query });
     await interaction.respond([{ name: reason.slice(0, MAX_CHOICE_LENGTH), value: 0 }]);
   },
 };

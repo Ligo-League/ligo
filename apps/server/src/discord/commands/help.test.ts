@@ -26,40 +26,9 @@ async function ask(who: FakeInput, command?: HelpTopic, locale: Locale = 'fr') {
 
 // Every variant a page can take, to check them all against Discord's limits.
 const FACTS: HelpFacts[] = [
-  { staff: false, rules: null },
-  {
-    staff: true,
-    rules: {
-      validation: 'staff',
-      teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
-      requestHours: 24,
-      forfeits: { warning_at: 2, exclusion_at: 3 },
-      extensionWeeks: 1,
-      autoSlot: { weekday: 7, time: '21:00' },
-    },
-  },
-  {
-    staff: true,
-    rules: {
-      validation: 'opponent',
-      teamRoles: { managers_max: 10, coaches_max: 1, club_managers_max: 3 },
-      requestHours: 24,
-      forfeits: { warning_at: null, exclusion_at: null },
-      extensionWeeks: 2,
-      autoSlot: null,
-    },
-  },
-  {
-    staff: true,
-    rules: {
-      validation: 'staff',
-      teamRoles: { managers_max: 0, coaches_max: 1, club_managers_max: 3 },
-      requestHours: 24,
-      forfeits: null,
-      extensionWeeks: 1,
-      autoSlot: { weekday: 7, time: '21:00' },
-    },
-  },
+  { staff: false, validation: null },
+  { staff: true, validation: 'staff' },
+  { staff: true, validation: 'opponent' },
 ];
 const LOCALES: Locale[] = ['fr', 'en'];
 
@@ -73,12 +42,13 @@ describe('/help', () => {
     expect(content).not.toContain('/league');
   });
 
-  it('adds the staff commands and the first setup steps for staff', async () => {
+  it('adds the staff commands for staff, and sends the rest to the website', async () => {
     const content = await ask(STAFF);
     expect(content).toContain('/standings');
-    for (const command of ['/staff match', '/staff sanction', '/team', '/league channel']) {
-      expect(content).toContain(command);
-    }
+    expect(content).toContain('/league channel');
+    expect(content).toContain('site');
+    expect(content).not.toContain('/staff match');
+    expect(content).not.toContain('/team');
   });
 
   it('explains one command in detail, in the member’s language', async () => {
@@ -87,66 +57,13 @@ describe('/help', () => {
   });
 
   it('explains a staff command to anyone who asks: it reveals nothing, and says who may use it', async () => {
-    expect(await ask(MEMBER, 'staff-match')).toContain('staff de la ligue');
+    expect(await ask(MEMBER, 'league')).toContain('staff de la ligue');
   });
 
   it('follows how the league validates results', () => {
-    const facts = (validation: 'staff' | 'opponent'): HelpFacts => ({
-      staff: false,
-      rules: {
-        validation,
-        teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
-        requestHours: 24,
-        forfeits: null,
-        extensionWeeks: 1,
-        autoSlot: { weekday: 7, time: '21:00' },
-      },
-    });
+    const facts = (validation: 'staff' | 'opponent'): HelpFacts => ({ staff: false, validation });
     expect(helpPage('fr', 'match', facts('staff'))).toContain('Valider');
     expect(helpPage('fr', 'match', facts('opponent'))).not.toContain('Valider');
-  });
-
-  it("states the league's deadline rule on the time page", () => {
-    const page = (autoSlot: { weekday: number; time: string } | null) =>
-      helpPage('fr', 'match-time', {
-        staff: false,
-        rules: {
-          validation: 'staff',
-          teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
-          requestHours: 24,
-          forfeits: null,
-          extensionWeeks: 1,
-          autoSlot,
-        },
-      });
-    expect(page({ weekday: 7, time: '21:00' })).toContain(
-      'fixe aussitôt le match au dernier dimanche de la prolongation, à 21:00',
-    );
-    expect(page(null)).toContain("le staff de la ligue fixe l'horaire");
-  });
-
-  it('names the forfeit thresholds of the season, and leaves out those that are not set', () => {
-    const page = (rules: HelpFacts['rules']) =>
-      helpPage('fr', 'staff-match', { staff: true, rules });
-    const both = page({
-      validation: 'staff',
-      teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
-      requestHours: 24,
-      forfeits: { warning_at: 2, exclusion_at: 3 },
-      extensionWeeks: 1,
-      autoSlot: null,
-    });
-    expect(both).toContain('À 2 forfaits');
-    expect(both).toContain('À 3 forfaits');
-    const none = page({
-      validation: 'staff',
-      teamRoles: { managers_max: 3, coaches_max: 1, club_managers_max: 3 },
-      requestHours: 24,
-      forfeits: { warning_at: null, exclusion_at: null },
-      extensionWeeks: 1,
-      autoSlot: null,
-    });
-    expect(none).not.toMatch(/À \d+ forfaits/);
   });
 
   it('fits every page in one Discord message, in both languages', () => {
@@ -171,9 +88,7 @@ describe('/help', () => {
       (node.options ?? []).flatMap((child) => [child.name, ...names(child)]);
     const pages: Record<string, HelpTopic[]> = {
       standings: ['standings'],
-      match: ['match', 'match-time', 'match-veto'],
-      staff: ['staff-match', 'staff-sanction', 'staff-exclusion'],
-      team: ['team'],
+      match: ['match'],
       league: ['league'],
       register: ['register'],
     };

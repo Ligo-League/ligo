@@ -11,8 +11,6 @@ import {
   checkReport,
   rejectResult,
   reportResult,
-  searchMatchesForStaff,
-  searchReportableMatches,
   validateResult,
   voidMatch,
   type ReportDetails,
@@ -644,42 +642,5 @@ describe('voidMatch', () => {
       ok: false,
       error: 'wrong_status',
     });
-  });
-});
-
-describe('match suggestions', () => {
-  it("offers a member their own teams' matches still to play", () => {
-    const { db } = league();
-    const ids = (actor: Actor, query = '') => {
-      const found = searchReportableMatches(db, actor, query, 25);
-      return found.ok ? found.matches.map((candidate) => candidate.id) : found.error;
-    };
-    expect(ids(BRAVO_MANAGER)).toEqual([3]);
-    expect(ids(CHARLIE_STAFF)).toEqual([3]);
-    expect(ids(BRAVO_MANAGER, 'cha')).toEqual([3]);
-    expect(ids(BRAVO_MANAGER, 'xray')).toEqual([]);
-    // Xray's only match already has a result: nothing is left to report.
-    expect(ids(XRAY_MANAGER)).toEqual([]);
-  });
-
-  it('says why it offers nothing, so the member is not left with an empty list', () => {
-    const { db } = league();
-    const why = (actor: Actor) => searchReportableMatches(db, actor, '', 25);
-    expect(why(OUTSIDER)).toEqual({ ok: false, error: 'no_team' });
-    expect(why(STAFF)).toEqual({ ok: false, error: 'no_team' });
-    expect(why({ ...BRAVO_MANAGER, guildId: null })).toEqual({ ok: false, error: 'not_linked' });
-    db.update(schema.season).set({ status: 'registration' }).run();
-    expect(why(BRAVO_MANAGER)).toEqual({ ok: false, error: 'no_season' });
-  });
-
-  it('offers staff the matches waiting for them, and every match that can be annulled', async () => {
-    const { db, report } = league();
-    const ids = (purpose: 'validate' | 'void', actor: Actor = STAFF) =>
-      searchMatchesForStaff(db, actor, purpose, '', 25).map((found) => found.id);
-    expect(ids('validate')).toEqual([]);
-    await report();
-    expect(ids('validate')).toEqual([3]);
-    expect(ids('void')).toEqual([1, 2, 3, 4]);
-    expect(ids('validate', BRAVO_MANAGER)).toEqual([]);
   });
 });
