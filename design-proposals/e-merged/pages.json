@@ -360,6 +360,62 @@
   "anchor": false
  },
  {
+  "file": "player-valorant.html",
+  "route": "/players/vexo/valorant",
+  "title": "Joueur Vexo : onglet Valorant",
+  "group": "Plusieurs jeux",
+  "note": "Même personne, autre jeu et autre club ; page tirée du schéma de stats de Valorant",
+  "anchor": false
+ },
+ {
+  "file": "player-rl.html",
+  "route": "/players/turbine",
+  "title": "Joueur Rocket League (Turbine)",
+  "group": "Plusieurs jeux",
+  "note": "Buts et passes ; pas de carte, de côté ni de personnage",
+  "anchor": false
+ },
+ {
+  "file": "match-rl.html",
+  "route": "/matches/8108",
+  "title": "Série Rocket League (BO5)",
+  "group": "Plusieurs jeux",
+  "note": "Pas de veto ni de cartes ; un match saisi à la main (console)",
+  "anchor": false
+ },
+ {
+  "file": "me.html",
+  "route": "/me",
+  "title": "Mon profil (/me)",
+  "group": "Plusieurs jeux",
+  "note": "Un compte par jeu, un rang par file classée, le rang affiché au choix",
+  "anchor": false
+ },
+ {
+  "file": "practice.html",
+  "route": "/teams/greed-esport/workspace/matches",
+  "title": "Entraînements (practice book)",
+  "group": "Pages privées",
+  "note": "Scrims, amicaux, inter-ligue ; privé",
+  "anchor": false
+ },
+ {
+  "file": "practice-match.html",
+  "route": "/teams/greed-esport/workspace/matches/practice",
+  "title": "Un entraînement",
+  "group": "Pages privées",
+  "note": "Rounds avec stratégie, joueurs de l’équipe, adversaires anonymes",
+  "anchor": false
+ },
+ {
+  "file": "practice-upload.html",
+  "route": "/teams/greed-esport/workspace/upload",
+  "title": "Envoi de replays d’entraînement",
+  "group": "Pages privées",
+  "note": "Regroupement par adversaire et par jour, quota",
+  "anchor": false
+ },
+ {
   "file": "workspace.html",
   "route": "/teams/greed-esport/workspace",
   "title": "Espace équipe : rapport",

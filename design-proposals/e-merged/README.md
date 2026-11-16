@@ -64,6 +64,17 @@ The overtime, manual-stats and unverified matches use E's match page. Forfeit, d
 A page that leaves a side column empty gets the default quick access.
 The old `/c/…` routes resolve to the new pages.
 
+## Several games, and the practice book (16 November 2026)
+
+The maintainer's review of the player page: a player may play R6 in the LFR and Valorant in the LFV, any game may be added, and some games have no maps, no rounds and no veto. Decided (design doc sections 4, 5, 7, 9 and 12):
+- **One player page per person, one tab per game.** The header (photo, nationality, the team in each game) and the career are shared; each tab shows one game. `/players/vexo` opens R6, `/players/vexo/valorant` the Valorant tab with another club (Not Scam Valkyr).
+- **A game declares what it has** (`_data/titles.ts`, `packages/titles` in production): maps, sides, characters, rounds, score unit, veto, ranked queues and metrics. The Valorant and Rocket League tabs are drawn only from that declaration, with no page code per game. A Rocket League tab has no map, side or character section.
+- **Rocket League:** goals and assists are typed; saves, shots, score and demos come from replays when they exist. The series page has no veto and no maps, and shows one game typed by hand next to replay games.
+- **Ranks by queue on `/me`:** R6 Solo/Duo and Flex, all optional. The player picks the rank shown, and registration copies that one. Which queue the LFR reads is O-34.
+- **Practice book:** the list, one practice match (rounds with a strategy tag, the team's players, opponents anonymous) and the replay upload. It's private to the team; no public opt-in for now.
+
+New pages (in `index.html`): `player-valorant`, `player-rl`, `match-rl`, `me`, `practice`, `practice-match`, `practice-upload`. E now has 54 pages.
+
 ## References and what E takes from each
 
 - **HLTV, Liquipedia, siege.gg (via A):**

@@ -4,6 +4,7 @@ import * as D from '../../_data/index.ts';
 import { html, href, icon, raw, teamBadge, flag, natName, type Raw } from '../../_build/lib.ts';
 import { scoreOf, divisionName } from '../../_build/shared.ts';
 import { focusTeam, qStandings, qResults, qMercato, leftQuick } from './quick.ts';
+import { personHead, careerAll, accountsPanel } from './games.ts';
 import { page, rightSidebar } from './layout.ts';
 import { photo, opIcon, mapArt } from './art.ts';
 import { divisionExcerpt } from './matchpage.ts';
@@ -260,7 +261,7 @@ function playerInfobox(p: D.Player): Raw {
       ['Nationalité', html`${flag(p.nat)} ${natName(p.nat)}`],
       ['Équipe', tm ? team(tm, { size: 16 }) : 'sans équipe'],
       ['Rôle', e ? `${e.position}${e.captain ? ' · capitaine' : ''}${e.role === 'sub' ? ' · remplaçant' : ''}` : null],
-      ['Rang R6', `${p.rank} (déclaré)`],
+      ['Rang affiché', D.gameAccounts[p.slug] ? `${D.gameAccounts[p.slug]?.[0]?.ranks.solo_duo} · R6 Solo/Duo (déclaré)` : `${p.rank} (déclaré)`],
       ['Stats publiques', p.consent ? 'oui (politique acceptée)' : 'non : politique de confidentialité pas encore acceptée'],
     ])}
   </section>`;
@@ -290,8 +291,7 @@ function player(slug: string): string {
     return html`<tr><th scope="row">${label}</th><td class="num">${t.rounds}</td><td class="num">${t.kills}–${t.deaths}</td><td class="num">${D.ratio(x.kd)}</td><td class="num">${D.pct(x.kost)}</td><td class="num">${x.entry === null ? '–' : D.signed(x.entry)}</td></tr>`;
   };
   const main = html`
-  <div class="head phead">${photo(slug, 64)}<div style="flex:1"><h1>${flag(p.nat, 16)} ${p.tag}</h1><div class="sub">${team(tm, { size: 14 })} · LFR ${divisionName(div)} · ${(D.rosters.get(tm.slug) ?? []).find((e) => e.player === slug)?.position}</div></div>
-    <label class="f">Saison<select><option selected>Saison 3</option><option>Saison 2</option><option>Toutes</option></select></label></div>
+  ${personHead(slug, 'r6')}
   ${panel(
     'Saison 3 · par rapport à la Ligue 1',
     html`<table class="data pct"><caption class="vh">Stats et percentiles</caption><thead><tr><th scope="col">Stat</th><th scope="col" class="num">Valeur</th><th scope="col" style="width:45%">Percentile en ${divisionName(div)}</th><th scope="col" class="num">Pct.</th></tr></thead><tbody>
@@ -333,14 +333,8 @@ function player(slug: string): string {
         <td class="num">${r.source === 'none' ? html`<span class="faint">–</span>` : `${r.totals.kills}–${r.totals.deaths}–${r.totals.assists}`}</td><td class="num">${r.totals.replayRounds ? D.pct(y.kost) : html`<span class="faint">–</span>`}</td><td class="opt">${r.source === 'replay_verified' ? 'replay' : r.source === 'replay_unverified' ? 'replay (non vérifié)' : r.source === 'manual' ? 'manuel' : 'aucune'}</td></tr>`;
     })}</tbody></table>`,
   )}
-  ${panel(
-    'Carrière',
-    html`<table class="data"><caption class="vh">Carrière</caption><thead><tr><th scope="col">Saison</th><th scope="col">Équipe</th><th scope="col">Division</th><th scope="col">Classement</th><th scope="col" class="num opt">Cartes</th><th scope="col" class="num opt">K/D</th><th scope="col">Récompenses</th></tr></thead><tbody>
-    ${career.map((c) => html`<tr><td>${c.competition} ${c.season}</td><td>${team(D.team(c.team), { size: 14 })}</td><td>${c.division}</td><td>${c.rank}</td><td class="num opt">${c.maps || tot.maps}</td><td class="num opt">${c.kd || D.ratio(d.kd)}</td><td class="wrapcell">${c.awards.join(', ') || html`<span class="faint">—</span>`}</td></tr>`)}
-    </tbody></table>
-    <table class="data dense"><caption class="vh">Résultats externes avec l’équipe</caption><tbody>${(D.externalResults[tm.slug] ?? []).filter((r) => r.roster.includes(slug)).map((r) => html`<tr><td class="faint">${D.dateYear(r.date)}</td><td><b>${r.placement}</b> <span class="tier tier-${r.tier}">${r.tier}</span></td><td>${r.event} <span class="faint">avec ${tm.tag}</span></td></tr>`)}</tbody></table>`,
-  )}`;
-  return page({ title: p.tag, crumbs: [['Accueil', '/'], ['Joueurs', null], [p.tag, null]], main, cols: 'three', left: leftQuick(focusTeam(D.teamOf(p.slug) as D.Team)), right: html`${playerInfobox(p)}${teamContext(D.teamOf(p.slug) as D.Team)}` });
+  ${careerAll(slug)}`;
+  return page({ title: p.tag, crumbs: [['Accueil', '/'], ['Joueurs', null], [p.tag, null]], main, game: 'r6', cols: 'three', left: leftQuick(focusTeam(D.teamOf(p.slug) as D.Team)), right: html`${playerInfobox(p)}${accountsPanel(p.slug)}${teamContext(D.teamOf(p.slug) as D.Team)}` });
 }
 
 function playerNoConsent(): string {

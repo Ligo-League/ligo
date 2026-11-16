@@ -823,3 +823,16 @@ tr.late th, tr.late td { background: #fff6f5; }
 @media (max-width: 640px) { .main > .m-later { order: 1; } }
 .rules-doc { overflow-wrap: anywhere; min-width: 0; }
 .rules-doc table, .rules-doc pre { display: block; max-width: 100%; overflow-x: auto; }
+
+/* Several games (16 November 2026): person header, game tabs, schema-driven figures, /me, practice upload. */
+.ph-where { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.ph-where > span { display: inline-flex; align-items: center; gap: 5px; }
+.gtabs { margin-top: 0; }
+.figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.figs > div { padding: 8px 12px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
+.figs .lbl { font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.figs b { font-size: 15px; }
+.drop { border: 2px dashed var(--line-strong); margin: 10px; padding: 18px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; border-radius: var(--radius-lg); background: var(--panel-head); }
+.drop p { margin: 0; flex: 1; min-width: 200px; }
+.mform input, .mform select { font: inherit; padding: 2px 6px; border: 1px solid var(--line-strong); border-radius: var(--radius); max-width: 100%; }
+.f-inline { display: inline-flex; gap: 4px; align-items: center; margin-left: 8px; color: var(--muted); }

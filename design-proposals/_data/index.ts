@@ -13,3 +13,4 @@ export * from './extra.ts';
 export { rng, hash, slugify } from './rng.ts';
 export * from './rules.ts';
 export * from './platform.ts';
+export * from './titles.ts';

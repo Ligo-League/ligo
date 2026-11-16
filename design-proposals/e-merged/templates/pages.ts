@@ -14,6 +14,8 @@ import { PAGES } from '../../_build/pagelist.ts';
 import { playedResume, playedScoreboard, playedRounds, roundPage, upcomingPage, vetoPage } from './matchpage.ts';
 import { RENDER as ENTITY } from './entity.ts';
 import { workspace, staff } from './private.ts';
+import { playerTitlePage, rlSeriesPage, mePage } from './games.ts';
+import { practiceList, practiceMatch, practiceUpload } from './practice.ts';
 
 const F = D.featured;
 const P = F.played.id;
@@ -46,6 +48,14 @@ const LIST: Spec[] = [
   { file: 'player.html', route: '/players/vexo', title: 'Joueur Vexo', group: 'Équipes et joueurs', note: 'Photo, opérateurs habituels, cartes', render: ENTITY['player.html'] as () => string },
   { file: 'player-noconsent.html', route: '/players/pyro', title: 'Joueur sans politique acceptée', group: 'Équipes et joueurs', note: 'Image par défaut, stats masquées', render: ENTITY['player-noconsent.html'] as () => string },
 
+  { file: 'player-valorant.html', route: '/players/vexo/valorant', title: 'Joueur Vexo : onglet Valorant', group: 'Plusieurs jeux', note: 'Même personne, autre jeu et autre club ; page tirée du schéma de stats de Valorant', render: () => playerTitlePage('vexo', 'valorant') },
+  { file: 'player-rl.html', route: '/players/turbine', title: 'Joueur Rocket League (Turbine)', group: 'Plusieurs jeux', note: 'Buts et passes ; pas de carte, de côté ni de personnage', render: () => playerTitlePage('turbine', 'rocket_league') },
+  { file: 'match-rl.html', route: `/matches/${D.featuredRl.id}`, title: 'Série Rocket League (BO5)', group: 'Plusieurs jeux', note: 'Pas de veto ni de cartes ; un match saisi à la main (console)', render: () => rlSeriesPage(D.featuredRl) },
+  { file: 'me.html', route: '/me', title: 'Mon profil (/me)', group: 'Plusieurs jeux', note: 'Un compte par jeu, un rang par file classée, le rang affiché au choix', render: mePage },
+
+  { file: 'practice.html', route: '/teams/greed-esport/workspace/matches', title: 'Entraînements (practice book)', group: 'Pages privées', note: 'Scrims, amicaux, inter-ligue ; privé', render: practiceList },
+  { file: 'practice-match.html', route: '/teams/greed-esport/workspace/matches/practice', title: 'Un entraînement', group: 'Pages privées', note: 'Rounds avec stratégie, joueurs de l’équipe, adversaires anonymes', render: practiceMatch },
+  { file: 'practice-upload.html', route: '/teams/greed-esport/workspace/upload', title: 'Envoi de replays d’entraînement', group: 'Pages privées', note: 'Regroupement par adversaire et par jour, quota', render: practiceUpload },
   { file: 'workspace.html', route: '/teams/greed-esport/workspace', title: 'Espace équipe : rapport', group: 'Pages privées', note: 'Connecté : Vexo', render: workspace },
   { file: 'staff.html', route: '/staff', title: 'File du staff', group: 'Pages privées', note: 'Connecté : Mistral', render: staff },
 ];
@@ -113,6 +123,12 @@ export const fallbacks: [RegExp, string][] = [
   // The old /c/... routes of the shared list, exactly, onto their E page.
   ...PAGES.map((x): [RegExp, string] => [new RegExp(`^${esc(x.route)}$`), (ALL.find((a) => a.file === x.file) as Spec).route]),
   [/^\/c\/lfr\/recruitment/, '/recruitment?comp=lfr'],
+  [/^\/players\/vexo\/r6/, '/players/vexo'],
+  [/^\/players\/turbine/, '/players/turbine'],
+  [/^\/players\/(kaz|orbite|gaufre|mosa|lio|zenith|pako|rivet|flux|nebula|grizz|boulon|sprint|celeste|moka|vortex|pepite|axel|brindille|kami|tornade|nougat|echo)/, '/players/turbine'],
+  [/^\/teams\/greed-esport\/workspace\/matches\/\d+/, '/teams/greed-esport/workspace/matches/practice'],
+  [/^\/matches\/81\d\d/, `/matches/${D.featuredRl.id}`],
+  [/^\/me$/, '/me'],
   // Pages not drawn: the nearest one that is.
   [/^\/matches$/, '/'],
   [/^\/matches\/\d+\/lineups/, `/matches/${U}`],
