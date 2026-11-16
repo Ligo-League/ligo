@@ -6,6 +6,7 @@ import { requireStaff, type Actor } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
 import { settleDisputes } from './disputes.ts';
+import { openReportPosts, type OpenReportPosts } from './open-report.ts';
 
 const { auditLog, evidence, game, match } = schema;
 
@@ -33,7 +34,7 @@ export type RecordResultError =
   | 'invalid_screenshot';
 
 export type RecordResultReply =
-  | {
+  | ({
       ok: true;
       match: LeagueMatch;
       scoreA: number;
@@ -44,7 +45,8 @@ export type RecordResultReply =
       resultsChannelId: string | null;
       /** The screenshot's evidence row, for the server to keep its copy once downloaded. */
       evidenceId: number | null;
-    }
+      // A report still open is superseded: its posts and disputes close (`OpenReportPosts`).
+    } & OpenReportPosts)
   | { ok: false; error: RecordResultError }
   // The rule is returned so that the refusal can say which scores are possible.
   | { ok: false; error: 'impossible_score'; rule: GameScoreSettings };
@@ -136,6 +138,8 @@ export function recordResult(
       .set({ status: 'validated', validatedBy: staffPlayer.id, validatedAt: now })
       .where(eq(match.id, found.id))
       .run();
+    // Read before the disputes are settled, which would leave none open to name.
+    const open = openReportPosts(tx, league, found.id);
     settleDisputes(tx, found.id, 'result_entered', staffPlayer.id, now);
 
     const evidenceId = screenshot
@@ -177,6 +181,7 @@ export function recordResult(
       previous,
       resultsChannelId: resultsChannelFor(league, found),
       evidenceId,
+      ...open,
     };
   });
 }

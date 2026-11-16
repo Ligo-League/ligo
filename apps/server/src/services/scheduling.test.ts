@@ -8,6 +8,7 @@ import {
   proposeTime,
   proposalDays,
   readMatchTime,
+  recordProposalPost,
   runSchedulingTick,
   setMatchTime,
 } from './scheduling.ts';
@@ -203,6 +204,21 @@ describe('setMatchTime', () => {
     expect(db.select().from(auditLog).all().at(-1)).toMatchObject({
       action: 'match.schedule',
       afterJson: { scheduledAt: late },
+    });
+  });
+
+  it('names the posts of the proposals it ends, for Discord to close them', () => {
+    const { db, propose } = league();
+    const posted = idOf(propose());
+    recordProposalPost(db, posted, { channelId: SCHEDULE, messageId: '910000000000000201' });
+    // A proposal the bot could not post has nothing to close.
+    propose(CHARLIE, THURSDAY_21H + 3_600_000);
+    const reply = setMatchTime(db, STAFF, { matchId: 3, at: AUTO_SLOT }, NOW);
+    expect(reply).toMatchObject({
+      ok: true,
+      withdrawn: [
+        { at: THURSDAY_21H, post: { channelId: SCHEDULE, messageId: '910000000000000201' } },
+      ],
     });
   });
 

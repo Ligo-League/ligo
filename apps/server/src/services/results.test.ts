@@ -1,7 +1,13 @@
 import { promotionSchema, registrationSchema, requestsSchema, vetoSchema } from '@ligo/core';
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
-import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import {
+  disputedReport,
+  leagueDatabase,
+  OPEN_REPORT_POSTS,
+  TEST_GUILD,
+  TEST_STAFF_ROLE,
+} from '../testing.ts';
 import type { Actor } from './permissions.ts';
 import { requireStaff } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
@@ -313,5 +319,37 @@ describe('recordResult', () => {
     expect(() => recordResult(db, STAFF, request, 9000)).toThrow(/audit down/);
     expect(db.select().from(match).all()[OPEN_MATCH - 1]?.status).toBe('scheduled');
     expect(db.select().from(player).all()).toEqual([]);
+  });
+});
+
+describe('recordResult over a report still open', () => {
+  it('names the report’s posts and the disputes it settles, for Discord to close them', () => {
+    const db = leagueDatabase();
+    disputedReport(db);
+    const reply = recordResult(db, STAFF, { matchId: OPEN_MATCH, scoreA: 7, scoreB: 4 }, 9000);
+    expect(reply).toMatchObject({
+      ok: true,
+      posts: [OPEN_REPORT_POSTS.queue],
+      post: OPEN_REPORT_POSTS.report,
+      disputes: [
+        {
+          reason: 'wrong_score',
+          details: 'Round 9 replayed',
+          raisedBy: '700000000000000002',
+          posts: [OPEN_REPORT_POSTS.dispute],
+        },
+      ],
+    });
+    expect(db.select().from(schema.dispute).get()?.resolution).toBe('result_entered');
+  });
+
+  it('names none on a match without a report', () => {
+    const reply = recordResult(
+      leagueDatabase(),
+      STAFF,
+      { matchId: OPEN_MATCH, scoreA: 7, scoreB: 5 },
+      9000,
+    );
+    expect(reply).toMatchObject({ ok: true, posts: [], post: null, disputes: [] });
   });
 });

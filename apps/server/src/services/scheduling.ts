@@ -279,7 +279,14 @@ export function pendingProposals(db: Pick<Db, 'select'>, matchId: number): Pendi
 // Staff set a time
 
 export type SetTimeReply =
-  | { ok: true; match: LeagueMatch; at: number; scheduleChannelId: string | null }
+  | {
+      ok: true;
+      match: LeagueMatch;
+      at: number;
+      scheduleChannelId: string | null;
+      /** The pending proposals it ended that the bot had posted, to close their buttons. */
+      withdrawn: { at: number; post: PostRef }[];
+    }
   | { ok: false; error: 'not_linked' | 'not_staff' | 'match_not_found' | 'not_schedulable' };
 
 /** Staff set a match's time, any time: the deadlines are theirs to bend. Pending proposals end. */
@@ -306,10 +313,20 @@ export function setMatchTime(
       .set({ scheduledAt: request.at, autoScheduled: false })
       .where(eq(match.id, found.id))
       .run();
-    tx.update(matchProposal)
-      .set({ status: 'withdrawn' })
-      .where(and(eq(matchProposal.matchId, found.id), eq(matchProposal.status, 'pending')))
-      .run();
+    const pending = and(eq(matchProposal.matchId, found.id), eq(matchProposal.status, 'pending'));
+    const withdrawn = tx
+      .select({
+        at: matchProposal.at,
+        channelId: matchProposal.channelId,
+        messageId: matchProposal.messageId,
+      })
+      .from(matchProposal)
+      .where(pending)
+      .all()
+      .flatMap(({ at, channelId, messageId }) =>
+        channelId && messageId ? [{ at, post: { channelId, messageId } }] : [],
+      );
+    tx.update(matchProposal).set({ status: 'withdrawn' }).where(pending).run();
     tx.insert(auditLog)
       .values({
         actorPlayerId: staffPlayer.id,
@@ -327,6 +344,7 @@ export function setMatchTime(
       match: found,
       at: request.at,
       scheduleChannelId: league.guild.scheduleChannelId,
+      withdrawn,
     };
   });
 }

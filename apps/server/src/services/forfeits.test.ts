@@ -1,7 +1,13 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import {
+  disputedReport,
+  leagueDatabase,
+  OPEN_REPORT_POSTS,
+  TEST_GUILD,
+  TEST_STAFF_ROLE,
+} from '../testing.ts';
 import { setAutoExclusion } from './exclusions.ts';
 import { recordForfeit } from './forfeits.ts';
 import type { Actor } from './permissions.ts';
@@ -226,5 +232,19 @@ describe('recordForfeit', () => {
     expect(() => forfeit(db, 3, 'b')).toThrow(/audit down/);
     expect(db.select().from(match).all()[2]?.status).toBe('scheduled');
     expect(db.select().from(sanction).all()).toEqual([]);
+  });
+});
+
+describe('recordForfeit over a report still open', () => {
+  it('names the report’s posts and the disputes it settles, for Discord to close them', () => {
+    const db = leagueDatabase();
+    disputedReport(db);
+    expect(forfeit(db, 3, 'b')).toMatchObject({
+      ok: true,
+      posts: [OPEN_REPORT_POSTS.queue],
+      post: OPEN_REPORT_POSTS.report,
+      disputes: [{ reason: 'wrong_score', posts: [OPEN_REPORT_POSTS.dispute] }],
+    });
+    expect(db.select().from(schema.dispute).get()?.resolution).toBe('forfeit');
   });
 });

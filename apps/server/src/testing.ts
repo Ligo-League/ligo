@@ -155,3 +155,66 @@ export function rosterPlayerForTests(db: Db, teamId: number, n: number): number 
   db.insert(schema.rosterPlayer).values({ teamId, playerId: id, joinedAt: n }).run();
   return id;
 }
+
+type Post = { channelId: string; messageId: string };
+
+/** Where `disputedReport` says its posts are, unless told otherwise. */
+export const OPEN_REPORT_POSTS: { queue: Post; report: Post; dispute: Post } = {
+  queue: { channelId: '800000000000000001', messageId: '910000000000000101' },
+  report: { channelId: '800000000000000004', messageId: '910000000000000102' },
+  dispute: { channelId: '800000000000000001', messageId: '910000000000000103' },
+};
+
+/**
+ * Match 3 (Bravo v Charlie) reported 7–5 by Bravo, then disputed by Charlie: its report's public
+ * post, its staff queue post and the dispute's queue post are on record, as the bot made them.
+ */
+export function disputedReport(db: Db, posts = OPEN_REPORT_POSTS): void {
+  const bravo = ensurePlayer(
+    db,
+    { orgId: 1, discordUserId: '700000000000000001', displayName: 'Ana' },
+    1,
+  );
+  const charlie = ensurePlayer(
+    db,
+    { orgId: 1, discordUserId: '700000000000000002', displayName: 'Ben' },
+    1,
+  );
+  db.insert(schema.game)
+    .values({ matchId: 3, n: 1, bansJson: [], scoreA: 7, scoreB: 5, status: 'pending' })
+    .run();
+  db.update(schema.match).set({ status: 'disputed' }).where(eq(schema.match.id, 3)).run();
+  const { queue, report, dispute } = posts;
+  const evidenceId = db
+    .insert(schema.evidence)
+    .values({
+      matchId: 3,
+      kind: 'score_screenshot',
+      url: 'https://discord.com/channels/1/2/3',
+      uploadedBy: bravo.id,
+      visibility: 'teams',
+      at: 1,
+      postChannelId: report.channelId,
+      postMessageId: report.messageId,
+    })
+    .returning({ id: schema.evidence.id })
+    .get().id;
+  const disputeId = db
+    .insert(schema.dispute)
+    .values({
+      matchId: 3,
+      evidenceId,
+      reason: 'wrong_score',
+      details: 'Round 9 replayed',
+      raisedBy: charlie.id,
+      at: 2,
+    })
+    .returning({ id: schema.dispute.id })
+    .get().id;
+  db.insert(schema.queuePost)
+    .values([
+      { entity: 'match', entityId: 3, ...queue, postedAt: 1 },
+      { entity: 'dispute', entityId: disputeId, ...dispute, postedAt: 2 },
+    ])
+    .run();
+}

@@ -11,6 +11,7 @@ import { requireStaff, type Actor } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
 import { settleDisputes } from './disputes.ts';
+import { openReportPosts, type OpenReportPosts } from './open-report.ts';
 import { excludeSlot, type Excluded } from './exclusions.ts';
 
 const { auditLog, game, match, sanction, slot } = schema;
@@ -31,7 +32,7 @@ export interface ForfeitOutcome {
 }
 
 export type ForfeitReply =
-  | {
+  | ({
       ok: true;
       match: LeagueMatch;
       /** Who forfeited: one side, or both when neither team showed up (O-28). */
@@ -42,7 +43,8 @@ export type ForfeitReply =
       queueChannelId: string | null;
       /** Where results are announced: a forfeit counts in the standings like any result. */
       resultsChannelId: string | null;
-    }
+      // A report still open is superseded: its posts and disputes close (`OpenReportPosts`).
+    } & OpenReportPosts)
   | { ok: false; error: ForfeitError };
 
 /**
@@ -103,6 +105,8 @@ export function recordForfeit(
       .set({ status: 'forfeit', validatedBy: staffPlayer.id, validatedAt: now })
       .where(eq(match.id, found.id))
       .run();
+    // Read before the disputes are settled, which would leave none open to name.
+    const open = openReportPosts(tx, league, found.id);
     settleDisputes(tx, found.id, 'forfeit', staffPlayer.id, now);
 
     // Counted after the change, over the stage, from the same data standings use.
@@ -189,6 +193,7 @@ export function recordForfeit(
       })),
       queueChannelId: league.guild.alertsChannelId,
       resultsChannelId: resultsChannelFor(league, found),
+      ...open,
     };
   });
 }
