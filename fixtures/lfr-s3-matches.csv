@@ -21,7 +21,7 @@ Ligue 1,4,OUTSOUKI,RCK,forfeit,,,OUTSOUKI
 Ligue 1,4,WMATES,NIGHTWOLVES,forfeit,,,NIGHTWOLVES
 Ligue 1,5,GREED1,NTS,forfeit,,,NTS
 Ligue 1,5,GREED2,CIVITAS,played,1,7,
-Ligue 1,5,RCK,DEVIL,,,,
+Ligue 1,5,RCK,DEVIL,forfeit,,,RCK
 Ligue 1,5,RPV,WMATES,played,4,7,
 Ligue 1,5,NIGHTWOLVES,OUTSOUKI,,,,
 Ligue 1,6,CIVITAS,GREED1,played,1,7,
@@ -30,7 +30,7 @@ Ligue 1,6,WMATES,GREED2,,,,
 Ligue 1,6,DEVIL,NIGHTWOLVES,forfeit,,,NIGHTWOLVES
 Ligue 1,6,OUTSOUKI,RPV,forfeit,,,OUTSOUKI
 Ligue 1,7,GREED1,RCK,,,,
-Ligue 1,7,CIVITAS,WMATES,,,,
+Ligue 1,7,CIVITAS,WMATES,played,4,7,
 Ligue 1,7,NIGHTWOLVES,NTS,forfeit,,,NIGHTWOLVES
 Ligue 1,7,GREED2,OUTSOUKI,forfeit,,,OUTSOUKI
 Ligue 1,7,RPV,DEVIL,played,4,7,
@@ -82,7 +82,7 @@ Ligue 2,6,STARLY,ASKIUM,,,,
 Ligue 2,6,PANARIA,ORIGINS,played,7,1,
 Ligue 2,7,SHADE,IGURU,,,,
 Ligue 2,7,NOVA1,SPECTRUM,forfeit,,,NOVA1
-Ligue 2,7,LUNARIA,NOVA2,,,,
+Ligue 2,7,LUNARIA,NOVA2,played,7,4,
 Ligue 2,7,MIXNCHILL,STARLY,forfeit,,,STARLY
 Ligue 2,7,ORIGINS,CLICK,,,,
 Ligue 2,7,ASKIUM,PANARIA,,,,
