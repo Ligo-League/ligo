@@ -176,6 +176,17 @@ section 16.
 - **Until answered:** the roadmap assumes late December or early January at the earliest.
 - **Answer:**
 
+#### O-34 · Which R6 rank the league reads
+
+- **Question:** from Season 4, R6 has two ranked queues, Solo/Duo and Flex. Which one does the LFR
+  read at registration and in its eligibility rules: Solo/Duo, Flex, the higher of the two, or
+  whichever the player chooses to show?
+- **Why it matters:** registration copies a rank onto the roster entry (design doc section 4), and
+  any rank limit in the rulebook needs to name a queue.
+- **Until answered:** players may fill both on `/me` and pick the one shown; registration copies
+  the shown one. No rank limit is enforced.
+- **Answer:**
+
 ### Team tools
 
 #### O-22 · Recruitment board
@@ -191,6 +202,16 @@ section 16.
   an open window; both are settings.
 
 ## For the maintainer
+
+#### M-38 · Standings for a title scored in games
+
+- **Question:** for a title with no round or goal score (score unit `games`, such as League of
+  Legends), what do F and C count: games won and lost across the season, so a BO1 win is 1–0?
+  And which tie-breakers make sense when every BO1 difference is 1?
+- **Why it matters:** the standings engine reads F, C and D from the score unit (design doc
+  sections 5 and 12).
+- **Until answered:** no such league exists; nothing is built. R6, Valorant (rounds) and Rocket
+  League (goals) are unchanged.
 
 #### M-37 · The MVP of a round
 

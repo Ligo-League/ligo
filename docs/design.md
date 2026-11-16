@@ -174,6 +174,12 @@ Everything hangs off org → competition → season → division → stage → m
 
 A team is a club, the team's organisation, with one or more rosters: Not Scam has Katsuki and Valkyr, W Mates has W Mates and Spectrum. A roster is what plays: it holds a slot in a division, plays the matches and has a line in the standings. Season 3 already has clubs with two rosters: Greed in Ligue 1 (Greed Esport and GREED Academy), Nova in Ligue 2 (Nova 1 and Nova 2), and W Mates in both leagues. Each roster has its own name and tag; the club's logo and colours are the default, and a roster may have its own (Nova 2's colours differ). In Ligo "organisation" (`org`) already names the group that runs the leagues, such as MBL Group, so a team's organisation is called a **club** in the code and these documents. The club holds the city, legal status, socials, team Discord and the default logo and colours; a roster has its own name and tag, may have its own logo and colours, and is shown under its own name. A club belongs to the group and may have rosters in several titles: a main roster and an academy per game is common (M-21). Several rosters of one club may play in the same division, with a limit as a setting; moves of players between a club's rosters are settings too, designed with the mercato (M-22). In a match between two rosters of one club, club officials act for neither side: each roster's own officials and captain do.
 
+**Players across games** (maintainer, 16 November 2026)
+
+A player is one person on Ligo, whatever they play: one Discord account, one `player`, one `game_account` per title. The same player may be on an R6 roster in the LFR and a Valorant roster in the LFV; each roster belongs to one title, and a club holds one roster per title (or more). The player page shows the person once and each game in its own tab (section 7), and each game's stats come from that title's metric schema (sections 9 and 12).
+
+**Ranks by queue** (maintainer, 16 November 2026). A title declares its ranked queues (section 12): R6 has Solo/Duo and Flex from Season 4, League of Legends the same two, Rocket League one per playlist, Valorant one. A player fills any of them on `/me`, all optional, and picks the one their profile and recruitment listings show. Ranks stay self-declared; Ligo looks none up (M-28). At registration the shown rank is copied onto the season's `roster_entry`, so a league keeps the rank a player registered with. Which queue a league reads, if any, is a league setting (O-34). This replaces `game_account.rank` and `rank_at_registration` of schema v1, already built in phase 3: `game_account.ranks_json` (`{ queue: rank }`, zod-checked against the title's queues), `shown_queue`, and `roster_entry.rank_at_registration`; a migration when the work is planned.
+
 **Who acts, by level** (maintainer, 14 November 2026)
 
 - **Teams, two levels:** roster officials act for one roster; club officials act for every roster of their club and manage the club itself.
@@ -383,6 +389,7 @@ The veto runs on the website at `/matches/:id/veto`, linked from the match page 
 
 These are the sequences of the [BLAST R6 global rulebook 2025](https://staticctf.ubisoft.com/J3yJr34U2pZ2Ieem48Dwy9uqj5PNUQTn/53GxmEddEWemHwz8BBbJpZ/96a6decc0ca03defc9c1ae9e06bd0809/BLASTR6_GLOBALRULEBOOK_SEASON_2025.pdf), section 5.1.3.2, which LFR follows (O-11). On any map, the team without side selection picks the overtime side.
 
+- **No veto:** `competition.ruleset_json.veto = null` turns the veto off, and the match pages have no Veto tab. The default comes from the title (section 12): a title without maps, such as Rocket League, has none; a title with maps has one, and a competition may still turn it off (maintainer, 16 November 2026).
 - **Settings** (`competition.ruleset_json.veto`): `formats`, by best-of (`bo1`, `bo3`, `bo5`), each a `sequence` of `A_ban`, `B_ban`, `A_pick`, `B_pick` and a `decider_side` (`team_a`, `coin`, or `round_difference`; `coin` for BO3 and BO5 by default); `step_seconds` (240). The defaults are the table above (O-11).
 - **Engine:** `packages/core/veto.ts` is a state machine: given format, pool and team A, it returns the next step and the valid choices. Each step is stored as a `veto_step` row; the decider is stored too, with no team, since nobody picks it. A side step follows each pick: the picker's opponent picks the starting side, then the picker the overtime side.
 - **Frozen at the start:** the format, the pool and the timer are copied into `match.veto_json`, so a settings change mid-veto cannot break it.
@@ -618,6 +625,8 @@ Ligo is a tool for esport leagues with divisions that happens to host MBL Group 
 - Ligo's logo is at the top left of every page and its name and logo are always in the footer. A competition's identity (logo, theme colours) shows in its own bar; custom domains and themes (section 18) come later.
 - The global header holds the game switcher, search, today's matches, recruitment, language and login. Side columns show only what belongs to the page they sit on.
 - Light theme first; a dark theme following the system setting comes later.
+- **A player in several games** (maintainer, 16 November 2026): one page per person, one tab per game (`/players/vexo/r6`, `/players/vexo/valorant`). The header and the career are shared; each tab shows only its game's teams, matches and stats. A game the player never played officially has no tab.
+- **Only what a game has:** pages show a section only when the title declares it (section 12). A Rocket League match has no Veto tab, no map card and no character table; its player tab is goals and assists per game and per season.
 - **Player photos:** optional, uploaded by the player on `/me`, shown on the player page and rosters; a default image stands in otherwise. Only Ligo's own staff remove a photo; a league's staff cannot, but anyone can report one to Ligo's staff.
 - **Game art:** Ubisoft allows its map and operator images on a site that reports matches, paid or not; it forbids them on merchandise sold and for AI training (checked by the maintainer, 16 November 2026). R6 uses them for map cards in the veto, the map banner of a played match, operator icons in rounds, and the player and team pages; each title supplies its images in `packages/titles`, with a text fallback.
 
@@ -631,7 +640,8 @@ Ligo is a tool for esport leagues with divisions that happens to host MBL Group 
 | `/c/:comp/:season/leaders`     | everyone                | Leaderboards per metric, with coverage                                                                                         |
 | `/c/:comp/rules`               | everyone                | Current rulebook version, with history; its staff publish a new version from `/c/:comp/rules/new` (Markdown, raw HTML shown as text) |
 | `/teams/:slug`                 | everyone                | Roster, staff, results, team stats                                                                                             |
-| `/players/:slug`               | everyone                | Season stats, splits by map, side and operator, game log (consenting players only)                                             |
+| `/players/:slug`               | everyone                | The person once (photo, clubs and teams in every game, career, awards), then one tab per game played; opens the game of the latest official match |
+| `/players/:slug/:title`        | everyone                | One game's stats, built from the title's metric schema: season totals, game log, splits the title has (map, side, character) (consenting players only) |
 | `/matches/:id`                 | everyone                | Score per game, scoreboards, round timeline when replays exist                                                                 |
 | `/register`                    | team owners             | Team registration form, filed as a request                                                                                     |
 | `/teams/:slug/manage`          | team owner and managers | Team officials, the team's requests (officials, slot transfer, mercato moves, team details) and their history                  |
@@ -804,6 +814,8 @@ type Derived = {
 ```
 
 Every stored metric is additive. Values shown as averages in game (Valorant ACS) are converted to totals at entry.
+
+**Stat pages from the schema** (maintainer, 16 November 2026). A game's tab on the player page, the team stats and the leaders are one layout driven by the title's metric schema, not a page per title: season totals and derived metrics, the game log, splits by competition and season, and splits by map, side or character only when the title declares them (section 12). Sections that need round facts (R6 operators, sites, round situations) appear only where replays give them. A game with goals and assists only gets a short page, and that is fine. Adding a title adds no page code.
 
 **R6 metrics**
 
@@ -1144,7 +1156,8 @@ Every league gets results, standings, channels and manual stats from the shared 
 
 - `.replay` files parse in the browser with boxcars (section 10). Ballchasing's upload API ([docs](https://ballchasing.com/doc/api)) stays an optional fallback.
 - Gaps fall back to the manual grid: console players have no replay files, and replays only keep stats for players who finished the game.
-- Metrics: `goals`, `assists`, `saves`, `shots`, `score`, `demos` (replay only). Derived: shooting % = goals / shots, goals per game.
+- Metrics: `goals` and `assists` in the manual grid (maintainer, 16 November 2026: that is all a Rocket League league needs); `saves`, `shots`, `score` and `demos` only from replays, when they exist, since they cost nothing to collect. Derived: goals and assists per game; shooting % = goals / shots when shots exist.
+- No maps, sides, characters or veto.
 - Consistency check: a side's goals sum to its game score. Series are best of N games; the standings score is goals.
 
 **FACEIT mixed R6 (FRFL)**
@@ -1159,6 +1172,8 @@ Every league gets results, standings, channels and manual stats from the shared 
 
 **Adding a title** = one folder in `packages/titles/<title>/` exporting:
 
+- what the game has (maintainer, 16 November 2026): `maps`, `sides`, `characters` (operators, agents, champions; with their label), `rounds`, and the score unit, `rounds`, `goals` or `games` (games won, for titles such as League of Legends with no round score; how F and C count then is M-38). Pages, the stat grid, the veto and the images show only what is declared, and a competition can turn an existing feature off (the veto, for one);
+- its ranked queues (R6: Solo/Duo and Flex; Rocket League: one per playlist) and the ranks of each;
 - the metric schema and derived metrics;
 - ruleset defaults (win condition, overtime and side rules);
 - the stat grid's consistency checks;
@@ -1341,6 +1356,9 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Discord               | One server per league: LFR, LFV, FRFL, LFRL                                                                                               | You           |
 | Cheating              | A ban covers LFR, LFV and LFRL                                                                                                            | Rulebook      |
 | Team tools            | Private practice book, playbook, team report, scouting, recruitment board, external results, team level and awards (section 17); R6 first | You           |
+| Several games         | One player page per person with one tab per game; stat pages built from each title's metric schema; a title declares maps, sides, characters, rounds, score unit and rank queues, and a competition may turn the veto off (16 November 2026) | You |
+| Ranks                 | Self-declared per ranked queue of the title; the player picks the one shown; the shown rank is copied at registration (16 November 2026) | You |
+| Practice privacy      | Practice data stays private; no public opt-in for now (16 November 2026) | You |
 | Team obligations      | None: no team is required to upload scrims or enter external events; external results are shown on team pages and never worth points      | You           |
 | Match volume          | FRFL and the cup provide the extra matches; the league stays at one BO1 per week                                                          | You           |
 | Team level scale      | The 0–10 rubric of section 17                                                                                                             | You           |
