@@ -642,6 +642,22 @@ Until the staff pages of phase 3f exist, staff cannot enter a result directly, r
 set a match time, give a sanction or exclude a team. Validating and refusing reports and team
 requests still works, with the queue's buttons and on `/staff`.
 
+## 34. Phase 3f-2: the staff panel on the match page
+
+No restart beyond `pnpm dev` picking up the change.
+
+1. With the staff role, open a match page: **Actions du staff** is at the bottom. Without the role,
+   it is not there, and its forms answer 403.
+2. **Saisir le résultat** on a match to play: the result counts at once and is announced in the
+   results channel with its picture. The screenshot is optional; when given, only staff see it.
+   On a validated match, the same form is **Corriger le résultat**.
+3. Report a result as a team, then come back as staff: **Signalement en attente** offers
+   **Valider** and **Refuser**. Entering another score instead closes the report: its posts in the
+   staff queue and the schedule channel lose their buttons and say the result was replaced.
+4. **Forfait** shows each team's forfeits this season and the thresholds, then records a forfeit by
+   one team or both; the warning and the exclusion follow as before.
+5. **Annuler le match** needs a reason.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
