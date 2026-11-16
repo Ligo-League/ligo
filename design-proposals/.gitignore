@@ -1,0 +1,5 @@
+node_modules/
+_tools/
+# Full screenshots are regenerated with _build/screenshots.ts; only the thumbnails of index.html are kept.
+screenshots/*
+!screenshots/_thumbs/

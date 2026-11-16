@@ -1,0 +1,98 @@
+/* Proposal E · A and C merged — design tokens (started from A).
+   Neutral greys carry the page; one league colour (the theme variables) marks where you are.
+   Every value a league may change is a --league-* variable, set from competition.theme_json. */
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('fonts/IBMPlexSans-wdth-wght.ttf') format('truetype');
+  font-weight: 100 700;
+  font-stretch: 75% 100%;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('fonts/IBMPlexMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  /* Neutral scale (no blue cast: not slate, not navy). */
+  --grey-0: #ffffff;
+  --grey-50: #f6f7f7;
+  --grey-100: #eff0f1;
+  --grey-150: #e8eaec; /* page */
+  --grey-200: #dcdfe2; /* borders */
+  --grey-300: #c9cdd1;
+  --grey-500: #80868c;
+  --grey-600: #5c6268; /* muted text: 6.2:1 on white, 5.1:1 on page */
+  --grey-800: #2f3337;
+  --grey-900: #1d2023; /* text: 16.4:1 on white */
+  --bar: #222527; /* top bar, charcoal */
+  --bar-2: #303437;
+  --bar-text: #e9eaeb;
+  --bar-muted: #a9aeb3; /* 7.3:1 on the bar */
+
+  --page: var(--grey-150);
+  --panel: var(--grey-0);
+  --panel-head: var(--grey-100);
+  --row-alt: var(--grey-50);
+  --row-hover: #f1f3f4;
+  --line: var(--grey-200);
+  --line-strong: var(--grey-300);
+  --text: var(--grey-900);
+  --muted: var(--grey-600);
+  --faint: var(--grey-500);
+
+  /* Results and states: each also has a text form (W/L, a word, a mark). */
+  --win: #17803d; /* 5.0:1 on white */
+  --win-bg: #e3f3e8;
+  --loss: #c22b2b; /* 5.6:1 on white */
+  --loss-bg: #fbe5e4;
+  --warn: #8a5a00; /* 6.0:1 on white */
+  --warn-bg: #fdf1d6;
+  --info: #1e5aa8; /* 6.6:1 on white */
+  --info-bg: #e5eefa;
+  --live: #c22b2b;
+
+  /* Standings zones: bar colour + a letter in the legend and the row's title. */
+  --zone-champion: #c99a06;
+  --zone-promotion: #17803d;
+  --zone-barrage_promotion: #6fbf87;
+  --zone-barrage_relegation: #e08a2c;
+  --zone-relegation: #c22b2b;
+
+  /* League theme (competition.theme_json). Defaults are LFR's; a page wrapper overrides them. */
+  --league-primary: #14306b;
+  --league-secondary: #d3263a;
+  --league-accent: #2f6fe0;
+  --league-on-primary: #ffffff;
+
+  /* Type: IBM Plex Sans, one family; tabular figures everywhere. */
+  --font: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --fs-xs: 11px; /* panel titles (caps), meta */
+  --fs-sm: 12px; /* tables */
+  --fs-base: 13px;
+  --fs-md: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-score: 30px;
+  --lh: 1.45;
+  --stretch-table: 88%; /* wdth axis in dense numeric tables */
+
+  /* Space and shape. */
+  --s1: 2px;
+  --s2: 4px;
+  --s3: 6px;
+  --s4: 8px;
+  --s5: 12px;
+  --s6: 16px;
+  --s7: 24px;
+  --radius: 2px;
+  --radius-lg: 3px;
+  --row-h: 26px;
+  --col-side: 248px;
+  --col-right: 272px;
+  --max: 1720px;
+}

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ligo · propositions de design</title>
+<style>
+  :root { --bg: #f3f3f1; --fg: #1b1b1b; --muted: #5e5e5a; --line: #d6d5d0; --link: #1a4fb4; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
+  header, main { max-width: 1280px; margin: 0 auto; padding: 0 16px; }
+  header { padding-top: 28px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  header p { margin: 0; color: var(--muted); max-width: 70ch; }
+  section { padding: 28px 0; border-bottom: 1px solid var(--line); }
+  h2 { font-size: 19px; margin: 0; }
+  h2 a { color: inherit; }
+  .meta { color: var(--muted); margin: 2px 0 14px; }
+  .links a { color: var(--link); margin-right: 14px; }
+  .thumbs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 14px; }
+  figure { margin: 0; }
+  figcaption { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .pair { display: grid; grid-template-columns: 1fr 96px; gap: 8px; align-items: start; }
+  .pair img { width: 100%; height: auto; border: 1px solid var(--line); background: #fff; display: block; }
+  a:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+  @media (max-width: 760px) { .thumbs { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ligo · propositions de design</h1>
+  <p>Maquettes statiques du site public et des principales pages connectées, sur un même jeu de données (LFR Saison 3, maintenant fictif : jeudi 26 novembre 2026, 20:40 CET). Lire la comparaison et la recommandation dans <a href="README.md">README.md</a>.</p>
+</header>
+<main>
+<section>
+  <h2><a href="e-merged/index.html">E · A et C réunis (après revue)</a></h2>
+  <p class="meta">Le cadre et la densité de A, les composants de C, Ligo comme plateforme ; cartes, opérateurs, rounds et photos. Lignée : A et C, revue du mainteneur du 16 novembre 2026.</p>
+  <p class="links"><a href="e-merged/index.html">Toutes les pages et états</a><a href="e-merged/README.md">README</a><a href="e-merged/tokens.css">tokens.css</a></p>
+  <div class="thumbs">
+    <figure>
+      <figcaption>Accueil</figcaption>
+      <a class="pair" href="e-merged/home.html">
+        <img src="screenshots/_thumbs/e-merged-home-1440.png" alt="E · A et C réunis (après revue), Accueil, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/e-merged-home-390.png" alt="E · A et C réunis (après revue), Accueil, 390 px" loading="lazy">
+      </a>
+    </figure><figure>
+      <figcaption>Classement Ligue 1</figcaption>
+      <a class="pair" href="e-merged/standings-ligue-1.html">
+        <img src="screenshots/_thumbs/e-merged-standings-ligue-1-1440.png" alt="E · A et C réunis (après revue), Classement Ligue 1, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/e-merged-standings-ligue-1-390.png" alt="E · A et C réunis (après revue), Classement Ligue 1, 390 px" loading="lazy">
+      </a>
+    </figure><figure>
+      <figcaption>Match joué</figcaption>
+      <a class="pair" href="e-merged/match-played.html">
+        <img src="screenshots/_thumbs/e-merged-match-played-1440.png" alt="E · A et C réunis (après revue), Match joué, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/e-merged-match-played-390.png" alt="E · A et C réunis (après revue), Match joué, 390 px" loading="lazy">
+      </a>
+    </figure>
+  </div>
+</section><section>
+  <h2><a href="a-reference/index.html">A · Site de référence</a></h2>
+  <p class="meta">Dense, tables partout, barres latérales de matchs et de classement ; une seule couleur de ligue sur des gris neutres. Lignée : HLTV, Liquipedia, VLR.gg, siege.gg.</p>
+  <p class="links"><a href="a-reference/index.html">Toutes les pages et états</a><a href="a-reference/README.md">README</a><a href="a-reference/tokens.css">tokens.css</a></p>
+  <div class="thumbs">
+    <figure>
+      <figcaption>Accueil</figcaption>
+      <a class="pair" href="a-reference/home.html">
+        <img src="screenshots/_thumbs/a-reference-home-1440.png" alt="A · Site de référence, Accueil, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/a-reference-home-390.png" alt="A · Site de référence, Accueil, 390 px" loading="lazy">
+      </a>
+    </figure><figure>
+      <figcaption>Classement Ligue 1</figcaption>
+      <a class="pair" href="a-reference/standings-ligue-1.html">
+        <img src="screenshots/_thumbs/a-reference-standings-ligue-1-1440.png" alt="A · Site de référence, Classement Ligue 1, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/a-reference-standings-ligue-1-390.png" alt="A · Site de référence, Classement Ligue 1, 390 px" loading="lazy">
+      </a>
+    </figure><figure>
+      <figcaption>Match joué</figcaption>
+      <a class="pair" href="a-reference/match-played.html">
+        <img src="screenshots/_thumbs/a-reference-match-played-1440.png" alt="A · Site de référence, Match joué, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/a-reference-match-played-390.png" alt="A · Site de référence, Match joué, 390 px" loading="lazy">
+      </a>
+    </figure>
+  </div>
+</section><section>
+  <h2><a href="b-league/index.html">B · Ligue officielle</a></h2>
+  <p class="meta">Typographie condensée en capitales, grands aplats aux couleurs des équipes, la journée de match au centre ; sombre. Lignée : LoL Esports et LEC, BLAST.tv, ligue1.com, les visuels de la LFR.</p>
+  <p class="links"><a href="b-league/index.html">Toutes les pages et états</a><a href="b-league/README.md">README</a><a href="b-league/tokens.css">tokens.css</a></p>
+  <div class="thumbs">
+    <figure>
+      <figcaption>Accueil</figcaption>
+      <a class="pair" href="b-league/home.html">
+        <img src="screenshots/_thumbs/b-league-home-1440.png" alt="B · Ligue officielle, Accueil, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/b-league-home-390.png" alt="B · Ligue officielle, Accueil, 390 px" loading="lazy">
+      </a>
+    </figure><figure>
+      <figcaption>Classement Ligue 1</figcaption>
+      <a class="pair" href="b-league/standings-ligue-1.html">
+        <img src="screenshots/_thumbs/b-league-standings-ligue-1-1440.png" alt="B · Ligue officielle, Classement Ligue 1, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/b-league-standings-ligue-1-390.png" alt="B · Ligue officielle, Classement Ligue 1, 390 px" loading="lazy">
+      </a>
+    </figure><figure>
+      <figcaption>Match joué</figcaption>
+      <a class="pair" href="b-league/match-played.html">
+        <img src="screenshots/_thumbs/b-league-match-played-1440.png" alt="B · Ligue officielle, Match joué, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/b-league-match-played-390.png" alt="B · Ligue officielle, Match joué, 390 px" loading="lazy">
+      </a>
+    </figure>
+  </div>
+</section><section>
+  <h2><a href="c-app/index.html">C · Application sportive</a></h2>
+  <p class="meta">Clair et pensé pour le mobile : listes à filets, points de forme, une même barre d’onglets sur chaque fiche. Lignée : Sofascore, FotMob, BBC Sport, L’Équipe, FACEIT.</p>
+  <p class="links"><a href="c-app/index.html">Toutes les pages et états</a><a href="c-app/README.md">README</a><a href="c-app/tokens.css">tokens.css</a></p>
+  <div class="thumbs">
+    <figure>
+      <figcaption>Accueil</figcaption>
+      <a class="pair" href="c-app/home.html">
+        <img src="screenshots/_thumbs/c-app-home-1440.png" alt="C · Application sportive, Accueil, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/c-app-home-390.png" alt="C · Application sportive, Accueil, 390 px" loading="lazy">
+      </a>
+    </figure><figure>
+      <figcaption>Classement Ligue 1</figcaption>
+      <a class="pair" href="c-app/standings-ligue-1.html">
+        <img src="screenshots/_thumbs/c-app-standings-ligue-1-1440.png" alt="C · Application sportive, Classement Ligue 1, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/c-app-standings-ligue-1-390.png" alt="C · Application sportive, Classement Ligue 1, 390 px" loading="lazy">
+      </a>
+    </figure><figure>
+      <figcaption>Match joué</figcaption>
+      <a class="pair" href="c-app/match-played.html">
+        <img src="screenshots/_thumbs/c-app-match-played-1440.png" alt="C · Application sportive, Match joué, 1440 px" loading="lazy">
+        <img src="screenshots/_thumbs/c-app-match-played-390.png" alt="C · Application sportive, Match joué, 390 px" loading="lazy">
+      </a>
+    </figure>
+  </div>
+</section>
+</main>
+</body>
+</html>

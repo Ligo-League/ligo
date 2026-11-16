@@ -63,7 +63,18 @@ const PURE_RULES = {
 };
 
 export default defineConfig(
-  { ignores: ['**/node_modules/', '**/dist/', 'coverage/', 'packages/db/migrations/'] },
+  {
+    ignores: [
+      '**/node_modules/',
+      '**/dist/',
+      'coverage/',
+      'packages/db/migrations/',
+      // Claude Code's worktrees: other checkouts of this repository.
+      '.claude/',
+      // Static design mockups with their own tooling (design-proposals/README.md), not app code.
+      'design-proposals/',
+    ],
+  },
 
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,

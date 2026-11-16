@@ -1,0 +1,79 @@
+/* Proposal C, sports app: design tokens.
+   Colours, type scale, spacing and radii, plus the four theme variables that a competition's
+   theme_json sets (--league-*). A league page overrides only those four, on its wrapper. */
+
+@font-face {
+  font-family: 'Schibsted Grotesk';
+  src: url('fonts/SchibstedGrotesk-wght.ttf') format('truetype');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Surfaces: white page, very light grey bands for section breaks, hairlines. */
+  --bg: #ffffff;
+  --band: #f4f5f7;
+  --band-strong: #eceef1;
+  --line: #e3e5e9;
+  --line-strong: #c9cdd3;
+
+  /* Text. --muted passes AA on white and on --band. */
+  --fg: #15181d;
+  --muted: #5a616c;
+  --link: #1d4f91;
+
+  /* Results and statuses: never the league's colours, so a theme cannot change their meaning. */
+  --win: #17803f;
+  --win-bg: #e6f4ea;
+  --loss: #c42f2f;
+  --loss-bg: #fbe9e9;
+  --warn: #935a00;
+  --warn-bg: #fdf1dc;
+  --info: #24548f;
+  --info-bg: #e8eff8;
+  --live: #d4281f;
+  --muted-bg: #eef0f2;
+
+  /* Standings zones (each also carries a letter, so it reads without colour). */
+  --zone-champion: #b8901b;
+  --zone-promotion: #17803f;
+  --zone-barrage_promotion: #6db88a;
+  --zone-barrage_relegation: #e08a2e;
+  --zone-relegation: #c42f2f;
+
+  /* League theme: competition.theme_json. Defaults are LFR's. */
+  --league-primary: #14306b;
+  --league-secondary: #d3263a;
+  --league-accent: #2f6fe0;
+  --league-on-primary: #ffffff;
+
+  /* Type: Schibsted Grotesk, one family; tabular figures wherever a number sits in a column. */
+  --font: 'Schibsted Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --fs-cap: 12px;
+  --fs-sm: 13px;
+  --fs-base: 15px;
+  --fs-md: 17px;
+  --fs-lg: 20px;
+  --fs-xl: 26px;
+  --fs-score: 34px;
+  --lh: 1.45;
+
+  /* Spacing on a 4 px grid. */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+
+  /* Radii: only pills and inputs are rounded. */
+  --r-pill: 999px;
+  --r-input: 6px;
+  --r-badge: 3px;
+
+  --page: 1140px;
+  --row: 48px;
+  --row-tight: 40px;
+}

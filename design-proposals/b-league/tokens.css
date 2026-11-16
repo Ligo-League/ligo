@@ -1,0 +1,98 @@
+/* Proposal B, "Official league": design tokens.
+   Neutral charcoal (never navy), one condensed display face, team and league colours as flat
+   fields. The --league-* variables are what competition.theme_json sets; a page wrapper
+   overrides them and nothing else changes between LFR and LFRL. */
+
+@font-face {
+  font-family: 'Archivo';
+  src: url('fonts/Archivo-wdth-wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+
+:root {
+  /* Surfaces: neutral greys with no blue cast. */
+  --bg: #111214;
+  --surface: #1a1b1e;
+  --surface-2: #232428;
+  --surface-3: #2c2d32;
+  --line: #2e3035;
+  --line-strong: #4a4c53;
+
+  /* Text. --text-2 passes AA for body text on every surface; --text-3 only for large or
+     secondary labels on --bg and --surface. */
+  --text: #f2f2f0;
+  --text-2: #b4b6bb;
+  --text-3: #95979d;
+
+  /* Meaning colours (always paired with a word or a letter). */
+  --win: #46c477;
+  --loss: #f26b61;
+  --warn: #f2a93b;
+  --info: #7fb0ff;
+  --live: #ff5a4e;
+  --focus: #ffd34d;
+
+  /* Standings zones (section 11). Each also carries a letter in the bar. */
+  --zone-champion: #e8c547;
+  --zone-promotion: #46c477;
+  --zone-barrage-promotion: #a3dcb5;
+  --zone-barrage-relegation: #f2a93b;
+  --zone-relegation: #f26b61;
+
+  /* League theme (competition.theme_json). Defaults are the neutral group chrome. */
+  --league-primary: #2c2d32;
+  --league-secondary: #4a4c53;
+  --league-accent: #f2f2f0;
+  --league-on-primary: #f2f2f0;
+  /* LFR's tricolour stripe; a league without a stripe repeats its secondary colour. */
+  --stripe-1: var(--line-strong);
+  --stripe-2: var(--line-strong);
+  --stripe-3: var(--line-strong);
+
+  /* Type. Archivo at 62 % width is the display face; 100 % for reading. */
+  --font: 'Archivo', 'Arial Narrow', Arial, sans-serif;
+  --display-stretch: 62%;
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-s: 13px;
+  --fs-base: 15px;
+  --fs-m: 17px;
+  --fs-l: 20px;
+  --fs-d4: 24px;
+  --fs-d3: 32px;
+  --fs-d2: 48px;
+  --fs-d1: 72px;
+  --lh: 1.5;
+  --track-caps: 0.16em;
+
+  /* Spacing, 4 px grid. */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+
+  /* Radii stay small: fields are flat. */
+  --r1: 2px;
+  --r2: 4px;
+
+  --page: 1280px;
+  --gutter: 24px;
+  --rule: 1px solid var(--line);
+  --rule-strong: 1px solid var(--line-strong);
+}
+
+@media (max-width: 720px) {
+  :root {
+    --gutter: 16px;
+    --fs-d1: 48px;
+    --fs-d2: 36px;
+    --fs-d3: 26px;
+    --fs-d4: 20px;
+  }
+}

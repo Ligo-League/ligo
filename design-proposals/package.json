@@ -1,0 +1,13 @@
+{
+  "name": "ligo-design-proposals",
+  "private": true,
+  "type": "module",
+  "description": "Static design mockups for the Ligo website. Not part of the pnpm workspace.",
+  "scripts": {
+    "build": "node _build/build.ts",
+    "shots": "node _build/screenshots.ts"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}
