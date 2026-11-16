@@ -150,12 +150,18 @@ lfr-league/
 - Apps depend on packages, never the reverse.
 - Bot commands and website routes call the same service functions in `apps/server/services/`. No logic lives in a command handler.
 
-**Website first, bot for quick access** (decided 13 November 2026)
+**Website first, the bot mostly a getter** (maintainer, 16 November 2026; replaces the rule of 13 November)
 
-- The website is the main tool. Every action the bot offers can also be done on the website, which has room for more fields, uploads, replays and explanations.
-- The bot is a convenience inside Discord: quick lookups, staff setup without leaving the server, and teams reporting and confirming a result from their voice call right after the match.
-- The bot stays feature complete for what it covers: an action started in Discord can be finished in Discord. An action that needs more than a command can carry (registration, mercato, replay uploads, the stat grid) is not squeezed into one; the bot links to its website page.
-- Because both call the same services, a new action gets both a command and a page, or the plan says why one of them waits. Until the website exists (phase 3) the bot carries every action; phase 3 adds the website side of those built before it.
+- The website is where everything is done: every action has a page, with room for more fields, uploads, replays and explanations. Discord is not an ergonomic place to manage a league.
+- The bot is quick access inside Discord. It does five things:
+  - **Notifies:** match times, reminders, results reported, validated or refused, staff queue posts, mercato moves, exclusions. Each post links to its page.
+  - **Answers its own notifications in one click:** accept or decline a time, confirm or contest a result, staff validate or refuse a report or a team request (a refusal asks its reason in a modal).
+  - **Reports a result** from the voice call right after the match: `/match report` with the score and the screenshot, answered with the link to the match page.
+  - **Runs the Discord server:** match channels, roles, permissions, the reconciler, the league's channels (`/league channel`) and the league side of moderation. Actions that change Discord itself stay commands.
+  - **Gets:** lookups that render an image (`/standings`, later `/stats`, `/leaderboard`) or a short answer, with the page's link added under it, written so Discord shows no embed for it.
+- Everything else is on the website only, with no command: team officials and requests, proposing a time, the veto, the captain for one match, staff result entry, forfeits, sanctions, exclusions and match times, registration, the mercato, uploads and the stat grid. A command has to make sense in Discord and be a simple, quick action; changing a team's officials is not one.
+- A new feature gets a page, and a Discord notification when people need to know. It gets a command only when it is a getter, changes Discord itself, or answers a notification.
+- Bot commands and pages still call the same services. The commands built before this rule that it drops are deleted, not turned into links, to keep the command list short (phase 3f).
 
 ## 4. Domain model and database schema
 
@@ -363,7 +369,7 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 **Scheduling (`scheduling_json`)**
 
 1. **Round robin by the circle method.** Shuffle with a stored seed; pair position i with n − 1 − i; keep position 0 fixed and rotate the rest each round. `rounds_per_week: 1` gives 9 weeks for 10 teams. The rulebook's "4 weeks, 2 matches per week" is a Season 2 leftover to correct for Season 4.
-2. **Date negotiation.** Teams agree a date and time through `/match propose-time`; the other team accepts or declines with a button (`match_proposal`). A time must fall in the match's week or its extension; staff can set any time (`/staff match schedule`). A team's new proposal replaces its pending one.
+2. **Date negotiation.** Teams agree a date and time on the match page; the bot posts the proposal and the other team accepts or declines with a button, in Discord or on the page (`match_proposal`). A time must fall in the match's week or its extension; staff can set any time from the match page's staff panel. A team's new proposal replaces its pending one.
 3. **Extension and auto-scheduling.** When the planned week ends without an agreed time, the bot grants the extension and at once sets the match to Sunday 21:00 of the extension week (`auto_scheduled = true`), announcing both in the schedule channel. A time the teams agree afterwards replaces it. If the bot was off past that Sunday slot, it sets nothing and staff decide. (Confirmed for Season 4 by the maintainer, 14 November 2026: O-13. The announcement says the teams can still agree another time.)
 4. **Settings** (`scheduling_json`): `time_zone` (`Europe/Paris`), `extension_weeks` (1), `auto_slot` (`{ "weekday": 7, "time": "21:00" }`, or null for none). `packages/core/scheduling.ts` computes the period; a clock in the server checks every minute.
 5. **Coupe de France.** 7 days to agree and no extension; otherwise Sunday 21:00. A team that doesn't show is disqualified; if neither shows, both are, and the next-round opponent gets a bye.
@@ -375,7 +381,7 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 
 **Map veto**
 
-The veto runs on the website at `/matches/:id/veto`, linked from the match page (and later from the match channel's control message), and in Discord. It uses the official competitive map pool and the standard competitive ban sequences. `/match veto` posts a message with one button per remaining map, then Attack and Defense for the side steps, and every step edits that message. The page (phase 3e) uses the same engine: the two sides (officials and captain), the players of their season lineup and league staff follow it; a side or staff starts it, which posts the Discord message in the schedule channel (M-32); the team whose turn it is chooses there too, and each choice edits the Discord message. The page asks the server every 3 seconds (htmx) and gets nothing back (204) until the veto moves; it stops asking once the veto is over.
+The veto runs on the website at `/matches/:id/veto`, linked from the match page and, later, from the match channel's control message. It uses the official competitive map pool and the standard competitive ban sequences. The veto is on the website only (maintainer, 16 November 2026; the `/match veto` command and its map buttons of phase 2 are removed): the two sides (officials and captain), the players of their season lineup and league staff follow it; a side or staff starts it, and the bot posts its link in the schedule channel (M-32), then its outcome (maps and sides) when it ends. The page asks the server every 3 seconds (htmx) and gets nothing back (204) until the veto moves; it stops asking once the veto is over.
 
 - **Map pool:** stored per season in `season.settings_json`; staff update it when Ubisoft rotates maps. The current pool has 9 maps.
 - **Team A** is the team that bans first. Without a coin toss it is also the team with side selection; after a coin toss in a BO1 the two can differ (section above).
@@ -403,12 +409,12 @@ These are the sequences of the [BLAST R6 global rulebook 2025](https://staticctf
 1. `scheduled`: channel created, window and deadline set.
 2. `reported`: an official or the captain of a team runs `/match report` with the score and a screenshot of the final scoreboard (required `evidence`), or reports on the match page with the screenshot uploaded (phase 3e; same checks: PNG, JPEG or WebP by the file's own bytes, 20 MB at most, kept by the server before anything is stored). The bot posts the report in public, pings the other side's officials and captain, and posts it in the staff queue channel. From the website, the public post goes to the league's schedule channel (M-32). The public post's place is kept on the `evidence` row (`post_channel_id`, `post_message_id`), so an answer edits it wherever it was given.
 3. The opponent confirms (`confirmed`) or disputes (`disputed`, staff alerted), with the buttons under the report or on the match page. Disputing opens a form: a reason from the competition's `dispute_reasons` setting or "other", and details (up to 1,000 characters, required for "other"). The reason and details go to the staff queue only, never to the public message, since a reason can accuse a player. Each dispute is a `dispute` row; the staff action that ends it (validate, reject, void, a direct result or a forfeit) records its resolution in the same transaction.
-4. Staff validate (`validated`) with the button in the queue or `/staff match validate`. Only now does the result count; it is announced in the results channel. Staff can instead reject the report: the match goes back to `scheduled`.
-5. Staff can set any result (`/staff match result`), forfeit or void directly; everything is audited.
+4. Staff validate (`validated`) with the button in the queue, on Discord or on `/staff`. Only now does the result count; it is announced in the results channel. Staff can instead reject the report: the match goes back to `scheduled`.
+5. Staff can set any result, forfeit or void directly, from the match page's staff panel; everything is audited.
 
 - The steps, and who may take each, are one table in `packages/core` (`match-lifecycle.ts`). With `result_validation: 'opponent'`, the opponent's confirmation validates.
 - Staff may validate before the opponent answers; whether they should is an open question (O-06).
-- The server keeps its own copy of each score screenshot (maintainer, 14 November 2026), from `/match report` and `/staff match result`, so the website can show it: the address Discord gives for an upload expires within a day. Its key is `evidence/<match_id>/<sha256>.<ext>` in `evidence.object_key`, on disk under `STORAGE_DIR` until R2 (phase 5) with the same keys. Only PNG, JPEG and WebP are kept, recognised by the file's own bytes, not the type Discord declares. `GET /evidence/:id` serves it to league staff and to the match's two teams (officials and captain) unless the row is marked for staff, never publicly or from a cache. The bot's post in the staff queue stays the Discord-side copy, and `evidence.url` links to it; a report whose copy could not be stored still stands on that post.
+- The server keeps its own copy of each score screenshot (maintainer, 14 November 2026), from `/match report` and the website's reports and staff entries, so the website can show it: the address Discord gives for an upload expires within a day. Its key is `evidence/<match_id>/<sha256>.<ext>` in `evidence.object_key`, on disk under `STORAGE_DIR` until R2 (phase 5) with the same keys. Only PNG, JPEG and WebP are kept, recognised by the file's own bytes, not the type Discord declares. `GET /evidence/:id` serves it to league staff and to the match's two teams (officials and captain) unless the row is marked for staff, never publicly or from a cache. The bot's post in the staff queue stays the Discord-side copy, and `evidence.url` links to it; a report whose copy could not be stored still stands on that post.
 - A button belongs to one report: its ID carries the `evidence` row of that report, so a button under an older report is refused.
 
 **Game score**
@@ -445,12 +451,12 @@ A restart keeps the score from before the crash. Each team may call one re-host 
 
 **Forfeits and exclusion**
 
-- Only staff record a forfeit (`/staff match forfeit`).
+- Only staff record a forfeit, from the match page's staff panel.
 - A team's forfeits are counted from its forfeit matches of the stage, never stored, so an annulled forfeit stops counting. The `slot.forfeits` column is therefore unused.
 - `season.settings_json.forfeits` holds the thresholds, `{ "warning_at": 2, "exclusion_at": 3 }` in LFR; either can be null. Reaching `warning_at` adds a `warning` sanction automatically.
 - **Automatic exclusion** (maintainer, 13 November 2026, O-05): the forfeit that reaches `exclusion_at` excludes the team in the same transaction: `slot.status = 'excluded'`, an `exclusion` sanction, the audit entry. The team's manager and staff get a direct message with the reason and how to appeal; the results channel announces it without the reason; the staff queue is told, with any direct message that could not be delivered.
-- **Appeal:** staff reverse an exclusion with `/staff exclusion reinstate` and a reason: the slot is active again and the sanction gets its end date.
-- **Exemption:** staff switch the automatic exclusion off for one team with `/staff exclusion auto`, always with a reason (`slot.auto_exclusion_off_*`), and back on. Reaching the threshold then only alerts the staff queue. Staff can still exclude any team with `/staff exclusion exclude`, for forfeits or another reason of the rulebook.
+- **Appeal:** staff reverse an exclusion on `/staff/sanctions` with a reason: the slot is active again and the sanction gets its end date.
+- **Exemption:** staff switch the automatic exclusion off for one team on `/staff/sanctions`, always with a reason (`slot.auto_exclusion_off_*`), and back on. Reaching the threshold then only alerts the staff queue. Staff can still exclude any team there, for forfeits or another reason of the rulebook.
 - **The 50% rule** (maintainer, 13 November 2026, O-04), applied by `packages/core/exclusion.ts` when standings are computed, never written into results, so a reinstatement restores every match:
     - only matches really played (validated, with a score) count as played; forfeits do not, whoever forfeited. Counting them would let a team that forfeits often pass the threshold and keep its results, the opposite of the rule's aim;
     - half of all the team's matches of the regular season, void ones aside; "at least half" is played × 2 ≥ total;
@@ -496,7 +502,7 @@ Who acts for a team (maintainer, 13 November 2026), in `team_staff`:
 - **Owner:** one, answerable to the league. Hands the team over, removes its officials.
 - **Managers:** up to `ruleset.team_roles.managers_max` (3, the rulebook's three staff).
 - **Coach:** up to `coaches_max` (1, as R6 lobbies have one coach slot per team).
-- **Captain and players** come with rosters in phase 3: one captain, who must be a player. The captain acts in matches like the officials (propose and accept a time, run the veto, report and confirm a result); it is the captain's job by default, and the officials can always do it too (M-19). The captaincy counts in the matches of its roster entry's season only, and gives no say over the team's officials (`/team` requests). The captain is mentioned with the officials when a time is proposed, a result reported or a veto started.
+- **Captain and players** come with rosters in phase 3: one captain, who must be a player. The captain acts in matches like the officials (propose and accept a time, run the veto, report and confirm a result); it is the captain's job by default, and the officials can always do it too (M-19). The captaincy counts in the matches of its roster entry's season only, and gives no say over the team's officials (the requests of `/teams/:slug/manage`). The captain is mentioned with the officials when a time is proposed, a result reported or a veto started.
 
 Owner, managers and coach all act in matches (propose a time, run the veto, report and confirm a result). One person may be an official of several teams.
 
@@ -518,7 +524,7 @@ Teams run themselves; the league only approves what its rules restrict (maintain
 
 ## 6. Discord bot
 
-One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Each server maps to one competition through `league_guild`, so commands never ask which league. The bot is the quick-access side of the platform (section 3): commands call the same services as the website, and all channel and role changes go through one reconciler. Discord limits a command's description to one short sentence, so `/help` explains each command in full.
+One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Each server maps to one competition through `league_guild`, so commands never ask which league. The bot is the quick-access side of the platform, mostly a getter (section 3, maintainer, 16 November 2026): it notifies, answers its own notifications, reports results, runs the server and looks things up; everything else is a website page. Commands call the same services as the website, and all channel and role changes go through one reconciler. Discord limits a command's description to one short sentence, so `/help` explains each command in full.
 
 **Who can do what**
 
@@ -540,27 +546,21 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 | `/leaderboard metric:<choice>`                   | everyone                | Top 10 for one metric, with coverage                                                                    |
 | `/rules [section]`                               | everyone                | Link to the current rulebook version on the website                                                     |
 | `/link`                                          | players                 | Opens the website to link Ubisoft, Riot or Epic accounts                                                |
-| `/match propose-time match date time`            | team managers and staff | Posts a proposal with Accept and Decline buttons                                                        |
-| `/match veto match`                              | team managers and staff | Starts the map veto: a message with a button per map, edited at each step; staff may start it too      |
-| `/match report match score_a score_b screenshot` | team managers and staff | Reports a BO1 result; the screenshot becomes `evidence`. A modal with a score per map comes with series |
-| `/match rehost`                                  | team managers and staff | Records the team's re-host for the current map                                                          |
-| `/register`, `/mercato`                          | team managers           | Open the website forms (too many fields for a modal)                                                    |
+| `/match report match score_a score_b screenshot` | team officials, captains and staff | Reports a BO1 result; the screenshot becomes `evidence`; the reply links to the match page. A score per map comes with series |
+| `/register`, `/mercato`                          | team officials          | Links to the website forms                                                                              |
 | `/stream title match:<autocomplete>`             | commentators            | Returns the mandatory title, e.g. "LFR Ligue 1 – RCK Esport VS Greed Esport"                            |
-| `/staff match validate\|result\|forfeit\|void`   | staff                   | Validation and direct changes, audited; `schedule` sets any match time                                  |
-| `/staff sanction add\|list`                      | staff                   | A warning or a change of points for a team; its sanctions this season                                   |
-| `/staff exclusion exclude\|reinstate\|auto`      | staff                   | Exclude a team, reinstate it on appeal, switch its automatic exclusion off or on (with a reason)        |
-| `/team owner\|leave\|list\|requests`, `/team member add\|remove` | team officials, staff | Teams file requests (section 5, "Team requests"); staff change a team directly; `requests` lists what waits |
 | `/league channel`, `/league channels`            | staff                   | Staff queue, schedule and results channels, results also per division; the list                         |
-| `/season create\|schedule\|publish\|close`       | staff                   | Season setup; `schedule` previews, `close` runs promotion and relegation                                |
 | `/week publish week:<n>`                         | staff                   | Creates that week's channels now instead of on schedule                                                 |
 | `/accreditation grant\|revoke`                   | staff                   | Commentator accreditations                                                                              |
 | `/admin sync [dry_run]`                          | staff                   | Runs the reconciler; dry run prints the diff                                                            |
-| `/admin reparse game:<id>`                       | staff                   | Re-runs replay verification and stitching for a game                                                    |
+
+Not commands (maintainer, 16 November 2026, section 3): proposing a time, the veto, re-hosts, the captain for one match, team officials and requests, staff result entry, forfeits, voids, match times, sanctions, exclusions, season setup and replay re-parsing are website pages. The bot posts their notifications with a link, and keeps the buttons that answer a notification (a time proposal, a result report, a staff queue post). `/accreditation` stays only if an accreditation gives a Discord role; otherwise it moves to the website too (decided when built).
 
 **Interaction rules**
 
 - Answer within 3 seconds or defer. Defer every reply that renders an image or touches R2.
 - Errors and private information go in ephemeral replies.
+- A page's link under a reply or a post is written `<https://…>`, so Discord shows no embed for it (maintainer, 16 November 2026).
 - Button `custom_id` format: `action:entityId:nonce`. The server re-checks permissions and the entity's current state on every click.
 
 **Match channel lifecycle**
@@ -571,8 +571,8 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
     - fixture, play window and deadline;
     - host team and side chooser, from live standings;
     - what the teams must do, step by step: agree a time, run the veto, report the result;
-    - buttons: Propose time, Map veto, Report result, Upload replays and MOSS, Enter stats.
-    - Once match channels exist, `/match propose-time` and `/match veto` work only in the match's own channel, so the two teams negotiate where only they and staff can read, and have a place to discuss the match (maintainer, 13 November 2026). Until then they work in any channel.
+    - link buttons to the match's pages: propose a time, map veto, report the result, upload replays and MOSS, enter stats (maintainer, 16 November 2026: these are website actions, section 3).
+    - Once match channels exist, the notifications of a match (time proposals, the veto opening and its outcome, reports) are posted in the match's own channel, so the two teams answer where only they and staff can read, and have a place to discuss the match (maintainer, 13 November 2026). Until then they go to the league's schedule channel.
 4. **Deadlines.** At the end of the planned week with no agreed time, the bot posts the one-week extension. At the end of the extension it posts the automatic Sunday 21:00 slot.
 5. **Result.** Once validated (by the opponent's confirmation in LFR, or by staff), the bot posts the result card in the channel and in the results channel.
 6. **Archive.** A configurable number of days after validation, the team roles lose Send Messages and the channel moves to an archive category.
@@ -1281,7 +1281,7 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
     - deadlines with extension and Sunday 21:00 auto-scheduling, side, overtime side and host;
     - forfeits, sanctions, audit log;
     - team requests (2c): teams change their own officials through requests that staff approve or refuse, every staff-queue post recorded. Accepted when a full week of results comes in through teams and is validated by staff with no manual table edits; that week runs during the Season 3 shadow run, alongside phase 3, instead of blocking it (maintainer, 14 November 2026).
-3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; the website side of every bot action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, exclusions, team officials and their requests, league channels, match times and the veto), with one page of every request waiting that marks the Discord posts as handled; the admin panel (section 7), with every setting phases 1 to 3 have, Discord channels included. Done when Season 4 registrations are taken on the website, and every bot action of phases 1 and 2 can also be done there.
+3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; a page for every action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, exclusions, team officials and their requests, league channels, match times and the veto), with one page of every request waiting that marks the Discord posts as handled; the admin panel (section 7), with every setting phases 1 to 3 have, Discord channels included. The bot drops the commands section 3 no longer gives it (maintainer, 16 November 2026). Done when Season 4 registrations are taken on the website, and every action of phases 1 and 2 can be done there.
 4. **Schedule and channels.** Round-robin generation, `/season publish`, weekly channels, MOSS channels, the reconciler across the league servers, team roles; their settings (categories, channel templates, team roles) in the admin panel. Done when Season 4's weeks are generated, published, run and archived automatically.
 5. **R6 replays.** WebAssembly build of the fork, browser uploader, normaliser, raw upload and server verification, stitching and review, match cards. Done when a re-hosted map uploaded by both teams stitches automatically and verifies, and a tampered JSON is caught.
 6. **Season end and cups.** `closeSeason()` with promotion, relegation and barrages (format pending); Coupe de France bracket with BO1 → BO3 → BO5; tie-break matches. Done when Season 4 closes and the cup runs to a final on the platform.
@@ -1359,6 +1359,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Several games         | One player page per person with one tab per game; stat pages built from each title's metric schema; a title declares maps, sides, characters, rounds, score unit and rank queues, and a competition may turn the veto off (16 November 2026) | You |
 | Ranks                 | Self-declared per ranked queue of the title; the player picks the one shown; the shown rank is copied at registration (16 November 2026) | You |
 | Practice privacy      | Practice data stays private; no public opt-in for now (16 November 2026) | You |
+| The bot's role        | The website is where everything is done; the bot notifies, answers its own notifications, reports results with their screenshot, runs the Discord server and looks things up (images with a link); the other commands are removed (16 November 2026) | You |
 | Team obligations      | None: no team is required to upload scrims or enter external events; external results are shown on team pages and never worth points      | You           |
 | Match volume          | FRFL and the cup provide the extra matches; the league stays at one BO1 per week                                                          | You           |
 | Team level scale      | The 0–10 rubric of section 17                                                                                                             | You           |

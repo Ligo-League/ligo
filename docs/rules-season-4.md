@@ -84,12 +84,12 @@ M-xx : mainteneur).
   confiée à quelqu'un d'autre.
 - Une même personne peut être responsable de plusieurs équipes.
 - **Statut** : Décidée (remplace « un manager et 3 membres de staff » du formulaire S3).
-- **Appliquée par** : chaque commande vérifie, au moment du clic, que la personne est responsable
+- **Appliquée par** : chaque page et chaque bouton du bot vérifie, au moment du clic, que la personne est responsable
   de l'équipe concernée, à son niveau ou à celui de son club. Les rôles Discord ne suffisent pas.
   Les limites sont des réglages. Le capitaine de l'effectif validé pour la saison agit dans les
   matchs de cette saison, et il est mentionné avec les responsables quand un horaire est proposé,
-  un résultat signalé ou un veto lancé. Il ne demande aucun changement de responsables : `/team`
-  reste réservé aux responsables. Le capitaine de remplacement pour un match est nommé sur la
+  un résultat signalé ou un veto lancé. Il ne demande aucun changement de responsables : la page
+  de gestion de l'équipe (`/teams/:slug/manage`) reste réservée aux responsables. Le capitaine de remplacement pour un match est nommé sur la
   page du match par les responsables ou le capitaine habituel ; il agit dans ce match seulement
   et y est mentionné, mais ne nomme personne.
 
@@ -155,8 +155,8 @@ M-xx : mainteneur).
 - À partir de la phase 3, l'inscription, les mouvements de mercato et les transferts de place
   passent aussi par des demandes.
 - **Statut** : Décidée.
-- **Appliquée par** : `/team` dépose la demande et la poste dans la file du staff avec les boutons
-  Approuver et Refuser ; le refus exige une raison. Le bot rappelle la demande au staff 6 heures
+- **Appliquée par** : la page de gestion de l'équipe sur le site (`/teams/:slug/manage`) dépose
+  la demande ; le bot la poste dans la file du staff avec les boutons Approuver et Refuser ; le refus exige une raison. Le bot rappelle la demande au staff 6 heures
   avant l'échéance. L'équipe reçoit la réponse en message privé. Toutes les demandes sont
   conservées, quelle que soit leur issue.
 
@@ -168,7 +168,8 @@ M-xx : mainteneur).
 - Les deux équipes conviennent d'un jour et d'une heure dans la semaine du match ou dans sa
   prolongation.
 - **Statut** : Décidée.
-- **Appliquée par** : `/match propose-time` ; l'équipe adverse accepte ou refuse avec un bouton.
+- **Appliquée par** : la page du match sur le site ; le bot poste la proposition et l'équipe
+  adverse accepte ou refuse avec un bouton, sur Discord ou sur le site.
   Un horaire passé ou hors de la semaine et de sa prolongation est refusé. Une nouvelle
   proposition d'une équipe remplace la précédente.
 
@@ -189,12 +190,14 @@ M-xx : mainteneur).
   d'accord**, mais seul le staff peut fixer cet horaire. Les équipes ne peuvent pas le proposer
   elles-mêmes.
 - **Statut** : Décidée.
-- **Appliquée par** : `/staff match schedule`, enregistré dans l'historique.
+- **Appliquée par** : le panneau du staff sur la page du match (phase 3f), enregistré dans
+  l'historique.
 
 ### 3.4 Salon du match
 
-- Une fois les salons de match créés par le bot, la proposition d'horaire et le veto se font
-  **uniquement dans le salon du match**. Le bot y épingle un message qui explique les étapes.
+- Une fois les salons de match créés par le bot, les propositions d'horaire, le veto et les
+  résultats du match sont annoncés **dans le salon du match**. Le bot y épingle un message qui
+  explique les étapes, avec un lien vers chaque page du site où elles se font.
 - **Statut** : Décidée ; appliquée à partir de la création des salons de match (phase 4).
 
 ## 4. Côtés, hôte et veto
@@ -226,8 +229,8 @@ M-xx : mainteneur).
   décisive. Côtés comme en BO3.
 - **4 minutes par étape.** Sans choix à temps, le bot choisit au hasard et le note.
 - **Statut** : Décidée.
-- **Appliquée par** : `/match veto`, ou la page du veto sur le site (`/matches/:id/veto`, pour
-  les deux équipes et le staff) ; seule l'équipe dont c'est le tour peut choisir. La carte et les
+- **Appliquée par** : la page du veto sur le site (`/matches/:id/veto`, pour les deux équipes
+  et le staff), que le bot annonce avec son lien, puis son résultat ; seule l'équipe dont c'est le tour peut choisir. La carte et les
   bans sont enregistrés avec le match.
 
 ### 4.3 Re-host
@@ -305,7 +308,7 @@ M-xx : mainteneur).
 
 - Le staff peut retirer ou rendre des points, avec un motif. Une sanction ne s'efface pas : une
   erreur se corrige par la sanction inverse.
-- **Appliquée par** : `/staff sanction`.
+- **Appliquée par** : la page des sanctions du staff sur le site (phase 3f).
 
 **Appliquée par (tout l'article 6)** : le classement est **calculé** à partir des résultats
 validés, des forfaits et des sanctions, à chaque consultation. Personne ne le modifie à la main.
@@ -321,8 +324,8 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
   elle seule avait déclaré forfait (0 point, score de forfait perdu, match joué), et le forfait
   compte pour chacune (avertissement, exclusion). Personne ne gagne le match.
 - **Statut** : Décidée.
-- **Appliquée par** : `/staff match forfeit` (`team` : la première, la seconde ou les deux
-  équipes) ; le bot compte les forfaits de chaque équipe concernée dans la saison à chaque fois,
+- **Appliquée par** : le panneau du staff sur la page du match (phase 3f : la première, la
+  seconde ou les deux équipes) ; le bot compte les forfaits de chaque équipe concernée dans la saison à chaque fois,
   ajoute l'avertissement puis prononce l'exclusion dans la même opération.
 
 ### 7.2 Exclusion
@@ -336,7 +339,7 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
   avec une raison**, et la réactiver. Seul le staff peut le faire. Le staff peut toujours exclure
   une équipe à la main, pour ses forfaits ou toute autre faute grave du règlement.
 - **Statut** : Décidée.
-- **Appliquée par** : `/staff exclusion exclude | reinstate | auto`, chaque décision enregistrée
+- **Appliquée par** : la page des sanctions du staff sur le site (phase 3f), chaque décision enregistrée
   dans l'historique.
 
 ### 7.3 Règle des 50 %

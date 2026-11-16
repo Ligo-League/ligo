@@ -187,6 +187,24 @@ section 16.
   the shown one. No rank limit is enforced.
 - **Answer:**
 
+#### O-35 · The mercato's moves
+
+- **Question:** the rulebook gives 3 moves per team per window and a one-day block, but not:
+  1. what counts as one move: is a swap (one player in, one out) one move or two? Do a starter
+     becoming a substitute, or a change of captain, count?
+  2. what the one-day block blocks: the transferred player playing any official match for 24 hours
+     after the move is approved?
+  3. whether the incoming player must accept the move with their own account (as with a roster's
+     invitation link), or whether the official's request is enough;
+  4. who opens a window and for how long, and whether the schema's `lock_hours` is the one-day
+     block or something else;
+  5. whether a team can change a player outside a window at all, for example with an exception
+     granted by staff.
+- **Why it matters:** the mercato (phase 3f) counts moves against the window's limit, blocks
+  players and decides what the request form asks.
+- **Until answered:** the mercato is not built; the moves between rosters of one club are M-22.
+- **Answer:**
+
 ### Team tools
 
 #### O-22 · Recruitment board
