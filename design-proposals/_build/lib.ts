@@ -210,7 +210,8 @@ export function rel(file: string): string {
 export function href(route: string): string {
   const [path, hash] = route.split('#') as [string, string | undefined];
   let file = routes.get(path);
-  if (!file) for (const [re, f] of FALLBACKS) if (re.test(path) && routes.has(f)) file = routes.get(f);
+  // First match wins: specific fallbacks come before the generic ones.
+  if (!file) for (const [re, f] of FALLBACKS) if (re.test(path) && routes.has(f)) { file = routes.get(f); break; }
   if (!file) return '#' + path;
   return rel(file) + (hash ? `#${hash}` : '');
 }
