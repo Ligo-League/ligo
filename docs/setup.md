@@ -106,13 +106,13 @@ Leave `DATABASE_PATH` and `LOG_LEVEL` as they are, and leave the commented lines
 
 Run these from the repository folder, in order:
 
-| Command                 | What you should see                                                                                                 |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `pnpm install`          | Ends with `Done`                                                                                                    |
-| `pnpm db:migrate`       | `Migrations applied to …/data/ligo.db`                                                                              |
-| `pnpm seed`             | `Created 1 org, 1 competition, 1 season, 2 divisions, 22 teams, 22 slots; …`, then a line for the matches           |
-| `pnpm discord:register` | `Registered 7 command(s) in guild …: /ping, /standings, /match, /staff, /team, /league, /help`, then the invite URL |
-| `pnpm dev`              | A log line containing `"msg":"Discord client ready"`; the command keeps running                                     |
+| Command                 | What you should see                                                                                             |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pnpm install`          | Ends with `Done`                                                                                                |
+| `pnpm db:migrate`       | `Migrations applied to …/data/ligo.db`                                                                          |
+| `pnpm seed`             | `Created 1 org, 1 competition, 1 season, 2 divisions, 22 teams, 22 slots; …`, then a line for the matches       |
+| `pnpm discord:register` | `Registered 6 command(s) in guild …: /ping, /standings, /match, /league, /register, /help`, then the invite URL |
+| `pnpm dev`              | A log line containing `"msg":"Discord client ready"`; the command keeps running                                 |
 
 Then, in any channel of `Ligo Staging`, type `/ping` and press Enter. The bot answers, visible only
 to you:
@@ -162,6 +162,8 @@ The website's Discord login arrives in phase 3. You can register its local addre
 
 ## 9. Phase 1: the staff role, the matches, `/standings` and `/staff match result`
 
+> **Since 16 November 2026** (step 33): `/staff` and `/team` are gone. Staff enter results, forfeits, sanctions and exclusions on the website (phase 3f). The steps below are kept as a record.
+
 The bot now reads the database, and it needs to know which server is LFR's and who its staff are.
 
 1. In `Ligo Staging`, open **Server Settings** > **Roles** > **Create Role**, name it `Staff` and
@@ -175,11 +177,11 @@ The bot now reads the database, and it needs to know which server is LFR's and w
 
 4. Run these, in order:
 
-| Command                 | What you should see                                                                            |
-| ----------------------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm seed`             | `Created 2 stages, 22 entries, 111 matches; …` and `Discord server …: link to LFR created.`    |
-| `pnpm discord:register` | `Registered 7 command(s) in guild …: /ping, /standings, /match, /staff, /team, /league, /help` |
-| `pnpm dev`              | `"msg":"Database ready"`, then `"msg":"Discord client ready"`                                  |
+| Command                 | What you should see                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `pnpm seed`             | `Created 2 stages, 22 entries, 111 matches; …` and `Discord server …: link to LFR created.` |
+| `pnpm discord:register` | `Registered 6 command(s) in guild …: /ping, /standings, /match, /league, /register, /help`  |
+| `pnpm dev`              | `"msg":"Database ready"`, then `"msg":"Discord client ready"`                               |
 
 Then type `/standings` in any channel of `Ligo Staging`: after a second the bot posts one image
 per division, visible to everyone. `/standings division:L2` posts one division, and
@@ -222,6 +224,8 @@ and the order of setup.
 4. `/standings` then shows the logos. A team whose logo is missing keeps its two colours.
 
 ## 10. Phase 2a: a result reported by a team
+
+> **Since 16 November 2026** (step 33): `/team` and `/staff match` are gone: owners are set on `/teams/<slug>/manage` by league staff, and staff decide with the queue's buttons or on the website. The steps below are kept as a record.
 
 Run `pnpm discord:register` again whenever commands change, then restart `pnpm dev`.
 
@@ -272,6 +276,8 @@ Other staff actions:
 
 ## 11. Phase 2b: agreeing a match time, and the map veto
 
+> **Since 16 November 2026** (step 33): `/match propose-time` and `/match veto` are gone: times are proposed on the match page (step 26) and the veto runs on its page (step 31). The bot posts both, with the page's link; a proposal keeps its Accept and Decline buttons. The steps below are kept as a record.
+
 Run `pnpm discord:register` again, then restart `pnpm dev` (it applies the new migrations).
 
 1. Create a `#planning` channel, then `/league channel kind:Planning des matchs channel:#planning`.
@@ -311,6 +317,8 @@ whichever turn is due. To see a timeout, lower `step_seconds` in the league's `r
 
 ## 12. Exclusion
 
+> **Since 16 November 2026** (step 33): `/staff exclusion` is gone; exclusions move to the website's sanctions page (phase 3f). The steps below are kept as a record.
+
 Run `pnpm discord:register` again (it adds `/staff exclusion`), then restart `pnpm dev` (it applies
 migration `0005`).
 
@@ -328,6 +336,8 @@ Existing Season 3 forfeits exclude nobody by themselves: only a new forfeit that
 threshold does.
 
 ## 13. Team requests
+
+> **Since 16 November 2026** (step 33): `/team` is gone: requests are filed and withdrawn on `/teams/<slug>/manage` (step 25). Staff still approve or refuse them with the buttons of the queue post. The steps below are kept as a record.
 
 Run `pnpm discord:register` again (`/team` changes and is now open to every member), then restart
 `pnpm dev` (it applies migrations `0006` and `0007`). Migration `0006` turns each team's manager
@@ -426,6 +436,8 @@ section 10).
    club's.
 
 ## 18. Forfeits at 7–0, and a forfeit by both teams
+
+> **Since 16 November 2026** (step 33): `/staff match forfeit` is gone; forfeits move to the match page's staff panel (phase 3f). The steps below are kept as a record.
 
 1. Restart `pnpm dev`: migration 0012 runs at start-up and lets a game be forfeited by both
    teams. Then run `pnpm discord:register`: `/staff match forfeit` gains a third choice for
@@ -608,6 +620,28 @@ channel`), mentioning the other side, with **Accepter** and **Refuser**.
    match only, and the bot mentions them for it. They cannot name another captain.
 4. Once the result is reported, the captain can no longer be changed.
 
+## 33. The bot becomes mostly a getter
+
+Decided on 16 November 2026 (design doc section 3): everything is done on the website; the bot
+posts notifications with a link to their page, keeps the buttons that answer them, takes results
+with `/match report`, runs the server's channels and looks things up.
+
+1. Run `pnpm discord:register`: `Registered 6 command(s) … /ping, /standings, /match, /league,
+/register, /help`. `/staff` and `/team` disappear, and `/match` keeps only `report`.
+2. `/standings` posts its images as before, with a line under them linking the season's page
+   (Discord shows no preview for it).
+3. `/match report` posts the report as before, with the match page's link under it. A time
+   proposed on the match page is posted with the same link and its Accept and Decline buttons.
+4. Start a veto on its page: the bot's post shows the steps and whose turn it is, with the veto
+   page's link, and no buttons. Each choice made on the page, and each step the clock plays,
+   edits the post. A veto post made before this change loses its buttons at the next step.
+5. `/help` lists the remaining commands (`/league channel` for staff only), and says the rest is
+   on the website.
+
+Until the staff pages of phase 3f exist, staff cannot enter a result directly, record a forfeit,
+set a match time, give a sanction or exclude a team. Validating and refusing reports and team
+requests still works, with the queue's buttons and on `/staff`.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
@@ -619,6 +653,6 @@ channel`), mentioning the other side, with **Accepter** and **Refuser**.
 | `/standings` answers "Ce serveur n'est relié à aucune ligue."                     | The server is not linked. Redo step 9: `DISCORD_STAFF_ROLE_ID` in `.env`, then `pnpm seed`.                 |
 | `/match` answers "Cette commande est réservée au staff de la ligue."              | You do not hold the role whose ID is in `DISCORD_STAFF_ROLE_ID`. Give yourself the `Staff` role (step 9.1). |
 | `/match report` answers "La ligue n'a pas encore choisi son salon de validation." | The staff queue channel is not set. Run `/league channel` (step 10.2).                                      |
-| `/match report` suggests only "Tu n'es ni capitaine ni responsable d'une équipe…" | You are not an official of any team. Run `/team owner` (step 10.3).                                         |
+| `/match report` suggests only "Tu n'es ni capitaine ni responsable d'une équipe…" | You are not an official of any team. As staff, add yourself as owner on `/teams/<slug>/manage` (step 25).   |
 | `/ping` does not appear when typing `/`                                           | Run `pnpm discord:register` again, then reload Discord (Ctrl+R).                                            |
 | `/ping` appears but answers "The application did not respond"                     | `pnpm dev` is not running, or it stopped with an error. Look at its terminal.                               |
