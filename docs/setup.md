@@ -658,6 +658,12 @@ No restart beyond `pnpm dev` picking up the change.
    one team or both; the warning and the exclusion follow as before.
 5. **Annuler le match** needs a reason.
 
+## 35. Phase 3f-3: setting a match time on the website
+
+On a match still to play, the staff panel has **Fixer l'horaire**: any day and time, in the
+league's time zone, even outside the match's week. Pending time proposals close (their Discord
+posts lose their buttons) and the time is announced in the schedule channel with its picture.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
