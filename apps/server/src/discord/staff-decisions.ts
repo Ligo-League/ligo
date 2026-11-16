@@ -1,4 +1,5 @@
 import { t, type Locale } from '../i18n/index.ts';
+import type { OpenReportPosts } from '../services/open-report.ts';
 import type { PostRef } from '../services/queue-posts.ts';
 import type { StaffStepReply } from '../services/reports.ts';
 import type { AnswerReply } from '../services/requests.ts';
@@ -37,6 +38,31 @@ async function edit(context: Announcer, post: PostRef, message: OutgoingMessage)
 }
 
 /**
+ * Closes a match's open report once staff acted on it: its queue posts and its public post show
+ * `marked` without buttons, and each open dispute's posts keep the team's words with `outcome`
+ * added under them; `dispute.line` is the match as the report showed it.
+ */
+export async function closeOpenReport(
+  context: Announcer,
+  open: OpenReportPosts,
+  marked: OutgoingMessage,
+  dispute: { line: string; outcome: string },
+): Promise<void> {
+  for (const post of open.posts) await edit(context, post, marked);
+  if (open.post) await edit(context, open.post, marked);
+  for (const settled of open.disputes) {
+    const message = disputeQueueMessage(
+      context.locale,
+      dispute.line,
+      settled.raisedBy,
+      settled,
+      dispute.outcome,
+    );
+    for (const post of settled.posts) await edit(context, post, message);
+  }
+}
+
+/**
  * After staff validate or refuse a report, or annul the match: every queue post about it and
  * its public post say so and lose their buttons, the disputes' posts keep the team's words with
  * the decision added, and a validated result is announced.
@@ -47,18 +73,12 @@ export async function announceReportDecision(
   staffUserId: string,
 ): Promise<void> {
   const { locale } = context;
-  const marked = reportDecisionMessage(locale, reply, staffUserId);
-  for (const post of reply.posts) await edit(context, post, marked);
-  if (reply.post) await edit(context, reply.post, marked);
-  const line = storedLine(locale, reply.match);
-  const outcome = t(locale, `queue.outcome.${DECIDED[reply.status]}`, {
-    member: mention(staffUserId),
+  await closeOpenReport(context, reply, reportDecisionMessage(locale, reply, staffUserId), {
+    line: storedLine(locale, reply.match),
+    outcome: t(locale, `queue.outcome.${DECIDED[reply.status]}`, { member: mention(staffUserId) }),
   });
-  for (const dispute of reply.disputes) {
-    const message = disputeQueueMessage(locale, line, dispute.raisedBy, dispute, outcome);
-    for (const post of dispute.posts) await edit(context, post, message);
-  }
   if (reply.status === 'validated') {
+    const line = storedLine(locale, reply.match);
     await announceWithCard(
       context,
       reply.resultsChannelId,

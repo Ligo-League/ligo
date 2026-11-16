@@ -58,7 +58,11 @@ export const en: Record<MessageKey, string> = {
     '**{line}** — confirmed by the other team ({member}): result validated, nothing to do.',
   'queue.rejected': '**{line}** — rejected by {member}. The match is to be reported again.',
   'queue.voided': '**{line}** — match annulled by {member}.',
+  'queue.entered': '**{line}** — replaced by the result entered by {member}: {result}.',
+  'queue.forfeited': '**{line}** — replaced by a forfeit recorded by {member}.',
   'queue.outcome.voided': '🚫 Match annulled by {member}.',
+  'queue.outcome.entered': '✏️ Result entered by {member}: {result}.',
+  'queue.outcome.forfeited': '🏳️ Forfeit recorded by {member}.',
   'queue.outcome.validated': '✅ Result validated by {member}.',
   'queue.outcome.rejected': '❌ Report rejected by {member}. The match is to be reported again.',
   'result.announce': 'Result validated — {line}.',
@@ -211,6 +215,7 @@ export const en: Record<MessageKey, string> = {
   'schedule.declined':
     '**{fixture}** — on {when}, declined by {member}. Propose another time on the match page, on the website.',
   'schedule.announce': 'Time set — {fixture}: {when}.',
+  'schedule.superseded': '**{fixture}** — on {when}: replaced by the time set by staff.',
   'schedule.autoSlot':
     'Extension — **{fixture}**: no time was agreed during the week. The match is set to {when}. You can still agree another time until {deadline} on the match page, on the website. {mentions}',
   'schedule.hint.nothingLeft': "No match to schedule: your teams' matches all have a result.",

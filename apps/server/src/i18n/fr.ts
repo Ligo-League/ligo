@@ -59,7 +59,11 @@ export const fr = {
     "**{line}** — confirmé par l'équipe adverse ({member}) : résultat validé, rien à faire.",
   'queue.rejected': '**{line}** — refusé par {member}. Le match est à signaler de nouveau.',
   'queue.voided': '**{line}** — match annulé par {member}.',
+  'queue.entered': '**{line}** — remplacé par le résultat saisi par {member} : {result}.',
+  'queue.forfeited': '**{line}** — remplacé par un forfait enregistré par {member}.',
   'queue.outcome.voided': '🚫 Match annulé par {member}.',
+  'queue.outcome.entered': '✏️ Résultat saisi par {member} : {result}.',
+  'queue.outcome.forfeited': '🏳️ Forfait enregistré par {member}.',
   'queue.outcome.validated': '✅ Résultat validé par {member}.',
   'queue.outcome.rejected':
     '❌ Signalement refusé par {member}. Le match est à signaler de nouveau.',
@@ -225,6 +229,7 @@ export const fr = {
   'schedule.declined':
     '**{fixture}** — le {when}, refusé par {member}. Proposez un autre horaire sur la page du match, sur le site.',
   'schedule.announce': 'Horaire fixé — {fixture} : {when}.',
+  'schedule.superseded': "**{fixture}** — le {when} : remplacé par l'horaire fixé par le staff.",
   'schedule.autoSlot':
     "Prolongation — **{fixture}** : aucun horaire convenu pendant la semaine. Le match est fixé au {when}. Vous pouvez encore convenir d'un autre horaire jusqu'au {deadline} sur la page du match, sur le site. {mentions}",
   'schedule.hint.nothingLeft':
