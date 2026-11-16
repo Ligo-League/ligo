@@ -1,6 +1,7 @@
 import { promotionSchema, registrationSchema, requestsSchema, vetoSchema } from '@ligo/core';
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
+import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import {
   disputedReport,
   leagueDatabase,
@@ -11,7 +12,7 @@ import {
 import type { Actor } from './permissions.ts';
 import { requireStaff } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
-import { recordResult } from './results.ts';
+import { enterResult, recordResult, SCREENSHOT_MAX_BYTES } from './results.ts';
 import { getStandings } from './standings.ts';
 
 const { auditLog, competition, evidence, game, match, player } = schema;
@@ -22,11 +23,6 @@ const STAFF: Actor = {
   memberRoleIds: ['333333333333333333', TEST_STAFF_ROLE],
 };
 const MEMBER: Actor = { ...STAFF, memberRoleIds: ['333333333333333333'] };
-const SCREENSHOT = {
-  url: 'https://cdn.discordapp.com/attachments/1/2/score.png?ex=abc&is=def&hm=123',
-  contentType: 'image/png',
-  size: 250_000,
-};
 // In leagueDatabase(): match 3 is BRV v CHA (Ligue 1, week 3), still to play;
 // match 1 is ALP 7-4 BRV, validated; match 2 is a forfeit; match 4 is in Ligue 2.
 const OPEN_MATCH = 3;
@@ -166,24 +162,25 @@ describe('recordResult', () => {
     expect(pointsOf(db)).toEqual({ ALP: [6, 3], CHA: [3, 2], BRV: [0, -5] });
   });
 
-  it('stores an attached screenshot as staff-only evidence, by ID in the audit log', () => {
+  it('records a kept screenshot as staff-only evidence, by ID in the audit log', () => {
     const db = leagueDatabase();
-    recordResult(db, STAFF, { ...request, screenshot: SCREENSHOT }, 9000);
+    const objectKey = `evidence/3/${'a'.repeat(64)}.png`;
+    recordResult(db, STAFF, { ...request, screenshot: { objectKey } }, 9000);
 
     const stored = db.select().from(evidence).all();
     expect(stored).toMatchObject([
       {
         matchId: OPEN_MATCH,
         kind: 'score_screenshot',
-        url: SCREENSHOT.url,
-        objectKey: null,
+        url: null,
+        objectKey,
         visibility: 'staff',
         at: 9000,
       },
     ]);
     const audit = db.select().from(auditLog).all().at(-1);
     expect(audit?.afterJson).toMatchObject({ evidenceId: stored[0]?.id });
-    expect(JSON.stringify(audit)).not.toContain('discordapp');
+    expect(JSON.stringify(audit)).not.toContain('evidence/');
   });
 
   it.each([
@@ -291,24 +288,6 @@ describe('recordResult', () => {
         .get();
       db.update(schema.leagueGuild).set({ competitionId: other.id }).run();
     });
-
-    it.each([
-      ['hosted elsewhere', { ...SCREENSHOT, url: 'https://example.com/score.png' }],
-      ['not https', { ...SCREENSHOT, url: SCREENSHOT.url.replace('https', 'http') }],
-      ['not an address', { ...SCREENSHOT, url: 'score.png' }],
-      ['not an image', { ...SCREENSHOT, contentType: 'application/pdf' }],
-      ['of unknown type', { ...SCREENSHOT, contentType: null }],
-      ['too large', { ...SCREENSHOT, size: 21 * 1024 * 1024 }],
-      ['empty', { ...SCREENSHOT, size: 0 }],
-    ])('a screenshot %s', (_name, screenshot) => {
-      const db = leagueDatabase();
-      expect(recordResult(db, STAFF, { ...request, screenshot }, 9000)).toEqual({
-        ok: false,
-        error: 'invalid_screenshot',
-      });
-      expect(db.select().from(evidence).all()).toEqual([]);
-      expect(db.select().from(match).all()[OPEN_MATCH - 1]?.status).toBe('scheduled');
-    });
   });
 
   it('rolls the result back when the audit entry cannot be written', () => {
@@ -351,5 +330,71 @@ describe('recordResult over a report still open', () => {
       9000,
     );
     expect(reply).toMatchObject({ ok: true, posts: [], post: null, disputes: [] });
+  });
+});
+
+// The staff panel on the match page uploads the screenshot (phase 3f): it is checked, then kept by
+// the evidence store before the result is recorded; a refusal stores nothing.
+describe('enterResult', () => {
+  const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 1, 2]);
+  const enter = (
+    db: ReturnType<typeof leagueDatabase>,
+    store: ReturnType<typeof fakeEvidenceStore>,
+    change: Partial<Parameters<typeof enterResult>[3]> = {},
+    actor: Actor = STAFF,
+  ) =>
+    enterResult(
+      db,
+      store,
+      actor,
+      { matchId: OPEN_MATCH, scoreA: 7, scoreB: 5, screenshot: PNG, ...change },
+      9000,
+    );
+
+  it('keeps the uploaded screenshot, then records the result with it', async () => {
+    const db = leagueDatabase();
+    const store = fakeEvidenceStore();
+    expect(await enter(db, store)).toMatchObject({ ok: true, scoreA: 7, scoreB: 5 });
+    const [key] = [...store.files.keys()];
+    expect(key).toMatch(/^evidence\/3\/[0-9a-f]{64}\.png$/);
+    expect(db.select().from(evidence).get()).toMatchObject({ objectKey: key, visibility: 'staff' });
+  });
+
+  it('records a result without a screenshot: optional for staff', async () => {
+    const db = leagueDatabase();
+    const store = fakeEvidenceStore();
+    expect((await enter(db, store, { screenshot: null })).ok).toBe(true);
+    expect(store.files.size).toBe(0);
+  });
+
+  it.each([
+    ['not an image', { screenshot: new Uint8Array([1, 2, 3]) }, 'invalid_screenshot'],
+    ['too large', { screenshot: new Uint8Array(SCREENSHOT_MAX_BYTES + 1) }, 'invalid_screenshot'],
+    ['an impossible score', { scoreA: 7, scoreB: 6 }, 'impossible_score'],
+    ['a match of no one', { matchId: 999 }, 'match_not_found'],
+    ['a forfeited match', { matchId: 2 }, 'match_closed'],
+  ])('refuses %s, and stores nothing', async (_name, change, error) => {
+    const db = leagueDatabase();
+    const store = fakeEvidenceStore();
+    expect(await enter(db, store, change)).toMatchObject({ ok: false, error });
+    expect(store.files.size).toBe(0);
+    expect(db.select().from(evidence).all()).toEqual([]);
+  });
+
+  it('refuses a member who is not staff, and stores nothing', async () => {
+    const store = fakeEvidenceStore();
+    expect(await enter(leagueDatabase(), store, {}, MEMBER)).toEqual({
+      ok: false,
+      error: 'not_staff',
+    });
+    expect(store.files.size).toBe(0);
+  });
+
+  it('records nothing when the screenshot cannot be kept', async () => {
+    const db = leagueDatabase();
+    const store = fakeEvidenceStore();
+    store.failing = true;
+    expect(await enter(db, store)).toEqual({ ok: false, error: 'screenshot_unstored' });
+    expect(db.select().from(match).all()[OPEN_MATCH - 1]?.status).toBe('scheduled');
   });
 });

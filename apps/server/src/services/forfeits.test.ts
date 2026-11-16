@@ -9,7 +9,7 @@ import {
   TEST_STAFF_ROLE,
 } from '../testing.ts';
 import { setAutoExclusion } from './exclusions.ts';
-import { recordForfeit } from './forfeits.ts';
+import { matchForfeitCounts, recordForfeit } from './forfeits.ts';
 import type { Actor } from './permissions.ts';
 import { voidMatch } from './reports.ts';
 import { getStandings } from './standings.ts';
@@ -246,5 +246,23 @@ describe('recordForfeit over a report still open', () => {
       disputes: [{ reason: 'wrong_score', posts: [OPEN_REPORT_POSTS.dispute] }],
     });
     expect(db.select().from(schema.dispute).get()?.resolution).toBe('forfeit');
+  });
+});
+
+describe('matchForfeitCounts', () => {
+  it("counts each team's forfeits in the match's stage, and the season's thresholds", () => {
+    const db = leagueDatabase();
+    // Charlie (side B of match 3) forfeited match 2; Bravo has none.
+    expect(matchForfeitCounts(db, 3)).toEqual({
+      a: 0,
+      b: 1,
+      thresholds: { warning_at: 2, exclusion_at: 3 },
+    });
+    forfeit(db, 3, 'both');
+    expect(matchForfeitCounts(db, 3)).toMatchObject({ a: 1, b: 2 });
+  });
+
+  it('is null for a match that does not exist', () => {
+    expect(matchForfeitCounts(leagueDatabase(), 999)).toBeNull();
   });
 });

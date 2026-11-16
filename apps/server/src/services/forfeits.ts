@@ -4,6 +4,7 @@ import {
   nextMatchStatus,
   type ForfeitConsequence,
   type ForfeitSide,
+  type ForfeitThresholds,
 } from '@ligo/core';
 import { listLeagueMatches, loadStandingsInput, schema, type Db, type LeagueMatch } from '@ligo/db';
 import { eq } from 'drizzle-orm';
@@ -196,4 +197,27 @@ export function recordForfeit(
       ...open,
     };
   });
+}
+
+/**
+ * Each side's forfeits so far in the match's stage, and the season's thresholds, for staff to see
+ * what a forfeit would bring before recording it. Null for an unknown match.
+ */
+export function matchForfeitCounts(
+  db: Pick<Db, 'select'>,
+  matchId: number,
+): { a: number; b: number; thresholds: ForfeitThresholds | null } | null {
+  const [found] = listLeagueMatches(db, { matchId });
+  const stage = found && loadStandingsInput(db, found.stageId);
+  if (!found || !stage) return null;
+  const countOf = (side: 'a' | 'b') => {
+    const team = stage.teams.find((entry) => entry.teamId === found[side].teamId);
+    return team ? countForfeits(stage.input.matches, team.entry) : 0;
+  };
+  const [season] = db
+    .select()
+    .from(schema.season)
+    .where(eq(schema.season.id, found.seasonId))
+    .all();
+  return { a: countOf('a'), b: countOf('b'), thresholds: season?.settingsJson.forfeits ?? null };
 }

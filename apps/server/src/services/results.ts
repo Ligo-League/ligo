@@ -1,11 +1,13 @@
 import { isPossibleGameScore, type GameScoreSettings } from '@ligo/core';
-import { listLeagueMatches, schema, type Db, type LeagueMatch } from '@ligo/db';
+import { listLeagueMatches, schema, type Db, type GuildLeague, type LeagueMatch } from '@ligo/db';
+import type { EvidenceStore } from '../assets/evidence-store.ts';
 import { eq } from 'drizzle-orm';
 import { isDiscordAttachmentUrl } from './attachments.ts';
 import { requireStaff, type Actor } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
 import { settleDisputes } from './disputes.ts';
+import { evidenceKeyOf, imageTypeOf } from './evidence.ts';
 import { openReportPosts, type OpenReportPosts } from './open-report.ts';
 
 const { auditLog, evidence, game, match } = schema;
@@ -21,7 +23,8 @@ export interface RecordResultRequest {
   /** Rounds won by side A and side B of the match. */
   scoreA: number;
   scoreB: number;
-  screenshot?: Screenshot | null;
+  /** The screenshot, already kept by the evidence store (`enterResult`); optional for staff. */
+  screenshot?: { objectKey: string } | null;
 }
 
 export type RecordResultError =
@@ -31,7 +34,8 @@ export type RecordResultError =
   | 'match_closed'
   | 'unsupported_series'
   | 'invalid_score'
-  | 'invalid_screenshot';
+  | 'invalid_screenshot'
+  | 'screenshot_unstored';
 
 export type RecordResultReply =
   | ({
@@ -53,7 +57,7 @@ export type RecordResultReply =
 
 // Statuses a direct staff result may overwrite. A forfeit or an annulled match is changed by its
 // own staff action, with its own consequences (forfeit counters, the 50% rule).
-const OPEN_STATUSES: readonly LeagueMatch['status'][] = [
+export const OPEN_STATUSES: readonly LeagueMatch['status'][] = [
   'scheduled',
   'reported',
   'confirmed',
@@ -78,6 +82,72 @@ export function isAcceptableScreenshot(screenshot: Screenshot): boolean {
   );
 }
 
+type Refusal = Extract<RecordResultReply, { ok: false }>;
+
+/** A score the league's rules allow, or why not. */
+function checkScore(league: GuildLeague, scoreA: number, scoreB: number): Refusal | null {
+  const validScore = [scoreA, scoreB].every((score) => Number.isSafeInteger(score) && score >= 0);
+  if (!validScore || scoreA === scoreB) return { ok: false, error: 'invalid_score' };
+  // The league's own rule for how a game is won; without one, any score with a winner passes.
+  const rule = league.competition.rulesetJson.game_score;
+  if (rule && !isPossibleGameScore(rule, scoreA, scoreB)) {
+    return { ok: false, error: 'impossible_score', rule };
+  }
+  return null;
+}
+
+/** The league's best-of-1 match whose result staff may enter, or why not. */
+function openMatch(
+  db: Pick<Db, 'select'>,
+  league: GuildLeague,
+  matchId: number,
+): { ok: true; found: LeagueMatch } | Refusal {
+  const [found] = listLeagueMatches(db, { matchId });
+  // A match of another league is reported as missing: staff of one league learn nothing
+  // about another's.
+  if (found?.competitionId !== league.competition.id) {
+    return { ok: false, error: 'match_not_found' };
+  }
+  if (!OPEN_STATUSES.includes(found.status)) return { ok: false, error: 'match_closed' };
+  if (found.bestOf !== 1) return { ok: false, error: 'unsupported_series' };
+  return { ok: true, found };
+}
+
+/**
+ * Staff enter a result with the screenshot uploaded on the website (phase 3f): everything is
+ * checked first, so a refusal stores no file; the file is then kept by the evidence store, and the
+ * result recorded with it. Without a screenshot, as `recordResult`.
+ */
+export async function enterResult(
+  db: Db,
+  store: EvidenceStore,
+  actor: Actor,
+  request: Omit<RecordResultRequest, 'screenshot'> & { screenshot: Uint8Array | null },
+  now: number,
+): Promise<RecordResultReply> {
+  const { screenshot, ...entry } = request;
+  if (!screenshot) return recordResult(db, actor, entry, now);
+  const staff = requireStaff(db, actor);
+  if (!staff.ok) return staff;
+  const refusal =
+    checkScore(staff.league, entry.scoreA, entry.scoreB) ??
+    (() => {
+      const opened = openMatch(db, staff.league, entry.matchId);
+      return opened.ok ? null : opened;
+    })();
+  if (refusal) return refusal;
+  const type = screenshot.byteLength <= SCREENSHOT_MAX_BYTES ? imageTypeOf(screenshot) : null;
+  if (!type) return { ok: false, error: 'invalid_screenshot' };
+  const objectKey = evidenceKeyOf(entry.matchId, screenshot, type);
+  try {
+    await store.put(objectKey, screenshot);
+  } catch {
+    // Without the server's copy the screenshot would be lost: nothing is recorded.
+    return { ok: false, error: 'screenshot_unstored' };
+  }
+  return recordResult(db, actor, { ...entry, screenshot: { objectKey } }, now);
+}
+
 /**
  * Staff enter, or correct, the result of a best-of-1 match. The match counts in standings at
  * once: a staff entry is the validation. The change and its audit entry are one transaction.
@@ -91,29 +161,15 @@ export function recordResult(
   const staff = requireStaff(db, actor);
   if (!staff.ok) return staff;
   const { league } = staff;
-
   const { scoreA, scoreB } = request;
-  const validScore = [scoreA, scoreB].every((score) => Number.isSafeInteger(score) && score >= 0);
-  if (!validScore || scoreA === scoreB) return { ok: false, error: 'invalid_score' };
-  // The league's own rule for how a game is won; without one, any score with a winner passes.
-  const rule = league.competition.rulesetJson.game_score;
-  if (rule && !isPossibleGameScore(rule, scoreA, scoreB)) {
-    return { ok: false, error: 'impossible_score', rule };
-  }
-  if (request.screenshot && !isAcceptableScreenshot(request.screenshot)) {
-    return { ok: false, error: 'invalid_screenshot' };
-  }
+  const scoreRefusal = checkScore(league, scoreA, scoreB);
+  if (scoreRefusal) return scoreRefusal;
   const screenshot = request.screenshot ?? null;
 
   return db.transaction((tx): RecordResultReply => {
-    const [found] = listLeagueMatches(tx, { matchId: request.matchId });
-    // A match of another league is reported as missing: staff of one league learn nothing
-    // about another's.
-    if (found?.competitionId !== league.competition.id) {
-      return { ok: false, error: 'match_not_found' };
-    }
-    if (!OPEN_STATUSES.includes(found.status)) return { ok: false, error: 'match_closed' };
-    if (found.bestOf !== 1) return { ok: false, error: 'unsupported_series' };
+    const opened = openMatch(tx, league, request.matchId);
+    if (!opened.ok) return opened;
+    const { found } = opened;
 
     const staffPlayer = ensurePlayer(
       tx,
@@ -149,7 +205,7 @@ export function recordResult(
             matchId: found.id,
             gameId,
             kind: 'score_screenshot',
-            url: screenshot.url,
+            objectKey: screenshot.objectKey,
             uploadedBy: staffPlayer.id,
             at: now,
           })
