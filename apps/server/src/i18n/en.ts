@@ -742,6 +742,13 @@ export const en: Record<MessageKey, string> = {
   'web.staffMatch.forfeitSide': 'Team that forfeits',
   'web.staffMatch.forfeitBoth': 'Both teams',
   'web.staffMatch.forfeitSave': 'Record the forfeit',
+  'web.staffMatch.time': 'Set the time',
+  'web.staffMatch.date': 'Day',
+  'web.staffMatch.hour': "Time (the league's own)",
+  'web.staffMatch.timeHint':
+    "Any day, even outside the match's week: pending proposals close, and the time is announced in the schedule channel.",
+  'web.staffMatch.timeSave': 'Set the time',
+  'web.staffMatch.done.timed': 'Time set and announced.',
   'web.staffMatch.void': 'Annul the match',
   'web.staffMatch.voidReason': 'Reason',
   'web.staffMatch.voidHint':

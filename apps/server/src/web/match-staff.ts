@@ -7,13 +7,18 @@ import {
 } from '@ligo/db';
 import type { Context, Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { announceForfeit, announceStaffResult } from '../discord/staff-actions.ts';
+import {
+  announceForfeit,
+  announceMatchTime,
+  announceStaffResult,
+} from '../discord/staff-actions.ts';
 import { announceReportDecision } from '../discord/staff-decisions.ts';
 import { t } from '../i18n/index.ts';
 import { matchForfeitCounts, recordForfeit } from '../services/forfeits.ts';
 import { requireStaff, type Actor } from '../services/permissions.ts';
 import { rejectResult, validateResult, voidMatch } from '../services/reports.ts';
 import { enterResult, OPEN_STATUSES, SCREENSHOT_MAX_BYTES } from '../services/results.ts';
+import { readMatchTime, setMatchTime } from '../services/scheduling.ts';
 import type { Env, Viewer } from './app.ts';
 import type { Html } from './layout.ts';
 import { messagePage } from './pages/errors.ts';
@@ -28,17 +33,18 @@ import type { RouteKit } from './route-kit.ts';
 import { webActor } from './roles.ts';
 
 // The staff panel on the match page (phase 3f; design doc section 3): league staff enter or
-// correct a result, validate or refuse a report, record a forfeit and annul a match, through the
+// correct a result, validate or refuse a report, set the time, record a forfeit and annul a match, through the
 // same services as the staff queue, with the same Discord announcements. Staff is asked of
 // Discord on every request and checked again by the service.
 
 const ROW_ID = /^[1-9]\d{0,9}$/;
-const ACTIONS = ['validate', 'reject', 'void', 'forfeit'] as const;
+const ACTIONS = ['validate', 'reject', 'void', 'forfeit', 'time'] as const;
 const DONE = {
   validate: 'validated',
   reject: 'rejected',
   void: 'voided',
   forfeit: 'forfeited',
+  time: 'timed',
 } as const satisfies Record<(typeof ACTIONS)[number], StaffDone>;
 const field = (form: Record<string, unknown>, name: string) =>
   typeof form[name] === 'string' ? form[name] : '';
@@ -100,6 +106,7 @@ export function matchStaffRoutes(
         : null,
       forfeit: counts && { counts: { a: counts.a, b: counts.b }, thresholds: counts.thresholds },
       canVoid: allows('void'),
+      canTime: found.status === 'scheduled',
       gameScore: rulesetJson.game_score ?? null,
       csrf: viewer.csrf,
       flash: flashOf(c),
@@ -194,6 +201,16 @@ export function matchStaffRoutes(
       if (!reply.ok) return refused(c, found.id, reply.error);
       await announceForfeit(discord, reply, actor.user.id);
       return back(c, found.id, `staff=${DONE.forfeit}`);
+    }
+
+    if (what === 'time') {
+      // Read in the league's own time zone, as the teams' proposals are.
+      const time = readMatchTime(db, actor, field(form, 'date'), field(form, 'time'));
+      if (!time.ok) return refused(c, found.id, time.error);
+      const reply = setMatchTime(db, actor, { matchId: found.id, at: time.at }, now);
+      if (!reply.ok) return refused(c, found.id, reply.error);
+      await announceMatchTime(discord, reply);
+      return back(c, found.id, `staff=${DONE.time}`);
     }
 
     const evidence = field(form, 'evidence');

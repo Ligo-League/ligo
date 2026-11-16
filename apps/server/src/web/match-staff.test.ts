@@ -15,6 +15,7 @@ import { ANA, testSite } from './testing.ts';
 
 const QUEUE = '800000000000000001';
 const RESULTS = '800000000000000002';
+const SCHEDULE = '800000000000000004';
 const LEA = { id: '222222222222222222', displayName: 'Léa Staff' };
 const BEN = { id: '700000000000000002', displayName: 'Ben' };
 const STAFF: Actor = { guildId: TEST_GUILD, user: LEA, memberRoleIds: [TEST_STAFF_ROLE] };
@@ -25,7 +26,9 @@ function site() {
   const db = leagueDatabase();
   setTeamOwner(db, STAFF, { teamId: 2, member: ANA }, 100);
   setTeamOwner(db, STAFF, { teamId: 3, member: BEN }, 100);
-  db.update(schema.leagueGuild).set({ alertsChannelId: QUEUE, resultsChannelId: RESULTS }).run();
+  db.update(schema.leagueGuild)
+    .set({ alertsChannelId: QUEUE, resultsChannelId: RESULTS, scheduleChannelId: SCHEDULE })
+    .run();
   const browser = testSite({ db, users: { 'code-lea': LEA, 'code-ben': BEN } });
   browser.setRoles([TEST_STAFF_ROLE], LEA.id);
   const stored = (id = 3) => db.select().from(schema.match).where(eq(schema.match.id, id)).get();
@@ -149,5 +152,40 @@ describe('the staff panel on the match page', () => {
     advance(61_000);
     expect((await act('forfeit', { side: 'a' })).status).toBe(403);
     expect(stored()?.status).toBe('scheduled');
+  });
+
+  it('sets any time on a match to play, and announces it (3f-3)', async () => {
+    const { request, logIn, act, stored, gateway } = site();
+    await logIn('/matches/3', 'code-lea');
+    expect(await (await request('/matches/3')).text()).toContain('action="/matches/3/staff/time"');
+    expect(await (await request('/matches/1')).text()).not.toContain(
+      'action="/matches/1/staff/time"',
+    );
+    // Paris time, outside the match's week: staff bend the deadlines.
+    expect(where(await act('time', { date: '2026-12-20', time: '18:30' }))).toBe(
+      '/matches/3?staff=timed#staff',
+    );
+    const at = Date.parse('2026-12-20T17:30:00Z');
+    expect(stored()).toMatchObject({ scheduledAt: at, autoScheduled: false });
+    expect(gateway.posted).toMatchObject([
+      {
+        channelId: SCHEDULE,
+        message: {
+          content: `Horaire fixé — Ligue 1, semaine 3 : Bravo – Charlie : <t:${String(at / 1000)}:F>.`,
+        },
+      },
+    ]);
+  });
+
+  it.each([
+    [{ date: '20/12/2026', time: '18:30' }, 3, 'invalid_date'],
+    [{ date: '2026-12-20', time: '18h' }, 3, 'invalid_time'],
+    [{ date: '2026-12-20', time: '18:30' }, 1, 'not_schedulable'],
+  ])('refuses a time %j on match %i', async (fields, id, error) => {
+    const { logIn, act } = site();
+    await logIn('/matches/3', 'code-lea');
+    expect(where(await act('time', fields, id))).toBe(
+      `/matches/${String(id)}?staff_error=${error}#staff`,
+    );
   });
 });

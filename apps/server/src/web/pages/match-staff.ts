@@ -8,7 +8,14 @@ import { csrfField, type Html } from '../layout.ts';
 // validate or refuse the report waiting, record a forfeit, annul the match. The services check
 // staff and the match's state again on every POST.
 
-export const STAFF_DONE = ['entered', 'validated', 'rejected', 'voided', 'forfeited'] as const;
+export const STAFF_DONE = [
+  'entered',
+  'validated',
+  'rejected',
+  'voided',
+  'forfeited',
+  'timed',
+] as const;
 export type StaffDone = (typeof STAFF_DONE)[number];
 
 const ERROR_KEYS = {
@@ -23,6 +30,10 @@ const ERROR_KEYS = {
   stale: 'match.error.stale',
   wrong_status: 'match.error.wrong_status',
   reason_required: 'match.error.reason_required',
+  invalid_date: 'schedule.error.invalid_date',
+  invalid_time: 'schedule.error.invalid_time',
+  nonexistent_time: 'schedule.error.nonexistent_time',
+  not_schedulable: 'schedule.error.not_schedulable',
 } as const satisfies Record<string, MessageKey>;
 export type StaffError = keyof typeof ERROR_KEYS;
 export const isStaffError = (value: string | undefined): value is StaffError =>
@@ -42,6 +53,8 @@ export interface StaffPanelData {
     thresholds: ForfeitThresholds | null;
   } | null;
   canVoid: boolean;
+  /** Whether staff may set the time: the match is still to play. */
+  canTime: boolean;
   gameScore: GameScoreSettings | null;
   csrf: string;
   flash: StaffFlash;
@@ -154,6 +167,17 @@ function forfeitForm(
   </form>`;
 }
 
+function timeForm(locale: Locale, data: StaffPanelData): Html {
+  return html`<form class="card" method="post" action="${action(data, 'time')}">
+    ${csrfField(data.csrf)}
+    <h3>${t(locale, 'web.staffMatch.time')}</h3>
+    <label>${t(locale, 'web.staffMatch.date')} <input type="date" name="date" required /></label>
+    <label>${t(locale, 'web.staffMatch.hour')} <input type="time" name="time" required /></label>
+    <p class="muted">${t(locale, 'web.staffMatch.timeHint')}</p>
+    <button type="submit">${t(locale, 'web.staffMatch.timeSave')}</button>
+  </form>`;
+}
+
 function voidForm(locale: Locale, data: StaffPanelData): Html {
   return html`<form class="card" method="post" action="${action(data, 'void')}">
     ${csrfField(data.csrf)}
@@ -172,6 +196,7 @@ export function staffPanel(locale: Locale, data: StaffPanelData): Html {
     <h2>${t(locale, 'web.staffMatch.title')}</h2>
     ${flashView(locale, data)} ${data.report ? reportForms(locale, data, data.report) : ''}
     ${data.entry ? entryForm(locale, data, data.entry.correcting) : ''}
+    ${data.canTime ? timeForm(locale, data) : ''}
     ${data.forfeit ? forfeitForm(locale, data, data.forfeit) : ''}
     ${data.canVoid ? voidForm(locale, data) : ''}
   </section>`;

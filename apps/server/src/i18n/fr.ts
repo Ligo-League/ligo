@@ -772,6 +772,13 @@ export const fr = {
   'web.staffMatch.forfeitSide': 'Équipe qui déclare forfait',
   'web.staffMatch.forfeitBoth': 'Les deux équipes',
   'web.staffMatch.forfeitSave': 'Enregistrer le forfait',
+  'web.staffMatch.time': "Fixer l'horaire",
+  'web.staffMatch.date': 'Jour',
+  'web.staffMatch.hour': 'Heure (celle de la ligue)',
+  'web.staffMatch.timeHint':
+    "N'importe quel jour, même hors de la semaine du match : les propositions en attente sont closes, et l'horaire est annoncé dans le salon de planning.",
+  'web.staffMatch.timeSave': "Fixer l'horaire",
+  'web.staffMatch.done.timed': 'Horaire fixé et annoncé.',
   'web.staffMatch.void': 'Annuler le match',
   'web.staffMatch.voidReason': 'Raison',
   'web.staffMatch.voidHint':
