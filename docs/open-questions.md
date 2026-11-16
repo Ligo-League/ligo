@@ -203,7 +203,12 @@ section 16.
 - **Why it matters:** the mercato (phase 3f) counts moves against the window's limit, blocks
   players and decides what the request form asks.
 - **Until answered:** the mercato is not built; the moves between rosters of one club are M-22.
-- **Answer:**
+- **Answer:** Well, first of all, the mercato is not required to exist for a tournament. e.g. Someone hosting a small league that doesn't care about players' moves can just make it available at all time (meaning the mercato window is ALWAYS open in a sense). Second of all, to answer the questions in order:
+  1. A swap is considered to be one move so it's cleaner and we can have the "X replaced Y in the roster" instead of having "X left" "Y arrived" in the history. A change of captain and a starter becoming a substitute is not move blocked by the mercato as it doesn't change the players, they are still in the same roster. But it can be counted as a move (at least for the history of the team, not necessarily to be shown on the mercato quick access menu)
+  2. Yes, it makes the player unavailable to play for 24 full hours. The reason is to avoid one player jumping from one team to another all the time during the mid season mercato window and just, idk, stomp/carry some teams.
+  3. The incoming player must accept the move when he is invited to join. When he is kicked out of a team, he can't give consent. The official request creates an invite link for the player. This is to avoid someone being claimed by a team they don't want to play in.
+  4. The tournament staff opens the window and decides for how long. And yes, I believe the schema's lock_hours is the amount of hours a player is blocked.
+  5. A team can change a player in their official roster with an exception granted by staff.
 
 ### Team tools
 
@@ -431,6 +436,11 @@ section 16.
   matches of the main roster, or a promotion from the academy to the main roster. A season of
   almost three months is long for a grassroots team to keep the same five. Still open: those
   settings' exact values, designed with the mercato (phase 3f). The intra-club match rule is kept.
+- **Answer (maintainer, 16 November 2026):** make it as lenient as possible in settings, so any
+  level of competition can be played: the grassroots case above is the starting point, but an
+  amateur league where teams keep the same five (prize money or other incentives) must be
+  possible too, with moves between a club's rosters limited or closed by its settings. The
+  settings themselves are designed with the mercato step.
 
 #### M-23 · The Ubisoft account at registration
 
