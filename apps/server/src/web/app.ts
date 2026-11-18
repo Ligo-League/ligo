@@ -40,6 +40,7 @@ import { ME_ERRORS, mePage, type MeFlash } from './pages/me.ts';
 import { clubRoutes } from './clubs.ts';
 import { matchCaptainRoutes } from './match-captain.ts';
 import { matchStaffRoutes } from './match-staff.ts';
+import { staffSanctionsRoutes } from './staff-sanctions.ts';
 import { matchReportRoutes } from './match-report.ts';
 import { matchTimeRoutes } from './match-time.ts';
 import { vetoRoutes } from './veto.ts';
@@ -654,6 +655,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   const veto = vetoRoutes(app, { deps, render, notFound, forbidden, guard });
   const matchCaptain = matchCaptainRoutes(app, { deps, render, notFound, forbidden, guard });
   const matchStaff = matchStaffRoutes(app, { deps, render, notFound, forbidden, guard });
+  staffSanctionsRoutes(app, { deps, render, notFound, forbidden, guard });
   rosterRoutes(app, { deps, render, notFound, forbidden, guard });
   app.get('/matches/:id', async (c) => {
     const id = c.req.param('id');
