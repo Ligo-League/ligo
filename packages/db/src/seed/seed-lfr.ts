@@ -1,6 +1,7 @@
 import {
   DEFAULT_DISPUTE_REASONS,
   promotionSchema,
+  mercatoSchema,
   registrationSchema,
   requestsSchema,
   teamRolesSchema,
@@ -63,6 +64,9 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
       min_age: 16,
       division_max: 12,
     }),
+    // Announced windows, 3 moves per team, every incoming player blocked 24 hours; a move
+    // inside a club is an ordinary one (O-35, M-22, maintainer, 16 and 19 November 2026).
+    mercato: mercatoSchema.parse({ mode: 'windows', max_moves_per_team: 3, lock_hours: 24 }),
   },
   // 3 points per win in Season 3, as the league's score7 tables are configured.
   pointsJson: {

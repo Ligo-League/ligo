@@ -26,7 +26,12 @@ const LFR_S3 = {
     game_score: { win_at: 7, overtime_rounds: 3 },
     team_roles: { managers_max: 3, coaches_max: 1 },
     requests: {
-      approval: { team_owner: 'staff', team_member_add: 'staff', team_member_remove: 'auto' },
+      approval: {
+        team_owner: 'staff',
+        team_member_add: 'staff',
+        team_member_remove: 'auto',
+        roster_move: 'staff',
+      },
       answer_within_hours: 24,
       remind_before_hours: 6,
     },
@@ -41,6 +46,13 @@ const LFR_S3 = {
       min_age: 16,
       lineup_lock_days: 0,
       division_max: 12,
+    },
+    // O-35 (maintainer, 16 and 19 November 2026).
+    mercato: {
+      mode: 'windows',
+      max_moves_per_team: 3,
+      lock_hours: 24,
+      intra_club_moves: 'counted',
     },
   },
   scheduling: {
@@ -348,6 +360,7 @@ describe('JSON round trip', () => {
               team_owner: fc.constantFrom('auto' as const, 'staff' as const),
               team_member_add: fc.constantFrom('auto' as const, 'staff' as const),
               team_member_remove: fc.constantFrom('auto' as const, 'staff' as const),
+              roster_move: fc.constantFrom('auto' as const, 'staff' as const),
             }),
             answer_within_hours: fc.integer({ min: 1, max: 720 }),
             remind_before_hours: fc.option(fc.integer({ min: 0, max: 719 })),
@@ -389,6 +402,12 @@ describe('JSON round trip', () => {
           min_age: fc.option(fc.integer({ min: 1, max: 99 }), { nil: null }),
           lineup_lock_days: fc.integer({ min: 0, max: 60 }),
           division_max: fc.integer({ min: 2, max: 64 }),
+        }),
+        mercato: fc.record({
+          mode: fc.constantFrom('open' as const, 'windows' as const),
+          max_moves_per_team: fc.option(fc.integer({ min: 1, max: 50 }), { nil: null }),
+          lock_hours: fc.integer({ min: 0, max: 720 }),
+          intra_club_moves: fc.constantFrom('counted' as const, 'free' as const, 'closed' as const),
         }),
       }),
     ],

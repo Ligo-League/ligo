@@ -1,4 +1,10 @@
-import { promotionSchema, registrationSchema, requestsSchema, vetoSchema } from '@ligo/core';
+import {
+  promotionSchema,
+  mercatoSchema,
+  registrationSchema,
+  requestsSchema,
+  vetoSchema,
+} from '@ligo/core';
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
@@ -209,6 +215,7 @@ describe('recordResult', () => {
             veto: vetoSchema.parse({}),
             promotion: promotionSchema.parse({}),
             registration: registrationSchema.parse({}),
+            mercato: mercatoSchema.parse({}),
           },
         })
         .run();

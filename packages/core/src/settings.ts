@@ -214,6 +214,29 @@ export const registrationSchema = z.strictObject({
 });
 export type RegistrationSettings = z.infer<typeof registrationSchema>;
 
+/** `open`: moves at any time during the season; `windows`: only while staff open a window. */
+export const MERCATO_MODES = ['open', 'windows'] as const;
+export type MercatoMode = (typeof MERCATO_MODES)[number];
+/** A move between two rosters of one club (M-22): an ordinary move, a free one, or none. */
+export const INTRA_CLUB_MOVES = ['counted', 'free', 'closed'] as const;
+export type IntraClubMoves = (typeof INTRA_CLUB_MOVES)[number];
+
+/**
+ * The mercato (design doc section 7; O-35 and M-22, maintainer, 16 and 19 November 2026). The
+ * defaults are as lenient as possible, so a small league needs no setup: always open, no limit,
+ * no block. A window takes `max_moves_per_team` and `lock_hours` as its own when staff open it;
+ * when the mercato is always open, they apply to the whole season.
+ */
+export const mercatoSchema = z.strictObject({
+  mode: z.enum(MERCATO_MODES).default('open'),
+  /** Counted moves a team may make; null: no limit. */
+  max_moves_per_team: z.int().min(1).max(50).nullable().default(null),
+  /** How long an incoming player waits after approval before playing (O-35). */
+  lock_hours: z.int().min(0).max(720).default(0),
+  intra_club_moves: z.enum(INTRA_CLUB_MOVES).default('counted'),
+});
+export type MercatoSettings = z.infer<typeof mercatoSchema>;
+
 /** `auto`: applied at once and recorded; `staff`: waits for league staff to approve or refuse. */
 export const APPROVAL_MODES = ['auto', 'staff'] as const;
 export type ApprovalMode = (typeof APPROVAL_MODES)[number];
@@ -230,8 +253,14 @@ export const requestsSchema = z
         team_owner: z.enum(APPROVAL_MODES).default('staff'),
         team_member_add: z.enum(APPROVAL_MODES).default('staff'),
         team_member_remove: z.enum(APPROVAL_MODES).default('auto'),
+        roster_move: z.enum(APPROVAL_MODES).default('staff'),
       })
-      .default({ team_owner: 'staff', team_member_add: 'staff', team_member_remove: 'auto' }),
+      .default({
+        team_owner: 'staff',
+        team_member_add: 'staff',
+        team_member_remove: 'auto',
+        roster_move: 'staff',
+      }),
     answer_within_hours: z.int().min(1).max(720).default(24),
     /** Staff are reminded this long before the deadline; null: no reminder. */
     remind_before_hours: z.int().min(0).nullable().default(6),
@@ -261,6 +290,7 @@ export const rulesetSchema = z.strictObject({
   veto: vetoSchema.default(() => vetoSchema.parse({})),
   promotion: promotionSchema.default(() => promotionSchema.parse({})),
   registration: registrationSchema.default(() => registrationSchema.parse({})),
+  mercato: mercatoSchema.default(() => mercatoSchema.parse({})),
 });
 export type RulesetSettings = z.infer<typeof rulesetSchema>;
 

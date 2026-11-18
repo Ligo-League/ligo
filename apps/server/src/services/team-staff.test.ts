@@ -1,4 +1,10 @@
-import { promotionSchema, registrationSchema, requestsSchema, vetoSchema } from '@ligo/core';
+import {
+  promotionSchema,
+  mercatoSchema,
+  registrationSchema,
+  requestsSchema,
+  vetoSchema,
+} from '@ligo/core';
 import { orgSettingsSchema, schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
@@ -194,6 +200,7 @@ describe('addTeamMember and removeTeamMember', () => {
           veto: vetoSchema.parse({}),
           promotion: promotionSchema.parse({}),
           registration: registrationSchema.parse({}),
+          mercato: mercatoSchema.parse({}),
         },
       })
       .run();
