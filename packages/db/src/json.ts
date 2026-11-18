@@ -6,7 +6,7 @@ import {
   vetoFormatSchema,
 } from '@ligo/core';
 import { z } from 'zod';
-import { LEGAL_STATUSES, SIDES } from './schema/enums.ts';
+import { LEGAL_STATUSES, REGISTRATION_ROLES, SIDES } from './schema/enums.ts';
 
 // zod schemas for the `*_json` columns that are not league rule settings.
 // Rule settings (points, tie-breaks, ruleset, scheduling, season, stage) live in @ligo/core.
@@ -128,6 +128,23 @@ export const rosterRegistrationPayloadSchema = z.strictObject({
 });
 export type RosterRegistrationPayload = z.infer<typeof rosterRegistrationPayloadSchema>;
 
+/**
+ * `request.payload_json` of a mercato move (design doc section 7; O-35): who leaves the roster's
+ * lineup, who arrives from its own players and in which role, the window it was filed in, whether
+ * it counts against the limit, the roster the incoming player leaves, and, for a staff
+ * exception, why. What counts is fixed when filed, so a team's count is read without
+ * recomputing every move.
+ */
+export const rosterMovePayloadSchema = z.strictObject({
+  outId: z.int().positive().nullable(),
+  in: z.strictObject({ playerId: z.int().positive(), role: z.enum(REGISTRATION_ROLES) }).nullable(),
+  windowId: z.int().positive().nullable(),
+  counted: z.boolean(),
+  fromTeamId: z.int().positive().nullable(),
+  exceptionReason: z.string().min(1).max(500).nullable(),
+});
+export type RosterMovePayload = z.infer<typeof rosterMovePayloadSchema>;
+
 /** `audit_log.before_json` / `after_json`: a snapshot of the changed entity. */
 export const auditSnapshotSchema = z.record(z.string(), z.unknown());
 export type AuditSnapshot = z.infer<typeof auditSnapshotSchema>;
@@ -143,5 +160,6 @@ export const requestPayloadSchema = z.union([
   // roster and its club; since, it names its roster in `team_id`.
   z.lazy(() => registrationPayloadSchema),
   z.lazy(() => rosterRegistrationPayloadSchema),
+  z.lazy(() => rosterMovePayloadSchema),
 ]);
 export type RequestPayload = z.infer<typeof requestPayloadSchema>;

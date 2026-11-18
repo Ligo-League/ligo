@@ -13,7 +13,8 @@ import { openTestDatabase } from './testing.ts';
 // Schema v1, the tables phase 0 was allowed to create (design doc section 15, "Start here
 // today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`,
 // 0004 `veto_step`, 0007 `request` and `queue_post`, 0009 `club`, 0010 `club_staff`, 0013
-// `rules_version`, 0014 `registration_invite` and `registration_player`, 0021 `match_captain`.
+// `rules_version`, 0014 `registration_invite` and `registration_player`, 0021 `match_captain`, 0023
+// `mercato_window`.
 const SCHEMA_TABLES = [
   'audit_log',
   'club',
@@ -31,6 +32,7 @@ const SCHEMA_TABLES = [
   'match_captain',
   'match_proposal',
   'match_slot',
+  'mercato_window',
   'org',
   'player',
   'queue_post',
@@ -385,5 +387,61 @@ describe('0014: registration', () => {
     expect(() =>
       run(`insert into game_account (player_id, title, display_name) values (4, 'r6', 'Other')`),
     ).toThrow(/UNIQUE/);
+  });
+});
+
+describe('0023: the mercato', () => {
+  it('keeps requests and what points at them, accepts a move, and gives LFR its windows', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0022_mbl_group_org');
+    const run = (sql: string) => db.$client.exec(sql);
+    const LENIENT = '{"result_validation":"opponent"}';
+    db.$client.pragma('foreign_keys = OFF');
+    run(`insert into org (id, name, slug, settings_json) values (1, 'MBL Group', 'mbl-group', '{}'),
+           (2, 'Other', 'other', '{}')`);
+    run(`insert into competition (id, org_id, title, name, slug, participant_mode, ruleset_json,
+           points_json, tiebreak_json, scheduling_json, stat_schema_version, theme_json)
+         values (1, 1, 'r6', 'LFR', 'lfr', 'team', '${LENIENT}', '{}', '{}', '{}', 1, '{}'),
+                (2, 2, 'r6', 'LFR', 'lfr', 'team', '${LENIENT}', '{}', '{}', '{}', 1, '{}')`);
+    run(`insert into request (id, competition_id, team_id, kind, payload_json, approval,
+           requested_by, requested_at) values (7, 1, 2, 'registration', '{}', 'staff', 3, 10)`);
+    run(`insert into registration_player (request_id, player_id, role, joined_at)
+         values (7, 3, 'player', 10)`);
+
+    migrateUpTo(db, '0023_mercato');
+
+    expect(db.$client.prepare('select id, kind, status from request').all()).toEqual([
+      { id: 7, kind: 'registration', status: 'pending' },
+    ]);
+    expect(db.$client.prepare('select request_id from registration_player').all()).toEqual([
+      { request_id: 7 },
+    ]);
+    expect(() =>
+      run(`insert into request (competition_id, kind, payload_json, approval, requested_by,
+             requested_at) values (1, 'roster_move', '{}', 'staff', 4, 20)`),
+    ).not.toThrow();
+    const mercato = (id: number) =>
+      db.$client
+        .prepare(
+          `select json_extract(ruleset_json, '$.mercato') as m from competition where id = ?`,
+        )
+        .get(id);
+    // Only the seed's LFR, in MBL Group; another group's league of the same name is left alone.
+    expect(mercato(1)).toEqual({
+      m: '{"mode":"windows","max_moves_per_team":3,"lock_hours":24,"intra_club_moves":"counted"}',
+    });
+    expect(mercato(2)).toEqual({ m: null });
+    expect(() =>
+      run(`insert into mercato_window (season_id, opens_at, closes_at, lock_hours, created_by,
+             created_at) values (1, 20, 10, 24, 3, 1)`),
+    ).toThrow(/CHECK/);
+    expect(() =>
+      run(`insert into mercato_window (season_id, opens_at, closes_at, max_moves_per_team,
+             lock_hours, created_by, created_at) values (1, 10, 20, 0, 24, 3, 1)`),
+    ).toThrow(/CHECK/);
+    expect(() =>
+      run(`insert into mercato_window (season_id, opens_at, closes_at, lock_hours, created_by,
+             created_at) values (1, 10, 20, 0, 3, 1)`),
+    ).not.toThrow();
   });
 });

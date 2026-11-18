@@ -162,6 +162,13 @@
       "when": 1795020966324,
       "tag": "0022_mbl_group_org",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1795045884077,
+      "tag": "0023_mercato",
+      "breakpoints": true
     }
   ]
 }

@@ -191,8 +191,11 @@ export type TeamRolesSettings = z.infer<typeof teamRolesSchema>;
 /** What a team can ask of the league (design doc section 5, "Team requests"). */
 export const TEAM_REQUEST_KINDS = ['team_owner', 'team_member_add', 'team_member_remove'] as const;
 export type TeamRequestKind = (typeof TEAM_REQUEST_KINDS)[number];
-/** Every kind of request: a team's, and a roster's registration, filed before the team exists. */
-export const REQUEST_KINDS = [...TEAM_REQUEST_KINDS, 'registration'] as const;
+/**
+ * Every kind of request: a team's, a roster's registration, filed before the team exists, and a
+ * mercato move (O-35).
+ */
+export const REQUEST_KINDS = [...TEAM_REQUEST_KINDS, 'registration', 'roster_move'] as const;
 export type RequestKind = (typeof REQUEST_KINDS)[number];
 
 /**

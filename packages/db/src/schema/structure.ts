@@ -164,6 +164,39 @@ export const rosterEntry = sqliteTable(
   ],
 );
 
+// A mercato window staff open for a season (design doc section 7; O-35, maintainer, 16 November
+// 2026). Its limit and block are filled from `ruleset.mercato` when it opens, then its own: a later
+// change of setting does not change a window already announced.
+export const mercatoWindow = sqliteTable(
+  'mercato_window',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    seasonId: integer('season_id')
+      .notNull()
+      .references(() => season.id),
+    opensAt: integer('opens_at').notNull(),
+    closesAt: integer('closes_at').notNull(),
+    // Null: no limit.
+    maxMovesPerTeam: integer('max_moves_per_team'),
+    lockHours: integer('lock_hours').notNull(),
+    createdBy: integer('created_by')
+      .notNull()
+      .references(() => player.id),
+    createdAt: integer('created_at').notNull(),
+    // Staff closed it before `closes_at`.
+    closedEarlyAt: integer('closed_early_at'),
+  },
+  (t) => [
+    index('mercato_window_season_idx').on(t.seasonId),
+    check('mercato_window_dates_check', sql`${t.opensAt} < ${t.closesAt}`),
+    check(
+      'mercato_window_limit_check',
+      sql`${t.maxMovesPerTeam} is null or ${t.maxMovesPerTeam} >= 1`,
+    ),
+    check('mercato_window_lock_check', sql`${t.lockHours} >= 0`),
+  ],
+);
+
 export const stage = sqliteTable(
   'stage',
   {

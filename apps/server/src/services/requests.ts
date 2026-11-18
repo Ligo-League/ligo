@@ -94,8 +94,8 @@ function personOf(db: Pick<Db, 'select'>, playerId: number): PersonRef {
 }
 
 /**
- * What a team request is about. A registration is no team request: it is filed before the team
- * exists and handled apart, so reaching here with one is a bug.
+ * What a team request is about. A registration or a mercato move is no team request: each is
+ * handled apart, so reaching here with one is a bug.
  */
 function teamPayloadOf(row: Pick<RequestRow, 'id' | 'kind' | 'payloadJson'>): {
   kind: TeamRequestKind;
@@ -103,11 +103,12 @@ function teamPayloadOf(row: Pick<RequestRow, 'id' | 'kind' | 'payloadJson'>): {
   role: AddableTeamRole | null;
 } {
   const payload = row.payloadJson;
-  if (row.kind === 'registration' || !('playerId' in payload)) {
+  const kind = TEAM_REQUEST_KINDS.find((teamKind) => teamKind === row.kind);
+  if (!kind || !('playerId' in payload)) {
     throw new Error(`Request ${String(row.id)} is not a team request`);
   }
   return {
-    kind: row.kind,
+    kind,
     playerId: payload.playerId,
     role: 'role' in payload ? payload.role : null,
   };
