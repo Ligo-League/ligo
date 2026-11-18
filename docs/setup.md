@@ -664,6 +664,18 @@ On a match still to play, the staff panel has **Fixer l'horaire**: any day and t
 league's time zone, even outside the match's week. Pending time proposals close (their Discord
 posts lose their buttons) and the time is announced in the schedule channel with its picture.
 
+## 36. Phase 3f-4: sanctions and exclusions on the website
+
+1. With the staff role, open `http://localhost:3000/staff/sanctions` (linked from the top of
+   `/staff`). Each league you are staff of lists its teams with their status, forfeits this season
+   and automatic exclusion, then the season's sanctions.
+2. **Donner une sanction**: a warning, or points (`-2` takes two away); `/standings` follows at
+   once. A sanction is never removed: correct a mistake with the opposite one.
+3. **Exclure une équipe** with a reason: its officials get the reason by direct message, the
+   results channel announces it without the reason, and the 50% rule applies.
+4. **Réintégrer une équipe** on appeal: the team and the results channel are told.
+5. **Exclusion automatique**: switch it off for one team with a reason, or back on.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

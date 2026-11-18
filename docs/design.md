@@ -650,6 +650,7 @@ Ligo is a tool for esport leagues with divisions that happens to host MBL Group 
 | `/matches/:id/games/:n/stitch` | team staff and staff    | Re-host review                                                                                                                 |
 | `/me`                          | logged-in player        | Linked accounts, nationality, stats consent                                                                                    |
 | `/staff/*`                     | staff                   | Validation queue, requests waiting (registrations, mercato, team officials), sanctions, forfeits, accreditations, unknown players, jobs, rules versions |
+| `/staff/sanctions`             | staff                   | Each team's status, forfeits and automatic exclusion, the season's sanctions; give a sanction, exclude, reinstate on appeal, switch the automatic exclusion (phase 3f) |
 | `/evidence/:id`                | staff and the match's teams | A score screenshot the server kept; never public                                                                           |
 | `/admin/*`                     | see M-20                | The admin panel: organisation, then each competition, then each league (division), with their settings and Discord setup       |
 
