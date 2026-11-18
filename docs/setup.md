@@ -712,6 +712,15 @@ posts lose their buttons) and the time is announced in the schedule channel with
 4. A channel where the bot cannot write is refused with the same message as in Discord, and
    nothing changes. `/league channel` and `/league channels` still work in Discord.
 
+## 39. Phase 3f-9: the mercato's tables
+
+1. Restart `pnpm dev` if it was not running: migration 0023 adds the `mercato_window` table,
+   lets a request be a mercato move (`roster_move`), and gives LFR its mercato settings
+   (announced windows, 3 moves per team, 24 hours before an incoming player may play). Requests
+   already filed are kept as they are.
+2. Nothing changes on the site or in Discord yet: the windows page and the moves come next
+   (3f-10 to 3f-12).
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
