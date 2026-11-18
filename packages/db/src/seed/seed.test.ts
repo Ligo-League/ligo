@@ -179,7 +179,9 @@ describe('seedLfr', () => {
       updated: { competitions: 0, seasons: 0, clubs: 0, teams: 0, slots: 0 },
       removed: { clubs: 0 },
     });
-    expect(db.select().from(org).all()).toMatchObject([{ name: 'LFR', slug: 'lfr', locale: 'fr' }]);
+    expect(db.select().from(org).all()).toMatchObject([
+      { name: 'MBL Group', slug: 'mbl-group', locale: 'fr' },
+    ]);
     expect(db.select().from(competition).all()).toMatchObject([
       {
         title: 'r6',
