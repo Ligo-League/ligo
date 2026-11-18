@@ -454,7 +454,7 @@ section 10).
 ## 19. Phase 3d-3: the rulebook page
 
 1. Restart `pnpm dev`: migration 0013 runs at start-up and adds the rulebook versions.
-2. Open `http://localhost:3000/c/lfr/rules`: no rulebook is in force yet. The season page links
+2. Open `http://localhost:3000/mbl-group/lfr/rules`: no rulebook is in force yet. The season page links
    to it.
 3. Log in as a member with the `Staff` role of the linked server: the page offers
    **Publier une nouvelle version**. Give the version a name, a date from which it is in force,
@@ -469,7 +469,7 @@ section 10).
 1. Restart `pnpm dev`: migration 0014 runs at start-up. Then `pnpm seed`: it prints
    `Opened Saison 4 for registration`, with placeholder dates (4 January to 14 March 2027).
 2. A rulebook must be in force before anyone can register: publish one at
-   `http://localhost:3000/c/lfr/rules/new` (section 19), dated today or earlier.
+   `http://localhost:3000/mbl-group/lfr/rules/new` (section 19), dated today or earlier.
 3. The home page shows **S'inscrire** next to Saison 4. Log in, fill in the club and the team,
    optionally a transparent PNG logo (1 MB at most), accept the rulebook, and send.
 4. The registration's page, `/registrations/1`, shows the invitation link to share. Joining from
@@ -504,7 +504,7 @@ section 10).
 ## 23. Phase 3d-6: the league's Discord server on the website
 
 1. Log in with the account that owns the staging server (or holds **Manage Server** there).
-   `/me` shows **Serveur Discord de la ligue : LFR**; open it (`/c/lfr/discord`).
+   `/me` shows **Serveur Discord de la ligue : LFR**; open it (`/mbl-group/lfr/discord`).
 2. In the staging server, make an invitation that never expires: Server Settings > Invites, or
    right-click a channel > **Invite People** > **Edit invite link** > **Expire After: Never**.
 3. On the page, check the staff role, paste the invitation, and click **Enregistrer**. The bot
@@ -573,7 +573,7 @@ channel`), mentioning the other side, with **Accepter** and **Refuser**.
 1. Restart `pnpm dev` if it was not running: migration 0019 marks a registration still pending
    from before (one that carried its club and roster) as withdrawn, with an audit row. Its filer
    registers the roster again.
-2. With your roster's players on it (section 28), open `http://localhost:3000/c/lfr/register`:
+2. With your roster's players on it (section 28), open `http://localhost:3000/mbl-group/lfr/register`:
    pick the roster, accept the rulebook, **Envoyer l'inscription**.
 3. On the registration's page, give each player a role (titulaire, remplaçant, or hors effectif)
    and pick the captain among the starters. The page says what a player still lacks, whether one
@@ -675,6 +675,15 @@ posts lose their buttons) and the time is announced in the schedule channel with
    results channel announces it without the reason, and the 50% rule applies.
 4. **Réintégrer une équipe** on appeal: the team and the results channel are told.
 5. **Exclusion automatique**: switch it off for one team with a reason, or back on.
+
+## 37. Phase 3f-5: competitions under their organisation
+
+1. Restart `pnpm dev` if it was not running: migration 0022 renames the seed's organisation "LFR"
+   to MBL Group (`mbl-group`), the only change it makes. The seed now creates it under that name.
+2. The season page is `http://localhost:3000/mbl-group/lfr/saison-3`; the rulebook, the
+   registration form and the league's Discord page follow (`/mbl-group/lfr/rules`, `/register`,
+   `/discord`). Every link on the site and in the bot's messages uses the new form.
+3. An old address such as `http://localhost:3000/c/lfr/saison-3` leads to the new one.
 
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
