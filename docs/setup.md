@@ -685,6 +685,20 @@ posts lose their buttons) and the time is announced in the schedule channel with
    `/discord`). Every link on the site and in the bot's messages uses the new form.
 3. An old address such as `http://localhost:3000/c/lfr/saison-3` leads to the new one.
 
+## 38. Phase 3f-6: the bot's channels on the website
+
+1. Log in as a member holding the league's staff role, then open `http://localhost:3000/staff`:
+   under **LFR**, follow **Salons du bot sur le serveur Discord**
+   (`/mbl-group/lfr/discord/channels`). The league's Discord page links to it too.
+2. The table shows each purpose (staff queue, schedule, results, then results per division) with
+   the channel in use. Each list holds the text channels of the league's server, with their
+   category.
+3. Choose a channel and click **Enregistrer**: the bot posts its notice there, as with
+   `/league channel`, and the table shows the new channel. For a division, the first choice,
+   **celui de la ligue**, gives it back the league's results channel.
+4. A channel where the bot cannot write is refused with the same message as in Discord, and
+   nothing changes. `/league channel` and `/league channels` still work in Discord.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
