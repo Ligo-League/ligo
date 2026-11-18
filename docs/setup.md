@@ -380,6 +380,19 @@ gets a message pinging the staff role with a link to the request.
 Nobody else can open these pages yet: they are not on the internet until the VPS (design doc
 section 13).
 
+To show the site to someone on the same home network (Wi-Fi or cable):
+
+1. Find this computer's address on the network: `ip -4 -br addr` (for example `192.168.1.34`).
+2. In `.env`, set `HOST=0.0.0.0` (listen on every network card, not only this computer) and,
+   when login is on (section 15), `PUBLIC_URL=http://192.168.1.34:3000`. Otherwise the site
+   sends the other computer to `localhost`, which is that computer itself.
+3. To log in from there, also add `http://192.168.1.34:3000/auth/callback` under OAuth2 >
+   Redirects. Use the same address on this computer too: the login cookie belongs to one address.
+4. Restart `pnpm dev` and open `http://192.168.1.34:3000` on the other computer. If it does not
+   load, the firewall may block port 3000 (`sudo nft list ruleset`).
+5. Afterwards, put `HOST=127.0.0.1` and `PUBLIC_URL=http://localhost:3000` back. The address can
+   change when the router restarts.
+
 ## 15. Phase 3b: logging in with Discord
 
 1. In the Developer Portal, under OAuth2 > Redirects, add `http://localhost:3000/auth/callback`.
