@@ -1,9 +1,17 @@
-import { listSeasonTeams, schema, type Db, type SeasonTeam } from '@ligo/db';
-import { and, asc, eq } from 'drizzle-orm';
+import { countForfeits } from '@ligo/core';
+import {
+  listSeasonTeams,
+  loadStandingsInput,
+  schema,
+  type Db,
+  type GuildLeague,
+  type SeasonTeam,
+} from '@ligo/db';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { requireStaff, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 
-const { auditLog, sanction } = schema;
+const { auditLog, sanction, slot, stage } = schema;
 
 /**
  * The sanctions staff can give to a team today. The others of the rulebook wait for what they
@@ -151,3 +159,102 @@ const toEntry = (row: typeof sanction.$inferSelect): SanctionEntry => ({
   at: row.startsAt,
   matchId: row.matchId,
 });
+
+export interface TeamSanctionState extends SeasonTeam {
+  status: 'active' | 'frozen' | 'withdrawn' | 'excluded';
+  /** Counted from the season's matches, like the forfeit rule counts them. */
+  forfeits: number;
+  /** Why staff switched the automatic exclusion off for the team; null while it is on. */
+  autoExclusionOffReason: string | null;
+}
+
+export interface SeasonSanction {
+  id: number;
+  teamId: number;
+  team: string;
+  kind: string;
+  pointsDelta: number | null;
+  reason: string;
+  at: number;
+  /** When an exclusion ended, on appeal; null while it lasts or for other kinds. */
+  endsAt: number | null;
+}
+
+export type SanctionsOverviewReply =
+  | {
+      ok: true;
+      league: GuildLeague;
+      teams: TeamSanctionState[];
+      /** Every sanction of the season, oldest first. */
+      sanctions: SeasonSanction[];
+    }
+  | { ok: false; error: 'not_linked' | 'not_staff' | 'no_season' };
+
+/**
+ * The staff's view of the season's discipline (phase 3f-4): each team with its status, its
+ * forfeits and its automatic exclusion, and every sanction given. For league staff only.
+ */
+export function sanctionsOverview(
+  db: Pick<Db, 'select'>,
+  actor: Pick<Actor, 'guildId' | 'memberRoleIds'>,
+): SanctionsOverviewReply {
+  const staff = requireStaff(db, actor);
+  if (!staff.ok) return staff;
+  const { league } = staff;
+  const { season } = league;
+  if (!season) return { ok: false, error: 'no_season' };
+
+  const forfeits = new Map<number, number>();
+  for (const row of db.select().from(stage).where(eq(stage.seasonId, season.id)).all()) {
+    if (row.kind !== 'round_robin') continue;
+    const loaded = loadStandingsInput(db, row.id);
+    for (const entry of loaded?.teams ?? []) {
+      const count = countForfeits(loaded?.input.matches ?? [], entry.entry);
+      forfeits.set(entry.teamId, (forfeits.get(entry.teamId) ?? 0) + count);
+    }
+  }
+  const teams = listSeasonTeams(db, season.id);
+  const slotIds = teams.map((entry) => entry.slotId);
+  const slots = new Map(
+    (slotIds.length === 0 ? [] : db.select().from(slot).where(inArray(slot.id, slotIds)).all()).map(
+      (row) => [row.id, row],
+    ),
+  );
+  const bySlot = new Map(teams.map((entry) => [entry.slotId, entry]));
+  return {
+    ok: true,
+    league,
+    teams: teams.map((entry) => {
+      const row = slots.get(entry.slotId);
+      return {
+        ...entry,
+        status: row?.status ?? 'active',
+        forfeits: forfeits.get(entry.teamId) ?? 0,
+        autoExclusionOffReason: row?.autoExclusionOffReason ?? null,
+      };
+    }),
+    sanctions: db
+      .select()
+      .from(sanction)
+      .where(and(eq(sanction.seasonId, season.id), eq(sanction.targetKind, 'slot')))
+      .orderBy(asc(sanction.startsAt), asc(sanction.id))
+      .all()
+      .flatMap((row): SeasonSanction[] => {
+        const owner = bySlot.get(row.targetId);
+        return owner
+          ? [
+              {
+                id: row.id,
+                teamId: owner.teamId,
+                team: owner.name,
+                kind: row.kind,
+                pointsDelta: row.pointsDelta,
+                reason: row.reason,
+                at: row.startsAt,
+                endsAt: row.endsAt,
+              },
+            ]
+          : [];
+      }),
+  };
+}

@@ -1,9 +1,10 @@
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import { excludeTeam, setAutoExclusion } from './exclusions.ts';
 import { recordForfeit } from './forfeits.ts';
 import type { Actor } from './permissions.ts';
-import { addSanction, listSanctions } from './sanctions.ts';
+import { addSanction, listSanctions, sanctionsOverview } from './sanctions.ts';
 import { getStandings } from './standings.ts';
 
 const STAFF: Actor = {
@@ -138,5 +139,35 @@ describe('listSanctions', () => {
     const db = leagueDatabase();
     expect(listSanctions(db, MEMBER, ALPHA)).toEqual({ ok: false, error: 'not_staff' });
     expect(listSanctions(db, STAFF, 99)).toEqual({ ok: false, error: 'team_not_found' });
+  });
+});
+
+// The staff's sanctions page (phase 3f-4): every team of the season with its status, its forfeits
+// and its automatic exclusion, and every sanction given, for league staff.
+describe('sanctionsOverview', () => {
+  it('lists the teams with their status and forfeits, and the season’s sanctions', () => {
+    const db = leagueDatabase();
+    add(db, { teamId: ALPHA, kind: 'points', points: -2, reason: 'Retard' });
+    excludeTeam(db, STAFF, { teamId: 4, reason: 'Triche' }, 9100);
+    setAutoExclusion(db, STAFF, { teamId: 2, enabled: false, reason: 'Absence prévue' }, 9200);
+    const reply = sanctionsOverview(db, STAFF);
+    if (!reply.ok) throw new Error(reply.error);
+    const team = (id: number) => reply.teams.find((entry) => entry.teamId === id);
+    expect(team(1)).toMatchObject({ name: 'Alpha Esport', status: 'active', forfeits: 0 });
+    expect(team(2)).toMatchObject({ autoExclusionOffReason: 'Absence prévue' });
+    // Charlie forfeited match 2.
+    expect(team(3)).toMatchObject({ forfeits: 1, autoExclusionOffReason: null });
+    expect(team(4)).toMatchObject({ status: 'excluded' });
+    expect(reply.sanctions).toMatchObject([
+      { teamId: 1, kind: 'points', pointsDelta: -2, reason: 'Retard', at: 9000, endsAt: null },
+      { teamId: 4, kind: 'exclusion', reason: 'Triche', at: 9100, endsAt: null },
+    ]);
+  });
+
+  it('is for league staff only, during a season', () => {
+    expect(sanctionsOverview(leagueDatabase(), MEMBER)).toEqual({ ok: false, error: 'not_staff' });
+    const db = leagueDatabase();
+    db.update(schema.season).set({ status: 'registration' }).run();
+    expect(sanctionsOverview(db, STAFF)).toEqual({ ok: false, error: 'no_season' });
   });
 });
