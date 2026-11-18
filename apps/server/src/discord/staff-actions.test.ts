@@ -1,14 +1,20 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { setAutoExclusion } from '../services/exclusions.ts';
+import { excludeTeam, reinstateTeam, setAutoExclusion } from '../services/exclusions.ts';
 import { recordForfeit } from '../services/forfeits.ts';
 import type { Actor } from '../services/permissions.ts';
 import { recordResult } from '../services/results.ts';
 import { proposeTime, recordProposalPost, setMatchTime } from '../services/scheduling.ts';
 import { setTeamOwner } from '../services/team-staff.ts';
 import { disputedReport, leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
-import { announceForfeit, announceMatchTime, announceStaffResult } from './staff-actions.ts';
+import {
+  announceExclusion,
+  announceForfeit,
+  announceMatchTime,
+  announceReinstatement,
+  announceStaffResult,
+} from './staff-actions.ts';
 import { fakeContext, fakeGateway } from './testing.ts';
 
 // What Discord shows after a staff action taken on the website (phase 3f): the result or forfeit
@@ -264,5 +270,63 @@ describe('announceMatchTime', () => {
         files: [{ name: 'match-3-time.png' }],
       },
     });
+  });
+});
+
+describe('exclusion and reinstatement by staff (3f-4)', () => {
+  const MANAGER = { id: '700000000000000002', displayName: 'Manager' };
+
+  it('tells the team why directly, and the results channel without the reason', async () => {
+    const { db, gateway, context } = league();
+    setTeamOwner(db, STAFF, { teamId: 3, member: MANAGER }, 100);
+    const reply = excludeTeam(db, STAFF, { teamId: 3, reason: 'Triche avérée' }, NOW);
+    if (!reply.ok) throw new Error(reply.error);
+    await announceExclusion(context, {
+      team: reply.team.name,
+      reason: reply.reason,
+      excluded: reply.excluded,
+      resultsChannelId: reply.resultsChannelId,
+      queueChannelId: reply.queueChannelId,
+    });
+    expect(gateway.direct[0]?.message.content).toContain('Raison : Triche avérée');
+    expect(gateway.posted).toHaveLength(1);
+    expect(gateway.posted[0]?.channelId).toBe(RESULTS);
+    expect(gateway.posted[0]?.message.content).toMatch(/^Charlie est exclue de la saison\./);
+    expect(gateway.posted[0]?.message.content).not.toContain('Triche');
+  });
+
+  it('tells the team it is back, and announces it', async () => {
+    const { db, gateway, context } = league();
+    setTeamOwner(db, STAFF, { teamId: 3, member: MANAGER }, 100);
+    excludeTeam(db, STAFF, { teamId: 3, reason: 'Triche' }, NOW);
+    const reply = reinstateTeam(db, STAFF, { teamId: 3, reason: 'Appel accepté' }, NOW);
+    if (!reply.ok) throw new Error(reply.error);
+    await announceReinstatement(context, reply);
+    expect(gateway.direct).toEqual([
+      {
+        userId: MANAGER.id,
+        message: {
+          content: 'Ton équipe Charlie est réintégrée dans la saison.\nRaison : Appel accepté',
+        },
+      },
+    ]);
+    expect(gateway.posted.map((post) => [post.channelId, post.message.content])).toEqual([
+      [RESULTS, 'Charlie est réintégrée dans la saison.'],
+    ]);
+  });
+
+  it('tells staff when the team could not be told directly', async () => {
+    const { db, gateway, context } = league();
+    setTeamOwner(db, STAFF, { teamId: 3, member: MANAGER }, 100);
+    excludeTeam(db, STAFF, { teamId: 3, reason: 'Triche' }, NOW);
+    const reply = reinstateTeam(db, STAFF, { teamId: 3, reason: 'Appel' }, NOW);
+    if (!reply.ok) throw new Error(reply.error);
+    const failing = {
+      ...gateway,
+      sendDirectMessage: () => Promise.reject(new Error('Direct messages are closed')),
+    };
+    await announceReinstatement({ ...context, gateway: failing }, reply);
+    expect(gateway.posted.at(-1)).toMatchObject({ channelId: QUEUE });
+    expect(gateway.posted.at(-1)?.message.content).toContain('Message privé non remis');
   });
 });

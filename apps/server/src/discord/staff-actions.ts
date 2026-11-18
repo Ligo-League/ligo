@@ -1,6 +1,6 @@
 import type { ExclusionSummary } from '@ligo/core';
 import { t, type Locale } from '../i18n/index.ts';
-import type { Excluded } from '../services/exclusions.ts';
+import type { Excluded, ReinstateReply } from '../services/exclusions.ts';
 import type { ForfeitReply } from '../services/forfeits.ts';
 import type { RecordResultReply } from '../services/results.ts';
 import type { SetTimeReply } from '../services/scheduling.ts';
@@ -216,5 +216,28 @@ export async function announceExclusion(
   ].filter((line): line is string => line !== undefined);
   if (queue.length > 0) {
     await notify(context, details.queueChannelId, { content: queue.join('\n') });
+  }
+}
+
+/**
+ * A team reinstated on appeal: its officials are told directly with the reason, the results
+ * channel announces it, and staff hear of any direct message that could not be delivered.
+ */
+export async function announceReinstatement(
+  context: Announcer,
+  reply: Extract<ReinstateReply, { ok: true }>,
+): Promise<void> {
+  const { locale } = context;
+  const team = reply.team.name;
+  const failed = await tellMembers(context, reply.memberIds, {
+    content: t(locale, 'exclusion.dmReinstated', { team, reason: reply.reason }),
+  });
+  await notify(context, reply.resultsChannelId, {
+    content: t(locale, 'exclusion.announceReinstated', { team }),
+  });
+  if (failed > 0) {
+    await notify(context, reply.queueChannelId, {
+      content: t(locale, 'exclusion.dmFailed', { team, count: failed }),
+    });
   }
 }
