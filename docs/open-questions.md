@@ -187,29 +187,6 @@ section 16.
   the shown one. No rank limit is enforced.
 - **Answer:**
 
-#### O-35 · The mercato's moves
-
-- **Question:** the rulebook gives 3 moves per team per window and a one-day block, but not:
-  1. what counts as one move: is a swap (one player in, one out) one move or two? Do a starter
-     becoming a substitute, or a change of captain, count?
-  2. what the one-day block blocks: the transferred player playing any official match for 24 hours
-     after the move is approved?
-  3. whether the incoming player must accept the move with their own account (as with a roster's
-     invitation link), or whether the official's request is enough;
-  4. who opens a window and for how long, and whether the schema's `lock_hours` is the one-day
-     block or something else;
-  5. whether a team can change a player outside a window at all, for example with an exception
-     granted by staff.
-- **Why it matters:** the mercato (phase 3f) counts moves against the window's limit, blocks
-  players and decides what the request form asks.
-- **Until answered:** the mercato is not built; the moves between rosters of one club are M-22.
-- **Answer:** Well, first of all, the mercato is not required to exist for a tournament. e.g. Someone hosting a small league that doesn't care about players' moves can just make it available at all time (meaning the mercato window is ALWAYS open in a sense). Second of all, to answer the questions in order:
-  1. A swap is considered to be one move so it's cleaner and we can have the "X replaced Y in the roster" instead of having "X left" "Y arrived" in the history. A change of captain and a starter becoming a substitute is not move blocked by the mercato as it doesn't change the players, they are still in the same roster. But it can be counted as a move (at least for the history of the team, not necessarily to be shown on the mercato quick access menu)
-  2. Yes, it makes the player unavailable to play for 24 full hours. The reason is to avoid one player jumping from one team to another all the time during the mid season mercato window and just, idk, stomp/carry some teams.
-  3. The incoming player must accept the move when he is invited to join. When he is kicked out of a team, he can't give consent. The official request creates an invite link for the player. This is to avoid someone being claimed by a team they don't want to play in.
-  4. The tournament staff opens the window and decides for how long. And yes, I believe the schema's lock_hours is the amount of hours a player is blocked.
-  5. A team can change a player in their official roster with an exception granted by staff.
-
 ### Team tools
 
 #### O-22 · Recruitment board
@@ -418,30 +395,6 @@ section 16.
   Discord: the owner, or the Manage Server permission. A competition created on the website is
   linked to a server by its creator first, so the bot must be installed before.
 
-#### M-22 · Rosters of one club in the same league
-
-- **Question:** in Season 3, Greed has two rosters in Ligue 1 and Nova two in Ligue 2. Is there a
-  limit on rosters of one club per division? May a player move between rosters of the same club
-  during a season, and does that count as a mercato move? In a match between two rosters of one
-  club, may a club official report the result for one side and confirm it for the other?
-- **Why it matters:** registration checks, the mercato, and the permission check on match
-  actions: today someone acting for both sides counts for side A.
-- **Until answered:** no limit per division (a setting, empty by default). A move between rosters
-  of one club is an ordinary mercato move. In a match between two rosters of one club, club
-  officials may act for neither side: each roster's own officials report and confirm.
-- **Answer (partial, maintainer, 14 November 2026):** several rosters of one club in a division
-  must be possible (Greed Academy won Ligue 2 in Season 3 and was promoted next to Greed), with
-  the limit as a setting. Moves between rosters of one club must be settings too, to cover the
-  possible cases: a move like any other mercato move, a player of the academy standing in for some
-  matches of the main roster, or a promotion from the academy to the main roster. A season of
-  almost three months is long for a grassroots team to keep the same five. Still open: those
-  settings' exact values, designed with the mercato (phase 3f). The intra-club match rule is kept.
-- **Answer (maintainer, 16 November 2026):** make it as lenient as possible in settings, so any
-  level of competition can be played: the grassroots case above is the starting point, but an
-  amateur league where teams keep the same five (prize money or other incentives) must be
-  possible too, with moves between a club's rosters limited or closed by its settings. The
-  settings themselves are designed with the mercato step.
-
 #### M-23 · The Ubisoft account at registration
 
 - **Question:** R6 players are identified by their Ubisoft `profileID`, but a player knows their
@@ -522,6 +475,66 @@ section 16.
 - **Answer:**
 
 ## Answered
+
+#### O-35 · The mercato's moves
+
+- **Question:** the rulebook gives 3 moves per team per window and a one-day block, but not:
+  1. what counts as one move: is a swap (one player in, one out) one move or two? Do a starter
+     becoming a substitute, or a change of captain, count?
+  2. what the one-day block blocks: the transferred player playing any official match for 24 hours
+     after the move is approved?
+  3. whether the incoming player must accept the move with their own account (as with a roster's
+     invitation link), or whether the official's request is enough;
+  4. who opens a window and for how long, and whether the schema's `lock_hours` is the one-day
+     block or something else;
+  5. whether a team can change a player outside a window at all, for example with an exception
+     granted by staff.
+- **Why it matters:** the mercato (phase 3f) counts moves against the window's limit, blocks
+  players and decides what the request form asks.
+- **Answer:** Well, first of all, the mercato is not required to exist for a tournament. e.g. Someone hosting a small league that doesn't care about players' moves can just make it available at all time (meaning the mercato window is ALWAYS open in a sense). Second of all, to answer the questions in order:
+  1. A swap is considered to be one move so it's cleaner and we can have the "X replaced Y in the roster" instead of having "X left" "Y arrived" in the history. A change of captain and a starter becoming a substitute is not move blocked by the mercato as it doesn't change the players, they are still in the same roster. But it can be counted as a move (at least for the history of the team, not necessarily to be shown on the mercato quick access menu)
+  2. Yes, it makes the player unavailable to play for 24 full hours. The reason is to avoid one player jumping from one team to another all the time during the mid season mercato window and just, idk, stomp/carry some teams.
+  3. The incoming player must accept the move when he is invited to join. When he is kicked out of a team, he can't give consent. The official request creates an invite link for the player. This is to avoid someone being claimed by a team they don't want to play in.
+  4. The tournament staff opens the window and decides for how long. And yes, I believe the schema's lock_hours is the amount of hours a player is blocked.
+  5. A team can change a player in their official roster with an exception granted by staff.
+- **Follow-up answers (maintainer, 19 November 2026):**
+  1. The incoming player gives consent by joining the roster's own players through its
+     invitation link; the move then picks among them. No link per move.
+  2. A player in another roster's lineup in the same competition leaves it when the move is
+     approved; the move counts for the receiving roster only, and the old one is told.
+  3. The block applies to every incoming player.
+  4. A new competition's mercato is always open by default, with no limit, no block and staff
+     approval; LFR has windows, 3 moves per team and a 24-hour block.
+  5. Staff exceptions: staff apply the move themselves, with a reason, at any time; it is not
+     counted against the window's limit.
+
+#### M-22 · Rosters of one club in the same league
+
+- **Question:** in Season 3, Greed has two rosters in Ligue 1 and Nova two in Ligue 2. Is there a
+  limit on rosters of one club per division? May a player move between rosters of the same club
+  during a season, and does that count as a mercato move? In a match between two rosters of one
+  club, may a club official report the result for one side and confirm it for the other?
+- **Why it matters:** registration checks, the mercato, and the permission check on match
+  actions: today someone acting for both sides counts for side A.
+- **Until answered:** no limit per division (a setting, empty by default). A move between rosters
+  of one club is an ordinary mercato move. In a match between two rosters of one club, club
+  officials may act for neither side: each roster's own officials report and confirm.
+- **Answer (partial, maintainer, 14 November 2026):** several rosters of one club in a division
+  must be possible (Greed Academy won Ligue 2 in Season 3 and was promoted next to Greed), with
+  the limit as a setting. Moves between rosters of one club must be settings too, to cover the
+  possible cases: a move like any other mercato move, a player of the academy standing in for some
+  matches of the main roster, or a promotion from the academy to the main roster. A season of
+  almost three months is long for a grassroots team to keep the same five. Still open: those
+  settings' exact values, designed with the mercato (phase 3f). The intra-club match rule is kept.
+- **Answer (maintainer, 16 November 2026):** make it as lenient as possible in settings, so any
+  level of competition can be played: the grassroots case above is the starting point, but an
+  amateur league where teams keep the same five (prize money or other incentives) must be
+  possible too, with moves between a club's rosters limited or closed by its settings. The
+  settings themselves are designed with the mercato step.
+- **Answer (maintainer, 19 November 2026):** a setting `intra_club_moves` with three values:
+  `counted` (an ordinary mercato move; default and LFR), `free` (no window needed, not counted)
+  and `closed` (refused). Loans, an academy player standing in for some matches of the main
+  roster, will come later: the design doc says so, and they need each match's lineup (phase 5).
 
 #### M-35 · A roster's players during a season under way
 
@@ -779,6 +792,8 @@ section 16.
   16 November; development stays on localhost until then. Phase 2's acceptance week, a full week of
   results through teams, runs during the Season 3 shadow run alongside phase 3 instead of blocking
   it.
+- **Update (18 November 2026):** the domain `ligoleague.eu` is bought (Porkbun). The VPS follows;
+  until it runs, nothing is served on the domain and development stays on localhost.
 
 #### M-07 · Image templates without JSX
 

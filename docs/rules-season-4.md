@@ -64,9 +64,10 @@ M-xx : mainteneur).
   une division, ses matchs et sa ligne au classement, sous son propre nom.
 - Plusieurs équipes d'un même club peuvent jouer dans la même division (Greed et GREED Academy en
   Ligue 1). La limite par division est un réglage, sans limite en Saison 4.
-- Les mouvements de joueurs entre équipes d'un même club (mouvement de mercato, remplacement sur
-  quelques matchs, promotion de l'académie) seront des réglages, fixés avec le mercato.
-- **Statut** : Décidée ; les mouvements entre équipes d'un club sont Provisoires (M-22).
+- Les mouvements de joueurs entre équipes d'un même club comptent comme des mouvements de mercato
+  ordinaires (réglage : ils peuvent aussi être libres ou interdits). Le prêt d'un joueur de
+  l'académie pour quelques matchs de l'équipe principale viendra plus tard.
+- **Statut** : Décidée (M-22, mainteneur, 19 novembre 2026).
 - **Appliquée par** : les clubs arrivent avec l'inscription sur le site (phase 3).
 
 ### 2.2 Responsables
@@ -108,8 +109,8 @@ M-xx : mainteneur).
   requis.
 - **Serveur Discord** : un joueur doit être membre du serveur Discord de la LFR pour rejoindre
   une équipe.
-- **Changements d'effectif** : libres jusqu'au début de la saison, puis uniquement pendant les
-  fenêtres de mercato annoncées : 3 mouvements par équipe, un joueur transféré est bloqué un jour.
+- **Changements d'effectif** : libres jusqu'au début de la saison, puis uniquement par le
+  mercato (section 2.5).
 - La publication des statistiques des joueurs fait partie de la **politique de confidentialité
   et des conditions d'utilisation de Ligo**, que chaque joueur accepte en créant son compte. Sans
   compte, et donc sans cet accord, un joueur ne peut pas figurer dans un effectif.
@@ -138,7 +139,7 @@ M-xx : mainteneur).
   qui peut inscrire l'équipe (propriétaire, managers du club, managers de l'équipe, pas le
   coach) compose l'effectif sur la page de l'inscription ou retire l'inscription ; le staff valide sur `/staff`, en choisissant
   la division (12 équipes au plus), ou refuse avec une raison. La validation donne à l'équipe sa
-  place et l'effectif de la saison. Le mercato viendra ensuite.
+  place et l'effectif de la saison. Le mercato suit (section 2.5).
 
 ### 2.4 Demandes des équipes
 
@@ -159,6 +160,35 @@ M-xx : mainteneur).
   la demande ; le bot la poste dans la file du staff avec les boutons Approuver et Refuser ; le refus exige une raison. Le bot rappelle la demande au staff 6 heures
   avant l'échéance. L'équipe reçoit la réponse en message privé. Toutes les demandes sont
   conservées, quelle que soit leur issue.
+
+### 2.5 Mercato
+
+- Après le début de la saison, l'effectif ne change que pendant les **fenêtres de mercato**,
+  ouvertes par le staff de la ligue, qui fixe leur durée.
+- **3 mouvements** au plus par équipe et par fenêtre. Un mouvement, c'est un joueur qui part, un
+  joueur qui arrive, ou un **remplacement** (l'un part, l'autre arrive), qui compte pour un
+  seul. Les demandes en attente comptent aussi.
+- Passer de titulaire à remplaçant, ou changer de capitaine, n'est pas un mouvement : c'est
+  possible à tout moment, et l'historique de l'équipe le garde. Le capitaine ne peut pas être
+  retiré : l'équipe nomme d'abord un autre capitaine.
+- Un joueur n'arrive dans une équipe que s'il l'a rejointe lui-même, par son lien d'invitation :
+  personne n'est enrôlé contre son gré. Un joueur retiré n'a pas à donner son accord.
+- Un joueur qui vient d'une autre équipe de la compétition la quitte dès que le mouvement est
+  validé ; le mouvement compte pour l'équipe qui l'accueille seulement, et l'ancienne équipe est
+  prévenue.
+- Tout joueur qui arrive est **bloqué 24 heures** pleines après la validation : il ne peut ni
+  jouer ni être capitaine pendant ce temps.
+- Un mouvement entre deux équipes d'un même club compte comme un autre (section 2.1).
+- Le staff valide chaque mouvement, ou le refuse avec une raison. Il peut aussi accorder une
+  **exception** hors fenêtre : il fait alors le mouvement lui-même, avec une raison, sans qu'il
+  compte dans la limite.
+- Chaque mouvement validé est annoncé dans le salon `#mercato` de la ligue.
+- Ce sont des réglages de la compétition : une autre ligue peut laisser son mercato ouvert toute
+  la saison, sans limite ni blocage, ou fermer les mouvements entre équipes d'un club.
+- **Statut** : Décidée (O-35, mainteneur, 16 et 19 novembre 2026).
+- **Appliquée par** : le staff ouvre les fenêtres sur le site ; les responsables déposent les
+  mouvements sur la page de gestion de l'équipe ; le staff les valide sur `/staff` ou avec les
+  boutons du bot (phase 3, en cours).
 
 ## 3. Programmation des matchs
 

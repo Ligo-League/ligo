@@ -178,7 +178,7 @@ Everything hangs off org → competition → season → division → stage → m
 
 **Clubs and rosters** (maintainer, 14 November 2026)
 
-A team is a club, the team's organisation, with one or more rosters: Not Scam has Katsuki and Valkyr, W Mates has W Mates and Spectrum. A roster is what plays: it holds a slot in a division, plays the matches and has a line in the standings. Season 3 already has clubs with two rosters: Greed in Ligue 1 (Greed Esport and GREED Academy), Nova in Ligue 2 (Nova 1 and Nova 2), and W Mates in both leagues. Each roster has its own name and tag; the club's logo and colours are the default, and a roster may have its own (Nova 2's colours differ). In Ligo "organisation" (`org`) already names the group that runs the leagues, such as MBL Group, so a team's organisation is called a **club** in the code and these documents. The club holds the city, legal status, socials, team Discord and the default logo and colours; a roster has its own name and tag, may have its own logo and colours, and is shown under its own name. A club belongs to the group and may have rosters in several titles: a main roster and an academy per game is common (M-21). Several rosters of one club may play in the same division, with a limit as a setting; moves of players between a club's rosters are settings too, designed with the mercato (M-22). In a match between two rosters of one club, club officials act for neither side: each roster's own officials and captain do.
+A team is a club, the team's organisation, with one or more rosters: Not Scam has Katsuki and Valkyr, W Mates has W Mates and Spectrum. A roster is what plays: it holds a slot in a division, plays the matches and has a line in the standings. Season 3 already has clubs with two rosters: Greed in Ligue 1 (Greed Esport and GREED Academy), Nova in Ligue 2 (Nova 1 and Nova 2), and W Mates in both leagues. Each roster has its own name and tag; the club's logo and colours are the default, and a roster may have its own (Nova 2's colours differ). In Ligo "organisation" (`org`) already names the group that runs the leagues, such as MBL Group, so a team's organisation is called a **club** in the code and these documents. The club holds the city, legal status, socials, team Discord and the default logo and colours; a roster has its own name and tag, may have its own logo and colours, and is shown under its own name. A club belongs to the group and may have rosters in several titles: a main roster and an academy per game is common (M-21). Several rosters of one club may play in the same division, with a limit as a setting; moves of players between a club's rosters are settings of the mercato (section 7, M-22), and loans of an academy player for some matches come later. In a match between two rosters of one club, club officials act for neither side: each roster's own officials and captain do.
 
 **Players across games** (maintainer, 16 November 2026)
 
@@ -236,7 +236,8 @@ slot           id, division_id, team_id, status ('active'|'frozen'|'withdrawn'|'
                forfeits, excluded_at NULL
 roster_entry   id, season_id, team_id, player_id, role ('player'|'sub'), captain, valid_from, valid_to NULL
                -- phase 3: the coach moved to team_staff; one captain, a player
-mercato_window id, season_id, opens_at, closes_at, max_moves_per_team, lock_hours
+mercato_window id, season_id, opens_at, closes_at, max_moves_per_team NULL, lock_hours,
+               created_by, created_at, closed_early_at NULL
 stage          id, season_id, division_id NULL, ord,
                kind ('round_robin'|'single_elim'|'double_elim'|'barrage'|'ladder'),
                config_json, status ('draft'|'published'|'closed')
@@ -679,19 +680,27 @@ Each phase adds its own settings to the panel as it adds them to the bot. Who ma
 - **Captain:** a starter, chosen with the lineup. When the captain cannot play a match, the officials or the captain name another starter or substitute of the roster captain for that match, until the result is reported; the usual captain keeps acting too (O-30, O-30b, with M-19). The stand-in is named on the match page (phase 3e, `match_captain`), acts in that match only, like a captain (times, veto, reports), is mentioned for it, and names nobody. Actions taken on the website are announced in the league's schedule channel, mentioning the other side, with the bot's buttons (M-32).
 - **Who may play:** `registration.min_age`, counted on the season's first day (16 in LFR; O-31). Each player gives their birth date on `/me`; nobody else sees it, and staff see only whether the player is old enough (O-33). Other leagues need more conditions as settings, to build when they come (M-31): the Benelux league asks for players aged 18 or older, at least 3 starters living in the Benelux, PC only, and a club based in the Benelux.
 - **Discord server:** each player of the lineup is a member of the league's Discord server before staff can approve; until then, the registration's page shows the server's invitation link, set on the league's Discord page (M-30).
-- **Lineup changes:** allowed until `registration.lineup_lock_days` before the season starts, then only during mercato windows. A league without windows changes lineups only between seasons (M-29; 0 days in LFR for now, O-32).
+- **Lineup changes:** allowed until `registration.lineup_lock_days` before the season starts, then through the mercato: in its windows, or at any time when the league's mercato is always open (M-29, O-35; 0 days in LFR for now, O-32).
 - **Invitation link:** the roster's, `/invite/<invitation>/<token>`, where the token is an HMAC of the invitation's row and a random nonce under the server's secret, with its own purpose. It is never stored: its officials see it again on the roster's page, and a new nonce voids the old link. It expires after the group's `rosters.invite_days` (7). Registrations filed before M-33 had their own link (`/join/…`), withdrawn by migration 0019.
 - **Rules acceptance:** the manager accepts the current rulebook version ("lu et approuvé"), stored with `rules_version_id` and a timestamp, replacing the signed page.
 - **Stats consent:** no longer a separate choice (maintainer, 16 November 2026). Ligo's Privacy Policy and terms of use say that the platform publishes players' stats, and accepting them is required to create an account, so every registered player has accepted it. The acceptance is stored with the policy version and a timestamp, like the rulebook's. Withdrawal, players seen in replays without an account, and players who joined before the policy are M-36.
 - **Division:** a new roster usually starts in Ligue 2; when places are free in Ligue 1, because teams left, staff may place it there. A roster that does not come back loses its place and registers again like a new one (O-26). Staff choose the division when they approve.
 - **Status:** a registration is a `registration` request, which staff see as soon as it is filed, without a notification (M-29). Incomplete submissions are frozen until fixed, as the rulebook says; staff approve, which gives the roster its slot and the season's roster entries (the club and roster exist already, M-33), or refuse with a reason. Approval also checks the roster's officials against the league's limits.
 
-**Mercato**
+**Mercato** (O-35 and M-22, maintainer, 16 and 19 November 2026)
 
-- Moves can only be requested inside an open `mercato_window`.
-- Each team gets at most 3 moves per window. A player can't be on two rosters in the same competition, and a transferred player is blocked for 1 day.
-- The form carries the rulebook's fields: Ubisoft ID, Discord account, nationality, rank, old team, new team.
-- Each move is a `roster_move` request that staff approve or refuse with a reason. Approval posts it in `#mercato` and updates rosters and Discord roles through the reconciler.
+A league decides how strict its mercato is: a small league may let teams change players at any time, a competitive one only in announced windows. Everything below is a setting of `ruleset.mercato`, as lenient as possible by default, so any level of competition can be played (M-22).
+
+- **When:** `mode` is `open` (moves any time during the season; the default) or `windows` (only while a `mercato_window` is open; LFR). Tournament staff open a window and choose how long it lasts. Until `registration.lineup_lock_days` before the season starts, lineups change freely, without a move (M-29).
+- **How many:** a window has `max_moves_per_team` (null: no limit) and `lock_hours`, filled from the settings `max_moves_per_team` (default null; 3 in LFR) and `lock_hours` (default 0; 24 in LFR) when staff open it, and editable there. In `open` mode the same two settings apply to the whole season. A team's count is its pending and approved `roster_move` requests in that window, so it cannot file more than it may get.
+- **What a move is:** one player out, one player in, or a swap (one out, one in), which counts once and reads "X a remplacé Y" in the history. A starter becoming a substitute, or a new captain, is no move: it applies at once at any time, within the lineup's limits, and stays in the team's history. The captain cannot be moved out; the team names another captain first.
+- **Consent:** nobody is claimed by a team they do not want to play for. The incoming player is one of the roster's own players (`roster_player`), who joined through its invitation link with their own account (M-33); the move picks among them. A player moved out has no say.
+- **Transfer:** a player in another roster's lineup in the same competition leaves it when the move is approved (one roster per competition). The move counts for the receiving roster only; the old one is told and loses no move.
+- **Block:** every incoming player starts `lock_hours` after approval (`roster_entry.valid_from`): until then they are listed but neither play nor act as captain. It stops a player from jumping between teams in a mid-season window to carry them.
+- **Moves inside a club** (M-22): `intra_club_moves` is `counted` (an ordinary move; default and LFR), `free` (no window needed, not counted) or `closed` (refused). **Loans** are planned: an academy player standing in for some matches of the club's main roster, without leaving the academy. They need each match's lineup, so they come with phase 5 at the earliest.
+- **Approval:** each move is a `roster_move` request, answered as `ruleset.requests.approval.roster_move` says (`staff` by default: approve, or refuse with a reason). Approval re-checks everything, ends the outgoing player's roster entry, starts the incoming one after the block, and posts the move in the league's `#mercato` channel. Discord roles follow through the reconciler, and the `roster-move` image comes in phase 4.
+- **Exceptions:** staff may apply a move themselves at any time, window or not, with a reason. It is audited, posted in `#mercato`, and not counted against the window's limit (O-35).
+- **The form** carries what the rulebook asks (Ubisoft name, Discord account, nationality, rank, old and new team), read from each player's own page, not typed by the officials.
 
 **Manual stat grid**
 
@@ -1186,7 +1195,7 @@ Every league gets results, standings, channels and manual stats from the shared 
 
 ## 13. Hosting and operations
 
-One VPS at €5–9 a month runs everything with Docker Compose. R2 holds raw replays and continuous SQLite backups. A restore from nothing must take under an hour.
+The domain is `ligoleague.eu` (Porkbun, bought 18 November 2026, renewed yearly); in production `PUBLIC_URL` is `https://ligoleague.eu`. One VPS at €5–9 a month runs everything with Docker Compose. R2 holds raw replays and continuous SQLite backups. A restore from nothing must take under an hour.
 
 **Provider options** (prices before VAT, checked November 2026)
 
@@ -1349,7 +1358,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | National              | Later; not needed until the owner launches it                                                                                             | You           |
 | Rosters               | 5 players and up to 2 substitutes, one of them captain; one owner, up to 3 managers and 1 coach (settings)                                | Rulebook, you |
 | Team requests         | Teams change their own officials by request; staff approve additions and handovers within 24 h, with a reason to refuse; removals apply at once | You           |
-| Mercato               | Announced windows only, 3 moves per team, 1-day block for a transferred player                                                            | Rulebook      |
+| Mercato               | Settings (O-35, M-22): always open by default; LFR announced windows only, 3 moves per team, every incoming player blocked 24 h; a swap is one move; consent through the roster's link; staff exceptions | Rulebook, you |
 | MOSS                  | Mandatory for every match                                                                                                                 | Rulebook      |
 | Replays | Mandatory from Season 4, at least one team per match; accepting public player stats is required at registration | You |
 | Platform structure    | Ligo's own home at `/`, games as entry points, `/:org/:comp/:season`, global clubs and teams, a league alone is an organisation with one competition, Ligo's mark always in the footer (section 7) | You |
