@@ -18,14 +18,14 @@ describe('logging in with Discord', () => {
     const { request, oauth, logIn, jar } = site();
     const home = await (await request('/')).text();
     expect(home).toContain('href="/auth/login?next=%2F"');
-    const redirect = await request('/auth/login?next=/c/lfr/saison-3');
+    const redirect = await request('/auth/login?next=/mbl-group/lfr/saison-3');
     expect(redirect.status).toBe(302);
     expect(redirect.headers.get('location')).toBe(
       `https://discord.example/authorize?state=${encodeURIComponent(oauth.states[0] ?? '')}`,
     );
-    const back = await logIn('/c/lfr/saison-3');
+    const back = await logIn('/mbl-group/lfr/saison-3');
     expect(back.status).toBe(303);
-    expect(back.headers.get('location')).toBe('/c/lfr/saison-3');
+    expect(back.headers.get('location')).toBe('/mbl-group/lfr/saison-3');
     expect(jar.has('ligo_session')).toBe(true);
     const page = await (await request('/')).text();
     expect(page).toContain('<a href="/me">Ana</a>');
@@ -91,7 +91,7 @@ describe('logging in with Discord', () => {
   });
 
   it('only goes back to a path of this site', () => {
-    expect(safeNext('/c/lfr/saison-3')).toBe('/c/lfr/saison-3');
+    expect(safeNext('/mbl-group/lfr/saison-3')).toBe('/mbl-group/lfr/saison-3');
     for (const next of ['//evil.example', 'https://evil.example', '/\\evil', 'me', '', undefined]) {
       expect(safeNext(next)).toBe('/me');
     }
@@ -130,9 +130,9 @@ describe('sessions', () => {
 
   it('sends every address to PUBLIC_URL, so cookies and origins match', async () => {
     const { request } = site();
-    const moved = await request('http://127.0.0.1:3000/c/lfr/saison-3?x=1');
+    const moved = await request('http://127.0.0.1:3000/mbl-group/lfr/saison-3?x=1');
     expect(moved.status).toBe(308);
-    expect(moved.headers.get('location')).toBe(`${ORIGIN}/c/lfr/saison-3?x=1`);
+    expect(moved.headers.get('location')).toBe(`${ORIGIN}/mbl-group/lfr/saison-3?x=1`);
     const posted = await request('http://127.0.0.1:3000/me/consent', { method: 'POST' });
     expect(posted.status).toBe(403);
   });

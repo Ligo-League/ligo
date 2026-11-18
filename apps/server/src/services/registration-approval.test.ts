@@ -2,7 +2,13 @@ import type { RegistrationRole } from '@ligo/core';
 import { schema } from '@ligo/db';
 import { and, eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { kairosRoster, registrationDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import {
+  kairosRoster,
+  LFR_KEY,
+  registrationDatabase,
+  TEST_GUILD,
+  TEST_STAFF_ROLE,
+} from '../testing.ts';
 import type { Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import {
@@ -36,7 +42,7 @@ async function setup(starters = 5) {
   const filed = fileRegistration(
     db,
     kairos.owner,
-    'lfr',
+    LFR_KEY,
     { teamId: kairos.teamId, rulesVersionId: 1, rulesAccepted: true },
     NOW,
   );

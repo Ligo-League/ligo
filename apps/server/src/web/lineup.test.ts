@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { TeamRole } from '@ligo/core';
 import { ensurePlayer } from '../services/players.ts';
 import { fileRegistration } from '../services/registrations.ts';
-import { kairosRoster, registrationDatabase } from '../testing.ts';
+import { kairosRoster, LFR_KEY, registrationDatabase } from '../testing.ts';
 import { openLineups, TEST_NOW, testSite } from './testing.ts';
 
 // The registration's page beyond picking the lineup (register.test.ts): withdrawing, who may
@@ -19,7 +19,7 @@ async function site() {
   fileRegistration(
     db,
     kairos.owner,
-    'lfr',
+    LFR_KEY,
     { teamId: kairos.teamId, rulesVersionId: 1, rulesAccepted: true },
     TEST_NOW,
   );

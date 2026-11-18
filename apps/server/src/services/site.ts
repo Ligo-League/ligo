@@ -10,14 +10,15 @@ import {
   type LeagueMatch,
 } from '@ligo/db';
 import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
-import { seasonSlug } from './paths.ts';
+import { findCompetitionAt, type CompetitionKey } from './competitions.ts';
+import { competitionPath, seasonSlug } from './paths.ts';
 import { leagueStandings, type StandingsTable } from './standings.ts';
 import { listTeamStaff } from './team-staff.ts';
 
 // What the public pages of the website show (design doc section 7). Everything here is public:
 // results count only once validated, and no evidence or Discord ID leaves this module.
 
-const { competition, division, game, match, season, slot, team } = schema;
+const { competition, division, game, match, org, season, slot, team } = schema;
 
 type SeasonStatus = (typeof season.$inferSelect)['status'];
 type Side = 'a' | 'b';
@@ -29,7 +30,8 @@ export interface SeasonLink {
 }
 
 export interface LeagueLinks {
-  competition: { name: string; slug: string };
+  /** `path` is its address, `/:org/:comp`. */
+  competition: { name: string; slug: string; path: string };
   seasons: SeasonLink[];
 }
 
@@ -41,9 +43,14 @@ const seasonLink = (row: typeof season.$inferSelect): SeasonLink => ({
 
 /** Every competition with its seasons, newest first. */
 export function listLeagues(db: Pick<Db, 'select'>): LeagueLinks[] {
-  const competitions = db.select().from(competition).orderBy(asc(competition.name)).all();
-  return competitions.map((row) => ({
-    competition: { name: row.name, slug: row.slug },
+  const competitions = db
+    .select({ row: competition, orgSlug: org.slug })
+    .from(competition)
+    .innerJoin(org, eq(competition.orgId, org.id))
+    .orderBy(asc(competition.name))
+    .all();
+  return competitions.map(({ row, orgSlug }) => ({
+    competition: { name: row.name, slug: row.slug, path: competitionPath(orgSlug, row.slug) },
     seasons: db
       .select()
       .from(season)
@@ -124,7 +131,7 @@ export interface DivisionFixtures {
 export type SeasonPage =
   | {
       ok: true;
-      competition: { name: string; slug: string; timeZone: string };
+      competition: { name: string; slug: string; path: string; timeZone: string };
       season: SeasonLink;
       /** The competition's other seasons, for links. */
       seasons: SeasonLink[];
@@ -137,23 +144,13 @@ export type SeasonPage =
 
 const LATEST_RESULTS = 10;
 
-function findCompetition(db: Pick<Db, 'select'>, slug: string) {
-  // One instance holds the group's leagues; their slugs do not repeat across organisations.
-  return db
-    .select()
-    .from(competition)
-    .where(eq(competition.slug, slug))
-    .orderBy(asc(competition.id))
-    .get();
-}
-
 /** A season's page: standings, fixtures by division and week, and the latest results. */
 export function seasonPage(
   db: Pick<Db, 'select'>,
-  competitionSlug: string,
+  key: CompetitionKey,
   wantedSeason: string,
 ): SeasonPage {
-  const found = findCompetition(db, competitionSlug);
+  const found = findCompetitionAt(db, key);
   if (!found) return { ok: false, error: 'not_found' };
   const seasons = db
     .select()
@@ -192,6 +189,7 @@ export function seasonPage(
     competition: {
       name: found.name,
       slug: found.slug,
+      path: found.path,
       timeZone: found.schedulingJson.time_zone,
     },
     season: seasonLink(row),
@@ -204,7 +202,7 @@ export function seasonPage(
 
 /** Where a roster plays: the latest season it has a place in, if any. */
 interface Place {
-  competition: { name: string; slug: string; timeZone: string };
+  competition: { name: string; slug: string; path: string; timeZone: string };
   season: SeasonLink;
   division: string;
   seasonId: number;
@@ -212,11 +210,12 @@ interface Place {
 
 function latestPlace(db: Pick<Db, 'select'>, teamId: number): Place | null {
   const latest = db
-    .select({ season, competition, division: division.name })
+    .select({ season, competition, division: division.name, orgSlug: org.slug })
     .from(slot)
     .innerJoin(division, eq(slot.divisionId, division.id))
     .innerJoin(season, eq(division.seasonId, season.id))
     .innerJoin(competition, eq(season.competitionId, competition.id))
+    .innerJoin(org, eq(competition.orgId, org.id))
     .where(and(eq(slot.teamId, teamId), ne(season.status, 'registration')))
     .orderBy(desc(season.startsOn), desc(season.id))
     .get();
@@ -225,6 +224,7 @@ function latestPlace(db: Pick<Db, 'select'>, teamId: number): Place | null {
     competition: {
       name: latest.competition.name,
       slug: latest.competition.slug,
+      path: competitionPath(latest.orgSlug, latest.competition.slug),
       timeZone: latest.competition.schedulingJson.time_zone,
     },
     season: seasonLink(latest.season),
@@ -372,7 +372,7 @@ export type MatchPage =
       ok: true;
       match: MatchLine;
       league: {
-        competition: { name: string; slug: string; timeZone: string };
+        competition: { name: string; slug: string; path: string; timeZone: string };
         season: SeasonLink;
       };
       /** The host the veto named; null when the teams agree on it, or before the veto. */
@@ -387,11 +387,12 @@ export function matchPage(db: Pick<Db, 'select'>, matchId: number): MatchPage {
   if (!found) return { ok: false, error: 'not_found' };
   const [line] = linesOf(db, [found]);
   const context = db
-    .select({ season, competition, hostSide: match.hostSide })
+    .select({ season, competition, hostSide: match.hostSide, orgSlug: org.slug })
     .from(match)
     .innerJoin(schema.stage, eq(match.stageId, schema.stage.id))
     .innerJoin(season, eq(schema.stage.seasonId, season.id))
     .innerJoin(competition, eq(season.competitionId, competition.id))
+    .innerJoin(org, eq(competition.orgId, org.id))
     .where(eq(match.id, found.id))
     .get();
   if (!line || !context) return { ok: false, error: 'not_found' };
@@ -415,6 +416,7 @@ export function matchPage(db: Pick<Db, 'select'>, matchId: number): MatchPage {
       competition: {
         name: context.competition.name,
         slug: context.competition.slug,
+        path: competitionPath(context.orgSlug, context.competition.slug),
         timeZone: context.competition.schedulingJson.time_zone,
       },
       season: seasonLink(context.season),

@@ -1,7 +1,7 @@
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
 import { fakeGateway } from '../discord/testing.ts';
-import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import { leagueDatabase, LFR_KEY, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import {
   adminCompetitions,
   discordSettings,
@@ -52,9 +52,9 @@ function setup() {
 describe('discordSettings', () => {
   it('shows the league’s server and the servers its admin manages, with their roles', async () => {
     const { db, gateway, user } = setup();
-    expect(await discordSettings(db, gateway, user, 'lfr', null)).toEqual({
+    expect(await discordSettings(db, gateway, user, LFR_KEY, null)).toEqual({
       ok: true,
-      competition: { id: 1, name: 'LFR', slug: 'lfr' },
+      competition: { id: 1, name: 'LFR', slug: 'lfr', path: '/mbl-group/lfr' },
       current: { guildId: TEST_GUILD, staffRoleId: TEST_STAFF_ROLE, inviteUrl: null },
       servers: [
         { id: TEST_GUILD, name: 'LFR Staging' },
@@ -69,30 +69,32 @@ describe('discordSettings', () => {
         ],
       },
     });
-    expect(await discordSettings(db, gateway, user, 'lfr', OTHER_GUILD)).toMatchObject({
+    expect(await discordSettings(db, gateway, user, LFR_KEY, OTHER_GUILD)).toMatchObject({
       chosen: { id: OTHER_GUILD, roles: [{ id: NEW_STAFF_ROLE }] },
     });
   });
 
   it('is for those who may manage the league’s server only', async () => {
     const { db, gateway, user } = setup();
-    expect(await discordSettings(db, gateway, user, 'nope', null)).toEqual({
+    expect(
+      await discordSettings(db, gateway, user, { ...LFR_KEY, competition: 'nope' }, null),
+    ).toEqual({
       ok: false,
       error: 'not_found',
     });
     const other = { playerId: 99, discordUserId: '799999999999999999' };
-    expect(await discordSettings(db, gateway, other, 'lfr', null)).toEqual({
+    expect(await discordSettings(db, gateway, other, LFR_KEY, null)).toEqual({
       ok: false,
       error: 'not_admin',
     });
     // Managing another server is not enough.
     gateway.guilds.set(TEST_GUILD, { name: 'LFR Staging', roles: [], managers: [] });
-    expect(await discordSettings(db, gateway, user, 'lfr', null)).toEqual({
+    expect(await discordSettings(db, gateway, user, LFR_KEY, null)).toEqual({
       ok: false,
       error: 'not_admin',
     });
     gateway.failing = true;
-    expect(await discordSettings(db, gateway, user, 'lfr', null)).toEqual({
+    expect(await discordSettings(db, gateway, user, LFR_KEY, null)).toEqual({
       ok: false,
       error: 'discord_unavailable',
     });
@@ -107,7 +109,7 @@ describe('saveDiscordSettings', () => {
         db,
         gateway,
         user,
-        'lfr',
+        LFR_KEY,
         change({ staffRoleId: ADMINS_ROLE }),
         NOW,
       ),
@@ -136,7 +138,7 @@ describe('saveDiscordSettings', () => {
         db,
         gateway,
         user,
-        'lfr',
+        LFR_KEY,
         change({ guildId: OTHER_GUILD, staffRoleId: NEW_STAFF_ROLE, inviteUrl: invite }),
         NOW,
       ),
@@ -173,7 +175,7 @@ describe('saveDiscordSettings', () => {
     ],
   ] as const)('refuses %s', async (_label, overrides, error) => {
     const { db, gateway, user, change } = setup();
-    expect(await saveDiscordSettings(db, gateway, user, 'lfr', change(overrides), NOW)).toEqual({
+    expect(await saveDiscordSettings(db, gateway, user, LFR_KEY, change(overrides), NOW)).toEqual({
       ok: false,
       error,
     });
@@ -185,7 +187,7 @@ describe('saveDiscordSettings', () => {
     gateway.invites.set('https://discord.gg/other', { guildId: OTHER_GUILD, expiresAt: null });
     gateway.invites.set('https://discord.gg/week', { guildId: TEST_GUILD, expiresAt: NOW + 1 });
     const save = (inviteUrl: string) =>
-      saveDiscordSettings(db, gateway, user, 'lfr', change({ inviteUrl }), NOW);
+      saveDiscordSettings(db, gateway, user, LFR_KEY, change({ inviteUrl }), NOW);
     expect(await save('https://discord.gg/other')).toEqual({
       ok: false,
       error: 'invite_other_server',
@@ -215,13 +217,13 @@ describe('saveDiscordSettings', () => {
         db,
         gateway,
         user,
-        'lfr',
+        LFR_KEY,
         change({ guildId: OTHER_GUILD, staffRoleId: NEW_STAFF_ROLE }),
         NOW,
       ),
     ).toEqual({ ok: false, error: 'server_taken' });
     const other = { playerId: 99, discordUserId: '799999999999999999' };
-    expect(await saveDiscordSettings(db, gateway, other, 'lfr', change(), NOW)).toEqual({
+    expect(await saveDiscordSettings(db, gateway, other, LFR_KEY, change(), NOW)).toEqual({
       ok: false,
       error: 'not_admin',
     });
@@ -231,7 +233,9 @@ describe('saveDiscordSettings', () => {
 describe('adminCompetitions', () => {
   it('lists the competitions whose server the user may manage', async () => {
     const { db, gateway, user } = setup();
-    expect(await adminCompetitions(db, gateway, ANA_ID)).toEqual([{ name: 'LFR', slug: 'lfr' }]);
+    expect(await adminCompetitions(db, gateway, ANA_ID)).toEqual([
+      { name: 'LFR', path: '/mbl-group/lfr' },
+    ]);
     expect(await adminCompetitions(db, gateway, '799999999999999999')).toEqual([]);
     gateway.failing = true;
     expect(await adminCompetitions(db, gateway, user.discordUserId)).toEqual([]);

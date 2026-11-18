@@ -118,7 +118,7 @@ export function leagueStandings(
     ok: true,
     competition: league.competition.name,
     season: league.season.name,
-    path: seasonPath(league.competition.slug, league.season),
+    path: seasonPath(league.org.slug, league.competition.slug, league.season),
     theme: league.competition.themeJson,
     tables,
   };

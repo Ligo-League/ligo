@@ -66,7 +66,7 @@ function standingsTable(locale: Locale, table: StandingsTable): Html {
     </div>`;
 }
 
-/** `/c/:competition/:season`: standings per division, latest results, fixtures by week. */
+/** `/:org/:competition/:season`: standings per division, latest results, fixtures by week. */
 export function seasonPageView(locale: Locale, page: Data): Page {
   const { competition, season } = page;
   const title = t(locale, 'web.season.title', {
@@ -75,12 +75,12 @@ export function seasonPageView(locale: Locale, page: Data): Page {
   });
   const others = page.seasons.filter((other) => other.slug !== season.slug);
   const body = html`<h1>${title}</h1>
-    <p><a href="/c/${competition.slug}/rules">${t(locale, 'web.season.rules')}</a></p>
+    <p><a href="${competition.path}/rules">${t(locale, 'web.season.rules')}</a></p>
     ${
       others.length > 0
         ? html`<p class="muted">
             ${t(locale, 'web.season.others')}
-            ${others.map((other) => html` <a href="/c/${competition.slug}/${other.slug}">${other.name}</a>`)}
+            ${others.map((other) => html` <a href="${competition.path}/${other.slug}">${other.name}</a>`)}
           </p>`
         : ''
     }

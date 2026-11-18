@@ -19,7 +19,7 @@ export function matchPageView(
   const title = t(locale, 'web.match.title', { a: match.a.name, b: match.b.name });
   const when = match.scheduledAt === null ? null : formatWhen(locale, match.scheduledAt, timeZone);
   const body = html`<p class="muted">
-      <a href="/c/${league.competition.slug}/${league.season.slug}"
+      <a href="${league.competition.path}/${league.season.slug}"
         >${t(locale, 'web.match.context', {
           competition: league.competition.name,
           season: league.season.name,

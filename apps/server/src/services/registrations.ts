@@ -12,6 +12,8 @@ import {
 } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
 import { and, asc, desc, eq, inArray, lte } from 'drizzle-orm';
+import { findCompetitionAt, type CompetitionKey } from './competitions.ts';
+import { competitionPath } from './paths.ts';
 import { teamsOfPlayer } from './permissions.ts';
 import { profilesOf } from './profiles.ts';
 import {
@@ -34,8 +36,8 @@ const { auditLog, competition, player, registrationPlayer, request, rulesVersion
 type Reader = Pick<Db, 'select'>;
 
 /** The competition, its season taking registrations, and the rulebook in force. */
-function openSeason(db: Reader, competitionSlug: string, now: number) {
-  const found = db.select().from(competition).where(eq(competition.slug, competitionSlug)).get();
+function openSeason(db: Reader, key: CompetitionKey, now: number) {
+  const found = findCompetitionAt(db, key);
   if (!found) return { ok: false as const, error: 'not_found' as const };
   const open = db
     .select()
@@ -72,9 +74,10 @@ export function registrationLink(
     guildId === null
       ? undefined
       : db
-          .select({ competition })
+          .select({ competition, orgSlug: schema.org.slug })
           .from(schema.leagueGuild)
           .innerJoin(competition, eq(schema.leagueGuild.competitionId, competition.id))
+          .innerJoin(schema.org, eq(competition.orgId, schema.org.id))
           .where(eq(schema.leagueGuild.guildId, guildId))
           .get();
   if (!linked) return { ok: false, error: 'not_linked' };
@@ -87,7 +90,7 @@ export function registrationLink(
   if (!open) return { ok: false, error: 'closed', competition: linked.competition.name };
   return {
     ok: true,
-    path: `/c/${linked.competition.slug}/register`,
+    path: `${competitionPath(linked.orgSlug, linked.competition.slug)}/register`,
     competition: linked.competition.name,
     season: open.name,
   };
@@ -159,7 +162,8 @@ export type RegistrationClosed = { ok: false; error: 'not_found' | 'closed' | 'n
 export type RegistrationForm =
   | {
       ok: true;
-      competition: { id: number; name: string; slug: string };
+      /** `path` is its address, `/:org/:comp`. */
+      competition: { id: number; name: string; slug: string; path: string };
       season: { id: number; name: string };
       rules: { id: number; version: string };
       /** The rosters the member may register now. */
@@ -170,11 +174,11 @@ export type RegistrationForm =
 
 export function registrationForm(
   db: Reader,
-  competitionSlug: string,
+  key: CompetitionKey,
   playerId: number,
   now: number,
 ): RegistrationForm {
-  const open = openSeason(db, competitionSlug, now);
+  const open = openSeason(db, key, now);
   if (!open.ok) return open;
   return {
     ok: true,
@@ -182,6 +186,7 @@ export function registrationForm(
       id: open.competition.id,
       name: open.competition.name,
       slug: open.competition.slug,
+      path: open.competition.path,
     },
     season: { id: open.season.id, name: open.season.name },
     rules: open.rules,
@@ -212,12 +217,12 @@ export type FileRegistrationReply =
 export function fileRegistration(
   db: Db,
   playerId: number,
-  competitionSlug: string,
+  key: CompetitionKey,
   input: RegistrationRequest,
   now: number,
 ): FileRegistrationReply {
   return db.transaction((tx): FileRegistrationReply => {
-    const open = openSeason(tx, competitionSlug, now);
+    const open = openSeason(tx, key, now);
     if (!open.ok) return open;
     const errors: FieldErrors<RegistrationFieldError> = [];
     // Checked inside the transaction: another registration of the roster may have just been filed.

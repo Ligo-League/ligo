@@ -49,7 +49,7 @@ describe('renderMarkdown', () => {
         '[BLAST](https://blast.tv/rules)',
         '[Écrire](mailto:staff@example.org)',
         '[Plus haut](#reglement)',
-        '[Classement](/c/lfr/saison-3)',
+        '[Classement](/mbl-group/lfr/saison-3)',
         '[Piège](javascript:alert(1))',
         '[Piège 2](data:text/html,<script>alert(1)</script>)',
         '[Piège 3](//evil.example/x)',
@@ -60,7 +60,7 @@ describe('renderMarkdown', () => {
     );
     expect(rendered).toContain('href="mailto:staff@example.org"');
     expect(rendered).toContain('href="#reglement"');
-    expect(rendered).toContain('href="/c/lfr/saison-3"');
+    expect(rendered).toContain('href="/mbl-group/lfr/saison-3"');
     expect(rendered).not.toMatch(/javascript:|data:|evil\.example"/i);
     expect(rendered).toContain('Piège');
   });

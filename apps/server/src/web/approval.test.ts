@@ -4,7 +4,13 @@ import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { setLineup } from '../services/registration-lineup.ts';
 import { fileRegistration } from '../services/registrations.ts';
-import { kairosRoster, registrationDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import {
+  kairosRoster,
+  LFR_KEY,
+  registrationDatabase,
+  TEST_GUILD,
+  TEST_STAFF_ROLE,
+} from '../testing.ts';
 import { openLineups, TEST_NOW, testSite } from './testing.ts';
 
 // Staff answer registrations on `/staff` (maintainer, 14 and 15 November 2026). Ana registered her
@@ -19,7 +25,7 @@ async function site(starters = 5) {
   const filed = fileRegistration(
     db,
     kairos.owner,
-    'lfr',
+    LFR_KEY,
     { teamId: kairos.teamId, rulesVersionId: 1, rulesAccepted: true },
     TEST_NOW,
   );

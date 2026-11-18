@@ -18,7 +18,7 @@ export interface MeData {
   /** The game account form, filled with what is stored or what was just typed. */
   game: Html;
   /** The competitions whose Discord server the player may manage. */
-  adminOf: { name: string; slug: string }[];
+  adminOf: { name: string; path: string }[];
   /** The registrations the player filed or joined, answered ones included. */
   registrations: ReturnType<typeof registrationsOf>;
   /** The rosters the player plays for, outside any season (M-33). */
@@ -112,7 +112,7 @@ export function mePage(locale: Locale, data: MeData): Page {
             ${t(locale, 'web.me.discordSettings')}
             ${data.adminOf.map(
               (competition, index) =>
-                html`${index > 0 ? ', ' : ''}<a href="/c/${competition.slug}/discord"
+                html`${index > 0 ? ', ' : ''}<a href="${competition.path}/discord"
                     >${competition.name}</a
                   >`,
             )}

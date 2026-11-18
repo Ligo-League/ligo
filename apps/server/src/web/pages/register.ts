@@ -156,7 +156,7 @@ export function rosterFields(
     </label>`;
 }
 
-/** `/c/:competition/register`: one of the member's rosters, the rulebook accepted. */
+/** `/:org/:competition/register`: one of the member's rosters, the rulebook accepted. */
 export function registerFormView(
   locale: Locale,
   form: FormData,
@@ -195,7 +195,7 @@ export function registerFormView(
         ? html`<p class="card flash error">${t(locale, 'web.register.fix')}</p>`
         : ''
     }
-    <form class="card stack" method="post" action="/c/${form.competition.slug}/register">
+    <form class="card stack" method="post" action="${form.competition.path}/register">
       ${csrfField(state.csrf)}
       <input type="hidden" name="rules_version" value="${String(form.rules.id)}" />
       <label for="team">${t(locale, 'web.register.roster')}</label>
@@ -218,7 +218,7 @@ export function registerFormView(
       ${fieldError('roster')}
       <h2>${t(locale, 'web.register.rules')}</h2>
       <p>
-        <a href="/c/${form.competition.slug}/rules" target="_blank" rel="noopener"
+        <a href="${form.competition.path}/rules" target="_blank" rel="noopener"
           >${t(locale, 'web.register.rules.read', { version: form.rules.version })}</a
         >
       </p>

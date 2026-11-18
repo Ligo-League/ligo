@@ -1,6 +1,8 @@
 import { schema, type Db } from '@ligo/db';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { DiscordGateway } from '../discord/gateway.ts';
+import { findCompetitionAt, type CompetitionKey } from './competitions.ts';
+import { competitionPath } from './paths.ts';
 
 // A league's Discord server, set on the website (design doc section 7; maintainer, 15 November
 // 2026). Every league has its own server. Rights come from Discord: whoever may manage the
@@ -33,8 +35,8 @@ export function isDiscordInvite(text: string): boolean {
 
 type Reader = Pick<Db, 'select'>;
 
-function linked(db: Reader, competitionSlug: string) {
-  const found = db.select().from(competition).where(eq(competition.slug, competitionSlug)).get();
+function linked(db: Reader, key: CompetitionKey) {
+  const found = findCompetitionAt(db, key);
   if (!found) return null;
   const guild = db
     .select()
@@ -59,9 +61,9 @@ async function access(
   db: Reader,
   gateway: Gateway,
   user: DiscordAdmin,
-  competitionSlug: string,
+  key: CompetitionKey,
 ): Promise<Access> {
-  const found = linked(db, competitionSlug);
+  const found = linked(db, key);
   if (!found) return { ok: false, error: 'not_found' };
   if (!found.guild || user.discordUserId === null) return { ok: false, error: 'not_admin' };
   let servers: { id: string; name: string }[];
@@ -80,7 +82,8 @@ async function access(
 export type DiscordSettingsView =
   | {
       ok: true;
-      competition: { id: number; name: string; slug: string };
+      /** `path` is its address, `/:org/:comp`. */
+      competition: { id: number; name: string; slug: string; path: string };
       current: { guildId: string; staffRoleId: string; inviteUrl: string | null };
       /** The servers the user manages where the bot is: the league may move to one of them. */
       servers: { id: string; name: string }[];
@@ -94,10 +97,10 @@ export async function discordSettings(
   db: Reader,
   gateway: Gateway,
   user: DiscordAdmin,
-  competitionSlug: string,
+  key: CompetitionKey,
   chosenGuildId: string | null,
 ): Promise<DiscordSettingsView> {
-  const allowed = await access(db, gateway, user, competitionSlug);
+  const allowed = await access(db, gateway, user, key);
   if (!allowed.ok) return allowed;
   const { found, guild, servers } = allowed;
   const chosen =
@@ -116,6 +119,7 @@ export async function discordSettings(
       id: found.competition.id,
       name: found.competition.name,
       slug: found.competition.slug,
+      path: found.competition.path,
     },
     current: { guildId: guild.guildId, staffRoleId: guild.staffRoleId, inviteUrl: guild.inviteUrl },
     servers,
@@ -151,11 +155,11 @@ export async function saveDiscordSettings(
   db: Db,
   gateway: Gateway,
   user: DiscordAdmin,
-  competitionSlug: string,
+  key: CompetitionKey,
   change: DiscordSettingsChange,
   now: number,
 ): Promise<{ ok: true } | { ok: false; error: SaveDiscordError }> {
-  const allowed = await access(db, gateway, user, competitionSlug);
+  const allowed = await access(db, gateway, user, key);
   if (!allowed.ok) return allowed;
   const { found, guild, servers } = allowed;
   const fail = (error: SaveDiscordError) => ({ ok: false as const, error });
@@ -245,7 +249,7 @@ export async function adminCompetitions(
   db: Reader,
   gateway: Pick<DiscordGateway, 'manageableGuilds'>,
   discordUserId: string | null,
-): Promise<{ name: string; slug: string }[]> {
+): Promise<{ name: string; path: string }[]> {
   if (discordUserId === null) return [];
   let servers: { id: string }[];
   try {
@@ -256,10 +260,12 @@ export async function adminCompetitions(
   const ids = servers.map((server) => server.id);
   if (ids.length === 0) return [];
   return db
-    .select({ name: competition.name, slug: competition.slug })
+    .select({ name: competition.name, slug: competition.slug, orgSlug: schema.org.slug })
     .from(leagueGuild)
     .innerJoin(competition, eq(leagueGuild.competitionId, competition.id))
+    .innerJoin(schema.org, eq(competition.orgId, schema.org.id))
     .where(and(inArray(leagueGuild.guildId, ids)))
     .orderBy(asc(competition.name))
-    .all();
+    .all()
+    .map((row) => ({ name: row.name, path: competitionPath(row.orgSlug, row.slug) }));
 }

@@ -20,7 +20,7 @@ export function clubPageView(locale: Locale, page: Data): Page {
             <span class="muted">(${roster.tag})</span> ·
             ${
               roster.place
-                ? html`<a href="/c/${roster.place.competition.slug}/${roster.place.season.slug}"
+                ? html`<a href="${roster.place.competition.path}/${roster.place.season.slug}"
                     >${t(locale, 'web.team.season', {
                       competition: roster.place.competition.name,
                       season: roster.place.season.name,

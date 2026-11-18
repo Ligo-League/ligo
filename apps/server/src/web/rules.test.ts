@@ -19,7 +19,7 @@ function rulesSite() {
   const site = testSite({ users: { 'code-lea': LEA } });
   site.setRoles([TEST_STAFF_ROLE], LEA.id);
   const publish = (fields: Record<string, string> = {}) =>
-    site.post('/c/lfr/rules', {
+    site.post('/mbl-group/lfr/rules', {
       version: 'Saison 3',
       effective_on: '2027-01-01',
       voted_on: '',
@@ -32,38 +32,38 @@ function rulesSite() {
 describe('the rulebook page', () => {
   it('says so when no version is in force, and links from the season page', async () => {
     const site = rulesSite();
-    const page = await site.request('/c/lfr/rules');
+    const page = await site.request('/mbl-group/lfr/rules');
     expect(page.status).toBe(200);
     const text = await page.text();
     expect(text).toContain('<h1>Règlement — LFR</h1>');
     expect(text).toContain('Aucun règlement n’est en vigueur pour le moment.');
     expect(text).not.toContain('Publier une nouvelle version');
-    expect(await (await site.request('/c/lfr/saison-3')).text()).toContain(
-      '<a href="/c/lfr/rules">Règlement</a>',
+    expect(await (await site.request('/mbl-group/lfr/saison-3')).text()).toContain(
+      '<a href="/mbl-group/lfr/rules">Règlement</a>',
     );
   });
 
   it('lets staff publish a version, shown to everyone with raw HTML as text', async () => {
     const site = rulesSite();
-    await site.logIn('/c/lfr/rules', 'code-lea');
-    expect(await (await site.request('/c/lfr/rules')).text()).toContain(
-      '<a href="/c/lfr/rules/new">Publier une nouvelle version</a>',
+    await site.logIn('/mbl-group/lfr/rules', 'code-lea');
+    expect(await (await site.request('/mbl-group/lfr/rules')).text()).toContain(
+      '<a href="/mbl-group/lfr/rules/new">Publier une nouvelle version</a>',
     );
-    const form = await (await site.request('/c/lfr/rules/new')).text();
+    const form = await (await site.request('/mbl-group/lfr/rules/new')).text();
     expect(form).toContain('name="_csrf"');
     // Today in Paris, as the default date.
     expect(form).toContain('value="2027-01-15"');
 
     const published = await site.publish();
     expect(published.status).toBe(303);
-    expect(published.headers.get('location')).toBe('/c/lfr/rules/1');
+    expect(published.headers.get('location')).toBe('/mbl-group/lfr/rules/1');
     // Stored with Unix line breaks, whatever the browser sent.
     expect(site.db.select().from(schema.rulesVersion).get()?.markdown).toBe(
       RULES.replaceAll('\r\n', '\n'),
     );
 
     site.jar.clear();
-    const text = await (await site.request('/c/lfr/rules')).text();
+    const text = await (await site.request('/mbl-group/lfr/rules')).text();
     expect(text.replace(/\s+/g, ' ')).toContain(
       'Version « Saison 3 » · en vigueur depuis le 1 janvier 2027',
     );
@@ -75,24 +75,24 @@ describe('the rulebook page', () => {
 
   it('starts a new version from the one in force, and shows an old one as such', async () => {
     const site = rulesSite();
-    await site.logIn('/c/lfr/rules', 'code-lea');
+    await site.logIn('/mbl-group/lfr/rules', 'code-lea');
     await site.publish();
-    expect(await (await site.request('/c/lfr/rules/new')).text()).toContain(
+    expect(await (await site.request('/mbl-group/lfr/rules/new')).text()).toContain(
       '&lt;script&gt;alert(1)&lt;/script&gt;</textarea>',
     );
     await site.publish({ version: 'Saison 3, v2', effective_on: '2027-01-10', markdown: 'v2' });
 
-    const current = await (await site.request('/c/lfr/rules')).text();
+    const current = await (await site.request('/mbl-group/lfr/rules')).text();
     expect(current).toContain('Version « Saison 3, v2 »');
-    expect(current).toContain('<a href="/c/lfr/rules/1">Saison 3</a>');
-    const old = await (await site.request('/c/lfr/rules/1')).text();
+    expect(current).toContain('<a href="/mbl-group/lfr/rules/1">Saison 3</a>');
+    const old = await (await site.request('/mbl-group/lfr/rules/1')).text();
     expect(old).toContain('Ancienne version, qui n’est plus en vigueur.');
-    expect(old).toContain('<a href="/c/lfr/rules">Voir la version en vigueur</a>');
+    expect(old).toContain('<a href="/mbl-group/lfr/rules">Voir la version en vigueur</a>');
   });
 
   it('shows the form again with the error and what was typed', async () => {
     const site = rulesSite();
-    await site.logIn('/c/lfr/rules', 'code-lea');
+    await site.logIn('/mbl-group/lfr/rules', 'code-lea');
     await site.publish();
     const again = await site.publish({ markdown: 'Texte <b>gardé</b>' });
     expect(again.status).toBe(400);
@@ -105,17 +105,19 @@ describe('the rulebook page', () => {
   it('refuses anyone but the league’s staff, re-checked in Discord at each request', async () => {
     const site = rulesSite();
     // Not logged in: the form sends to the login.
-    const anonymous = await site.request('/c/lfr/rules/new');
+    const anonymous = await site.request('/mbl-group/lfr/rules/new');
     expect(anonymous.status).toBe(303);
-    expect(anonymous.headers.get('location')).toBe('/auth/login?next=%2Fc%2Flfr%2Frules%2Fnew');
+    expect(anonymous.headers.get('location')).toBe(
+      '/auth/login?next=%2Fmbl-group%2Flfr%2Frules%2Fnew',
+    );
 
-    await site.logIn('/c/lfr/rules');
-    expect((await site.request('/c/lfr/rules/new')).status).toBe(403);
+    await site.logIn('/mbl-group/lfr/rules');
+    expect((await site.request('/mbl-group/lfr/rules/new')).status).toBe(403);
     expect((await site.publish()).status).toBe(403);
 
     // Léa, staff, loses the role in Discord: refused at once (the test reader keeps nothing).
     site.jar.clear();
-    await site.logIn('/c/lfr/rules', 'code-lea');
+    await site.logIn('/mbl-group/lfr/rules', 'code-lea');
     site.setRoles([], LEA.id);
     expect((await site.publish()).status).toBe(403);
     expect(site.db.select().from(schema.rulesVersion).all()).toEqual([]);
@@ -123,8 +125,8 @@ describe('the rulebook page', () => {
 
   it('refuses a form without the session’s token', async () => {
     const site = rulesSite();
-    await site.logIn('/c/lfr/rules', 'code-lea');
-    const response = await site.request('/c/lfr/rules', {
+    await site.logIn('/mbl-group/lfr/rules', 'code-lea');
+    const response = await site.request('/mbl-group/lfr/rules', {
       method: 'POST',
       headers: {
         Origin: 'http://localhost:3000',
@@ -135,12 +137,14 @@ describe('the rulebook page', () => {
     expect(response.status).toBe(403);
   });
 
-  it.each(['/c/lfr/rules/99', '/c/lfr/rules/abc', '/c/nope/rules', '/c/nope/rules/new'])(
-    'answers 404 for %s',
-    async (path) => {
-      const site = rulesSite();
-      await site.logIn('/c/lfr/rules', 'code-lea');
-      expect((await site.request(path)).status).toBe(404);
-    },
-  );
+  it.each([
+    '/mbl-group/lfr/rules/99',
+    '/mbl-group/lfr/rules/abc',
+    '/c/nope/rules',
+    '/c/nope/rules/new',
+  ])('answers 404 for %s', async (path) => {
+    const site = rulesSite();
+    await site.logIn('/mbl-group/lfr/rules', 'code-lea');
+    expect((await site.request(path)).status).toBe(404);
+  });
 });

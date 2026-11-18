@@ -5,7 +5,7 @@ import { csrfField, pageOf, type Page } from '../layout.ts';
 
 type Settings = Extract<DiscordSettingsView, { ok: true }>;
 
-/** `/c/:competition/discord`: the league's server, its staff role and its invitation link. */
+/** `/:org/:competition/discord`: the league's server, its staff role and its invitation link. */
 export function discordSettingsPage(
   locale: Locale,
   data: Settings,
@@ -18,7 +18,7 @@ export function discordSettingsPage(
   },
 ): Page {
   const title = t(locale, 'web.discord.title', { competition: data.competition.name });
-  const action = `/c/${data.competition.slug}/discord`;
+  const action = `${data.competition.path}/discord`;
   const moving = data.chosen.id !== data.current.guildId;
   const body = html`<h1>${title}</h1>
     ${

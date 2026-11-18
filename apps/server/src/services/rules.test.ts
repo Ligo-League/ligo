@@ -1,6 +1,6 @@
 import { schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
-import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import { leagueDatabase, LFR_KEY, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import type { Actor } from './permissions.ts';
 import { publishRules, rulesPage } from './rules.ts';
 
@@ -110,7 +110,7 @@ describe('rulesPage', () => {
   };
 
   it('shows the version in force, and lists every version, the latest first', () => {
-    const page = rulesPage(twoVersions(), 'lfr', NOW);
+    const page = rulesPage(twoVersions(), LFR_KEY, NOW);
     if (!page.ok) throw new Error(page.error);
     expect(page.competition).toMatchObject({ name: 'LFR', slug: 'lfr', timeZone: 'Europe/Paris' });
     expect(page.currentId).toBe(1);
@@ -122,20 +122,23 @@ describe('rulesPage', () => {
   });
 
   it('moves to a new version on the day it comes into force', () => {
-    const page = rulesPage(twoVersions(), 'lfr', DEC_1);
+    const page = rulesPage(twoVersions(), LFR_KEY, DEC_1);
     expect(page.ok && page.shown?.version).toBe('Saison 3, v2');
   });
 
   it('shows any version of the competition asked for, and no other', () => {
     const db = twoVersions();
-    const page = rulesPage(db, 'lfr', NOW, 2);
+    const page = rulesPage(db, LFR_KEY, NOW, 2);
     expect(page.ok && [page.shown?.markdown, page.currentId]).toEqual(['Sept-zéro.', 1]);
-    expect(rulesPage(db, 'lfr', NOW, 99)).toEqual({ ok: false, error: 'not_found' });
-    expect(rulesPage(db, 'lfv', NOW)).toEqual({ ok: false, error: 'not_found' });
+    expect(rulesPage(db, LFR_KEY, NOW, 99)).toEqual({ ok: false, error: 'not_found' });
+    expect(rulesPage(db, { ...LFR_KEY, competition: 'lfv' }, NOW)).toEqual({
+      ok: false,
+      error: 'not_found',
+    });
   });
 
   it('shows nothing in force before the first version comes into force', () => {
-    const page = rulesPage(twoVersions(), 'lfr', NOV_1 - 1);
+    const page = rulesPage(twoVersions(), LFR_KEY, NOV_1 - 1);
     expect(page.ok && [page.shown, page.currentId, page.versions.length]).toEqual([null, null, 2]);
   });
 });

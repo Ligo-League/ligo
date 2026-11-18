@@ -55,7 +55,7 @@ export function teamPageView(locale: Locale, page: Data): Page {
     ${
       season
         ? html`<p>
-            <a href="/c/${season.competition.slug}/${season.season.slug}"
+            <a href="${season.competition.path}/${season.season.slug}"
               >${t(locale, 'web.team.season', {
                 competition: season.competition.name,
                 season: season.season.name,

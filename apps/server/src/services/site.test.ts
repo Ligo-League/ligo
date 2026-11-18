@@ -1,7 +1,7 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import { leagueDatabase, LFR_KEY, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { listLeagues, matchPage, seasonPage, teamPage } from './site.ts';
 import { setTeamOwner } from './team-staff.ts';
 
@@ -19,7 +19,7 @@ describe('listLeagues', () => {
   it('lists each competition with its seasons and their URL slugs', () => {
     expect(listLeagues(leagueDatabase())).toEqual([
       {
-        competition: { name: 'LFR', slug: 'lfr' },
+        competition: { name: 'LFR', slug: 'lfr', path: '/mbl-group/lfr' },
         seasons: [{ name: 'Saison 3', slug: 'saison-3', status: 'active' }],
       },
     ]);
@@ -28,7 +28,7 @@ describe('listLeagues', () => {
 
 describe('seasonPage', () => {
   it('finds a season by the slugs of its competition and its name', () => {
-    const page = seasonPage(leagueDatabase(), 'lfr', 'saison-3');
+    const page = seasonPage(leagueDatabase(), LFR_KEY, 'saison-3');
     if (!page.ok) throw new Error(page.error);
     expect(page.competition).toMatchObject({ name: 'LFR', slug: 'lfr' });
     expect(page.season).toEqual({ name: 'Saison 3', slug: 'saison-3', status: 'active' });
@@ -43,7 +43,7 @@ describe('seasonPage', () => {
   it('groups the fixtures by division and week, with scores only for results that count', () => {
     const db = leagueDatabase();
     db.update(schema.match).set({ status: 'reported' }).where(eq(schema.match.id, 1)).run();
-    const page = seasonPage(db, 'lfr', 'saison-3');
+    const page = seasonPage(db, LFR_KEY, 'saison-3');
     if (!page.ok) throw new Error(page.error);
     const [ligue1] = page.fixtures;
     expect(ligue1?.division).toBe('Ligue 1');
@@ -61,7 +61,7 @@ describe('seasonPage', () => {
   });
 
   it('lists the latest results that count, latest week first', () => {
-    const page = seasonPage(leagueDatabase(), 'lfr', 'saison-3');
+    const page = seasonPage(leagueDatabase(), LFR_KEY, 'saison-3');
     if (!page.ok) throw new Error(page.error);
     expect(page.latest.map((line) => [line.id, line.result])).toEqual([
       [2, { kind: 'forfeit', by: 'a' }],
@@ -72,8 +72,11 @@ describe('seasonPage', () => {
 
   it('finds nothing for an unknown competition or season', () => {
     const db = leagueDatabase();
-    expect(seasonPage(db, 'lfv', 'saison-3')).toEqual({ ok: false, error: 'not_found' });
-    expect(seasonPage(db, 'lfr', 'saison-9')).toEqual({ ok: false, error: 'not_found' });
+    expect(seasonPage(db, { ...LFR_KEY, competition: 'lfv' }, 'saison-3')).toEqual({
+      ok: false,
+      error: 'not_found',
+    });
+    expect(seasonPage(db, LFR_KEY, 'saison-9')).toEqual({ ok: false, error: 'not_found' });
   });
 });
 

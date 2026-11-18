@@ -12,7 +12,7 @@ const dateOf = (locale: Locale, at: number, timeZone: string) =>
     timeZone,
   }).format(at);
 
-/** `/c/:competition/rules` and `/c/:competition/rules/:id`: one version, and the history. */
+/** `/:org/:competition/rules` and `/:org/:competition/rules/:id`: one version, and the history. */
 export function rulesPageView(
   locale: Locale,
   page: Data,
@@ -20,7 +20,7 @@ export function rulesPageView(
 ): Page {
   const { competition, shown } = page;
   const date = (at: number) => dateOf(locale, at, competition.timeZone);
-  const base = `/c/${competition.slug}/rules`;
+  const base = `${competition.path}/rules`;
   const title = t(locale, 'web.rules.title', { competition: competition.name });
 
   let notice: Html | string = '';
@@ -90,7 +90,7 @@ export interface RulesFormValues {
   votedOn: string;
 }
 
-/** `/c/:competition/rules/new`: staff publish a version, starting from the one in force. */
+/** `/:org/:competition/rules/new`: staff publish a version, starting from the one in force. */
 export function rulesFormView(
   locale: Locale,
   competition: Data['competition'],
@@ -100,9 +100,9 @@ export function rulesFormView(
   const { values } = form;
   const error: MessageKey | null = form.error && `web.rules.error.${form.error}`;
   const body = html`<h1>${title}</h1>
-    <p><a href="/c/${competition.slug}/rules">${t(locale, 'web.rules.back')}</a></p>
+    <p><a href="${competition.path}/rules">${t(locale, 'web.rules.back')}</a></p>
     ${error ? html`<p class="card flash error">${t(locale, error)}</p>` : ''}
-    <form class="card stack" method="post" action="/c/${competition.slug}/rules">
+    <form class="card stack" method="post" action="${competition.path}/rules">
       ${csrfField(form.csrf)}
       <label for="version">${t(locale, 'web.rules.form.version')}</label>
       <input

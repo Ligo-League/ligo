@@ -1,7 +1,7 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { kairosRoster, leagueDatabase, registrationDatabase } from '../testing.ts';
+import { kairosRoster, leagueDatabase, LFR_KEY, registrationDatabase } from '../testing.ts';
 import { ensurePlayer } from './players.ts';
 import { fileRegistration, registrationForm, registrationStatus } from './registrations.ts';
 
@@ -15,14 +15,14 @@ const REQUEST = { teamId: 0, rulesVersionId: 1, rulesAccepted: true };
 async function setup(db = registrationDatabase()) {
   const kairos = await kairosRoster(db);
   const file = (changes: Partial<typeof REQUEST> = {}, by = kairos.owner) =>
-    fileRegistration(db, by, 'lfr', { ...REQUEST, teamId: kairos.teamId, ...changes }, NOW);
+    fileRegistration(db, by, LFR_KEY, { ...REQUEST, teamId: kairos.teamId, ...changes }, NOW);
   return { db, ...kairos, file };
 }
 
 describe('registrationForm', () => {
   it('opens while a season takes registrations and a rulebook is in force', async () => {
     const { db, owner, teamId } = await setup();
-    expect(registrationForm(db, 'lfr', owner, NOW)).toMatchObject({
+    expect(registrationForm(db, LFR_KEY, owner, NOW)).toMatchObject({
       ok: true,
       competition: { name: 'LFR', slug: 'lfr' },
       season: { name: 'Saison 4' },
@@ -30,14 +30,17 @@ describe('registrationForm', () => {
       rosters: [{ teamId, name: 'Kairos', tag: 'KRS', slug: 'kairos', players: 5 }],
       settings: { starters: 5, subs_max: 2, stats_consent_required: true },
     });
-    expect(registrationForm(db, 'nope', owner, NOW)).toEqual({ ok: false, error: 'not_found' });
+    expect(registrationForm(db, { ...LFR_KEY, competition: 'nope' }, owner, NOW)).toEqual({
+      ok: false,
+      error: 'not_found',
+    });
     const closed = await setup(leagueDatabase());
-    expect(registrationForm(closed.db, 'lfr', closed.owner, NOW)).toEqual({
+    expect(registrationForm(closed.db, LFR_KEY, closed.owner, NOW)).toEqual({
       ok: false,
       error: 'closed',
     });
     const early = await setup(registrationDatabase(NOW + 1));
-    expect(registrationForm(early.db, 'lfr', early.owner, NOW)).toEqual({
+    expect(registrationForm(early.db, LFR_KEY, early.owner, NOW)).toEqual({
       ok: false,
       error: 'no_rules',
     });
@@ -51,10 +54,10 @@ describe('registrationForm', () => {
       1,
     ).id;
     db.insert(schema.teamStaff).values({ teamId, playerId: coach, role: 'coach', since: 1 }).run();
-    expect(registrationForm(db, 'lfr', coach, NOW)).toMatchObject({ ok: true, rosters: [] });
+    expect(registrationForm(db, LFR_KEY, coach, NOW)).toMatchObject({ ok: true, rosters: [] });
     expect(file().ok).toBe(true);
     const owner = db.select().from(schema.clubStaff).get()?.playerId ?? 0;
-    expect(registrationForm(db, 'lfr', owner, NOW)).toMatchObject({ ok: true, rosters: [] });
+    expect(registrationForm(db, LFR_KEY, owner, NOW)).toMatchObject({ ok: true, rosters: [] });
   });
 });
 

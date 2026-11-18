@@ -25,7 +25,7 @@ describe('/standings', () => {
     expect(interaction.replies).toMatchObject([
       {
         content:
-          'Le classement, le calendrier et les résultats sur le site : <http://localhost:3000/c/lfr/saison-3>',
+          'Le classement, le calendrier et les résultats sur le site : <http://localhost:3000/mbl-group/lfr/saison-3>',
         ephemeral: false,
       },
     ]);
@@ -89,7 +89,7 @@ describe('/standings', () => {
           '1  XRA      1  1  0   8   6    +2    3',
           '2  YAN      1  0  1   6   8    -2    0',
           '```',
-          'Le classement, le calendrier et les résultats sur le site : <http://localhost:3000/c/lfr/saison-3>',
+          'Le classement, le calendrier et les résultats sur le site : <http://localhost:3000/mbl-group/lfr/saison-3>',
         ].join('\n'),
       },
     ]);
@@ -109,7 +109,7 @@ describe('/standings', () => {
         '1  XRA    1  1  0   8   6    +2    3',
         '2  YAN    1  0  1   6   8    -2    0',
         '```',
-        'Standings, fixtures and results on the website: <http://localhost:3000/c/lfr/saison-3>',
+        'Standings, fixtures and results on the website: <http://localhost:3000/mbl-group/lfr/saison-3>',
       ].join('\n'),
     );
   });

@@ -16,14 +16,14 @@ export function homePage(locale: Locale, leagues: readonly LeagueLinks[]): Page 
                 ${seasons.map(
                   (season) =>
                     html`<li>
-                      <a href="/c/${competition.slug}/${season.slug}">${season.name}</a>
+                      <a href="${competition.path}/${season.slug}">${season.name}</a>
                       <span class="muted"
                         >· ${t(locale, `web.season.status.${season.status}`)}</span
                       >
                       ${
                         season.status === 'registration'
                           ? html`·
-                              <a href="/c/${competition.slug}/register"
+                              <a href="${competition.path}/register"
                                 >${t(locale, 'web.home.register')}</a
                               >`
                           : ''

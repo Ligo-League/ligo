@@ -1,10 +1,11 @@
 import { zonedDateTime } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { requireStaff, type Actor } from './permissions.ts';
+import { findCompetitionAt, type CompetitionKey } from './competitions.ts';
 import { ensurePlayer } from './players.ts';
 
-const { auditLog, competition, rulesVersion } = schema;
+const { auditLog, rulesVersion } = schema;
 
 // A competition's rulebook (design doc sections 4 and 7). Versions are published by the
 // competition's staff and never edited: teams accept a given version when they register, so a
@@ -24,7 +25,8 @@ export interface RulesVersionSummary {
 export type RulesPage =
   | {
       ok: true;
-      competition: { id: number; name: string; slug: string; timeZone: string };
+      /** `path` is its address, `/:org/:comp`. */
+      competition: { id: number; name: string; slug: string; path: string; timeZone: string };
       /** The version asked for, or the one in force; null before any is in force. */
       shown: (RulesVersionSummary & { markdown: string }) | null;
       currentId: number | null;
@@ -36,16 +38,11 @@ export type RulesPage =
 /** The rulebook of a competition: the version in force, or the one asked for, and the history. */
 export function rulesPage(
   db: Pick<Db, 'select'>,
-  competitionSlug: string,
+  key: CompetitionKey,
   now: number,
   versionId: number | null = null,
 ): RulesPage {
-  const found = db
-    .select()
-    .from(competition)
-    .where(eq(competition.slug, competitionSlug))
-    .orderBy(asc(competition.id))
-    .get();
+  const found = findCompetitionAt(db, key);
   if (!found) return { ok: false, error: 'not_found' };
   const rows = db
     .select()
@@ -70,6 +67,7 @@ export function rulesPage(
       id: found.id,
       name: found.name,
       slug: found.slug,
+      path: found.path,
       timeZone: found.schedulingJson.time_zone,
     },
     shown: shown && { ...summary(shown), markdown: shown.markdown },

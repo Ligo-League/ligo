@@ -30,6 +30,8 @@ import { answerRequest } from '../services/requests.ts';
 import { requireStaff } from '../services/permissions.ts';
 import { publishRules, rulesPage } from '../services/rules.ts';
 import { clubPage, listLeagues, matchPage, seasonPage, teamPage } from '../services/site.ts';
+import { findLegacyCompetition, type CompetitionKey } from '../services/competitions.ts';
+import { competitionPath } from '../services/paths.ts';
 import { staffQueue } from '../services/staff-queue.ts';
 import { layout, type Page } from './layout.ts';
 import { clubPageView } from './pages/club.ts';
@@ -331,8 +333,26 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   app.get('/', (c) => render(c, homePage(locale, listLeagues(db))));
 
   // -------------------------------------------------------------------------------------------
-  // The rulebook. Registered before `/c/:competition/:season`, which would read `rules` as a
-  // season.
+  // The addresses before the move to `/:org/:competition` (phase 3f-5): links already shared keep
+  // working, and lead to the new address for good. Registered before the competition routes,
+  // which would otherwise read `c` as an organisation.
+  app.get('/c/:competition/*', (c) => {
+    const slug = c.req.param('competition');
+    const found = findLegacyCompetition(db, slug);
+    if (!found) return notFound(c);
+    const url = new URL(c.req.url);
+    return c.redirect(found.path + url.pathname.slice(`/c/${slug}`.length) + url.search, 301);
+  });
+
+  // A competition's pages live under its organisation, `/:org/:competition` (design doc section
+  // 7). Each of these routes ends in a word no other route uses in that place; the season page,
+  // `/:org/:competition/:season`, matches any third word, so it is registered last of all.
+  const keyOf = (c: Context<Env>): CompetitionKey => ({
+    org: c.req.param('org') ?? '',
+    competition: c.req.param('competition') ?? '',
+  });
+
+  // The rulebook.
 
   /** The viewer as staff of this competition, asked of Discord now; null for anyone else. */
   const staffOf = async (viewer: Viewer | null, competitionId: number) => {
@@ -343,13 +363,12 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   };
   const showRules = async (c: Context<Env>, versionId: number | null) => {
     const now = deps.now();
-    const page = rulesPage(db, c.req.param('competition') ?? '', now, versionId);
+    const page = rulesPage(db, keyOf(c), now, versionId);
     if (!page.ok) return notFound(c);
     const canPublish = (await staffOf(c.get('viewer'), page.competition.id)) !== null;
     return render(c, rulesPageView(locale, page, { now, canPublish }));
   };
   // The league's Discord server, for whoever may manage it (maintainer, 15 November 2026).
-  // Registered before `/c/:competition/:season`, which would read `discord` as a season.
   const showDiscord = async (
     c: Context<Env>,
     viewer: Viewer,
@@ -357,13 +376,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     state: { values?: { staffRoleId: string; inviteUrl: string }; error?: SaveDiscordError },
   ) => {
     const user = { playerId: viewer.playerId, discordUserId: viewer.discordUserId };
-    const data = await discordSettings(
-      db,
-      deps.gateway,
-      user,
-      c.req.param('competition') ?? '',
-      chosen,
-    );
+    const data = await discordSettings(db, deps.gateway, user, keyOf(c), chosen);
     if (!data.ok) {
       if (data.error === 'not_found') return notFound(c);
       if (data.error === 'not_admin') return forbidden(c);
@@ -390,13 +403,13 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       state.error ? 400 : 200,
     );
   };
-  app.get('/c/:competition/discord', async (c) => {
+  app.get('/:org/:competition/discord', async (c) => {
     if (!login) return notFound(c);
     const viewer = c.get('viewer');
     if (!viewer) return c.redirect(`/auth/login?next=${encodeURIComponent(c.req.path)}`, 303);
     return showDiscord(c, viewer, c.req.query('server') ?? null, {});
   });
-  app.post('/c/:competition/discord', async (c) => {
+  app.post('/:org/:competition/discord', async (c) => {
     const guarded = await guard(c);
     if (guarded instanceof Response) return guarded;
     const { viewer, form } = guarded;
@@ -406,10 +419,12 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       staffRoleId: text('staff_role'),
       inviteUrl: text('invite_url'),
     };
-    const slug = c.req.param('competition');
+    const key = keyOf(c);
     const user = { playerId: viewer.playerId, discordUserId: viewer.discordUserId };
-    const reply = await saveDiscordSettings(db, deps.gateway, user, slug, change, deps.now());
-    if (reply.ok) return c.redirect(`/c/${slug}/discord?saved=1`, 303);
+    const reply = await saveDiscordSettings(db, deps.gateway, user, key, change, deps.now());
+    if (reply.ok) {
+      return c.redirect(`${competitionPath(key.org, key.competition)}/discord?saved=1`, 303);
+    }
     if (reply.error === 'not_found') return notFound(c);
     if (reply.error === 'not_admin') return forbidden(c);
     return showDiscord(c, viewer, change.guildId, {
@@ -418,10 +433,10 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     });
   });
 
-  app.get('/c/:competition/rules', (c) => showRules(c, null));
-  app.get('/c/:competition/rules/new', async (c) => {
+  app.get('/:org/:competition/rules', (c) => showRules(c, null));
+  app.get('/:org/:competition/rules/new', async (c) => {
     if (!login) return notFound(c);
-    const page = rulesPage(db, c.req.param('competition'), deps.now());
+    const page = rulesPage(db, keyOf(c), deps.now());
     if (!page.ok) return notFound(c);
     const viewer = c.get('viewer');
     if (!viewer) return c.redirect(`/auth/login?next=${encodeURIComponent(c.req.path)}`, 303);
@@ -439,15 +454,15 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       rulesFormView(locale, page.competition, { values, error: null, csrf: viewer.csrf }),
     );
   });
-  app.get('/c/:competition/rules/:id', (c) => {
+  app.get('/:org/:competition/rules/:id', (c) => {
     const id = c.req.param('id');
     return ROW_ID.test(id) ? showRules(c, Number(id)) : notFound(c);
   });
-  app.post('/c/:competition/rules', async (c) => {
+  app.post('/:org/:competition/rules', async (c) => {
     const guarded = await guard(c);
     if (guarded instanceof Response) return guarded;
     const { viewer, form } = guarded;
-    const page = rulesPage(db, c.req.param('competition'), deps.now());
+    const page = rulesPage(db, keyOf(c), deps.now());
     if (!page.ok) return notFound(c);
     const actor = await staffOf(viewer, page.competition.id);
     if (!actor) return forbidden(c);
@@ -480,11 +495,11 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
         400,
       );
     }
-    return c.redirect(`/c/${page.competition.slug}/rules/${String(reply.id)}`, 303);
+    return c.redirect(`${page.competition.path}/rules/${String(reply.id)}`, 303);
   });
 
   // -------------------------------------------------------------------------------------------
-  // Registration (phase 3d-4a). Registered before `/c/:competition/:season` too.
+  // Registration (phase 3d-4a).
 
   const registrationClosed = (c: Context<Env>, error: 'not_found' | 'closed' | 'no_rules') =>
     error === 'not_found'
@@ -507,26 +522,26 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
             ),
           );
 
-  app.get('/c/:competition/register', (c) => {
+  app.get('/:org/:competition/register', (c) => {
     if (!login) return notFound(c);
     const viewer = c.get('viewer');
     if (!viewer) return c.redirect(`/auth/login?next=${encodeURIComponent(c.req.path)}`, 303);
-    const form = registrationForm(db, c.req.param('competition'), viewer.playerId, deps.now());
+    const form = registrationForm(db, keyOf(c), viewer.playerId, deps.now());
     if (!form.ok) return registrationClosed(c, form.error);
     c.header('Cache-Control', 'no-store');
     return render(c, registerFormView(locale, form, { teamId: '', errors: [], csrf: viewer.csrf }));
   });
 
-  app.post('/c/:competition/register', async (c) => {
+  app.post('/:org/:competition/register', async (c) => {
     const guarded = await guard(c);
     if (guarded instanceof Response) return guarded;
     const { viewer, form } = guarded;
-    const slug = c.req.param('competition');
-    const text = (key: string) => (typeof form[key] === 'string' ? form[key] : '');
+    const key = keyOf(c);
+    const text = (name: string) => (typeof form[name] === 'string' ? form[name] : '');
     const reply = fileRegistration(
       db,
       viewer.playerId,
-      slug,
+      key,
       {
         teamId: ROW_ID.test(text('team')) ? Number(text('team')) : -1,
         rulesVersionId: Number(text('rules_version')),
@@ -536,7 +551,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     );
     if (reply.ok) return c.redirect(`/registrations/${String(reply.id)}`, 303);
     if (!('errors' in reply)) return registrationClosed(c, reply.error);
-    const again = registrationForm(db, slug, viewer.playerId, deps.now());
+    const again = registrationForm(db, key, viewer.playerId, deps.now());
     if (!again.ok) return registrationClosed(c, again.error);
     c.header('Cache-Control', 'no-store');
     return render(
@@ -564,7 +579,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     const competitionRow = db
       .select({ scheduling: schema.competition.schedulingJson })
       .from(schema.competition)
-      .where(eq(schema.competition.slug, status.competition.slug))
+      .where(eq(schema.competition.id, status.competition.id))
       .get();
     // The roster's officials' page, about other players: kept by no cache.
     c.header('Cache-Control', 'no-store');
@@ -636,10 +651,6 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     return backToRegistration(c, id, reply, 'withdrawn');
   });
 
-  app.get('/c/:competition/:season', (c) => {
-    const page = seasonPage(db, c.req.param('competition'), c.req.param('season'));
-    return page.ok ? render(c, seasonPageView(locale, page)) : notFound(c);
-  });
   app.get('/teams/:slug', (c) => {
     const page = teamPage(db, c.req.param('slug'));
     return page.ok ? render(c, teamPageView(locale, page)) : notFound(c);
@@ -987,6 +998,12 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   });
 
   teamManageRoutes(app, { deps, render, notFound, forbidden, guard });
+
+  // Last of all: any third word is read as a season (see `keyOf`).
+  app.get('/:org/:competition/:season', (c) => {
+    const page = seasonPage(db, keyOf(c), c.req.param('season'));
+    return page.ok ? render(c, seasonPageView(locale, page)) : notFound(c);
+  });
 
   app.notFound(notFound);
   app.onError((error, c) => {
