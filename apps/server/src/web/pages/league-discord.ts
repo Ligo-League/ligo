@@ -29,6 +29,11 @@ export function discordSettingsPage(
         : ''
     }
     <p>${t(locale, 'web.discord.intro')}</p>
+    <p>
+      <a href="${data.competition.path}/discord/channels"
+        >${t(locale, 'web.discord.channelsLink')}</a
+      >
+    </p>
     <form class="card stack" method="get" action="${action}">
       <label for="server">${t(locale, 'web.discord.server')}</label>
       <select id="server" name="server">

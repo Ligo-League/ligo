@@ -1,4 +1,10 @@
-import { DiscordAPIError, PermissionFlagsBits, type Client } from 'discord.js';
+import {
+  ChannelType,
+  DiscordAPIError,
+  PermissionFlagsBits,
+  type Client,
+  type TextChannel,
+} from 'discord.js';
 import { isDiscordAttachmentUrl } from '../services/attachments.ts';
 import type { OutgoingMessage } from './commands/types.ts';
 import { toDiscordMessage } from './outgoing.ts';
@@ -35,6 +41,12 @@ export interface DiscordGateway {
    * @everyone nor a role an integration manages. Null when the bot is not in the server.
    */
   guildRoles(guildId: string): Promise<{ id: string; name: string }[] | null>;
+  /**
+   * The text channels of a server the bot is in, in the order Discord lists them, with their
+   * category's name. Null when the bot is not in the server. The website offers them as the
+   * league's channels, and a channel ID typed by hand is checked against them.
+   */
+  guildTextChannels(guildId: string): Promise<GuildTextChannel[] | null>;
   /** Where an invitation leads, and when it expires; null for one Discord does not know. */
   resolveInvite(url: string): Promise<{ guildId: string; expiresAt: number | null } | null>;
   /**
@@ -46,6 +58,13 @@ export interface DiscordGateway {
     guildId: string,
     username: string,
   ): Promise<{ id: string; displayName: string } | null>;
+}
+
+export interface GuildTextChannel {
+  id: string;
+  name: string;
+  /** The category it sits in, if any. */
+  category: string | null;
 }
 
 // Enough to find one exact username among the names that start with it.
@@ -159,6 +178,28 @@ export function createDiscordGateway(client: Client): DiscordGateway {
           .filter((role) => role.id !== guild.id && !role.managed)
           .sort((x, y) => y.position - x.position)
           .map((role) => ({ id: role.id, name: role.name }));
+      } catch (error) {
+        if (isDiscordError(error, UNKNOWN_GUILD)) return null;
+        throw error;
+      }
+    },
+
+    async guildTextChannels(guildId) {
+      try {
+        const guild = await client.guilds.fetch(guildId);
+        const channels = await guild.channels.fetch();
+        const position = (id: string | null) =>
+          id === null ? -1 : (channels.get(id)?.rawPosition ?? -1);
+        return [...channels.values()]
+          .filter((channel): channel is TextChannel => channel?.type === ChannelType.GuildText)
+          .sort(
+            (x, y) => position(x.parentId) - position(y.parentId) || x.rawPosition - y.rawPosition,
+          )
+          .map((channel) => ({
+            id: channel.id,
+            name: channel.name,
+            category: channel.parent?.name ?? null,
+          }));
       } catch (error) {
         if (isDiscordError(error, UNKNOWN_GUILD)) return null;
         throw error;

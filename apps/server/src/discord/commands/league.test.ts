@@ -30,8 +30,17 @@ const divisionChannel = (division: number, id?: string): FakeInput => ({
   options: { kind: 'results', division, ...(id ? { channel: { channel: { id } } } : {}) },
 });
 
+const OTHER_SERVER_CHANNEL = '800000000000000009';
+
 function session() {
   const gateway = fakeGateway();
+  // The league's server and its text channels: a channel is checked against them.
+  gateway.guilds.set(TEST_GUILD, {
+    name: 'LFR Staging',
+    roles: [],
+    managers: [],
+    channels: [QUEUE, RESULTS, L1_RESULTS].map((id) => ({ id, name: id, category: null })),
+  });
   const context = fakeContext({ db: leagueDatabase(), gateway });
   const run = async (input: FakeInput) => {
     const interaction = fakeInteraction('league', input);
@@ -107,6 +116,15 @@ describe('/league channel', () => {
       ephemeral: true,
     });
     expect(stored()).toMatchObject({ alertsChannelId: null });
+  });
+
+  it("refuses a channel that is not one of the league's server, before posting", async () => {
+    const { run, gateway, stored } = session();
+    expect((await run(channel('results', OTHER_SERVER_CHANNEL)))[0]?.content).toBe(
+      "Ce salon n'est pas un salon textuel du serveur de la ligue.",
+    );
+    expect(gateway.posted).toEqual([]);
+    expect(stored()).toMatchObject({ resultsChannelId: null });
   });
 
   it('refuses a member who is not league staff before posting anything', async () => {

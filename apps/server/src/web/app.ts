@@ -30,7 +30,11 @@ import { answerRequest } from '../services/requests.ts';
 import { requireStaff } from '../services/permissions.ts';
 import { publishRules, rulesPage } from '../services/rules.ts';
 import { clubPage, listLeagues, matchPage, seasonPage, teamPage } from '../services/site.ts';
-import { findLegacyCompetition, type CompetitionKey } from '../services/competitions.ts';
+import {
+  findCompetitionById,
+  findLegacyCompetition,
+  type CompetitionKey,
+} from '../services/competitions.ts';
 import { competitionPath } from '../services/paths.ts';
 import { staffQueue } from '../services/staff-queue.ts';
 import { layout, type Page } from './layout.ts';
@@ -43,6 +47,7 @@ import { clubRoutes } from './clubs.ts';
 import { matchCaptainRoutes } from './match-captain.ts';
 import { matchStaffRoutes } from './match-staff.ts';
 import { staffSanctionsRoutes } from './staff-sanctions.ts';
+import { leagueChannelsRoutes } from './league-channels.ts';
 import { matchReportRoutes } from './match-report.ts';
 import { matchTimeRoutes } from './match-time.ts';
 import { vetoRoutes } from './veto.ts';
@@ -667,6 +672,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   const matchCaptain = matchCaptainRoutes(app, { deps, render, notFound, forbidden, guard });
   const matchStaff = matchStaffRoutes(app, { deps, render, notFound, forbidden, guard });
   staffSanctionsRoutes(app, { deps, render, notFound, forbidden, guard });
+  leagueChannelsRoutes(app, { deps, render, notFound, forbidden, guard });
   rosterRoutes(app, { deps, render, notFound, forbidden, guard });
   app.get('/matches/:id', async (c) => {
     const id = c.req.param('id');
@@ -857,6 +863,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       if (!league) continue;
       leagues.push({
         name: competition.name,
+        path: findCompetitionById(db, competition.id)?.path ?? null,
         timeZone: league.competition.schedulingJson.time_zone,
         queue: staffQueue(db, league),
         registrations: await registrationsToApprove(db, memberOf, league.competition.id),

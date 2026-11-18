@@ -259,6 +259,8 @@ export const fr = {
   'league.channel.notice.schedule': 'Les prolongations et les horaires fixés seront annoncés ici.',
   'league.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
   'league.error.not_staff': 'Cette commande est réservée au staff de la ligue.',
+  'league.error.channel_not_in_server':
+    "Ce salon n'est pas un salon textuel du serveur de la ligue.",
   'league.error.cannot_post':
     'Je ne peux pas écrire dans ce salon. Donne-moi « Voir le salon » et « Envoyer des messages », puis réessaie.',
   'error.unknownCommand': 'Commande inconnue.',
@@ -942,6 +944,23 @@ export const fr = {
   'web.join.joinServer': 'Rejoindre le serveur Discord',
   'web.join.discordUnavailable': 'Discord ne répond pas pour l’instant : réessaie dans un moment.',
   'web.me.discordSettings': 'Serveur Discord de la ligue :',
+  'web.staff.channelsLink': 'Salons du bot sur le serveur Discord →',
+  'web.discord.channelsLink':
+    'Les salons du bot (file de validation, planning, résultats) : réservés au staff de la ligue →',
+  'web.channels.title': 'Salons du bot — {competition}',
+  'web.channels.intro':
+    "Le bot publie de lui-même dans ces salons du serveur de la ligue. Il y poste d'abord un message : un salon où il ne peut pas écrire est refusé, et rien ne change.",
+  'web.channels.purpose': 'Usage',
+  'web.channels.current': 'Salon actuel',
+  'web.channels.change': 'Changer',
+  'web.channels.choose': '— Choisis un salon —',
+  'web.channels.unknown': 'introuvable sur le serveur',
+  'web.channels.save': 'Enregistrer',
+  'web.channels.saved': 'Salon enregistré.',
+  'web.channels.divisionResults': '{kind} — {division}',
+  'web.channels.hint':
+    'Une division sans son propre salon de résultats utilise celui de la ligue. Le bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler leurs résultats.',
+  'web.channels.back': '← Serveur Discord de la ligue',
   'web.discord.title': 'Serveur Discord — {competition}',
   'web.discord.intro':
     'Chaque ligue a son propre serveur Discord. Celles et ceux qui peuvent le gérer (son propriétaire, ou la permission « Gérer le serveur ») choisissent ici son rôle de staff et son lien d’invitation, ou déplacent la ligue vers un autre serveur qu’ils gèrent.',

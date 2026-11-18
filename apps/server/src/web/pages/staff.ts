@@ -11,6 +11,8 @@ import { csrfField, formatWhen, pageOf, type Html, type Page } from '../layout.t
 
 export interface LeagueQueue {
   name: string;
+  /** The competition's address, `/:org/:comp`, for its own staff pages. */
+  path: string | null;
   timeZone: string;
   queue: StaffQueue;
   /** Registrations waiting, seen as soon as they are filed (M-29). */
@@ -329,8 +331,15 @@ export function staffPage(locale: Locale, data: StaffData): Page {
     <p><a href="/staff/sanctions">${t(locale, 'web.staff.sanctionsLink')}</a></p>
     ${flash}
     ${data.leagues.map(
-      ({ name, timeZone, queue, registrations }) =>
+      ({ name, path, timeZone, queue, registrations }) =>
         html`<h2>${name}</h2>
+          ${
+            path === null
+              ? ''
+              : html`<p>
+                  <a href="${path}/discord/channels">${t(locale, 'web.staff.channelsLink')}</a>
+                </p>`
+          }
           ${section(locale, 'web.staff.reports', queue.reports, (report) =>
             reportItem(locale, report, data, timeZone),
           )}

@@ -13,7 +13,7 @@ import type {
 } from './commands/types.ts';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeAssetStore, PNG_HEADER_FOR_TESTS } from '../assets/store.ts';
-import type { DiscordGateway } from './gateway.ts';
+import type { DiscordGateway, GuildTextChannel } from './gateway.ts';
 
 type OptionValue =
   | string
@@ -257,8 +257,16 @@ export interface FakeGateway extends DiscordGateway {
   roleReads: number;
   /** What a download returns: a PNG header unless a test sets other bytes. */
   downloadData: Uint8Array;
-  /** The servers the bot is in: their name, roles, and the users who may manage them. */
-  guilds: Map<string, { name: string; roles: { id: string; name: string }[]; managers: string[] }>;
+  /** The servers the bot is in: their name, roles, text channels and who may manage them. */
+  guilds: Map<
+    string,
+    {
+      name: string;
+      roles: { id: string; name: string }[];
+      managers: string[];
+      channels?: GuildTextChannel[];
+    }
+  >;
   /** Invitations Discord knows, by address. */
   invites: Map<string, { guildId: string; expiresAt: number | null }>;
   /** Members found by username, by `guildId:username` (lower case). */
@@ -326,6 +334,11 @@ export function fakeGateway(): FakeGateway {
     guildRoles(guildId) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       return Promise.resolve(gateway.guilds.get(guildId)?.roles ?? null);
+    },
+    guildTextChannels(guildId) {
+      if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
+      const guild = gateway.guilds.get(guildId);
+      return Promise.resolve(guild ? (guild.channels ?? []) : null);
     },
     resolveInvite(url) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));

@@ -242,6 +242,8 @@ export const en: Record<MessageKey, string> = {
   'league.channel.notice.schedule': 'Extensions and agreed match times will be announced here.',
   'league.error.not_linked': 'This server is not linked to a league.',
   'league.error.not_staff': 'This command is for league staff only.',
+  'league.error.channel_not_in_server':
+    "That channel is not a text channel of the league's server.",
   'league.error.cannot_post':
     'I cannot write in that channel. Give me "View Channel" and "Send Messages", then try again.',
   'error.unknownCommand': 'Unknown command.',
@@ -907,6 +909,23 @@ export const en: Record<MessageKey, string> = {
   'web.join.joinServer': 'Join the Discord server',
   'web.join.discordUnavailable': 'Discord is not answering right now: try again in a moment.',
   'web.me.discordSettings': 'League Discord server:',
+  'web.staff.channelsLink': "The bot's channels on the Discord server →",
+  'web.discord.channelsLink':
+    "The bot's channels (validation queue, schedule, results): for league staff →",
+  'web.channels.title': "The bot's channels — {competition}",
+  'web.channels.intro':
+    "The bot posts in these channels of the league's server by itself. It first posts a message there: a channel it cannot write in is refused, and nothing changes.",
+  'web.channels.purpose': 'Purpose',
+  'web.channels.current': 'Current channel',
+  'web.channels.change': 'Change',
+  'web.channels.choose': '— Choose a channel —',
+  'web.channels.unknown': 'not found on the server',
+  'web.channels.save': 'Save',
+  'web.channels.saved': 'Channel saved.',
+  'web.channels.divisionResults': '{kind} — {division}',
+  'web.channels.hint':
+    "A division without its own results channel uses the league's. The bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report their results.",
+  'web.channels.back': "← The league's Discord server",
   'web.discord.title': 'Discord server — {competition}',
   'web.discord.intro':
     'Every league has its own Discord server. Whoever may manage it (its owner, or the Manage Server permission) chooses its staff role and invitation link here, or moves the league to another server they manage.',

@@ -44,6 +44,7 @@ export type SetLeagueChannelError =
   | 'not_linked'
   | 'not_staff'
   | 'cannot_post'
+  | 'channel_not_in_server'
   | 'channel_required'
   | 'division_not_found'
   | 'queue_per_division';
@@ -59,12 +60,13 @@ export type SetLeagueChannelReply =
 
 /**
  * Stores which channel the bot uses for one purpose, for the whole league or, for results, for
- * one division. The bot first posts a notice there: a channel it cannot write to is refused now,
- * not on the evening a result needs validating.
+ * one division. The channel must be a text channel of the league's own server: the website takes
+ * any ID, and the bot is in other leagues' servers too. The bot then posts a notice there: a
+ * channel it cannot write to is refused now, not on the evening a result needs validating.
  */
 export async function setLeagueChannel(
   db: Db,
-  gateway: DiscordGateway,
+  gateway: Pick<DiscordGateway, 'postMessage' | 'guildTextChannels'>,
   actor: Actor,
   request: SetLeagueChannelRequest,
   now: number,
@@ -87,6 +89,16 @@ export async function setLeagueChannel(
   if (request.channelId === null && !target) return { ok: false, error: 'channel_required' };
 
   if (request.channelId !== null) {
+    const { channelId } = request;
+    let channels: { id: string }[] | null;
+    try {
+      channels = await gateway.guildTextChannels(league.guild.guildId);
+    } catch {
+      return { ok: false, error: 'cannot_post' };
+    }
+    if (!channels?.some((channel) => channel.id === channelId)) {
+      return { ok: false, error: 'channel_not_in_server' };
+    }
     try {
       await gateway.postMessage(request.channelId, {
         content: request.notice(target?.name ?? null),
@@ -145,7 +157,7 @@ export type LeagueChannelsReply =
       resultsChannelId: string | null;
       scheduleChannelId: string | null;
       /** The current season's divisions, top level first; null means the league's channel. */
-      divisions: { name: string; resultsChannelId: string | null }[];
+      divisions: { id: number; name: string; resultsChannelId: string | null }[];
     }
   | { ok: false; error: 'not_linked' | 'not_staff' };
 
@@ -163,6 +175,7 @@ export function listLeagueChannels(
     resultsChannelId: guild.resultsChannelId,
     scheduleChannelId: guild.scheduleChannelId,
     divisions: divisions.map(({ division: row }) => ({
+      id: row.id,
       name: row.name,
       resultsChannelId: row.resultsChannelId,
     })),
