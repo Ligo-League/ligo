@@ -17,7 +17,8 @@ export const pageOf = (title: string, body: Html): Page => ({ title, body });
 
 /** Who is looking, for the header: a logged-in user, or a login link when login is on. */
 export interface Nav {
-  user: { name: string; csrf: string } | null;
+  /** `admin`: the user owns an organisation, so the header links to the admin panel. */
+  user: { name: string; csrf: string; admin: boolean } | null;
   login: boolean;
   /** The current path, to come back to after login. */
   path: string;
@@ -30,6 +31,7 @@ export const csrfField = (token: string): Html =>
 function account(locale: Locale, nav: Nav): Html | string {
   if (nav.user) {
     return html`<nav class="account">
+      ${nav.user.admin ? html`<a href="/admin">${t(locale, 'web.nav.admin')}</a>` : ''}
       <a href="/me">${nav.user.name}</a>
       <form method="post" action="/auth/logout">
         ${csrfField(nav.user.csrf)}<button type="submit">${t(locale, 'web.auth.logout')}</button>

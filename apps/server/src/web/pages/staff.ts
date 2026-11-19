@@ -375,6 +375,7 @@ export function staffPage(locale: Locale, data: StaffData): Page {
               ? ''
               : html`<p>
                   <a href="${path}/discord/channels">${t(locale, 'web.staff.channelsLink')}</a>
+                  · <a href="/admin${path}">${t(locale, 'web.staff.adminLink')}</a>
                 </p>`
           }
           ${section(locale, 'web.staff.reports', queue.reports, (report) =>

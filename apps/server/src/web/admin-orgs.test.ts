@@ -149,3 +149,22 @@ describe('the admin home', () => {
     expect(page).toContain('<a href="/admin/mlb-group/lfr">LFR</a>');
   });
 });
+
+describe('the ways into the admin panel', () => {
+  it('are in the header for an owner, on /me and /staff for staff, and nowhere for a player', async () => {
+    const { request, logIn, setRoles, jar } = site();
+    await logIn('/me');
+    const player = await (await request('/me')).text();
+    expect(player).not.toContain('href="/admin"');
+
+    setRoles([TEST_STAFF_ROLE], ANA.id);
+    const me = await (await request('/me')).text();
+    expect(me).toContain('href="/admin"');
+    expect(await (await request('/staff')).text()).toContain('href="/admin/mlb-group/lfr"');
+
+    jar.clear();
+    await logIn('/', 'code-owner');
+    const home = await (await request('/')).text();
+    expect(home).toMatch(/<header class="site">[\s\S]*href="\/admin"[\s\S]*<\/header>/);
+  });
+});

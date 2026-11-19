@@ -903,6 +903,18 @@ posts lose their buttons) and the time is announced in the schedule channel with
    (`/<org>/<competition>/discord/channels`) shows only the current season's divisions.
 5. A division has no schedule yet (phase 4), and cannot be removed.
 
+## 52. Phase 3h-8: the ways into the admin panel
+
+1. Log in as MLB Group's owner: the header shows **Administration** next to your name, leading
+   to `/admin`. The header checks only ownership, from the database; it asks Discord nothing.
+2. As league staff (the staff role on the league's server), `/me` shows **Administration** under
+   the link to the staff queue, and `/staff` links each competition to its admin page
+   (**Administration de la compétition**).
+3. A player who owns nothing and is staff nowhere sees none of these links; `/admin` still opens
+   for them and offers to create an organisation.
+4. From `/admin`: an organisation (`/admin/<org>`), its competitions (`/admin/<org>/<comp>`), the
+   rules page, each season (`…/seasons/<id>`) and each division (`…/divisions/<id>`).
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

@@ -57,6 +57,7 @@ import { matchTimeRoutes } from './match-time.ts';
 import { vetoRoutes } from './veto.ts';
 import { matchStatsRoutes } from './match-stats.ts';
 import { adminOrgRoutes } from './admin-orgs.ts';
+import { ownedOrgs } from '../services/orgs.ts';
 import { adminCompetitionRoutes } from './admin-competitions.ts';
 import { adminSeasonRoutes } from './admin-seasons.ts';
 import { matchScoreboard } from '../services/scoreboard.ts';
@@ -236,7 +237,13 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   ) => {
     const viewer = c.get('viewer');
     const nav = {
-      user: viewer && { name: viewer.name, csrf: viewer.csrf },
+      // Owners only: one query, no Discord call on every page. Staff reach the panel from /me
+      // and /staff.
+      user: viewer && {
+        name: viewer.name,
+        csrf: viewer.csrf,
+        admin: ownedOrgs(db, viewer).length > 0,
+      },
       login: login !== null,
       path: c.req.path,
     };
@@ -817,6 +824,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       mePage(locale, {
         profile,
         staffOf: staffOf.map((competition) => competition.name),
+        admin: staffOf.length > 0 || ownedOrgs(db, viewer).length > 0,
         countries: countryChoices(locale),
         csrf: viewer.csrf,
         flash: state.flash,

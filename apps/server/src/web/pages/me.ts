@@ -11,6 +11,8 @@ export type MeFlash = 'saved' | 'left' | 'joined' | (typeof ME_ERRORS)[number];
 export interface MeData {
   profile: Profile;
   staffOf: string[];
+  /** Whether the player owns an organisation or is a competition's staff: the admin panel. */
+  admin: boolean;
   countries: { code: string; name: string }[];
   csrf: string;
   /** What the last form did, from the address it sent back to. */
@@ -106,6 +108,7 @@ export function mePage(locale: Locale, data: MeData): Page {
           </p>`
         : ''
     }
+    ${data.admin ? html`<p><a href="/admin">${t(locale, 'web.me.admin')}</a></p>` : ''}
     ${
       data.adminOf.length > 0
         ? html`<p>

@@ -661,7 +661,7 @@ Ligo is a tool for esport leagues with divisions that happens to host MLB Group 
 | `/staff/mercato`               | staff                   | The season's mercato windows: open one (dates in the league's time zone, limit and block from the settings), close it early or cancel it; announced in `#mercato` (phase 3f) |
 | `/:org/:comp/discord/channels` | staff                   | The channels the bot posts in (staff queue, schedule, results, results per division), chosen among the league server's text channels, as `/league channel` does (phase 3f) |
 | `/evidence/:id`                | staff and the match's teams | A score screenshot the server kept; never public                                                                           |
-| `/admin`                       | logged-in user          | The organisations the user owns and the competitions where they are staff (phase 3h) |
+| `/admin`                       | logged-in user          | The organisations the user owns and the competitions where they are staff; linked from the header for an organisation's owner, from `/me` for owners and staff, and from each competition on `/staff` (phase 3h) |
 | `/orgs/new`                    | whoever may manage a Discord server where the bot is | Creates an organisation; its creator owns it (phase 3h, M-20) |
 | `/admin/:org/new`              | organisation owner      | Creates a competition: game, name, slug and participant mode, fixed afterwards; settings from defaults (phase 3h) |
 | `/admin/:org/:comp/rules`      | organisation owner, competition staff | The competition's rules: the points and tie-breakers new seasons copy, map score, veto, promotion, registration, mercato, stats, dispute reasons (phase 3h) |
