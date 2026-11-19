@@ -227,6 +227,23 @@ section 16.
 
 ## For the maintainer
 
+#### M-43 · Widgets for other websites (`/embed/...`)
+
+- **Decided (maintainer, 19 November 2026):** Ligo offers widgets other websites put in an
+  iframe, under `/embed/...` (a league's standings or fixtures on a club's or the league's own
+  site). They come with the look phase, with the images page, since both show Ligo's look outside
+  its own pages.
+- **To settle when the look phase is planned:**
+  1. Which widgets: standings, fixtures, a team's next match, a match card, others?
+  2. Whether a league may limit which sites embed its widgets, or any site may.
+  3. Whether a widget follows the league's theme, can be set light or dark, and in which
+     language.
+  4. Whether a widget carries a link back to Ligo's page, and the Ligo name (section 7: Ligo's
+     name and logo are on every page).
+- **Why it matters:** every page refuses to be framed today (`frame-ancestors 'none'`,
+  `X-Frame-Options: DENY`); only `/embed/...` will be opened to framing, and it must show nothing
+  a logged-in viewer could act on.
+
 #### M-41 · Who holds a slot
 
 - **Question:** a slot (a team's place in a division) belongs today to the roster that plays in
