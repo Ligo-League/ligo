@@ -354,10 +354,10 @@ Every scoring rule belongs to the season (maintainer, 19 November 2026; M-40): `
 
 - Each win is worth 3 points in Season 3, as score7 is set (Season 2 gave 1). There are no draws in R6 competitive settings, so score7's N column is not shown.
 - **A forfeit in the table** follows `forfeit.counts_as_played` (default true): a match played for both teams, a win for the opponent and a loss for the team that forfeited. score7 shows its walkovers (W.O.) this way, and they are imported as forfeits.
-- score7 shows one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). Neither team showed up, and score7 cannot record a forfeit by both sides, so staff typed a draw. Ligo's fixture records it as a forfeit by both (`forfeit_by` = `BOTH`, maintainer, 19 November 2026). Both teams had been excluded; once the fixture marks them so (the teams file's `excluded` column), the 50% rule makes a match between two excluded teams count for neither (O-01). When two teams that are not excluded both fail to show up, staff record a forfeit by both: each gets a forfeit loss (no points, the losing side of the forfeit score, a match played, a forfeit towards its own warning and exclusion), and nobody wins (O-28).
+- score7 shows one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). Neither team showed up, and score7 cannot record a forfeit by both sides, so staff typed a draw. Ligo's fixture records it as a forfeit by both (`forfeit_by` = `BOTH`, maintainer, 19 November 2026). Both teams had been excluded at their third forfeit, and the teams file marks them so (its `excluded` column, with RPV, which left the league), so the 50% rule makes their match count for neither (O-01). When two teams that are not excluded both fail to show up, staff record a forfeit by both: each gets a forfeit loss (no points, the losing side of the forfeit score, a match played, a forfeit towards its own warning and exclusion), and nobody wins (O-28).
 - F counts rounds won, C rounds lost, and D = F − C. Columns: J, V, D, F, C, D, PTS.
 - Ranking: points, then D. Season 2 shows it: Vaevictis and Origin's Esport both have 8 points; D 23 beats D 21.
-- **Forfeit score** is a season setting, `forfeit_score`: `[7, 0]` in LFR (Seasons 2 and 3; maintainer, 14 November 2026), so a team that showed up loses nothing on D. score7 counted Season 3's forfeits 0–0, and the Season 3 test compares with score7 at 0–0. It feeds F and C, so it changes D.
+- **Forfeit score** is a season setting, `forfeit_score`: `[7, 0]` in LFR (Seasons 2 and 3; maintainer, 14 November 2026), so a team that showed up loses nothing on D. score7 counted Season 3's forfeits 0–0. It feeds F and C, so it changes D.
 - A forfeit the 50% rule creates for an excluded team scores `exclusion_forfeit_score`; `null` (the default) means the same as `forfeit_score`. Whether LFR wants a different score there is O-27.
 - **Unresolved ties** (same points and same D) follow `unresolved_tie`:
     - `shared`: both teams show the same rank (default);
@@ -1298,7 +1298,7 @@ Pure league logic gets exhaustive unit and property tests. Replay handling gets 
 | Team report            | Hand-built round facts                                                    | Win % per map, side, site and strat; opening duel and player-count states; plants; minimum sample hiding; sum first, divide last                                                |
 | Team level             | Table-driven cases and fast-check properties                              | Anchors move the whole group without reordering it; forfeits ignored; a level hidden under the minimum matches; same inputs give the same level                                 |
 
-**Acceptance for standings:** a shadow run against score7 for the rest of the current season, with identical tables every week.
+**Acceptance for standings:** a shadow run against score7 for the rest of the current season, with identical tables every week. It passed on score7's snapshot; from 19 November 2026 score7 is no longer kept up to date, and `fixtures/lfr-s3-matches.csv` is the only source of truth for Season 3's matches (maintainer).
 
 ## 15. Roadmap
 

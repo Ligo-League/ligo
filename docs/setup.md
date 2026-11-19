@@ -826,10 +826,12 @@ posts lose their buttons) and the time is announced in the schedule channel with
 
 1. In `fixtures/lfr-s3-matches.csv`, `forfeit_by` takes `BOTH` when neither team showed up:
    each gets a forfeit loss and nobody wins (O-28). Nightwolves against Outsouki (week 5) is
-   recorded so.
+   recorded so. This file is the only source of truth for Season 3's matches: score7 is no
+   longer kept up to date.
 2. `fixtures/lfr-s3-teams.csv` has an `excluded` column: the reason a team was excluded from
-   the season, empty for a team that plays on. RPV's says it left the LFR.
-3. Run `pnpm seed`: it prints `1 exclusions` once and excludes RPV as the website's staff
+   the season, empty for a team that plays on. RPV's says it left the LFR; Nightwolves and
+   Outsouki were excluded at their third forfeit.
+3. Run `pnpm seed`: it prints `3 exclusions` once and excludes the three teams as the website's staff
    exclusion does (its slot, an `exclusion` sanction and the audit entry), recorded as decided by
    the maintainer's account. No Discord announcement is posted. Running it again changes nothing,
    and an exclusion made on the website is never undone by the seed.

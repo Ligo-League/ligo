@@ -89,7 +89,7 @@ pnpm format         # Prettier: rewrite files in place
 pnpm db:generate    # drizzle-kit: create a migration from schema changes
 pnpm db:migrate     # apply migrations to the local database
 pnpm seed           # load fixture data (LFR teams, Season 3 fixtures/results)
-pnpm fixtures:score7    # refresh the Season 3 fixture CSVs from score7 (run by hand, needs network)
+pnpm fixtures:score7    # history only: rewrites the *.score7.csv snapshots (score7 is no longer kept up to date)
 pnpm assets:logos       # turn data/assets/logos into 128 px PNGs for the images (needs ImageMagick)
 pnpm discord:register   # register slash commands to the staging guild only
 ```
@@ -146,7 +146,9 @@ These are summaries; the design doc (sections 4, 5, 8, 9) has the details.
 - `packages/core`: every rule has tests. Use fast-check for the round robin and the veto state
   machine. Include the edge cases listed in design doc section 14 (three-way ties, the 50% rule,
   re-host stitching cases).
-- Standings must reproduce real LFR tables (Season 2 example, Season 3 shadow run).
+- Standings must reproduce real LFR tables (Season 2 example; Season 3 matched score7 from week 5).
+- `fixtures/lfr-s3-matches.csv` is the only source of truth for Season 3's matches (maintainer,
+  19 November 2026): score7 is no longer kept up to date, and no test compares with it.
 - R6 normaliser: golden-file tests on real replays in `fixtures/replays/` (git LFS or a download
   script; never commit large binaries directly).
 - Discord and R2 are behind interfaces with in-memory fakes; unit tests never hit the network.

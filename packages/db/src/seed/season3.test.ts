@@ -2,170 +2,37 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { computeStandings, isPossibleGameScore } from '@ligo/core';
 import { R6_GAME_SCORE } from '@ligo/titles';
-import { parse } from 'csv-parse/sync';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { loadStandingsInput } from '../queries/standings.ts';
-import { division, slot, stage } from '../schema/index.ts';
+import { division, slot, stage, team } from '../schema/index.ts';
 import { openTestDatabase } from '../testing.ts';
 import { parseMatchesCsv } from './matches-csv.ts';
 import { parseTeamsCsv } from './parse-teams-csv.ts';
 import { LFR_DIVISION_NAMES, seedLfr } from './seed-lfr.ts';
 import { seedMatches } from './seed-matches.ts';
 
-// The acceptance test of phase 1 (design doc section 15): from the real Season 3 fixtures and
-// results, Ligo computes the tables score7 shows. The score7 files are one snapshot, written
-// together by `pnpm fixtures:score7`. `lfr-s3-matches.csv`, which the seed loads, is Ligo's own
-// record, corrected by staff since (maintainer, 14 November 2026): it is checked on its own.
+// LFR Season 3 as Ligo records it. `fixtures/lfr-s3-matches.csv` is the only source of truth for
+// the season's matches (maintainer, 19 November 2026): score7 is no longer kept up to date, so
+// its snapshot (`*.score7.csv`) is history and no test compares with it any more. Phase 1's
+// acceptance, Ligo's tables equal to score7's from week 5, passed on that snapshot.
 const fixtureFile = (name: string) =>
   readFileSync(fileURLToPath(new URL(`../../../../fixtures/${name}`, import.meta.url)), 'utf8');
 
 const teams = parseTeamsCsv(fixtureFile('lfr-s3-teams.csv'), LFR_DIVISION_NAMES);
 if (!teams.ok) throw new Error(teams.errors.join('\n'));
-const matches = parseMatchesCsv(fixtureFile('lfr-s3-matches.score7.csv'), teams.teams);
-if (!matches.ok) throw new Error(matches.errors.join('\n'));
 const record = parseMatchesCsv(fixtureFile('lfr-s3-matches.csv'), teams.teams);
 if (!record.ok) throw new Error(record.errors.join('\n'));
 
-interface Score7Row {
-  division: string;
-  team: string;
-  rank: number;
-  played: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  scoreFor: number;
-  scoreAgainst: number;
-  diff: number;
-  points: number;
-}
-const score7: Score7Row[] = parse<Record<string, string>>(
-  fixtureFile('lfr-s3-standings.score7.csv'),
-  { columns: true },
-).map((row) => ({
-  division: row.division ?? '',
-  team: row.team ?? '',
-  rank: Number(row.rank),
-  played: Number(row.played),
-  wins: Number(row.wins),
-  draws: Number(row.draws),
-  losses: Number(row.losses),
-  scoreFor: Number(row.score_for),
-  scoreAgainst: Number(row.score_against),
-  diff: Number(row.diff),
-  points: Number(row.points),
-}));
-
-// score7 is set to give 1 point for a draw. Ligo has no draws: a drawn row is left without
-// result, so a team in one has that many fewer matches played and points than on score7.
-const SCORE7_POINTS_FOR_DRAW = 1;
-
 const db = openTestDatabase();
-// score7's snapshot is from before RPV left the league (19 November 2026): its teams as they were.
-seedLfr(
-  db,
-  teams.teams.map((entry) => ({ ...entry, excluded: null })),
-  1000,
-);
-const seedSummary = seedMatches(db, matches.matches, 2000);
-
-describe('LFR Season 3 from the committed fixtures', () => {
-  it('seeds every fixture without conflict', () => {
-    expect(seedSummary.conflicts).toEqual([]);
-    expect(seedSummary.created.matches).toBe(matches.matches.length);
-    const drawn = matches.matches.filter((match) => match.result.kind === 'draw');
-    expect(seedSummary.draws).toHaveLength(drawn.length);
-  });
-
-  it('holds only scores a map of R6 can end on', () => {
-    const impossible = matches.matches.filter(
-      ({ result }) =>
-        result.kind === 'played' &&
-        !isPossibleGameScore(R6_GAME_SCORE, result.scoreA, result.scoreB),
-    );
-    expect(impossible).toEqual([]);
-  });
-
-  it.each(LFR_DIVISION_NAMES)('reproduces the score7 table of %s', (divisionName) => {
-    const stageRow = db
-      .select({ id: stage.id })
-      .from(stage)
-      .innerJoin(division, eq(stage.divisionId, division.id))
-      .where(eq(division.name, divisionName))
-      .get();
-    const data = loadStandingsInput(db, stageRow?.id ?? -1);
-    if (!data) throw new Error(`No stage for ${divisionName}`);
-    // score7 counts a forfeit 0-0, where LFR's setting is 7-0 since 14 November 2026.
-    const result = computeStandings({
-      ...data.input,
-      forfeitScore: [0, 0],
-      exclusionForfeitScore: [0, 0],
-    });
-    if (!result.ok) throw new Error(JSON.stringify(result.error));
-
-    const computed = result.rows.map((row) => ({
-      team: data.teams.find((team) => team.entry === row.entry)?.tag,
-      rank: row.rank,
-      played: row.played,
-      wins: row.wins,
-      losses: row.losses,
-      scoreFor: row.scoreFor,
-      scoreAgainst: row.scoreAgainst,
-      diff: row.diff,
-      points: row.points,
-    }));
-    const expected = score7
-      .filter((row) => row.division === divisionName)
-      .map((row) => ({
-        team: row.team,
-        rank: row.rank,
-        played: row.played - row.draws,
-        wins: row.wins,
-        losses: row.losses,
-        scoreFor: row.scoreFor,
-        scoreAgainst: row.scoreAgainst,
-        diff: row.diff,
-        points: row.points - row.draws * SCORE7_POINTS_FOR_DRAW,
-      }));
-
-    expect(expected.length).toBeGreaterThan(0);
-    expect(computed).toEqual(expected);
-  });
-});
+seedLfr(db, teams.teams, 1000);
+const summary = seedMatches(db, record.matches, 2000);
 
 describe('LFR Season 3 as Ligo records it', () => {
-  const recordDb = openTestDatabase();
-  seedLfr(recordDb, teams.teams, 1000);
-  const summary = seedMatches(recordDb, record.matches, 2000);
-
-  it('holds the same fixtures as score7, in the same order', () => {
-    const fixture = ({ division, week, teamA, teamB }: (typeof record.matches)[number]) =>
-      [division, week, teamA, teamB].join(' ');
-    expect(record.matches.map(fixture)).toEqual(matches.matches.map(fixture));
-  });
-
   it('seeds every fixture without conflict, and holds no draw', () => {
     expect(summary.conflicts).toEqual([]);
     expect(summary.created.matches).toBe(record.matches.length);
-    // The 0–0 score7 shows for Nightwolves against Outsouki was no draw: neither team showed
-    // up, a forfeit by both (O-28; maintainer, 19 November 2026).
     expect(summary.draws).toEqual([]);
-    const both = record.matches.find(
-      (row) => row.teamA === 'NIGHTWOLVES' && row.teamB === 'OUTSOUKI',
-    );
-    expect(both?.result).toEqual({ kind: 'forfeit', forfeitBy: 'both' });
-  });
-
-  it('holds RPV as excluded: it left the league (maintainer, 19 November 2026)', () => {
-    expect(teams.teams.find((entry) => entry.tag === 'RPV')?.excluded).toBe('A quitté la LFR');
-    expect(
-      recordDb
-        .select()
-        .from(slot)
-        .all()
-        .filter((row) => row.status === 'excluded'),
-    ).toHaveLength(1);
   });
 
   it('holds only scores a map of R6 can end on', () => {
@@ -175,5 +42,55 @@ describe('LFR Season 3 as Ligo records it', () => {
         !isPossibleGameScore(R6_GAME_SCORE, result.scoreA, result.scoreB),
     );
     expect(impossible).toEqual([]);
+  });
+
+  it('records a forfeit by both teams where neither showed up (O-28)', () => {
+    const both = record.matches.find(
+      (row) => row.teamA === 'NIGHTWOLVES' && row.teamB === 'OUTSOUKI',
+    );
+    expect(both?.result).toEqual({ kind: 'forfeit', forfeitBy: 'both' });
+  });
+
+  it('holds the excluded teams (maintainer, 19 November 2026)', () => {
+    const reasons = Object.fromEntries(
+      teams.teams.flatMap((entry) => (entry.excluded ? [[entry.tag, entry.excluded]] : [])),
+    );
+    expect(reasons).toEqual({
+      NIGHTWOLVES: 'Exclue au 3e forfait',
+      OUTSOUKI: 'Exclue au 3e forfait',
+      RPV: 'A quitté la LFR',
+    });
+    const excluded = db
+      .select({ tag: team.tag })
+      .from(slot)
+      .innerJoin(team, eq(slot.teamId, team.id))
+      .where(eq(slot.status, 'excluded'))
+      .all()
+      .map((row) => row.tag)
+      .sort();
+    expect(excluded).toEqual(['NIGHTWOLVES', 'OUTSOUKI', 'RPV']);
+  });
+
+  it.each(LFR_DIVISION_NAMES)('computes the table of %s, every team in it once', (name) => {
+    const stageRow = db
+      .select({ id: stage.id })
+      .from(stage)
+      .innerJoin(division, eq(stage.divisionId, division.id))
+      .where(eq(division.name, name))
+      .get();
+    const data = loadStandingsInput(db, stageRow?.id ?? -1);
+    if (!data) throw new Error(`No stage for ${name}`);
+    const result = computeStandings(data.input);
+    if (!result.ok) throw new Error(JSON.stringify(result.error));
+    const tags = result.rows.map(
+      (row) => data.teams.find((entry) => entry.entry === row.entry)?.tag,
+    );
+    expect(new Set(tags).size).toBe(tags.length);
+    expect(tags.sort()).toEqual(
+      teams.teams
+        .filter((entry) => entry.division === name)
+        .map((entry) => entry.tag)
+        .sort(),
+    );
   });
 });
