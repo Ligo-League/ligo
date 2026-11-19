@@ -13,7 +13,17 @@ export type FieldKind =
   | { type: 'text' }
   | { type: 'choice'; options: readonly string[] }
   /** A checkbox: sent when ticked, absent otherwise. */
-  | { type: 'bool' };
+  | { type: 'bool' }
+  /** An ordered list of choices, one select per place (`path.0`, `path.1`…); empty places dropped. */
+  | { type: 'choiceList'; options: readonly string[]; size: number }
+  /** A list of words typed in one input, separated by spaces or commas: a veto sequence. */
+  | { type: 'words' }
+  /**
+   * A list of objects, one row of inputs each (`path.0.key`, `path.0.label.fr`…), with `size` rows
+   * shown: the current ones and blank ones to add. An empty row is dropped; an optional column
+   * left empty is left out of its object.
+   */
+  | { type: 'rows'; columns: readonly { name: string; optional?: boolean }[]; size: number };
 
 export interface SettingField {
   path: string;
@@ -39,9 +49,9 @@ function setAt(target: Record<string, unknown>, path: string, value: unknown): v
   node[keys.at(-1) ?? path] = value;
 }
 
-/** The value a field gives, or the problem with what was typed. */
-function readField(
-  kind: FieldKind,
+/** The value an input gives, or the problem with what was typed. */
+function readInput(
+  kind: Exclude<FieldKind, { type: 'choiceList' | 'words' | 'rows' }>,
   typed: string | undefined,
 ): { value: unknown } | { error: SettingFieldError } {
   const text = (typed ?? '').trim();
@@ -61,6 +71,100 @@ function readField(
   }
 }
 
+/** The value a field gives from the form, or the problem with what was typed. */
+function readField(
+  field: SettingField,
+  form: Readonly<Record<string, string>>,
+): { value: unknown } | { error: SettingFieldError } {
+  const { kind, path } = field;
+  switch (kind.type) {
+    case 'choiceList': {
+      const chosen = Array.from({ length: kind.size }, (_, index) =>
+        (form[`${path}.${String(index)}`] ?? '').trim(),
+      ).filter((entry) => entry !== '');
+      return chosen.every((entry) => kind.options.includes(entry))
+        ? { value: chosen }
+        : { error: 'invalid' };
+    }
+    case 'words':
+      return {
+        value: (form[path] ?? '').split(/[\s,]+/).filter((word) => word !== ''),
+      };
+    case 'rows': {
+      const rows: Record<string, unknown>[] = [];
+      for (let index = 0; index < kind.size; index += 1) {
+        const cells = kind.columns.map((column) => ({
+          column,
+          text: (form[`${path}.${String(index)}.${column.name}`] ?? '').trim(),
+        }));
+        if (cells.every((cell) => cell.text === '')) continue;
+        const row: Record<string, unknown> = {};
+        for (const { column, text } of cells) {
+          if (text === '' && column.optional) continue;
+          setAt(row, column.name, text);
+        }
+        rows.push(row);
+      }
+      return { value: rows };
+    }
+    default:
+      return readInput(kind, form[path]);
+  }
+}
+
+/** A setting's value as its input shows it. */
+function shown(value: unknown): string {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+    ? String(value)
+    : '';
+}
+
+/** The value at a path of the settings ("ruleset.requests.answer_within_hours"). */
+export function valueAt(settings: unknown, path: string): unknown {
+  let node: unknown = settings;
+  for (const key of path.split('.')) {
+    node =
+      typeof node === 'object' && node !== null
+        ? (node as Record<string, unknown>)[key]
+        : undefined;
+  }
+  return node;
+}
+
+/** Every input of the form with its current value, by input name. */
+export function settingsFormValues(
+  settings: unknown,
+  fields: readonly SettingField[],
+): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const { path, kind } of fields) {
+    const value = valueAt(settings, path);
+    const list = Array.isArray(value) ? (value as unknown[]) : [];
+    switch (kind.type) {
+      case 'choiceList':
+        for (let index = 0; index < kind.size; index += 1) {
+          values[`${path}.${String(index)}`] = shown(list[index]);
+        }
+        break;
+      case 'words':
+        values[path] = list.map(shown).join(' ');
+        break;
+      case 'rows':
+        for (let index = 0; index < kind.size; index += 1) {
+          for (const column of kind.columns) {
+            values[`${path}.${String(index)}.${column.name}`] = shown(
+              valueAt(list[index], column.name),
+            );
+          }
+        }
+        break;
+      default:
+        values[path] = shown(value);
+    }
+  }
+  return values;
+}
+
 export type SettingsRead<T> = { ok: true; value: T } | { ok: false; errors: SettingErrors };
 
 /**
@@ -78,7 +182,7 @@ export function readSettingsForm<T>(
   const draft = copy(current) as Record<string, unknown>;
   const errors: SettingErrors = {};
   for (const field of fields) {
-    const read = readField(field.kind, form[field.path]);
+    const read = readField(field, form);
     if ('error' in read) errors[field.path] = read.error;
     else setAt(draft, field.path, read.value);
   }
@@ -92,7 +196,10 @@ export function readSettingsForm<T>(
     const path = issue.path.map(String).join('.');
     // A problem inside a field's value (an object field) belongs to that field.
     const owner = [...paths].find((entry) => path === entry || path.startsWith(`${entry}.`));
-    errors[owner ?? 'form'] ??= 'invalid';
+    // A rule across several fields (the veto's formats, a request's deadlines) lands on their
+    // group, named by the path they share; one across unrelated fields, on the form.
+    const group = path !== '' && [...paths].some((entry) => entry.startsWith(`${path}.`));
+    errors[owner ?? (group ? path : 'form')] ??= 'invalid';
   }
   return { ok: false, errors };
 }

@@ -222,7 +222,7 @@ describe('a competition’s general settings', () => {
         'scheduling.time_zone': 'invalid',
         'scheduling.extension_weeks': 'invalid',
         // The reminder must come before the deadline: a rule across two fields.
-        form: 'invalid',
+        'ruleset.requests': 'invalid',
       },
     });
     expect(reload()).toEqual(before);

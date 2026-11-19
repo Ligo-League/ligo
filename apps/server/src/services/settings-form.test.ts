@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
-import { readSettingsForm, type SettingField } from './settings-form.ts';
+import { readSettingsForm, settingsFormValues, type SettingField } from './settings-form.ts';
 
 // The admin panel's settings forms (phase 3h): each setting is a field named by its path in the
 // settings; the typed values go into a copy of the settings, which the setting's own zod schema
@@ -85,5 +85,116 @@ describe('reading a settings form', () => {
         'nested.on': '1',
       }),
     ).toEqual({ ok: false, errors: { form: 'invalid' } });
+  });
+});
+
+describe('fields holding lists', () => {
+  const lists = z.strictObject({
+    criteria: z.array(z.enum(['points', 'diff', 'wins'])).min(1),
+    sequence: z.array(z.enum(['A_ban', 'B_ban', 'A_pick'])),
+    reasons: z.array(
+      z.strictObject({
+        key: z.string().regex(/^[a-z_]+$/),
+        label: z.strictObject({ fr: z.string().min(1), en: z.string().min(1).optional() }),
+      }),
+    ),
+  });
+  const current: z.infer<typeof lists> = {
+    criteria: ['points', 'diff'],
+    sequence: ['A_ban', 'B_ban'],
+    reasons: [{ key: 'wrong_score', label: { fr: 'Score incorrect', en: 'Wrong score' } }],
+  };
+  const fields: readonly SettingField[] = [
+    {
+      path: 'criteria',
+      kind: { type: 'choiceList', options: ['points', 'diff', 'wins'], size: 3 },
+    },
+    { path: 'sequence', kind: { type: 'words' } },
+    {
+      path: 'reasons',
+      kind: {
+        type: 'rows',
+        size: 3,
+        columns: [{ name: 'key' }, { name: 'label.fr' }, { name: 'label.en', optional: true }],
+      },
+    },
+  ];
+
+  it('shows each list as the inputs its form has', () => {
+    expect(settingsFormValues(current, fields)).toEqual({
+      'criteria.0': 'points',
+      'criteria.1': 'diff',
+      'criteria.2': '',
+      sequence: 'A_ban B_ban',
+      'reasons.0.key': 'wrong_score',
+      'reasons.0.label.fr': 'Score incorrect',
+      'reasons.0.label.en': 'Wrong score',
+      'reasons.1.key': '',
+      'reasons.1.label.fr': '',
+      'reasons.1.label.en': '',
+      'reasons.2.key': '',
+      'reasons.2.label.fr': '',
+      'reasons.2.label.en': '',
+    });
+  });
+
+  it('reads them back, leaving out the empty places and rows', () => {
+    expect(
+      readSettingsForm(lists, current, fields, {
+        'criteria.0': 'diff',
+        'criteria.1': '',
+        'criteria.2': 'wins',
+        sequence: ' A_ban, B_ban  A_pick ',
+        'reasons.0.key': 'wrong_score',
+        'reasons.0.label.fr': 'Score faux',
+        'reasons.0.label.en': '',
+        'reasons.2.key': 'late',
+        'reasons.2.label.fr': 'Retard',
+      }),
+    ).toEqual({
+      ok: true,
+      value: {
+        criteria: ['diff', 'wins'],
+        sequence: ['A_ban', 'B_ban', 'A_pick'],
+        reasons: [
+          { key: 'wrong_score', label: { fr: 'Score faux' } },
+          { key: 'late', label: { fr: 'Retard' } },
+        ],
+      },
+    });
+  });
+
+  it('puts a problem inside a list on the list', () => {
+    expect(
+      readSettingsForm(lists, current, fields, {
+        'criteria.0': 'nonsense',
+        sequence: 'A_ban C_ban',
+        'reasons.0.key': 'Bad Key',
+        'reasons.0.label.fr': 'x',
+      }),
+    ).toEqual({
+      ok: false,
+      errors: { criteria: 'invalid', sequence: 'invalid', reasons: 'invalid' },
+    });
+  });
+});
+
+describe('a rule across several fields', () => {
+  it('lands on the group of fields it is about', () => {
+    const grouped = z.strictObject({
+      deadline: z
+        .strictObject({ answer: z.int(), remind: z.int() })
+        .refine((value) => value.remind < value.answer),
+    });
+    const fields: readonly SettingField[] = [
+      { path: 'deadline.answer', kind: { type: 'int' } },
+      { path: 'deadline.remind', kind: { type: 'int' } },
+    ];
+    expect(
+      readSettingsForm(grouped, { deadline: { answer: 24, remind: 6 } }, fields, {
+        'deadline.answer': '4',
+        'deadline.remind': '6',
+      }),
+    ).toEqual({ ok: false, errors: { deadline: 'invalid' } });
   });
 });

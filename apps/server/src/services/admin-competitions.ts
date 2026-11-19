@@ -9,7 +9,12 @@ import { R6_GAME_SCORE, TITLES, type Title } from '@ligo/titles';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { OrgUser } from './orgs.ts';
-import { readSettingsForm, type SettingErrors, type SettingField } from './settings-form.ts';
+import {
+  readSettingsForm,
+  settingsFormValues,
+  type SettingErrors,
+  type SettingField,
+} from './settings-form.ts';
 
 // Competitions in the admin panel (phase 3h; design doc section 7, M-20, maintainer,
 // 19 November 2026). The organisation's owner creates them; the owner and the competition's staff
@@ -163,21 +168,6 @@ function shapeAutoSlot(draft: Record<string, unknown>): void {
   if (scheduling?.auto_slot?.weekday === null) scheduling.auto_slot = null;
 }
 
-/** A setting as its form field shows it. */
-function valueAt(settings: unknown, path: string): string {
-  let node: unknown = settings;
-  for (const key of path.split('.')) {
-    node =
-      typeof node === 'object' && node !== null
-        ? (node as Record<string, unknown>)[key]
-        : undefined;
-  }
-  // Every general field holds a string, a number or a boolean.
-  return typeof node === 'string' || typeof node === 'number' || typeof node === 'boolean'
-    ? String(node)
-    : '';
-}
-
 export type CompetitionAdminView =
   | {
       ok: true;
@@ -195,8 +185,11 @@ export type CompetitionAdminView =
     }
   | { ok: false; error: 'not_found' | 'not_allowed' };
 
-/** Who opens the competition's admin page: the organisation's owner and the competition's staff. */
-function opened(
+/**
+ * Who opens the competition's admin pages: the organisation's owner and the competition's staff
+ * (`staffIds`, the competitions whose staff role the user holds now).
+ */
+export function openCompetition(
   db: Reader,
   user: OrgUser,
   orgSlug: string,
@@ -232,7 +225,7 @@ export function competitionAdmin(
   compSlug: string,
   staffIds: readonly number[],
 ): CompetitionAdminView {
-  const access = opened(db, user, orgSlug, compSlug, staffIds);
+  const access = openCompetition(db, user, orgSlug, compSlug, staffIds);
   if (!access.ok) return access;
   const { orgRow, row, owner } = access;
   const general = generalOf(row);
@@ -247,9 +240,7 @@ export function competitionAdmin(
       title: row.title,
       participantMode: row.participantMode,
     },
-    values: Object.fromEntries(
-      GENERAL_FIELDS.map((field) => [field.path, valueAt(general, field.path)]),
-    ),
+    values: settingsFormValues(general, GENERAL_FIELDS),
   };
 }
 
@@ -266,7 +257,7 @@ export function updateCompetitionGeneral(
   form: Readonly<Record<string, string>>,
   now: number,
 ): UpdateGeneralReply {
-  const access = opened(db, user, key.orgSlug, key.compSlug, key.staffIds);
+  const access = openCompetition(db, user, key.orgSlug, key.compSlug, key.staffIds);
   if (!access.ok) return access;
   const { row } = access;
   const current = generalOf(row);
