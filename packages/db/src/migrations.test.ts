@@ -14,7 +14,7 @@ import { openTestDatabase } from './testing.ts';
 // today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`,
 // 0004 `veto_step`, 0007 `request` and `queue_post`, 0009 `club`, 0010 `club_staff`, 0013
 // `rules_version`, 0014 `registration_invite` and `registration_player`, 0021 `match_captain`, 0023
-// `mercato_window`.
+// `mercato_window`, 0024 `stat` and `stat_sheet`.
 const SCHEMA_TABLES = [
   'audit_log',
   'club',
@@ -48,6 +48,8 @@ const SCHEMA_TABLES = [
   'slot',
   'stage',
   'stage_entry',
+  'stat',
+  'stat_sheet',
   'team',
   'team_staff',
   'veto_step',
@@ -443,5 +445,37 @@ describe('0023: the mercato', () => {
       run(`insert into mercato_window (season_id, opens_at, closes_at, lock_hours, created_by,
              created_at) values (1, 10, 20, 0, 3, 1)`),
     ).not.toThrow();
+  });
+});
+
+describe('0024: stats', () => {
+  it('stores a stat once per game, player and metric, and checks a sheet’s entry and confirmation', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0024_stats');
+    const run = (sql: string) => db.$client.exec(sql);
+    db.$client.pragma('foreign_keys = OFF');
+    run(
+      `insert into stat (game_id, player_id, metric, value, source) values (1, 2, 'kills', 9, 'manual')`,
+    );
+    expect(() =>
+      run(
+        `insert into stat (game_id, player_id, metric, value, source) values (1, 2, 'kills', 3, 'manual')`,
+      ),
+    ).toThrow(/UNIQUE|PRIMARY/);
+    expect(() =>
+      run(
+        `insert into stat (game_id, player_id, metric, value, source) values (1, 2, 'deaths', 3, 'typed')`,
+      ),
+    ).toThrow(/CHECK/);
+    run(`insert into stat_sheet (game_id, side, entered_by, entered_at, entered_as)
+         values (1, 'a', 2, 10, 'own')`);
+    expect(() =>
+      run(`insert into stat_sheet (game_id, side, entered_by, entered_at, entered_as)
+           values (1, 'b', 2, 10, 'friend')`),
+    ).toThrow(/CHECK/);
+    expect(() =>
+      run(`insert into stat_sheet (game_id, side, entered_by, entered_at, entered_as, confirmed_by)
+           values (2, 'b', 2, 10, 'opponent', 3)`),
+    ).toThrow(/CHECK/);
   });
 });

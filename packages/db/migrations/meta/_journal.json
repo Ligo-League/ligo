@@ -169,6 +169,13 @@
       "when": 1795045884077,
       "tag": "0023_mercato",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1795057109085,
+      "tag": "0024_stats",
+      "breakpoints": true
     }
   ]
 }

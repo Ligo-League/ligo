@@ -4,6 +4,7 @@ import {
   index,
   integer,
   primaryKey,
+  real,
   sqliteTable,
   text,
   unique,
@@ -25,6 +26,8 @@ import {
   SIDES,
   START_SIDES,
   STATS_SOURCES,
+  STAT_SHEET_ENTRIES,
+  STAT_SOURCES,
   VETO_ACTIONS,
 } from './enums.ts';
 import { player, team } from './people.ts';
@@ -149,6 +152,61 @@ export const game = sqliteTable(
     check('game_forfeit_side_check', oneOf(t.forfeitSide, FORFEIT_SIDES)),
     check('game_status_check', oneOf(t.status, GAME_STATUSES)),
     check('game_stats_source_check', oneOf(t.statsSource, STATS_SOURCES)),
+  ],
+);
+
+// Level 1 stats (design doc section 9): one row per player, per game, per metric, for every
+// title. Every metric is additive; derived metrics are computed from sums.
+export const stat = sqliteTable(
+  'stat',
+  {
+    gameId: integer('game_id')
+      .notNull()
+      .references(() => game.id),
+    playerId: integer('player_id')
+      .notNull()
+      .references(() => player.id),
+    metric: text('metric').notNull(),
+    value: real('value').notNull(),
+    source: text('source', { enum: STAT_SOURCES }).notNull(),
+    // Who typed it, for a manual stat.
+    enteredBy: integer('entered_by').references(() => player.id),
+    // False while a side entered by the opponent waits for its own team's confirmation (M-39).
+    verified: integer('verified', { mode: 'boolean' }).notNull().default(false),
+  },
+  (t) => [
+    primaryKey({ columns: [t.gameId, t.playerId, t.metric] }),
+    index('stat_player_idx').on(t.playerId),
+    check('stat_source_check', oneOf(t.source, STAT_SOURCES)),
+  ],
+);
+
+// One side's manual stats for one game (M-39, maintainer, 19 November 2026): who entered them, as
+// its own team, the opponent or staff, and who of its own team confirmed a sheet the opponent
+// entered.
+export const statSheet = sqliteTable(
+  'stat_sheet',
+  {
+    gameId: integer('game_id')
+      .notNull()
+      .references(() => game.id),
+    side: text('side', { enum: SIDES }).notNull(),
+    enteredBy: integer('entered_by')
+      .notNull()
+      .references(() => player.id),
+    enteredAt: integer('entered_at').notNull(),
+    enteredAs: text('entered_as', { enum: STAT_SHEET_ENTRIES }).notNull(),
+    confirmedBy: integer('confirmed_by').references(() => player.id),
+    confirmedAt: integer('confirmed_at'),
+  },
+  (t) => [
+    primaryKey({ columns: [t.gameId, t.side] }),
+    check('stat_sheet_side_check', oneOf(t.side, SIDES)),
+    check('stat_sheet_entered_as_check', oneOf(t.enteredAs, STAT_SHEET_ENTRIES)),
+    check(
+      'stat_sheet_confirmed_check',
+      sql`(${t.confirmedBy} is null) = (${t.confirmedAt} is null)`,
+    ),
   ],
 );
 

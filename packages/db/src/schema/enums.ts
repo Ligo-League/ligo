@@ -41,6 +41,10 @@ export const MATCH_SLOT_SOURCES = ['entry', 'seed', 'winner_of', 'loser_of'] as 
 export const LINEUP_ROLES = ['starter', 'sub'] as const;
 export const GAME_STATUSES = ['pending', 'final', 'void'] as const;
 export const STATS_SOURCES = ['none', 'manual', 'replay', 'api'] as const;
+/** Where a stored stat comes from: the stat grid, a replay or a title's API. */
+export const STAT_SOURCES = ['manual', 'replay', 'api'] as const;
+/** Who entered a side's stat sheet: its own team, the opponent, or league staff (M-39). */
+export const STAT_SHEET_ENTRIES = ['own', 'opponent', 'staff'] as const;
 export const EVIDENCE_KINDS = ['score_screenshot', 'moss', 'vod_link', 'other'] as const;
 export const EVIDENCE_VISIBILITIES = ['staff', 'teams', 'public'] as const;
 /** Where a proposed match time stands; only `pending` can still be answered. */
