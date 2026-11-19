@@ -735,6 +735,20 @@ posts lose their buttons) and the time is announced in the schedule channel with
    is announced in `#mercato`. Two windows of a season cannot overlap.
 5. Teams cannot file moves yet: that is 3f-11.
 
+## 41. Phase 3f-11: a team's mercato page
+
+1. Log in as an owner or manager of a roster playing Season 3, open its manage page and follow
+   **Mercato de l'effectif** (`/teams/<slug>/mercato`). League staff can open it too.
+2. The page shows the season's lineup. **Passer remplaçant**, **Passer titulaire** and **Nommer
+   capitaine** apply at once: they are no moves.
+3. Without an open window (step 40), the move form is hidden. Open a window, then reload.
+4. A player who should arrive must first join the roster with its invitation link (manage page),
+   complete their profile on `/me` and be on the league's Discord server.
+5. Choose who leaves, who arrives (or both, a swap counted once) and click **Demander**. The staff
+   queue channel gets a post with a link to the page; the move shows **En attente du staff**.
+   **Retirer** takes it back and strikes the post through.
+6. Staff cannot approve or refuse moves yet: that is 3f-12.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

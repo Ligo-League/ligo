@@ -646,6 +646,7 @@ Ligo is a tool for esport leagues with divisions that happens to host MBL Group 
 | `/matches/:id`                 | everyone                | Score per game, scoreboards, round timeline when replays exist                                                                 |
 | `/register`                    | team owners             | Team registration form, filed as a request                                                                                     |
 | `/teams/:slug/manage`          | team owner and managers | Team officials, the team's requests (officials, slot transfer, mercato moves, team details) and their history                  |
+| `/teams/:slug/mercato`         | officials who manage the players, staff | The season's lineup (blocked players shown), role and captain changes at once, mercato moves filed and withdrawn, with the moves counted and the limit (phase 3f) |
 | `/matches/:id/upload`          | match players and staff | Replay uploader (browser parsing), MOSS and screenshot uploads; the map veto lives next to it at /matches/:id/veto             |
 | `/matches/:id/stats`           | team staff and staff    | Manual stat grid                                                                                                               |
 | `/matches/:id/games/:n/stitch` | team staff and staff    | Re-host review                                                                                                                 |
