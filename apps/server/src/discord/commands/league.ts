@@ -29,6 +29,7 @@ async function listChannels(
     t(locale, 'league.channels.title'),
     `${t(locale, 'league.channel.kind.staff_queue')} : ${channelText(locale, reply.queueChannelId)}`,
     `${t(locale, 'league.channel.kind.schedule')} : ${channelText(locale, reply.scheduleChannelId)}`,
+    `${t(locale, 'league.channel.kind.mercato')} : ${channelText(locale, reply.mercatoChannelId)}`,
     // The divisions' own results channels follow the league's, which they fall back to.
     `${t(locale, 'league.channel.kind.results')} : ${channelText(locale, reply.resultsChannelId)}`,
     ...reply.divisions.map((row) =>

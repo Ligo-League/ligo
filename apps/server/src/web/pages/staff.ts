@@ -329,6 +329,7 @@ export function staffPage(locale: Locale, data: StaffData): Page {
     : '';
   const body = html`<h1>${t(locale, 'web.staff.title')}</h1>
     <p><a href="/staff/sanctions">${t(locale, 'web.staff.sanctionsLink')}</a></p>
+    <p><a href="/staff/mercato">${t(locale, 'web.staff.mercatoLink')}</a></p>
     ${flash}
     ${data.leagues.map(
       ({ name, path, timeZone, queue, registrations }) =>

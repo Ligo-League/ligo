@@ -7,7 +7,7 @@ import { ensurePlayer } from './players.ts';
 const { auditLog, division, leagueGuild } = schema;
 
 /** The channels the bot posts in by itself, each stored by ID. */
-export const LEAGUE_CHANNEL_KINDS = ['staff_queue', 'results', 'schedule'] as const;
+export const LEAGUE_CHANNEL_KINDS = ['staff_queue', 'results', 'schedule', 'mercato'] as const;
 export type LeagueChannelKind = (typeof LEAGUE_CHANNEL_KINDS)[number];
 
 const COLUMN = {
@@ -17,6 +17,8 @@ const COLUMN = {
   results: 'resultsChannelId',
   // Extensions and agreed match times, until each match has its own channel (phase 4).
   schedule: 'scheduleChannelId',
+  // Mercato windows and approved moves (design doc section 7), mentioning nobody.
+  mercato: 'mercatoChannelId',
 } as const satisfies Record<LeagueChannelKind, keyof typeof leagueGuild.$inferSelect>;
 
 /**
@@ -156,6 +158,7 @@ export type LeagueChannelsReply =
       queueChannelId: string | null;
       resultsChannelId: string | null;
       scheduleChannelId: string | null;
+      mercatoChannelId: string | null;
       /** The current season's divisions, top level first; null means the league's channel. */
       divisions: { id: number; name: string; resultsChannelId: string | null }[];
     }
@@ -174,6 +177,7 @@ export function listLeagueChannels(
     queueChannelId: guild.alertsChannelId,
     resultsChannelId: guild.resultsChannelId,
     scheduleChannelId: guild.scheduleChannelId,
+    mercatoChannelId: guild.mercatoChannelId,
     divisions: divisions.map(({ division: row }) => ({
       id: row.id,
       name: row.name,

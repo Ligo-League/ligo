@@ -255,6 +255,18 @@ export const fr = {
   'schedule.error.invalid_time': 'Heure illisible : tape-la comme 21:00.',
   'schedule.error.nonexistent_time':
     "Cette heure n'existe pas ce jour-là, à cause du changement d'heure. Choisis-en une autre.",
+  'mercato.window.opened':
+    "**Mercato — {competition}, {season}** : fenêtre ouverte du {from} au {to}. {rules} Les mouvements se déposent sur la page de gestion de l'équipe, sur le site.",
+  'mercato.window.limit': '{count} mouvements au plus par équipe.',
+  'mercato.window.noLimit': 'Pas de limite de mouvements.',
+  'mercato.window.lock':
+    'Un joueur qui arrive ne peut jouer que {hours} h après la validation de son mouvement.',
+  'mercato.window.closed':
+    "**Mercato** : la fenêtre prévue jusqu'au {to} est fermée dès maintenant. Les mouvements déjà déposés seront traités.",
+  'mercato.window.cancelled': '**Mercato** : la fenêtre prévue du {from} au {to} est annulée.',
+  'league.channel.kind.mercato': 'Mercato',
+  'league.channel.notice.mercato':
+    'Les fenêtres de mercato et les mouvements validés seront annoncés ici.',
   'league.channel.kind.schedule': 'Planning des matchs',
   'league.channel.notice.schedule': 'Les prolongations et les horaires fixés seront annoncés ici.',
   'league.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
@@ -292,7 +304,7 @@ export const fr = {
   'help.page.register':
     "**`/register`** — inscrire une équipe\nOuvert à tous, pendant les inscriptions.\n\nLe bot donne le lien du formulaire sur le site. D'abord, ton club et ton équipe existent sur le site (« Créer un club » sur ta page), et tes joueurs l'ont rejointe par son lien d'invitation, chacun avec son propre compte et sa page remplie (compte R6, rang, nationalité, date de naissance, accord sur les statistiques). Le formulaire inscrit l'équipe et enregistre l'acceptation du règlement ; tu choisis ensuite parmi ses joueurs les titulaires, les remplaçants et le capitaine, un titulaire.",
   'help.page.league':
-    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
+    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `kind` Mercato : les fenêtres de mercato et les mouvements validés, sans mentionner personne.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
   'veto.title': '**Veto — {fixture}** (BO{bestOf})',
   'veto.roles':
     '{chooser} choisit le côté de départ et commence le veto ; {other} choisit le côté en prolongation. Hôte : {host}.',
@@ -752,6 +764,47 @@ export const fr = {
   'web.veto.done.started_unposted':
     'Veto lancé. Il n’a pas pu être publié sur Discord : les deux équipes le suivent sur cette page.',
   'web.veto.done.chosen': 'Choix enregistré.',
+  'web.staff.mercatoLink': 'Fenêtres de mercato →',
+  'web.mercato.title': 'Fenêtres de mercato',
+  'web.mercato.intro':
+    "Pendant une fenêtre, les équipes déposent leurs mouvements sur leur page de gestion. Le bot annonce l'ouverture et la fermeture anticipée dans le salon #mercato de la ligue, s'il est choisi.",
+  'web.mercato.season': 'Saison en cours : {season}.',
+  'web.mercato.noSeason': 'Aucune saison en cours : pas de fenêtre à ouvrir.',
+  'web.mercato.alwaysOpen':
+    'Le mercato de cette ligue est ouvert toute la saison ({season}) : les équipes déposent leurs mouvements à tout moment, sans fenêtre.',
+  'web.mercato.none': 'Aucune fenêtre pour cette saison.',
+  'web.mercato.opens': 'Ouverture',
+  'web.mercato.closes': 'Fermeture',
+  'web.mercato.limit': 'Mouvements par équipe',
+  'web.mercato.lock': 'Blocage',
+  'web.mercato.state': 'État',
+  'web.mercato.noLimit': 'sans limite',
+  'web.mercato.hours': '{hours} h',
+  'web.mercato.closedEarly': '{at} (prévue {planned})',
+  'web.mercato.state.upcoming': 'À venir',
+  'web.mercato.state.open': 'Ouverte',
+  'web.mercato.state.closed': 'Fermée',
+  'web.mercato.close': 'Fermer maintenant',
+  'web.mercato.cancel': 'Annuler',
+  'web.mercato.openTitle': 'Ouvrir une fenêtre',
+  'web.mercato.timeZone': 'Dates et heures dans le fuseau de la ligue ({zone}).',
+  'web.mercato.limitField': 'Mouvements au plus par équipe (vide : sans limite)',
+  'web.mercato.lockField': "Heures avant qu'un joueur arrivant puisse jouer",
+  'web.mercato.open': 'Ouvrir la fenêtre',
+  'web.mercato.back': '← File du staff',
+  'web.mercato.done.opened': 'Fenêtre enregistrée.',
+  'web.mercato.done.closed': 'Fenêtre fermée.',
+  'web.mercato.error.no_season': 'Aucune saison en cours : pas de fenêtre à ouvrir.',
+  'web.mercato.error.always_open':
+    "Le mercato de cette ligue est ouvert toute la saison : il n'a pas de fenêtres.",
+  'web.mercato.error.closes_before_opening': "La fermeture doit venir après l'ouverture.",
+  'web.mercato.error.closes_in_past': 'Cette fenêtre serait déjà fermée.',
+  'web.mercato.error.invalid_limit':
+    'Le nombre de mouvements va de 1 à 50, ou reste vide pour aucune limite.',
+  'web.mercato.error.invalid_lock': 'Le blocage va de 0 à 720 heures.',
+  'web.mercato.error.overlaps': 'Cette fenêtre chevauche une autre fenêtre de la saison.',
+  'web.mercato.error.window_not_found': 'Fenêtre introuvable.',
+  'web.mercato.error.already_closed': 'Cette fenêtre est déjà fermée.',
   'web.staff.sanctionsLink': 'Sanctions et exclusions des équipes →',
   'web.sanctions.title': 'Sanctions et exclusions',
   'web.sanctions.back': '← File du staff',

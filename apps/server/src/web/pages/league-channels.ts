@@ -106,6 +106,11 @@ export function leagueChannelsPage(locale: Locale, data: ChannelsPageData): Page
           division: null,
           channelId: current.scheduleChannelId,
         })}
+        ${row(locale, data, kind('mercato'), {
+          kind: 'mercato',
+          division: null,
+          channelId: current.mercatoChannelId,
+        })}
         ${row(locale, data, kind('results'), {
           kind: 'results',
           division: null,
