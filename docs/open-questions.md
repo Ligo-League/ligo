@@ -47,6 +47,25 @@ section 16.
   Season 3 and probably in Season 4: the team that showed up must not lose on difference. It is a
   setting (`forfeit_score`). The maintainer was wrong on 13 November ("no rounds").
 
+#### O-36 · A forfeit's round difference in Season 4
+
+- **Question:** the maintainer asked the teams (19 November 2026). Neither 0–0 nor 7–0 convinces
+  everyone: 0–0 gives the team that wanted to play no round difference while its rivals earn
+  some by playing; 7–0 gives it too much. Proposal: the team that receives the forfeit gets its
+  usual points and **+4** round difference, as if it won 7–3 (Season 3's average round
+  difference of a played match: 4.05 over 39 matches); the team that forfeits loses its usual
+  points and gets **−7**, as if it lost 0–7, so forfeiting is never better than losing. The value
+  is fixed before the season starts and does not change during it.
+- **Why it matters:** the score feeds rounds won and lost, so the difference that breaks ties.
+  Other titles would take the same rule with their own values (Valorant, CS2, Call of Duty, any
+  round-based game; goals in Rocket League).
+- **Until answered:** 7–0 (`forfeit_score`), the same score for both teams.
+- **What Ligo would need:** `forfeit_score` gives one score, read from each side, so the winner's
+  difference is always the opposite of the loser's. The proposal needs each side's own rounds for
+  and against (winner 7–3, loser 0–7): a change of the setting's shape with a migration, as a
+  setting per season, which the scoring lock (M-40) already freezes once a result counts. Ligo
+  could also show the previous season's average difference when staff set it.
+
 #### O-03 · Ligue 2 calendar
 
 - **Question:** Ligue 2 has 12 teams, so score7 schedules 11 rounds, two more than the season's
