@@ -516,6 +516,19 @@ section 16.
 
 ## Answered
 
+#### M-42 · What a player page shows
+
+- **Question:** who has a public player page, does it show game accounts and ranks, and which
+  matches does it list, when Ligo knows who played a map only from a stat sheet (later a
+  replay)?
+- **Answer (maintainer, 19 November 2026):**
+  - Every account has a page at `/players/<slug>`, even an empty one.
+  - It shows each game account's in-game name and rank, marked as declared unless verified.
+    Never the Ubisoft profile ID, birth date, Discord ID or email.
+  - It lists only the matches a stat sheet (later a replay) names the player in: a lineup kept
+    without stats does not claim a player played.
+- **Where:** design doc section 7; built in phase 3i.
+
 #### M-20 · Who opens the admin panel
 
 - **Question:** who may open each level of the admin panel (design doc section 7)? A
