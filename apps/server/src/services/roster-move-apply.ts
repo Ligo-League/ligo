@@ -282,3 +282,43 @@ export function decideMove(
     ...moveChannels(db, league.competition.id),
   };
 }
+
+/** A move waiting for staff, with its roster, for the staff queue. */
+export interface MoveToDecide {
+  move: MoveView;
+  team: { name: string; slug: string };
+}
+
+/** The competition's moves waiting for staff, oldest first. */
+export function movesToDecide(db: Reader, competitionId: number): MoveToDecide[] {
+  return db
+    .select({ id: request.id, teamId: request.teamId, seasonId: request.seasonId })
+    .from(request)
+    .where(
+      and(
+        eq(request.competitionId, competitionId),
+        eq(request.kind, 'roster_move'),
+        eq(request.status, 'pending'),
+      ),
+    )
+    .orderBy(request.requestedAt, request.id)
+    .all()
+    .flatMap((row) => {
+      if (row.teamId === null || row.seasonId === null) return [];
+      const found = movesOf(db, row.seasonId, row.teamId).find((entry) => entry.id === row.id);
+      const teamRow = db.select().from(team).where(eq(team.id, row.teamId)).get();
+      return found && teamRow
+        ? [{ move: viewOf(db, found), team: { name: teamRow.name, slug: teamRow.slug } }]
+        : [];
+    });
+}
+
+/** The competition a move belongs to, whose staff answer it; null for anything else. */
+export function moveCompetition(db: Reader, requestId: number): number | null {
+  const row = db
+    .select({ competitionId: request.competitionId, kind: request.kind })
+    .from(request)
+    .where(eq(request.id, requestId))
+    .get();
+  return row?.kind === 'roster_move' ? row.competitionId : null;
+}

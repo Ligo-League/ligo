@@ -8,7 +8,7 @@ import { csrfField, formatWhen, pageOf, type Html, type Page } from '../layout.t
 // under way, its moves and the form to file one, for league staff and the officials who manage
 // its players. Role and captain changes apply at once; a move waits for staff.
 
-export const MERCATO_TEAM_DONE = ['filed', 'withdrawn', 'role'] as const;
+export const MERCATO_TEAM_DONE = ['filed', 'withdrawn', 'role', 'exception'] as const;
 export type MercatoTeamDone = (typeof MERCATO_TEAM_DONE)[number];
 
 const ERROR_KEYS = {
@@ -30,10 +30,14 @@ const ERROR_KEYS = {
   captain_not_starter: 'web.rosterMercato.error.captain_not_starter',
   not_started: 'web.rosterMercato.error.not_started',
   not_found: 'web.rosterMercato.error.not_found',
+  reason_required: 'web.rosterMercato.error.reason_required',
 } as const satisfies Record<string, MessageKey>;
 export type MercatoTeamError = keyof typeof ERROR_KEYS;
 export const isMercatoTeamError = (value: string | undefined): value is MercatoTeamError =>
   value !== undefined && Object.hasOwn(ERROR_KEYS, value);
+
+/** The text explaining a refused move, for the staff queue too. */
+export const mercatoTeamErrorKey = (error: MercatoTeamError): MessageKey => ERROR_KEYS[error];
 
 export type MercatoTeamFlash = { done: MercatoTeamDone } | { error: MercatoTeamError } | null;
 
@@ -140,6 +144,51 @@ function moveForm(locale: Locale, view: View, csrf: string): Html {
   </form>`;
 }
 
+/** League staff only: a move applied at once, at any time, with a reason (O-35). */
+function exceptionForm(locale: Locale, view: View, csrf: string): Html {
+  if (!view.staff) return html``;
+  const leaving = view.lineup.filter((entry) => !entry.captain);
+  return html`<form
+    class="card stack"
+    method="post"
+    action="/teams/${view.team.slug}/mercato/exception"
+  >
+    ${csrfField(csrf)}
+    <h2>${t(locale, 'web.rosterMercato.exceptionTitle')}</h2>
+    <p class="muted">${t(locale, 'web.rosterMercato.exceptionHint')}</p>
+    <label
+      >${t(locale, 'web.rosterMercato.out')}
+      <select name="out">
+        <option value="">${t(locale, 'web.rosterMercato.nobody')}</option>
+        ${leaving.map(
+          (entry) => html`<option value="${String(entry.playerId)}">${entry.name}</option>`,
+        )}
+      </select></label
+    >
+    <label
+      >${t(locale, 'web.rosterMercato.in')}
+      <select name="in">
+        <option value="">${t(locale, 'web.rosterMercato.nobody')}</option>
+        ${view.candidates.map(
+          (entry) => html`<option value="${String(entry.playerId)}">${entry.name}</option>`,
+        )}
+      </select></label
+    >
+    <label
+      >${t(locale, 'web.rosterMercato.role')}
+      <select name="role">
+        <option value="player">${t(locale, 'mercato.role.player')}</option>
+        <option value="sub">${t(locale, 'mercato.role.sub')}</option>
+      </select></label
+    >
+    <label
+      >${t(locale, 'web.rosterMercato.exceptionReason')}
+      <textarea name="reason" maxlength="500" rows="2" required></textarea>
+    </label>
+    <button type="submit">${t(locale, 'web.rosterMercato.exceptionApply')}</button>
+  </form>`;
+}
+
 function movesTable(locale: Locale, view: View, csrf: string): Html {
   if (view.moves.length === 0) {
     return html`<p class="muted">${t(locale, 'web.rosterMercato.noMoves')}</p>`;
@@ -199,7 +248,7 @@ export function rosterMercatoPage(
       </table>
     </div>
     <p class="muted">${t(locale, 'web.rosterMercato.roleHint')}</p>
-    ${moveForm(locale, view, state.csrf)}
+    ${moveForm(locale, view, state.csrf)} ${exceptionForm(locale, view, state.csrf)}
     <h2>${t(locale, 'web.rosterMercato.moves')}</h2>
     ${movesTable(locale, view, state.csrf)}
     <p><a href="/teams/${view.team.slug}/manage">${t(locale, 'web.rosterMercato.back')}</a></p>`;

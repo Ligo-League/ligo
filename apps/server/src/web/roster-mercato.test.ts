@@ -20,13 +20,16 @@ const STAFF: Actor = {
   memberRoleIds: [TEST_STAFF_ROLE],
 };
 const MANAGER = { id: '700000000000000002', displayName: 'Manager' };
+const LEA = { id: STAFF.user.id, displayName: 'Léa Staff' };
+const MERCATO = '800000000000000004';
 
 function site() {
   const db = leagueDatabase();
   setTeamOwner(db, STAFF, { teamId: 1, member: MANAGER }, 1);
   const ids = mercatoLineups(db);
-  db.update(schema.leagueGuild).set({ alertsChannelId: QUEUE }).run();
-  const browser = testSite({ db, users: { 'code-man': MANAGER } });
+  db.update(schema.leagueGuild).set({ alertsChannelId: QUEUE, mercatoChannelId: MERCATO }).run();
+  const browser = testSite({ db, users: { 'code-man': MANAGER, 'code-lea': LEA } });
+  browser.setRoles([TEST_STAFF_ROLE], LEA.id);
   // Every player is on the league's Discord server.
   for (let n = 1; n <= 9; n += 1) {
     browser.gateway.members.set(`${TEST_GUILD}:${`71000000000000000${String(n)}`.slice(-18)}`, []);
@@ -132,5 +135,83 @@ describe('a roster’s mercato page', () => {
     expect((await post(`${PAGE}/move`, { out: p(6), in: '', role: 'sub' })).status).toBe(403);
     expect((await post(`${PAGE}/role`, { captain: p(2) })).status).toBe(403);
     expect(moves()).toEqual([]);
+  });
+});
+
+describe('league staff and moves', () => {
+  it('approve a move from /staff: the lineup changes and #mercato announces it', async () => {
+    const { request, post, logIn, jar, openWindow, p, moves, gateway } = site();
+    openWindow();
+    await logIn(PAGE, 'code-man');
+    await post(`${PAGE}/move`, { out: p(5), in: p(7), role: 'player', note: 'Blessure' });
+    jar.clear();
+    await logIn('/staff', 'code-lea');
+    const queue = await (await request('/staff')).text();
+    expect(queue).toContain('Mouvements de mercato (1)');
+    expect(queue).toContain('P7 remplace P5');
+    const id = String(moves()[0]?.id);
+    expect(queue).toContain(`action="/staff/moves/${id}/approve"`);
+    expect(where(await post(`/staff/moves/${id}/approve`, {}))).toBe('/staff?done=move_approved');
+    expect(moves()[0]?.status).toBe('approved');
+    expect(gateway.posted.find((entry) => entry.channelId === MERCATO)?.message.content).toMatch(
+      /^\*\*LFR\*\* — Alpha Esport : P7 remplace P5\./,
+    );
+    expect(await (await request('/staff?done=move_approved')).text()).toContain(
+      'Mouvements de mercato (0)',
+    );
+  });
+
+  it('refuse a move from /staff with a reason, and say which rule a move now breaks', async () => {
+    const { request, post, logIn, jar, openWindow, p, moves } = site();
+    openWindow();
+    await logIn(PAGE, 'code-man');
+    await post(`${PAGE}/move`, { out: p(5), in: '', role: 'sub' });
+    await post(`${PAGE}/move`, { out: p(6), in: '', role: 'sub' });
+    // P5 becomes captain after the move was filed: it cannot leave any more.
+    await post(`${PAGE}/role`, { captain: p(5) });
+    jar.clear();
+    await logIn('/staff', 'code-lea');
+    const [first, second] = moves().map((row) => String(row.id));
+    expect(where(await post(`/staff/moves/${String(first)}/approve`, {}))).toBe(
+      '/staff?move_error=captain_leaving',
+    );
+    expect(await (await request('/staff?move_error=captain_leaving')).text()).toContain(
+      'Le capitaine ne peut pas partir',
+    );
+    expect(where(await post(`/staff/moves/${String(second)}/reject`, { reason: '' }))).toBe(
+      '/staff?error=reason_required',
+    );
+    expect(
+      where(await post(`/staff/moves/${String(second)}/reject`, { reason: 'Hors délai' })),
+    ).toBe('/staff?done=move_rejected');
+    expect(moves().map((row) => row.status)).toEqual(['pending', 'rejected']);
+  });
+
+  it('apply an exception from the team’s page, without a window, not counted', async () => {
+    const { request, post, logIn, p, moves, gateway } = site();
+    await logIn(PAGE, 'code-lea');
+    expect(await (await request(PAGE)).text()).toContain('Exception du staff');
+    const applied = await post(`${PAGE}/exception`, {
+      out: p(5),
+      in: p(7),
+      role: 'player',
+      reason: 'Blessure longue durée',
+    });
+    expect(where(applied)).toBe(`${PAGE}?done=exception`);
+    expect(moves()).toMatchObject([{ status: 'approved', payloadJson: { counted: false } }]);
+    expect(gateway.posted.find((entry) => entry.channelId === QUEUE)?.message.content).toContain(
+      '✅ Exception du staff (<@222222222222222222>) : Blessure longue durée',
+    );
+  });
+
+  it('refuse every staff POST from someone who is not staff', async () => {
+    const { post, logIn, openWindow, p, moves } = site();
+    openWindow();
+    await logIn(PAGE, 'code-man');
+    await post(`${PAGE}/move`, { out: p(6), in: '', role: 'sub' });
+    const id = String(moves()[0]?.id);
+    expect((await post(`/staff/moves/${id}/approve`, {})).status).toBe(403);
+    expect((await post(`${PAGE}/exception`, { out: p(5), in: '', reason: 'x' })).status).toBe(403);
+    expect(moves()).toMatchObject([{ status: 'pending' }]);
   });
 });

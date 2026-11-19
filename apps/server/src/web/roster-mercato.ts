@@ -113,6 +113,33 @@ export function rosterMercatoRoutes(app: Hono<Env>, kit: RouteKit, memberOf: Mem
     }),
   );
 
+  // A staff exception (O-35): applied at once, at any time, with a reason; not counted.
+  app.post(
+    '/teams/:slug/mercato/exception',
+    post(async (c, { roster, actor }, form, back) => {
+      const role = field(form, 'role') === 'sub' ? 'sub' : 'player';
+      const incoming = idOf(field(form, 'in'));
+      const reply = await fileMove(
+        db,
+        memberOf,
+        actor,
+        {
+          teamId: roster.teamId,
+          outId: idOf(field(form, 'out')),
+          in: incoming === null ? null : { playerId: incoming, role },
+          note: null,
+          exceptionReason: field(form, 'reason'),
+        },
+        deps.now(),
+      );
+      if (!reply.ok) return refused(c, back, reply.error);
+      if (deps.login) {
+        await announceMoveFiled(discord, reply, deps.login.publicUrl, actor.user.id);
+      }
+      return back('done=exception');
+    }),
+  );
+
   app.post(
     '/teams/:slug/mercato/moves/:id/withdraw',
     post(async (c, { roster, actor }, _form, back) => {

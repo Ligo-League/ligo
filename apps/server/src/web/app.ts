@@ -50,6 +50,8 @@ import { staffSanctionsRoutes } from './staff-sanctions.ts';
 import { leagueChannelsRoutes } from './league-channels.ts';
 import { staffMercatoRoutes } from './staff-mercato.ts';
 import { rosterMercatoRoutes } from './roster-mercato.ts';
+import { isMercatoTeamError, mercatoTeamErrorKey } from './pages/roster-mercato.ts';
+import { movesToDecide } from '../services/roster-move-apply.ts';
 import { matchReportRoutes } from './match-report.ts';
 import { matchTimeRoutes } from './match-time.ts';
 import { vetoRoutes } from './veto.ts';
@@ -155,6 +157,8 @@ const STAFF_DONE = [
   'rejected_request',
   'registration_approved',
   'registration_rejected',
+  'move_approved',
+  'move_rejected',
 ] as const;
 const STAFF_ERRORS = [
   'match_not_found',
@@ -870,15 +874,20 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
         timeZone: league.competition.schedulingJson.time_zone,
         queue: staffQueue(db, league),
         registrations: await registrationsToApprove(db, memberOf, league.competition.id),
+        moves: movesToDecide(db, league.competition.id),
       });
     }
     const done = oneOf(STAFF_DONE, c.req.query('done'));
     const error = oneOf(STAFF_ERRORS, c.req.query('error'));
+    // A move that no longer passes the rules says which one.
+    const moveError = c.req.query('move_error');
     const flash: { error: boolean; key: MessageKey } | null = done
       ? { error: false, key: `web.staff.done.${done}` }
       : error
         ? { error: true, key: `web.staff.error.${error}` }
-        : null;
+        : isMercatoTeamError(moveError)
+          ? { error: true, key: mercatoTeamErrorKey(moveError) }
+          : null;
     // The queue is for this viewer only: no shared cache keeps it.
     c.header('Cache-Control', 'no-store');
     return render(c, staffPage(locale, { leagues, csrf: viewer.csrf, now: deps.now(), flash }));

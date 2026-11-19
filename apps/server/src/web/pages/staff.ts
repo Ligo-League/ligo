@@ -8,6 +8,8 @@ import type { QueuedDispute, QueuedReport, StaffQueue } from '../../services/sta
 import { R6_RANKS } from '@ligo/titles';
 import { lineupGapList } from './register.ts';
 import { csrfField, formatWhen, pageOf, type Html, type Page } from '../layout.ts';
+import { moveLine } from '../../discord/move-posts.ts';
+import type { MoveToDecide } from '../../services/roster-move-apply.ts';
 
 export interface LeagueQueue {
   name: string;
@@ -17,6 +19,8 @@ export interface LeagueQueue {
   queue: StaffQueue;
   /** Registrations waiting, seen as soon as they are filed (M-29). */
   registrations: RegistrationToApprove[];
+  /** Mercato moves waiting (design doc section 7). */
+  moves: MoveToDecide[];
 }
 
 export interface StaffData {
@@ -304,6 +308,38 @@ function registrationItem(
   </li>`;
 }
 
+function moveItem(locale: Locale, entry: MoveToDecide, data: StaffData, timeZone: string): Html {
+  const { move } = entry;
+  const action = `/staff/moves/${String(move.id)}`;
+  return html`<li class="card">
+    <p>
+      <strong>${t(locale, 'web.staff.move.title', { team: entry.team.name })}</strong> :
+      ${moveLine(locale, move)}
+    </p>
+    <p class="muted">
+      ${t(locale, 'web.staff.request.by', {
+        name: move.requester,
+        when: formatWhen(locale, move.requestedAt, timeZone),
+      })}
+      ${move.counted ? '' : html` · ${t(locale, 'mercato.move.notCounted')}`} ·
+      <a href="/teams/${entry.team.slug}/mercato">${t(locale, 'web.staff.move.page')}</a>
+    </p>
+    ${move.note === null ? '' : html`<blockquote>${move.note}</blockquote>`}
+    <form class="inline" method="post" action="${action}/approve">
+      ${csrfField(data.csrf)}
+      <button type="submit">${t(locale, 'mercato.button.approve')}</button>
+    </form>
+    <form class="stack" method="post" action="${action}/reject">
+      ${csrfField(data.csrf)}
+      <label
+        >${t(locale, 'mercato.form.reason')}
+        <textarea name="reason" maxlength="500" rows="2" required></textarea>
+      </label>
+      <button type="submit">${t(locale, 'mercato.button.reject')}</button>
+    </form>
+  </li>`;
+}
+
 function section<T>(
   locale: Locale,
   title: MessageKey,
@@ -332,7 +368,7 @@ export function staffPage(locale: Locale, data: StaffData): Page {
     <p><a href="/staff/mercato">${t(locale, 'web.staff.mercatoLink')}</a></p>
     ${flash}
     ${data.leagues.map(
-      ({ name, path, timeZone, queue, registrations }) =>
+      ({ name, path, timeZone, queue, registrations, moves }) =>
         html`<h2>${name}</h2>
           ${
             path === null
@@ -352,6 +388,9 @@ export function staffPage(locale: Locale, data: StaffData): Page {
           )}
           ${section(locale, 'web.staff.registrations', registrations, (entry) =>
             registrationItem(locale, entry, data, timeZone),
+          )}
+          ${section(locale, 'web.staff.moves', moves, (entry) =>
+            moveItem(locale, entry, data, timeZone),
           )}`,
     )}`;
   return pageOf(t(locale, 'web.staff.title'), body);

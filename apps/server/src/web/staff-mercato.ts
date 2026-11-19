@@ -1,6 +1,8 @@
 import { zonedDateTime } from '@ligo/core';
 import type { Context, Hono } from 'hono';
 import { announceWindowClosed, announceWindowOpened } from '../discord/mercato-posts.ts';
+import { announceMoveDecision } from '../discord/move-posts.ts';
+import { decideMove, moveCompetition } from '../services/roster-move-apply.ts';
 import {
   closeMercatoWindow,
   mercatoOverview,
@@ -24,6 +26,9 @@ import { staffCompetitions, webActor } from './roles.ts';
 
 const ROW_ID = /^[1-9]\d{0,9}$/;
 const ACTIONS = ['open', 'close'] as const;
+const DECISIONS = ['approve', 'reject'] as const;
+// What `/staff` explains in its own words; any other refusal of a move says which rule it breaks.
+const QUEUE_ERRORS = new Set(['not_found', 'not_pending', 'reason_required']);
 const field = (form: Record<string, unknown>, name: string) =>
   typeof form[name] === 'string' ? form[name].trim() : '';
 
@@ -113,5 +118,43 @@ export function staffMercatoRoutes(app: Hono<Env>, kit: RouteKit): void {
     if (!reply.ok) return refused(reply.error);
     await announceWindowOpened(discord, reply);
     return back('done=opened');
+  });
+
+  // A move waiting in `/staff` (phase 3f-12): approved, or refused with a reason the team reads.
+  app.post('/staff/moves/:id/:decision', async (c) => {
+    const decision = DECISIONS.find((entry) => entry === c.req.param('decision'));
+    const id = c.req.param('id');
+    if (!decision || !ROW_ID.test(id)) return notFound(c);
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const competitionId = moveCompetition(db, Number(id));
+    if (competitionId === null) return notFound(c);
+    const now = deps.now();
+    const actor = await webActor(db, deps.roles, viewer, competitionId, now);
+    if (!actor) return forbidden(c);
+    const reply = decideMove(
+      db,
+      actor,
+      { requestId: Number(id), decision, reason: field(form, 'reason') },
+      now,
+    );
+    if (!reply.ok) {
+      if (reply.error === 'not_staff' || reply.error === 'not_linked') return forbidden(c);
+      const query = QUEUE_ERRORS.has(reply.error) ? 'error' : 'move_error';
+      return c.redirect(`/staff?${query}=${reply.error}`, 303);
+    }
+    if (deps.login) {
+      await announceMoveDecision(
+        { db, gateway: deps.gateway, locale },
+        reply,
+        actor.user.id,
+        deps.login.publicUrl,
+      );
+    }
+    return c.redirect(
+      `/staff?done=${decision === 'approve' ? 'move_approved' : 'move_rejected'}`,
+      303,
+    );
   });
 }
