@@ -208,7 +208,8 @@ When no trigger applies, one line in the plan is enough: "Hosting: nothing neede
 
 Once phase 3 is done, the work puts everything together into a complete-looking website based
 on `design-proposals/` (proposal E, the merged one), and makes the images the bot posts in
-Discord or for social media look like the website (maintainer, 19 November 2026).
+Discord or for social media look like the website (maintainer, 19 November 2026). The images page
+(`manual` mode) and the `/embed/...` widgets for other websites come with it (M-43).
 
 **Tell the maintainer** as soon as Ligo has enough features to build the website's appearance
 from the proposals: say so explicitly at the end of the task where that becomes true, with what
