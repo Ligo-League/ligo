@@ -60,6 +60,7 @@ describe('LFR Season 3 as Ligo records it', () => {
       NOVA1: 'A arrêté de jouer',
       OUTSOUKI: 'Exclue au 3e forfait',
       RPV: 'A quitté la LFR',
+      STARLY: 'Le roster a été dissout',
     });
     const excluded = db
       .select({ tag: team.tag })
@@ -69,7 +70,7 @@ describe('LFR Season 3 as Ligo records it', () => {
       .all()
       .map((row) => row.tag)
       .sort();
-    expect(excluded).toEqual(['NIGHTWOLVES', 'NOVA1', 'OUTSOUKI', 'RPV']);
+    expect(excluded).toEqual(['NIGHTWOLVES', 'NOVA1', 'OUTSOUKI', 'RPV', 'STARLY']);
   });
 
   it.each(LFR_DIVISION_NAMES)('computes the table of %s, every team in it once', (name) => {
