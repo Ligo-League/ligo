@@ -7,6 +7,7 @@ import {
   GENERAL_FIELDS,
   updateCompetitionGeneral,
 } from '../services/admin-competitions.ts';
+import { competitionRules, updateCompetitionRules } from '../services/admin-rules.ts';
 import type { OrgUser } from '../services/orgs.ts';
 import type { Env, Viewer } from './app.ts';
 import {
@@ -15,6 +16,7 @@ import {
   competitionPageView,
   type CompetitionPageData,
 } from './pages/admin-competition.ts';
+import { rulesPageView, type RulesPageData } from './pages/admin-rules.ts';
 import type { RouteKit } from './route-kit.ts';
 import { staffCompetitions } from './roles.ts';
 
@@ -134,5 +136,57 @@ export function adminCompetitionRoutes(app: Hono<Env>, kit: RouteKit): void {
     if (reply.ok) return c.redirect(`/admin/${orgSlug}/${compSlug}?done=saved`, 303);
     if (reply.error !== 'invalid') return reply.error === 'not_found' ? notFound(c) : forbidden(c);
     return show(c, viewer, { typed: { values: typed, errors: reply.errors }, done: null });
+  });
+
+  const showRules = async (
+    c: Context<Env>,
+    viewer: Viewer,
+    extra: Pick<RulesPageData, 'typed' | 'saved'>,
+  ) => {
+    const view = competitionRules(
+      db,
+      userOf(viewer),
+      c.req.param('org') ?? '',
+      c.req.param('comp') ?? '',
+      await staffIds(viewer),
+    );
+    if (!view.ok) return view.error === 'not_found' ? notFound(c) : forbidden(c);
+    c.header('Cache-Control', 'private, no-store');
+    return render(
+      c,
+      rulesPageView(locale, { view, csrf: viewer.csrf, ...extra }),
+      extra.typed ? 400 : 200,
+    );
+  };
+
+  app.get('/admin/:org/:comp/rules', async (c) => {
+    const viewer = c.get('viewer');
+    if (!deps.login) return notFound(c);
+    if (!viewer) return toLogin(c);
+    return showRules(c, viewer, { typed: null, saved: c.req.query('done') === 'saved' });
+  });
+
+  app.post('/admin/:org/:comp/rules', async (c) => {
+    const guarded = await guard(c);
+    if (guarded instanceof Response) return guarded;
+    const { viewer, form } = guarded;
+    const orgSlug = c.req.param('org');
+    const compSlug = c.req.param('comp');
+    // Every input as typed; the service reads only the rules' own.
+    const typed = Object.fromEntries(
+      Object.entries(form).flatMap(([name, value]) =>
+        typeof value === 'string' && name !== '_csrf' ? [[name, value]] : [],
+      ),
+    );
+    const reply = updateCompetitionRules(
+      db,
+      userOf(viewer),
+      { orgSlug, compSlug, staffIds: await staffIds(viewer) },
+      typed,
+      deps.now(),
+    );
+    if (reply.ok) return c.redirect(`/admin/${orgSlug}/${compSlug}/rules?done=saved`, 303);
+    if (reply.error !== 'invalid') return reply.error === 'not_found' ? notFound(c) : forbidden(c);
+    return showRules(c, viewer, { typed: { values: typed, errors: reply.errors }, saved: false });
   });
 }

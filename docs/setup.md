@@ -852,6 +852,21 @@ posts lose their buttons) and the time is announced in the schedule channel with
    audited.
 4. `/admin` now leads staff to their competition's page.
 
+## 49. Phase 3h-5: a competition's rules
+
+1. From the competition's admin page, follow **Règles de la compétition**
+   (`/admin/<org>/<competition>/rules`). The organisation's owner and the competition's staff
+   open it.
+2. It holds the points and tie-breakers a **new** season copies (a season's own are changed on
+   its page, step 3h-6), how a map is won (empty: any score with a winner), the veto (time per
+   step, each format's sequence such as `A_ban B_ban A_pick …`, and the decider's side),
+   promotion and relegation, registration, the mercato, the stat grid and the dispute reasons
+   (three blank rows to add one; empty a row to remove one).
+3. Only the tie-breakers the standings compute are offered: points, round difference, rounds
+   won and wins.
+4. Anything refused keeps what was typed, says what is wrong on its field (or on its section for
+   a rule across fields, such as "a BO3 picks 2 maps"), and saves nothing.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

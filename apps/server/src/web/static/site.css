@@ -507,3 +507,20 @@ button.inline {
   font-weight: bold;
   text-align: left;
 }
+
+/* The admin panel's settings forms (pages/settings-fields.ts). */
+fieldset {
+  border: 1px solid var(--line);
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.select-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.settings-rows input {
+  width: 100%;
+}

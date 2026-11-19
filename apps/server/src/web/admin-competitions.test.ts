@@ -115,3 +115,71 @@ describe('a competition’s general settings', () => {
     expect(lfr()).toEqual(before);
   });
 });
+
+describe('a competition’s rules page', () => {
+  /** Every input of the page with its value, ticked boxes only, as a browser sends them. */
+  const inputsOf = (page: string): Record<string, string> => {
+    const fields: Record<string, string> = {};
+    for (const match of page.matchAll(/<input\s+name="([^"]+)"\s+value="([^"]*)"/g)) {
+      fields[match[1] ?? ''] = match[2] ?? '';
+    }
+    for (const match of page.matchAll(
+      /<input\s+type="checkbox"\s+name="([^"]+)"\s+value="1"\s+checked/g,
+    )) {
+      fields[match[1] ?? ''] = '1';
+    }
+    for (const match of page.matchAll(/<select name="([^"]+)">([\s\S]*?)<\/select>/g)) {
+      fields[match[1] ?? ''] = /<option value="([^"]*)"\s+selected/.exec(match[2] ?? '')?.[1] ?? '';
+    }
+    return fields;
+  };
+
+  it('shows the rules and saves a change, keeping everything else', async () => {
+    const { request, logIn, post, setRoles, lfr } = site();
+    setRoles([TEST_STAFF_ROLE], ANA.id);
+    await logIn('/admin/mlb-group/lfr/rules');
+    expect(await (await request('/admin/mlb-group/lfr')).text()).toContain(
+      'href="/admin/mlb-group/lfr/rules"',
+    );
+    const page = await (await request('/admin/mlb-group/lfr/rules')).text();
+    const fields = inputsOf(page);
+    expect(fields).toMatchObject({
+      'points.outcomes.win': '3',
+      'points.forfeit.counts_as_played': '1',
+      'tiebreak.criteria.0': 'points',
+      'ruleset.mercato.mode': 'windows',
+      'ruleset.dispute_reasons.0.key': 'wrong_score',
+    });
+    const before = lfr();
+    expect(
+      where(
+        await post('/admin/mlb-group/lfr/rules', {
+          ...fields,
+          'ruleset.mercato.lock_hours': '48',
+        }),
+      ),
+    ).toBe('/admin/mlb-group/lfr/rules?done=saved');
+    const after = lfr();
+    expect(after?.rulesetJson.mercato.lock_hours).toBe(48);
+    expect({ ...after?.rulesetJson, mercato: null }).toEqual({
+      ...before?.rulesetJson,
+      mercato: null,
+    });
+    expect(after?.pointsJson).toEqual(before?.pointsJson);
+  });
+
+  it('says what a veto sequence must hold, and saves nothing', async () => {
+    const { request, logIn, post, setRoles, lfr } = site();
+    setRoles([TEST_STAFF_ROLE], ANA.id);
+    await logIn('/admin/mlb-group/lfr/rules');
+    const fields = inputsOf(await (await request('/admin/mlb-group/lfr/rules')).text());
+    const before = lfr();
+    const response = await post('/admin/mlb-group/lfr/rules', {
+      ...fields,
+      'ruleset.veto.formats.bo3.sequence': 'A_ban B_ban A_pick',
+    });
+    expect(response.status).toBe(400);
+    expect(await response.text()).toContain('En BO N, une séquence choisit N − 1 cartes');
+    expect(lfr()).toEqual(before);
+  });
+});

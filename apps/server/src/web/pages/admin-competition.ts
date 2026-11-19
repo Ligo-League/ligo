@@ -162,6 +162,7 @@ export const GENERAL_SECTIONS: readonly SectionView[] = [
   },
   {
     title: 'web.admin.settings.section.requests',
+    groups: { 'ruleset.requests': 'web.admin.settings.group.requests' },
     fields: [
       {
         path: 'ruleset.requests.approval.team_owner',
@@ -249,6 +250,11 @@ export function competitionPageView(locale: Locale, data: CompetitionPageData): 
           : ''
       }
       <ul>
+        <li>
+          <a href="/admin/${org.slug}/${competition.slug}/rules"
+            >${t(locale, 'web.admin.comp.rules')}</a
+          >
+        </li>
         <li><a href="${path}/discord">${t(locale, 'web.admin.comp.discord')}</a></li>
         <li><a href="${path}/discord/channels">${t(locale, 'web.admin.comp.channels')}</a></li>
       </ul>
