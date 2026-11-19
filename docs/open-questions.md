@@ -227,6 +227,28 @@ section 16.
 
 ## For the maintainer
 
+#### M-41 · Who holds a slot
+
+- **Question:** a slot (a team's place in a division) belongs today to the roster that plays in
+  it (`slot.team_id`); nothing records a person or a club holding it. The maintainer sees it held
+  by someone: in Season 3, RCK broke up but forfeited its last three matches to keep its place,
+  and the place is Nivalem's, not RCK's owner Ricky's; Nivalem, now in AR33S Esport, could put
+  AR33S in that place next season (maintainer, 19 November 2026). To settle:
+  1. Who holds a slot: a person, a club (its owner deciding), or either?
+  2. Who holds it at first: the person who filed the registration, the roster's owner, the club?
+  3. When the holder may put another roster in it: only between seasons (at the next season's
+     registration), or during a season too; with staff approval or not (the design doc already
+     has a `slot_transfer` request approved by staff)?
+  4. Whether the holder may hand the slot to someone else, and what happens to a slot whose
+     holder leaves the league.
+- **Why it matters:** next season's slots come from `closeSeason()` (phase 6) and from
+  registration; both need to know whose place it is. RCK's case also says a team that breaks up
+  keeps its place by playing out its forfeits, which the 50% rule and the exclusion threshold
+  decide today.
+- **Until answered:** nothing changes; a slot stays the roster's. The answer is needed before
+  phase 6 (`closeSeason()`) and before Season 4's registration closes, if Season 3's places carry
+  over to their holders.
+
 #### M-38 · Standings for a title scored in games
 
 - **Question:** for a title with no round or goal score (score unit `games`, such as League of
