@@ -1,4 +1,4 @@
-import type { CellError, SideError } from '@ligo/titles';
+import type { CellError, CrossWarning, SideError } from '@ligo/titles';
 import { html } from 'hono/html';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
 import type { SheetCheck, SideSheetView, StatGridView } from '../../services/stat-sheets.ts';
@@ -231,15 +231,7 @@ export function statsPageView(locale: Locale, data: StatsPageData): Page {
   </nav>`;
   const names = { a: view.match.a, b: view.match.b };
   const warnings = view.warnings.map(
-    (warning) =>
-      html`<p class="card flash error">
-        ${t(locale, 'web.stats.warning', {
-          team: names[warning.side],
-          kills: warning.kills,
-          other: names[warning.side === 'a' ? 'b' : 'a'],
-          deaths: warning.deaths,
-        })}
-      </p>`,
+    (warning) => html`<p class="card flash error">${warningText(locale, names, warning)}</p>`,
   );
   const editable = view.sides.some((sheet) => sheet.canEdit);
   return pageOf(
@@ -254,6 +246,33 @@ export function statsPageView(locale: Locale, data: StatsPageData): Page {
   );
 }
 
-/** The match page's link to the grid, for its teams and league staff once it has a result. */
-export const statsLink = (locale: Locale, matchId: number): Html =>
-  html`<p><a href="/matches/${String(matchId)}/stats">${t(locale, 'web.stats.link')}</a></p>`;
+/** One warning across sides, as the grid and the match page give it. */
+const warningText = (locale: Locale, names: { a: string; b: string }, warning: CrossWarning) =>
+  t(locale, 'web.stats.warning', {
+    team: names[warning.side],
+    kills: warning.kills,
+    other: names[warning.side === 'a' ? 'b' : 'a'],
+    deaths: warning.deaths,
+  });
+
+/**
+ * The match page's link to the grid, for its teams and league staff once it has a result, with
+ * the warnings across sides of each game: these are for the teams and staff only (M-39).
+ */
+export function statsLink(
+  locale: Locale,
+  matchId: number,
+  names: { a: string; b: string },
+  warnings: readonly { n: number; warning: CrossWarning }[],
+): Html {
+  return html`<p><a href="/matches/${String(matchId)}/stats">${t(locale, 'web.stats.link')}</a></p>
+    ${warnings.map(
+      (entry) =>
+        html`<p class="card flash error">
+          ${t(locale, 'web.stats.warningGame', {
+            n: entry.n,
+            warning: warningText(locale, names, entry.warning),
+          })}
+        </p>`,
+    )}`;
+}

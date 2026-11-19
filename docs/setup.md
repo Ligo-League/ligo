@@ -787,6 +787,10 @@ posts lose their buttons) and the time is announced in the schedule channel with
    differ by more than 3 (`ruleset.stats.kills_deaths_tolerance`). It does not block.
 8. `ruleset.stats.entry_days` (none in LFR) closes the grid to the teams that many days after
    validation; staff can still correct.
+9. Once the match is validated, its page shows each map's scoreboard to everyone: the sheets that
+   count (a side the opponent entered appears once its own team confirms it), with K/D, kills per
+   round and headshot rate. A player without stats consent is named without figures. The warning
+   of step 7 shows on the match page too, to the two teams and staff only.
 
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |

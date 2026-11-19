@@ -498,3 +498,12 @@ button.inline {
 .stat-grid input[aria-invalid='true'] {
   outline: 2px solid var(--zone-relegation);
 }
+
+.scoreboard {
+  margin-top: 0.75rem;
+}
+
+.scoreboard caption {
+  font-weight: bold;
+  text-align: left;
+}

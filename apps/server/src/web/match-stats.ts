@@ -77,7 +77,13 @@ export function matchStatsRoutes(
     if (!viewer || !found || found.status === 'scheduled') return '';
     const actor = await actorOf(viewer, found);
     if (!actor) return '';
-    return statGrid(db, actor, matchId, null, deps.now()).ok ? statsLink(locale, matchId) : '';
+    const first = statGrid(db, actor, matchId, null, deps.now());
+    if (!first.ok) return '';
+    const warnings = first.games.flatMap(({ n }) => {
+      const view = n === first.game.n ? first : statGrid(db, actor, matchId, n, deps.now());
+      return view.ok ? view.warnings.map((warning) => ({ n, warning })) : [];
+    });
+    return statsLink(locale, matchId, first.match, warnings);
   };
 
   const page = async (

@@ -1209,4 +1209,7 @@ export const en: Record<MessageKey, string> = {
   'web.stats.lock.void': 'Match annulled: no stats.',
   'web.stats.lock.replay': 'This map’s stats come from the replay.',
   'web.stats.lock.deadline': 'The entry deadline has passed: only staff can still correct.',
+  'web.match.noStats': 'No stats for this team.',
+  'web.match.statsHidden': 'Stats not published.',
+  'web.stats.warningGame': 'Map {n}: {warning}',
 };

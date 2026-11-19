@@ -1,9 +1,75 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
+import type { Scoreboard } from '../../services/scoreboard.ts';
 import type { MatchPage } from '../../services/site.ts';
 import { formatWhen, matchOutcome, pageOf, type Html, type Page } from '../layout.ts';
 
 type Data = Extract<MatchPage, { ok: true }>;
+type Column = Scoreboard['columns'][number];
+
+function figure(locale: Locale, column: Column, value: number | null | undefined): string {
+  if (value === null || value === undefined) return '–';
+  const number = (options: Intl.NumberFormatOptions) =>
+    new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', options).format(value);
+  switch (column.format) {
+    case 'count':
+      return number({ maximumFractionDigits: 0 });
+    case 'ratio':
+      return number({ minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    case 'percent':
+      return number({ style: 'percent', maximumFractionDigits: 0 });
+    case 'signed':
+      return number({ maximumFractionDigits: 0, signDisplay: 'exceptZero' });
+  }
+}
+
+/** One game's figures, a table per side (M-39); players without stats consent named only. */
+function gameScoreboard(
+  locale: Locale,
+  columns: readonly Column[],
+  sides: Scoreboard['games'][number]['sides'],
+): Html {
+  return html`${sides.map(
+    (entry) =>
+      html`<table class="stat-grid scoreboard">
+        <caption>
+          ${entry.team}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">${t(locale, 'web.stats.player')}</th>
+            ${columns.map((column) => html`<th scope="col">${column.label[locale]}</th>`)}
+          </tr>
+        </thead>
+        <tbody>
+          ${
+            entry.rows.length === 0
+              ? html`<tr>
+                  <td colspan="${String(columns.length + 1)}" class="muted">
+                    ${t(locale, 'web.match.noStats')}
+                  </td>
+                </tr>`
+              : entry.rows.map(
+                  (row) =>
+                    html`<tr>
+                      <th scope="row">${row.name}</th>
+                      ${
+                        row.hidden
+                          ? html`<td colspan="${String(columns.length)}" class="muted">
+                              ${t(locale, 'web.match.statsHidden')}
+                            </td>`
+                          : columns.map(
+                              (column) =>
+                                html`<td>${figure(locale, column, row.values[column.key])}</td>`,
+                            )
+                      }
+                    </tr>`,
+                )
+          }
+        </tbody>
+      </table>`,
+  )}`;
+}
 
 /**
  * `/matches/:id`: the teams, the time or the result, and each game's map and bans. `panels` are
@@ -13,10 +79,17 @@ export function matchPageView(
   locale: Locale,
   page: Data,
   panels: readonly (Html | string)[] = [],
+  scoreboard: Scoreboard | null = null,
 ): Page {
   const { match, league } = page;
   const { timeZone } = league.competition;
   const title = t(locale, 'web.match.title', { a: match.a.name, b: match.b.name });
+  const boards = new Map(
+    (scoreboard?.games ?? []).map((entry) => [
+      entry.n,
+      gameScoreboard(locale, scoreboard?.columns ?? [], entry.sides),
+    ]),
+  );
   const when = match.scheduledAt === null ? null : formatWhen(locale, match.scheduledAt, timeZone);
   const body = html`<p class="muted">
       <a href="${league.competition.path}/${league.season.slug}"
@@ -62,6 +135,7 @@ export function matchPageView(
                       </p>`
                     : ''
                 }
+                ${boards.get(game.n) ?? ''}
               </div>`,
           )
         : html`<p class="muted">${t(locale, 'web.match.noGames')}</p>`

@@ -148,3 +148,39 @@ describe('the stat grid on the website', () => {
     expect((await request('/matches/3/stats')).status).toBe(404);
   });
 });
+
+describe('the scoreboard on the match page', () => {
+  it('shows the stats that count to everyone, as the match is validated', async () => {
+    const { request, logIn, post, jar, cells } = site();
+    await logIn('/matches/1');
+    await post('/matches/1/stats/1/a', cells({ 1: [11, 6, 3, 2, 3], 2: [11, 2, 0, 1, ''] }));
+    // Bravo's side, entered by Alpha, waits for Bravo.
+    await post('/matches/1/stats/1/b', cells({ 9: [11, 3, 8, 0, ''] }));
+    jar.clear();
+    const page = await (await request('/matches/1')).text();
+    expect(page).toContain('<caption>');
+    expect(page).toMatch(/<th scope="row">P1<\/th>\s*<td>11<\/td>\s*<td>6<\/td>\s*<td>3<\/td>/);
+    // K/D 2,00 and HS 50 % for P1, in French.
+    expect(page).toContain('<td>2,00</td>');
+    expect(page).toMatch(/<td>50\s%<\/td>/);
+    expect(page).not.toContain('<th scope="row">P9</th>');
+    expect(page).toContain('Pas de statistiques pour cette équipe.');
+    // The warning across sides is not public.
+    expect(page).not.toContain('Vérifiez les deux feuilles');
+  });
+
+  it('warns the teams and staff when the sides disagree', async () => {
+    const { request, logIn, post, jar, cells } = site();
+    await logIn('/matches/1');
+    await post('/matches/1/stats/1/a', cells({ 1: [11, 6, 3, 2, ''], 2: [11, 2, 0, 1, ''] }));
+    await post('/matches/1/stats/1/b', cells({ 9: [11, 3, 1, 0, ''] }));
+    const warning = 'Carte 1 : Alpha Esport compte 8 kills, mais Bravo compte 1 morts.';
+    expect(await (await request('/matches/1')).text()).toContain(warning);
+    jar.clear();
+    await logIn('/matches/1', 'code-lea');
+    expect(await (await request('/matches/1')).text()).toContain(warning);
+    jar.clear();
+    await logIn('/matches/1', 'code-eve');
+    expect(await (await request('/matches/1')).text()).not.toContain('Vérifiez');
+  });
+});

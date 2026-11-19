@@ -56,6 +56,7 @@ import { matchReportRoutes } from './match-report.ts';
 import { matchTimeRoutes } from './match-time.ts';
 import { vetoRoutes } from './veto.ts';
 import { matchStatsRoutes } from './match-stats.ts';
+import { matchScoreboard } from '../services/scoreboard.ts';
 import { rosterRoutes } from './rosters.ts';
 import { rostersOf } from '../services/rosters.ts';
 import { teamManageRoutes } from './team-manage.ts';
@@ -706,7 +707,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       await matchStaff.panel(c, Number(id)),
     ].filter((panel) => panel !== '');
     if (panels.length > 0) c.header('Cache-Control', 'private, no-store');
-    return render(c, matchPageView(locale, page, panels));
+    return render(c, matchPageView(locale, page, panels, matchScoreboard(db, Number(id))));
   });
 
   // -------------------------------------------------------------------------------------------

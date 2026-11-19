@@ -1258,6 +1258,9 @@ export const fr = {
   'web.stats.lock.void': 'Match annulé : pas de statistiques.',
   'web.stats.lock.replay': 'Les statistiques de cette carte viennent du replay.',
   'web.stats.lock.deadline': 'Le délai de saisie est passé : seul le staff peut encore corriger.',
+  'web.match.noStats': 'Pas de statistiques pour cette équipe.',
+  'web.match.statsHidden': 'Statistiques non publiées.',
+  'web.stats.warningGame': 'Carte {n} : {warning}',
 } as const;
 
 export type MessageKey = keyof typeof fr;
