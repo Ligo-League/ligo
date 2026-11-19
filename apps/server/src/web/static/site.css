@@ -464,3 +464,37 @@ fieldset:disabled {
 button.inline {
   margin-left: 8px;
 }
+
+/* The stat grid (pages/match-stats.ts). */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.tabs a[aria-current='page'] {
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.stat-grid {
+  border-collapse: collapse;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.stat-grid th,
+.stat-grid td {
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+.stat-grid input {
+  width: 4rem;
+}
+
+.stat-grid input[aria-invalid='true'] {
+  outline: 2px solid var(--zone-relegation);
+}

@@ -55,6 +55,7 @@ import { movesToDecide } from '../services/roster-move-apply.ts';
 import { matchReportRoutes } from './match-report.ts';
 import { matchTimeRoutes } from './match-time.ts';
 import { vetoRoutes } from './veto.ts';
+import { matchStatsRoutes } from './match-stats.ts';
 import { rosterRoutes } from './rosters.ts';
 import { rostersOf } from '../services/rosters.ts';
 import { teamManageRoutes } from './team-manage.ts';
@@ -106,6 +107,8 @@ export interface StaticFiles {
   htmx: string;
   /** The registration form's "add a colour" button. */
   colors: string;
+  /** The stat grid's paste from a spreadsheet. */
+  statPaste: string;
 }
 
 export interface WebDeps {
@@ -129,12 +132,13 @@ export interface WebDeps {
 
 /** The stylesheet next to this file, and htmx at the version pinned in package.json. */
 export async function loadStaticFiles(): Promise<StaticFiles> {
-  const [css, htmx, colors] = await Promise.all([
+  const [css, htmx, colors, statPaste] = await Promise.all([
     readFile(new URL('./static/site.css', import.meta.url), 'utf8'),
     readFile(new URL(import.meta.resolve('htmx.org/dist/htmx.min.js')), 'utf8'),
     readFile(new URL('./static/colors.js', import.meta.url), 'utf8'),
+    readFile(new URL('./static/stat-paste.js', import.meta.url), 'utf8'),
   ]);
-  return { css, htmx, colors };
+  return { css, htmx, colors, statPaste };
 }
 
 export interface Viewer extends WebUser {
@@ -324,6 +328,12 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   );
   app.get('/static/colors.js', (c) =>
     c.body(deps.files.colors, 200, {
+      'Content-Type': 'text/javascript; charset=utf-8',
+      'Cache-Control': STATIC_CACHE,
+    }),
+  );
+  app.get('/static/stat-paste.js', (c) =>
+    c.body(deps.files.statPaste, 200, {
       'Content-Type': 'text/javascript; charset=utf-8',
       'Cache-Control': STATIC_CACHE,
     }),
@@ -677,6 +687,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   const veto = vetoRoutes(app, { deps, render, notFound, forbidden, guard });
   const matchCaptain = matchCaptainRoutes(app, { deps, render, notFound, forbidden, guard });
   const matchStaff = matchStaffRoutes(app, { deps, render, notFound, forbidden, guard });
+  const matchStats = matchStatsRoutes(app, { deps, render, notFound, forbidden, guard });
   staffSanctionsRoutes(app, { deps, render, notFound, forbidden, guard });
   leagueChannelsRoutes(app, { deps, render, notFound, forbidden, guard });
   staffMercatoRoutes(app, { deps, render, notFound, forbidden, guard });
@@ -688,6 +699,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     // What the viewer's own team may do: the page is then theirs, kept by no shared cache.
     const panels = [
       veto.link(c, Number(id)),
+      await matchStats.link(c, Number(id)),
       await matchReport.panel(c, Number(id)),
       await matchTime.panel(c, Number(id)),
       matchCaptain.panel(c, Number(id)),

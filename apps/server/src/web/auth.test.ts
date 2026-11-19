@@ -245,7 +245,7 @@ describe('without login settings', () => {
       assets: fakeAssetStore(),
       evidence: fakeEvidenceStore(),
       locale: 'fr',
-      files: { css: '', htmx: '', colors: '' },
+      files: { css: '', htmx: '', colors: '', statPaste: '' },
       logger: { error: vi.fn() },
       login: null,
       roles: () => Promise.resolve([]),

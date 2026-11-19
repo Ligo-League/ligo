@@ -765,6 +765,29 @@ posts lose their buttons) and the time is announced in the schedule channel with
 6. The team's page and the season page list the approved moves, without their reasons.
 7. A player still blocked after a move cannot be named captain for a match.
 
+## 43. Phase 3g: the stat grid
+
+1. Restart `pnpm dev` if it was not running: migration 0024 adds the `stat` and `stat_sheet`
+   tables. Nothing already stored changes.
+2. Log in as an official or captain of a team whose match has a result (reported or validated)
+   and open the match page: it links **Statistiques des joueurs** (`/matches/<id>/stats`). League
+   staff see the link too. Nobody else does.
+3. One tab per map. Each side has a grid: rounds played, kills, deaths, assists, and headshots
+   (optional). An empty row means the player did not play that map.
+4. Type a value the map cannot hold (more rounds than the map had, more deaths than rounds): the
+   grid lists the problem under the side within a second, before saving. **Enregistrer** with a
+   problem saves nothing, keeps what was typed and outlines the cells.
+5. Copy rows from a spreadsheet (the numbers only, without the names) and paste them into the
+   first cell: the grid fills right then down.
+6. Your own side counts at once. You may also enter the other side while that team has not: it
+   then shows **elle compte une fois confirmée par …**, and that team's official sees
+   **Confirmer la feuille de …**. Once that team entered or confirmed its side, only staff can
+   change it.
+7. With both sides entered, a red notice warns when one side's kills and the other's deaths
+   differ by more than 3 (`ruleset.stats.kills_deaths_tolerance`). It does not block.
+8. `ruleset.stats.entry_days` (none in LFR) closes the grid to the teams that many days after
+   validation; staff can still correct.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

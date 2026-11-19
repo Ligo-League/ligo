@@ -1219,6 +1219,45 @@ export const fr = {
   'web.staff.error.owner_cannot_leave': 'Le propriétaire ne peut pas être retiré par une demande.',
   'web.staff.error.role_full':
     "Ce rôle est déjà complet dans l'équipe, au maximum prévu par la ligue. Refuse la demande en donnant la raison.",
+  'web.stats.link': 'Statistiques des joueurs',
+  'web.stats.title': 'Statistiques : {a} – {b}',
+  'web.stats.back': 'Retour au match',
+  'web.stats.game': 'Carte {n} ({score})',
+  'web.stats.intro':
+    'Une ligne vide : le joueur n’a pas joué cette carte. Pour coller depuis un tableur, copiez les lignes des joueurs (sans les noms) et collez-les dans la première case.',
+  'web.stats.player': 'Joueur',
+  'web.stats.optional': '(facultatif)',
+  'web.stats.sub': '(remplaçant)',
+  'web.stats.save': 'Enregistrer',
+  'web.stats.confirm': 'Confirmer la feuille de {team}',
+  'web.stats.entry.none': 'Pas encore saisie.',
+  'web.stats.entry.own': 'Saisie par {name}, pour son équipe.',
+  'web.stats.entry.staff': 'Saisie par {name}, staff de la ligue.',
+  'web.stats.entry.waiting':
+    'Saisie par {name}, de l’équipe adverse : elle compte une fois confirmée par {team}.',
+  'web.stats.entry.confirmed': 'Saisie par {name}, de l’équipe adverse, confirmée par {team}.',
+  'web.stats.warning':
+    '{team} compte {kills} kills, mais {other} compte {deaths} morts. Vérifiez les deux feuilles.',
+  'web.stats.cell.required': '{metric} : à remplir',
+  'web.stats.cell.not_integer': '{metric} : un nombre entier',
+  'web.stats.cell.below_min': '{metric} : au moins {limit}',
+  'web.stats.cell.above_max': '{metric} : au plus {limit}',
+  'web.stats.cell.side_above_max': '{metric} : {total} pour l’équipe, au plus {limit}',
+  'web.stats.cell.unknown': 'Un joueur ne fait pas partie de cette équipe pour ce match.',
+  'web.stats.done.saved_own': 'Feuille enregistrée.',
+  'web.stats.done.saved_staff': 'Feuille enregistrée par le staff.',
+  'web.stats.done.saved_opponent':
+    'Feuille enregistrée : elle compte une fois confirmée par l’équipe concernée.',
+  'web.stats.done.confirmed': 'Feuille confirmée.',
+  'web.stats.error.not_allowed': 'Vous ne pouvez pas modifier cette feuille.',
+  'web.stats.error.no_game': 'Cette carte n’existe pas dans ce match.',
+  'web.stats.error.invalid': 'Rien n’est enregistré : corrigez les valeurs signalées.',
+  'web.stats.error.nothing_to_confirm': 'Il n’y a rien à confirmer sur cette feuille.',
+  'web.stats.lock.no_result': 'Le match n’a pas encore de résultat.',
+  'web.stats.lock.forfeit': 'Carte gagnée par forfait : pas de statistiques.',
+  'web.stats.lock.void': 'Match annulé : pas de statistiques.',
+  'web.stats.lock.replay': 'Les statistiques de cette carte viennent du replay.',
+  'web.stats.lock.deadline': 'Le délai de saisie est passé : seul le staff peut encore corriger.',
 } as const;
 
 export type MessageKey = keyof typeof fr;

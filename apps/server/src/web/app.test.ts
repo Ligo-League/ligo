@@ -12,7 +12,12 @@ import { createWebApp, loadStaticFiles, type WebDeps } from './app.ts';
 // The public pages through HTTP, against the league of leagueDatabase(): LFR's Saison 3, with
 // Alpha Esport, Bravo and Charlie in Ligue 1, Xray and Yankee in Ligue 2.
 
-const FILES = { css: 'body {}', htmx: '/* htmx */', colors: '/* colors */' };
+const FILES = {
+  css: 'body {}',
+  htmx: '/* htmx */',
+  colors: '/* colors */',
+  statPaste: '/* paste */',
+};
 
 function site(overrides: Partial<WebDeps> = {}) {
   const db = leagueDatabase();
@@ -175,6 +180,9 @@ describe('files', () => {
     expect((await get('/static/htmx.min.js')).headers.get('content-type')).toContain(
       'text/javascript',
     );
+    const paste = await get('/static/stat-paste.js');
+    expect(paste.headers.get('content-type')).toContain('text/javascript');
+    expect(paste.text).toBe(FILES.statPaste);
   });
 
   it('serves a prepared logo, and nothing else from the asset folder', async () => {
@@ -201,6 +209,7 @@ describe('files', () => {
     const files = await loadStaticFiles();
     expect(files.css).toContain(':root');
     expect(files.htmx).toContain('htmx');
+    expect(files.statPaste).toContain('data-stat-grid');
   });
 });
 
