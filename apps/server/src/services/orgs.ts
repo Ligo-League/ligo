@@ -1,8 +1,12 @@
+import { createHash } from 'node:crypto';
 import { slugify } from '@ligo/core';
 import { orgSettingsSchema, schema, type Db } from '@ligo/db';
+import { squareLogo } from '@ligo/render';
 import { asc, eq } from 'drizzle-orm';
+import { LOGO_SIZE, type AssetStore } from '../assets/store.ts';
 import type { DiscordGateway } from '../discord/gateway.ts';
 import { isDiscordInvite } from './league-discord.ts';
+import { checkLogo, type LogoError } from './logo.ts';
 import { RESERVED_ORG_SLUGS } from './paths.ts';
 
 // Organisations in the admin panel (design doc section 7; M-20, maintainer, 19 November 2026).
@@ -298,4 +302,56 @@ export function handOverOrg(
       .run();
   });
   return { ok: true, owner: next.name };
+}
+
+export type OrgLogoReply =
+  { ok: true } | { ok: false; error: 'not_found' | 'not_owner' | LogoError | 'logo_not_stored' };
+
+/**
+ * The owner gives the organisation a logo: the same checks as a roster's, kept as the 128 px
+ * square images and pages use, in the asset store.
+ */
+export async function setOrgLogo(
+  db: Db,
+  assets: Pick<AssetStore, 'write'>,
+  user: OrgUser,
+  slug: string,
+  file: Uint8Array,
+  now: number,
+): Promise<OrgLogoReply> {
+  const row = db.select().from(org).where(eq(org.slug, slug)).get();
+  if (!row) return { ok: false, error: 'not_found' };
+  if (!ownerOf(row, user)) return { ok: false, error: 'not_owner' };
+  const checked = checkLogo(file);
+  if (!checked.ok) return { ok: false, error: checked.error };
+  let logo: Uint8Array;
+  try {
+    logo = squareLogo(file, LOGO_SIZE);
+  } catch {
+    return { ok: false, error: 'invalid_logo' };
+  }
+  const hash = createHash('sha256').update(logo).digest('hex').slice(0, 8);
+  // Organisation slugs are at most 40 characters: the key fits the asset store's names.
+  const key = `logos/org-${row.slug}-${hash}.png`;
+  try {
+    await assets.write(key, logo);
+  } catch {
+    return { ok: false, error: 'logo_not_stored' };
+  }
+  db.transaction((tx) => {
+    tx.update(org).set({ logoKey: key }).where(eq(org.id, row.id)).run();
+    tx.insert(auditLog)
+      .values({
+        actorPlayerId: user.playerId,
+        actorKind: 'user',
+        action: 'org.logo',
+        entity: 'org',
+        entityId: String(row.id),
+        beforeJson: { logoKey: row.logoKey },
+        afterJson: { logoKey: key },
+        at: now,
+      })
+      .run();
+  });
+  return { ok: true };
 }

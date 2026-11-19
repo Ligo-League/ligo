@@ -2,9 +2,19 @@ import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase } from '../testing.ts';
+import { pngForTests } from './logo.ts';
 import { ensurePlayer } from './players.ts';
+import { fakeAssetStore } from '../assets/store.ts';
 import { fakeGateway } from '../discord/testing.ts';
-import { checkOrgInvite, createOrg, handOverOrg, orgAdmin, ownedOrgs, updateOrg } from './orgs.ts';
+import {
+  checkOrgInvite,
+  createOrg,
+  handOverOrg,
+  orgAdmin,
+  ownedOrgs,
+  setOrgLogo,
+  updateOrg,
+} from './orgs.ts';
 
 // Organisations in the admin panel (design doc section 7; M-20, maintainer, 19 November 2026):
 // whoever may manage a Discord server where the bot is creates one and owns it; the owner is a
@@ -174,5 +184,27 @@ describe('the organisation’s Discord invitation', () => {
     expect(await checkOrgInvite(gateway, 'https://discord.gg/week')).toBe('expires');
     expect(await checkOrgInvite(gateway, 'https://discord.gg/gone')).toBe('invalid');
     expect(await checkOrgInvite(gateway, 'https://example.com/x')).toBe('invalid');
+  });
+});
+
+describe('the organisation’s logo', () => {
+  it('is kept square in the asset store, for its owner only', async () => {
+    const { db, zoe, create, orgRow } = league();
+    create();
+    const assets = fakeAssetStore();
+    const png = pngForTests({ width: 256, height: 256, colorType: 6 });
+    expect(await setOrgLogo(db, assets, zoe, 'benelux-siege-league', png, NOW)).toEqual({
+      ok: true,
+    });
+    const key = orgRow('benelux-siege-league')?.logoKey ?? '';
+    expect(key).toMatch(/^logos\/org-benelux-siege-league-[0-9a-f]{8}\.png$/);
+    expect(Object.keys(assets.files)).toEqual([key]);
+    expect(await setOrgLogo(db, assets, zoe, 'mlb-group', png, NOW)).toEqual({
+      ok: false,
+      error: 'not_owner',
+    });
+    expect(
+      await setOrgLogo(db, assets, zoe, 'benelux-siege-league', new Uint8Array([1, 2, 3]), NOW),
+    ).toMatchObject({ ok: false });
   });
 });

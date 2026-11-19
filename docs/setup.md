@@ -808,6 +808,20 @@ posts lose their buttons) and the time is announced in the schedule channel with
    `/mbl-group/lfr/saison-3`, from a Discord message the bot posted before, leads to the new one.
 3. Nothing else changes on the site yet: the admin panel's pages come next.
 
+## 46. Phase 3h-3: organisations in the admin panel
+
+1. Log in and open `http://localhost:3000/admin`: your organisations, and the competitions
+   where you hold the staff role.
+2. **Créer une organisation** (`/orgs/new`) works only if you may manage a Discord server where
+   the bot is installed; otherwise the page says so and links to the bot's install address. Give a
+   name (and an address, or let Ligo make it from the name), a language and a description. You
+   become its owner.
+3. On the organisation's page (`/admin/<slug>`), its owner changes the name, language,
+   description and Discord invitation (Discord checks that it never expires), uploads a logo
+   (the same rules as a team's), and may hand the organisation to someone who has logged in to
+   Ligo once, by their Discord user ID. Nobody else opens that page.
+4. MLB Group's page, `/admin/mlb-group`, opens only for its owner's Discord account.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

@@ -22,6 +22,7 @@ export const RESERVED_ORG_SLUGS: readonly string[] = [
   // MLB Group's address before its name's typo was fixed: it redirects (migration 0026).
   'mbl-group',
   'me',
+  'orgs',
   'players',
   'r6',
   'recruitment',
