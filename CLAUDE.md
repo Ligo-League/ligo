@@ -33,8 +33,8 @@ The maintainer manages, designs and reviews. You write the code. The process is:
 ## Stack
 
 - TypeScript (strict) on the current Node LTS, pnpm workspaces.
-- Discord: discord.js. HTTP: Hono with server-rendered `html` templates (no JSX); htmx for forms; small Preact islands
-  only for the replay uploader and the stat grid.
+- Discord: discord.js. HTTP: Hono with server-rendered `html` templates (no JSX); htmx for forms and the
+  stat grid (M-39); a small Preact island only for the replay uploader.
 - Database: SQLite (WAL) with better-sqlite3 and Drizzle ORM; migrations via drizzle-kit.
 - Validation: zod everywhere data crosses a boundary (HTTP input, JSON columns, parser output).
 - Images: Satori + @resvg/resvg-js. Storage: Cloudflare R2 via @aws-sdk/client-s3 (presigned URLs).
