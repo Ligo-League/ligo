@@ -246,7 +246,9 @@ section 16.
   keeps its place by playing out its forfeits, which the 50% rule and the exclusion threshold
   decide today.
 - **Answer, in part (maintainer, 19 November 2026):**
-  - Question 1: either; each slot is held by a person or by a club (its owner deciding).
+  - Question 1: each league decides, as a setting: its slots are held by clubs, by individuals,
+    or by either. The Benelux league's are held by clubs; the LFR's by either. A club's slot is
+    decided by its owner.
   - Question 3: only between seasons; the holder registers another roster into the slot for the
     next season, and staff approve it as any registration. No change of roster during a season.
 - **Still open:** questions 2 (who holds a slot at first) and 4 (handing it over, a holder who

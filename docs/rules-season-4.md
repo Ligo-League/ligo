@@ -73,8 +73,10 @@ M-xx : mainteneur).
 ### 2.1 bis Titulaire d'une place
 
 - Une place dans une division a un **titulaire** : une personne ou un club (son propriétaire
-  décide). Le titulaire n'est pas forcément le propriétaire de l'équipe qui joue : en Saison 3,
-  la place de RCK est à Nivalem, pas à Ricky, propriétaire de RCK.
+  décide). Chaque ligue choisit par un réglage si ses places sont tenues par des clubs, par des
+  personnes, ou par les deux ; en LFR, par les deux. Le titulaire n'est pas forcément le
+  propriétaire de l'équipe qui joue : en Saison 3, la place de RCK est à Nivalem, pas à Ricky,
+  propriétaire de RCK.
 - **Entre deux saisons**, le titulaire peut mettre une autre équipe à sa place pour la saison
   suivante, à l'inscription de celle-ci ; le staff approuve, comme toute inscription. Pas de
   changement d'équipe en cours de saison.
