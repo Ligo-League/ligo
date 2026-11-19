@@ -240,6 +240,18 @@ export const mercatoSchema = z.strictObject({
 });
 export type MercatoSettings = z.infer<typeof mercatoSchema>;
 
+/**
+ * The manual stat grid (design doc section 7; M-39, maintainer, 19 November 2026): how many days
+ * after a result is validated teams may still enter or change its stats (null: no deadline;
+ * staff can always correct), and how far one side's kills and the other side's deaths may differ
+ * before the teams and staff are warned.
+ */
+export const statsSettingsSchema = z.strictObject({
+  entry_days: z.int().min(1).max(365).nullable().default(null),
+  kills_deaths_tolerance: z.int().min(0).max(50).default(3),
+});
+export type StatsSettings = z.infer<typeof statsSettingsSchema>;
+
 /** `auto`: applied at once and recorded; `staff`: waits for league staff to approve or refuse. */
 export const APPROVAL_MODES = ['auto', 'staff'] as const;
 export type ApprovalMode = (typeof APPROVAL_MODES)[number];
@@ -294,6 +306,7 @@ export const rulesetSchema = z.strictObject({
   promotion: promotionSchema.default(() => promotionSchema.parse({})),
   registration: registrationSchema.default(() => registrationSchema.parse({})),
   mercato: mercatoSchema.default(() => mercatoSchema.parse({})),
+  stats: statsSettingsSchema.default(() => statsSettingsSchema.parse({})),
 });
 export type RulesetSettings = z.infer<typeof rulesetSchema>;
 

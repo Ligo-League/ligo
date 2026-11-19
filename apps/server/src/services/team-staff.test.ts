@@ -1,8 +1,9 @@
 import {
-  promotionSchema,
   mercatoSchema,
+  promotionSchema,
   registrationSchema,
   requestsSchema,
+  statsSettingsSchema,
   vetoSchema,
 } from '@ligo/core';
 import { orgSettingsSchema, schema } from '@ligo/db';
@@ -201,6 +202,7 @@ describe('addTeamMember and removeTeamMember', () => {
           promotion: promotionSchema.parse({}),
           registration: registrationSchema.parse({}),
           mercato: mercatoSchema.parse({}),
+          stats: statsSettingsSchema.parse({}),
         },
       })
       .run();

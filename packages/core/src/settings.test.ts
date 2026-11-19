@@ -54,6 +54,8 @@ const LFR_S3 = {
       lock_hours: 24,
       intra_club_moves: 'counted',
     },
+    // M-39 (maintainer, 19 November 2026): no deadline for the stat grid.
+    stats: { entry_days: null, kills_deaths_tolerance: 3 },
   },
   scheduling: {
     rounds_per_week: 1,
@@ -183,6 +185,16 @@ describe('rulesetSchema', () => {
     ['a missing mode', {}],
   ])('refuses %s', (_label, value) => {
     expect(accepts(rulesetSchema, value)).toBe(false);
+  });
+
+  it('gives the stat grid no deadline and a tolerance of 3 kills, unless set otherwise', () => {
+    expect(rulesetSchema.parse({ result_validation: 'staff' }).stats).toEqual({
+      entry_days: null,
+      kills_deaths_tolerance: 3,
+    });
+    expect(() =>
+      rulesetSchema.parse({ result_validation: 'staff', stats: { entry_days: 0 } }),
+    ).toThrow();
   });
 
   it('allows 3 managers and 1 coach, and staff approval of additions, unless set otherwise', () => {
@@ -408,6 +420,10 @@ describe('JSON round trip', () => {
           max_moves_per_team: fc.option(fc.integer({ min: 1, max: 50 }), { nil: null }),
           lock_hours: fc.integer({ min: 0, max: 720 }),
           intra_club_moves: fc.constantFrom('counted' as const, 'free' as const, 'closed' as const),
+        }),
+        stats: fc.record({
+          entry_days: fc.option(fc.integer({ min: 1, max: 365 }), { nil: null }),
+          kills_deaths_tolerance: fc.integer({ min: 0, max: 50 }),
         }),
       }),
     ],

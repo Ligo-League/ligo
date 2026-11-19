@@ -3,6 +3,7 @@ import {
   promotionSchema,
   mercatoSchema,
   registrationSchema,
+  statsSettingsSchema,
   requestsSchema,
   teamRolesSchema,
   vetoSchema,
@@ -67,6 +68,8 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
     // Announced windows, 3 moves per team, every incoming player blocked 24 hours; a move
     // inside a club is an ordinary one (O-35, M-22, maintainer, 16 and 19 November 2026).
     mercato: mercatoSchema.parse({ mode: 'windows', max_moves_per_team: 3, lock_hours: 24 }),
+    // No deadline for the stat grid; a tolerance of 3 kills (M-39, 19 November 2026).
+    stats: statsSettingsSchema.parse({}),
   },
   // 3 points per win in Season 3, as the league's score7 tables are configured.
   pointsJson: {
