@@ -476,6 +476,21 @@ section 16.
 
 ## Answered
 
+#### M-39 · The manual stat grid
+
+- **Question:** the design doc gives the stat grid's columns and checks, but not: the technology
+  (a Preact island needs a bundler the project has not got), who enters each side and who
+  confirms, whether the check across sides (kills against the other side's deaths) blocks, and
+  until when stats can be entered.
+- **Answer (maintainer, 19 November 2026):**
+  1. htmx and a short paste script, no Preact island: no new dependency, no build step, and the
+     checks are written once, on the server. Preact stays for the replay uploader (phase 5).
+  2. A team's officials and captains enter their own side, which stands at once; a side entered
+     by the opponent waits for its own team's confirmation; staff enter or correct any side.
+  3. The per-player ranges block; the check across sides only warns the teams and staff
+     (tolerance 3, a setting).
+  4. A setting, `stats.entry_days` after validation, with no deadline by default (LFR too).
+
 #### O-35 · The mercato's moves
 
 - **Question:** the rulebook gives 3 moves per team per window and a one-day block, but not:

@@ -436,8 +436,15 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 - Un joueur banni pour triche l'est sur toutes les ligues du groupe (LFR, LFV, LFRL).
 - **Replays obligatoires** : pour chaque match, au moins une équipe envoie les replays de
   chaque carte sur le site.
-- **Statut** : Règlement S3 ; replays obligatoires décidés. MOSS et replays sur le site en
-  phase 5.
+- **Statistiques saisies à la main**, tant qu'une carte n'a pas ses replays : les responsables
+  ou le capitaine d'une équipe saisissent celles de leurs joueurs, qui comptent tout de suite.
+  Une équipe peut saisir celles de l'adversaire, qui doit alors les confirmer. Le staff peut
+  saisir ou corriger n'importe quelle équipe. Les valeurs impossibles sont refusées (par
+  exemple plus de 5 kills par manche) ; un écart entre les kills d'une équipe et les morts de
+  l'autre est signalé au staff. Les replays remplacent toujours la saisie manuelle.
+- **Statut** : Règlement S3 ; replays obligatoires décidés ; saisie manuelle des statistiques
+  décidée (M-39, mainteneur, 19 novembre 2026). MOSS et replays sur le site en phase 5,
+  statistiques manuelles en phase 3.
 
 ---
 

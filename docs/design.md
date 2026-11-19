@@ -114,7 +114,7 @@ Replays are parsed in the uploader's browser by WebAssembly builds of each title
 | Language and runtime  | TypeScript on the current Node LTS                                                                        | Best Discord library, Satori is JavaScript-only, one language for bot, web, engine and stats |
 | Discord               | discord.js                                                                                                | Most complete coverage of slash commands, buttons, modals, permissions                       |
 | HTTP                  | Hono with server-rendered `html` tagged templates (M-07: Node runs TypeScript directly, without JSX)      | Small, fast, one process with the bot                                                        |
-| Browser interactivity | htmx for forms; small Preact islands for the uploader and the stat grid                                   | No SPA framework to maintain                                                                 |
+| Browser interactivity | htmx for forms and the stat grid (with a small paste script); a small Preact island for the replay uploader | No SPA framework to maintain                                                                 |
 | Replay parsing        | Each title's parser compiled to WebAssembly, run in a Web Worker in the browser and in Node on the server | One parser build, two places; no native binaries on the server                               |
 | Database              | SQLite in WAL mode, better-sqlite3, Drizzle ORM and drizzle-kit migrations                                | Zero-ops, fast, typed schema                                                                 |
 | Validation            | zod                                                                                                       | One schema for API input, JSON columns, parser output and stat sheets                        |
@@ -705,13 +705,15 @@ A league decides how strict its mercato is: a small league may let teams change 
 - **Exceptions:** staff may apply a move themselves at any time, window or not, with a reason. It is audited, posted in `#mercato`, and not counted against the window's limit (O-35).
 - **The form** carries what the rulebook asks (Ubisoft name, Discord account, nationality, rank, old and new team), read from each player's own page, not typed by the officials.
 
-**Manual stat grid**
+**Manual stat grid** (M-39, maintainer, 19 November 2026)
 
-- One tab per game. Rows are lineup members; columns are the title's manual metrics (section 9).
-- Pasting tab-separated rows from Excel or Google Sheets fills the grid.
-- Live validation: types and ranges, then the title's consistency checks (section 12).
-- Each team submits its own side, or one submits both and the other confirms; staff can override; everything is audited.
-- Replay data always wins over manual data for the same game.
+- `/matches/:id/stats`: one tab per game. Rows are the side's season lineup at the match's time; columns are the title's manual metrics (section 9). A row left empty means the player did not play that game.
+- **Who enters:** a team's officials and captains (the match's stand-in captain included) enter their own side, which stands at once. A team may enter the other side too; that side then waits for its own officials or captain to confirm it. League staff enter or correct any side at any time. Every change is audited.
+- **Checks:** each player's values must be possible, from the game's score (R6: rounds played ≤ the game's rounds, kills ≤ 5 × rounds played, deaths ≤ rounds played, headshots ≤ kills); these block saving. The check across sides (one side's kills ≈ the other's deaths, within `ruleset.stats.kills_deaths_tolerance`, 3 by default) only warns the two teams and staff: the other side may not be entered yet, and a death is not always a kill.
+- **Until when:** `ruleset.stats.entry_days` after the result is validated; null (the default, LFR too) for no deadline. Staff can always correct.
+- **How:** a plain HTML table of inputs that works without JavaScript; htmx asks the server to check the values as they are typed, with the same TypeScript checks as on saving; a short script fills the grid from rows pasted from Excel or Google Sheets (tab-separated). No Preact island and no build step here (maintainer, 19 November 2026).
+- Saving a side records who played in the match's `lineup` and sets the game's `stats_source` to `manual`.
+- Replay data always wins over manual data for the same game: once a game has replay stats, its grid closes.
 
 **Performance and privacy**
 
