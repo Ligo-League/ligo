@@ -55,7 +55,7 @@ export function matchCaptainRoutes(
         side,
         team: found[side].name,
         ...captains[side],
-        lineup: matchLineup(db, found, side),
+        lineup: matchLineup(db, found, side, deps.now()),
       })),
       csrf: viewer.csrf,
       flash: flashOf(c),

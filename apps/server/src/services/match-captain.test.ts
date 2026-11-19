@@ -1,4 +1,5 @@
 import { listLeagueMatches, schema } from '@ligo/db';
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { matchCaptains, nameMatchCaptain } from './match-captain.ts';
@@ -91,6 +92,15 @@ describe('nameMatchCaptain', () => {
     expect(name(BRAVO_MANAGER, outsiderId)).toEqual({ ok: false, error: 'not_in_lineup' });
     expect(name(BRAVO_MANAGER, captainId)).toEqual({ ok: false, error: 'usual_captain' });
     expect(name(BRAVO_MANAGER, subId, 999)).toEqual({ ok: false, error: 'match_not_found' });
+  });
+
+  it('refuses a player still blocked after their mercato move (O-35)', () => {
+    const { db, subId, name } = league();
+    db.update(schema.rosterEntry)
+      .set({ validFrom: NOW + 1 })
+      .where(eq(schema.rosterEntry.playerId, subId))
+      .run();
+    expect(name(BRAVO_MANAGER, subId)).toEqual({ ok: false, error: 'not_in_lineup' });
   });
 
   it('closes once the result is reported', () => {

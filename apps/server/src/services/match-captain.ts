@@ -22,13 +22,20 @@ export interface LineupPlayer {
 }
 
 /** A side's season lineup, as it stands now: starters first, then substitutes, by name. */
-export function matchLineup(db: Reader, found: LeagueMatch, side: Side): LineupPlayer[] {
+export function matchLineup(
+  db: Reader,
+  found: LeagueMatch,
+  side: Side,
+  /** Leaves out the players still blocked then after a mercato move (O-35). */
+  at?: number,
+): LineupPlayer[] {
   const rows = db
     .select({
       playerId: rosterEntry.playerId,
       name: player.displayName,
       role: rosterEntry.role,
       captain: rosterEntry.captain,
+      validFrom: rosterEntry.validFrom,
     })
     .from(rosterEntry)
     .innerJoin(player, eq(rosterEntry.playerId, player.id))
@@ -43,7 +50,9 @@ export function matchLineup(db: Reader, found: LeagueMatch, side: Side): LineupP
     .all();
   return rows
     .flatMap((row): LineupPlayer[] =>
-      row.role === 'player' || row.role === 'sub' ? [{ ...row, role: row.role }] : [],
+      (row.role === 'player' || row.role === 'sub') && (at === undefined || row.validFrom <= at)
+        ? [{ playerId: row.playerId, name: row.name, role: row.role, captain: row.captain }]
+        : [],
     )
     .sort((x, y) => Number(x.role === 'sub') - Number(y.role === 'sub'));
 }
@@ -92,7 +101,8 @@ export function nameMatchCaptain(
     const found = leagueMatch(tx, league, request.matchId);
     if (!found) return { ok: false, error: 'match_not_found' };
     const acting = matchActorOf(tx, actor, found.seasonId);
-    const lineup = matchLineup(tx, found, request.side);
+    // A player still blocked after their move cannot act in a match yet.
+    const lineup = matchLineup(tx, found, request.side, now);
     const picked =
       request.playerId === null
         ? null
