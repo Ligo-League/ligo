@@ -1373,6 +1373,28 @@ export const en: Record<MessageKey, string> = {
   'web.admin.season.done.created': 'Season created, open for registration.',
   'web.admin.season.done.saved': 'Settings saved.',
   'web.admin.season.done.status': 'Status changed.',
+  'web.admin.season.divisions': 'Divisions',
+  'web.admin.season.noDivision': 'No division yet.',
+  'web.admin.season.newDivision': 'Add a division',
+  'web.admin.division.title': '{name} ({season})',
+  'web.admin.division.newTitle': 'New division: {season}',
+  'web.admin.division.createButton': 'Add the division',
+  'web.admin.division.kind': 'Kind',
+  'web.admin.division.kind.league': 'League',
+  'web.admin.division.kind.regional': 'Regional',
+  'web.admin.division.level': 'Level',
+  'web.admin.division.levelHelp': '1 for the highest (Ligue 1), 2 for the next…',
+  'web.admin.division.region': 'Region',
+  'web.admin.division.regionHelp': 'Empty: none.',
+  'web.admin.division.prefix': 'Prefix',
+  'web.admin.division.prefixHelp':
+    'Short, without spaces (L1, SUD): it names the division’s Discord categories and is typed in /standings.',
+  'web.admin.division.resultsChannel': 'Results channel',
+  'web.admin.division.leagueChannel': 'The league’s',
+  'web.admin.division.resultsChannelHelp':
+    'A text channel of the league’s server. The bot posts a message there before saving.',
+  'web.admin.division.channelUnavailable':
+    'Discord is not answering, or the competition has no linked server: the results channel stays as it is.',
   'web.admin.settings.none': '—',
   'web.admin.settings.group.requests':
     'The reminder to staff must come before the answer deadline ends.',

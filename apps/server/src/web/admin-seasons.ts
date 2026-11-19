@@ -1,5 +1,7 @@
 import type { Context, Hono } from 'hono';
+import { t } from '../i18n/index.ts';
 import { openCompetition } from '../services/admin-competitions.ts';
+import { divisionAdmin, saveDivision } from '../services/admin-divisions.ts';
 import {
   advanceSeason,
   createSeason,
@@ -9,6 +11,7 @@ import {
 import type { OrgUser } from '../services/orgs.ts';
 import type { SettingErrors } from '../services/settings-form.ts';
 import type { Env, Viewer } from './app.ts';
+import { divisionPageView, type DivisionPageData } from './pages/admin-division.ts';
 import {
   SEASON_DONE,
   seasonNewView,
@@ -20,7 +23,8 @@ import { staffCompetitions } from './roles.ts';
 
 // Seasons in the admin panel (phase 3h; design doc section 7, M-40), for the organisation's owner
 // and the competition's staff, whose staff role is asked of Discord again on every request:
-// `/admin/:org/:comp/seasons/new`, then `/admin/:org/:comp/seasons/:id` with its status form.
+// `/admin/:org/:comp/seasons/new`, then `/admin/:org/:comp/seasons/:id` with its status form,
+// and its divisions at `…/seasons/:id/divisions/new` and `…/seasons/:id/divisions/:division`.
 
 const userOf = (viewer: Viewer): OrgUser => ({
   playerId: viewer.playerId,
@@ -177,4 +181,78 @@ export function adminSeasonRoutes(app: Hono<Env>, kit: RouteKit): void {
     // A status already passed (two tabs, say): the page shows where the season is.
     return c.redirect(pageOf(key), 303);
   });
+
+  /** The season and division in the address; null when an ID is not a number. */
+  const divisionKeyOf = async (c: Context<Env>, viewer: Viewer) => {
+    const key = await keyOf(c, viewer);
+    const raw = c.req.param('division') ?? 'new';
+    if (!key || (raw !== 'new' && !/^\d{1,9}$/.test(raw))) return null;
+    return { ...key, divisionId: raw === 'new' ? null : Number(raw) };
+  };
+
+  const showDivision = async (
+    c: Context<Env>,
+    viewer: Viewer,
+    extra: Pick<DivisionPageData, 'typed' | 'saved'>,
+  ) => {
+    const key = await divisionKeyOf(c, viewer);
+    if (!key) return notFound(c);
+    const view = divisionAdmin(db, userOf(viewer), key);
+    if (!view.ok) return view.error === 'not_found' ? notFound(c) : forbidden(c);
+    let channels: DivisionPageData['channels'] = null;
+    if (view.guildId !== null) {
+      try {
+        channels = await deps.gateway.guildTextChannels(view.guildId);
+      } catch {
+        channels = null;
+      }
+    }
+    c.header('Cache-Control', 'private, no-store');
+    return render(
+      c,
+      divisionPageView(locale, { view, channels, csrf: viewer.csrf, ...extra }),
+      extra.typed ? 400 : 200,
+    );
+  };
+
+  const divisionPaths = [
+    '/admin/:org/:comp/seasons/:id/divisions/new',
+    '/admin/:org/:comp/seasons/:id/divisions/:division',
+  ];
+  for (const path of divisionPaths) {
+    app.get(path, async (c) => {
+      const viewer = c.get('viewer');
+      if (!deps.login) return notFound(c);
+      if (!viewer) return toLogin(c);
+      return showDivision(c, viewer, { typed: null, saved: c.req.query('done') === 'saved' });
+    });
+
+    app.post(path, async (c) => {
+      const guarded = await guard(c);
+      if (guarded instanceof Response) return guarded;
+      const { viewer, form } = guarded;
+      const key = await divisionKeyOf(c, viewer);
+      if (!key) return notFound(c);
+      const typed = typedOf(form);
+      const reply = await saveDivision(
+        db,
+        deps.gateway,
+        userOf(viewer),
+        key,
+        typed,
+        (division) => t(locale, 'league.channel.notice.resultsDivision', { division }),
+        deps.now(),
+      );
+      if (reply.ok) {
+        return c.redirect(`${pageOf(key)}/divisions/${String(reply.id)}?done=saved`, 303);
+      }
+      if (reply.error !== 'invalid') {
+        return reply.error === 'not_found' ? notFound(c) : forbidden(c);
+      }
+      return showDivision(c, viewer, {
+        typed: { values: typed, errors: reply.errors },
+        saved: false,
+      });
+    });
+  }
 }

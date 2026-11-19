@@ -203,6 +203,23 @@ export function seasonPageView(locale: Locale, data: SeasonPageData): Page {
               </form>`
         }
       </section>
+      <section class="card stack">
+        <h2>${t(locale, 'web.admin.season.divisions')}</h2>
+        ${
+          view.divisions.length === 0
+            ? html`<p class="muted">${t(locale, 'web.admin.season.noDivision')}</p>`
+            : html`<ul>
+                ${view.divisions.map(
+                  (division) =>
+                    html`<li>
+                      <a href="${base}/divisions/${String(division.id)}">${division.name}</a>
+                      (${division.categoryPrefix})
+                    </li>`,
+                )}
+              </ul>`
+        }
+        <p><a href="${base}/divisions/new">${t(locale, 'web.admin.season.newDivision')}</a></p>
+      </section>
       ${lockNotice(locale, view)}
       <form class="card stack" method="post" action="${base}">
         ${csrfField(data.csrf)}

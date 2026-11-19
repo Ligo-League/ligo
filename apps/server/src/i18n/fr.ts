@@ -1424,6 +1424,28 @@ export const fr = {
   'web.admin.season.done.created': 'Saison créée, ouverte aux inscriptions.',
   'web.admin.season.done.saved': 'Réglages enregistrés.',
   'web.admin.season.done.status': 'Statut changé.',
+  'web.admin.season.divisions': 'Divisions',
+  'web.admin.season.noDivision': 'Aucune division pour l’instant.',
+  'web.admin.season.newDivision': 'Ajouter une division',
+  'web.admin.division.title': '{name} ({season})',
+  'web.admin.division.newTitle': 'Nouvelle division : {season}',
+  'web.admin.division.createButton': 'Ajouter la division',
+  'web.admin.division.kind': 'Type',
+  'web.admin.division.kind.league': 'Ligue',
+  'web.admin.division.kind.regional': 'Régionale',
+  'web.admin.division.level': 'Niveau',
+  'web.admin.division.levelHelp': '1 pour la plus haute (Ligue 1), 2 pour la suivante…',
+  'web.admin.division.region': 'Région',
+  'web.admin.division.regionHelp': 'Vide : aucune.',
+  'web.admin.division.prefix': 'Préfixe',
+  'web.admin.division.prefixHelp':
+    'Court, sans espace (L1, SUD) : il nomme les catégories Discord de la division et se tape dans /standings.',
+  'web.admin.division.resultsChannel': 'Salon des résultats',
+  'web.admin.division.leagueChannel': 'Celui de la ligue',
+  'web.admin.division.resultsChannelHelp':
+    'Un salon textuel du serveur de la ligue. Le bot y poste un message avant d’enregistrer.',
+  'web.admin.division.channelUnavailable':
+    'Discord ne répond pas, ou la compétition n’a pas de serveur relié : le salon des résultats reste tel quel.',
   'web.admin.settings.none': '—',
   'web.admin.settings.group.requests':
     'Le rappel au staff doit venir avant la fin du délai de réponse.',

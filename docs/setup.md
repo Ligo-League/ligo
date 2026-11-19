@@ -887,6 +887,22 @@ posts lose their buttons) and the time is announced in the schedule channel with
    any it does not use. Registration is open only in the first. Changing the status posts
    nothing on Discord and creates no schedule.
 
+## 51. Phase 3h-7: divisions in the admin panel
+
+1. A season's admin page lists its divisions, top level first. Follow **Ajouter une division**
+   (`/admin/<org>/<competition>/seasons/<id>/divisions/new`).
+2. A division has a name, a kind (league or regional), a level (1 for the highest), an optional
+   region and a short prefix without spaces (`L1`, `SUD`), which names its Discord categories
+   and is what `/standings` accepts. A name or prefix the season already has is refused,
+   whatever the case.
+3. Its results channel is chosen among the league server's text channels; "the league's" means
+   the league's results channel applies. The bot posts a message in a newly chosen channel
+   before saving, so a channel it cannot write in is refused at once. When Discord does not
+   answer, the page says so and leaves the channel as it is.
+4. This is the place to give Season 4's divisions their results channels: the channels page
+   (`/<org>/<competition>/discord/channels`) shows only the current season's divisions.
+5. A division has no schedule yet (phase 4), and cannot be removed.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
