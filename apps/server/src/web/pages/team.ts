@@ -1,5 +1,6 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
+import { playerPath } from '../../services/paths.ts';
 import type { TeamPage } from '../../services/site.ts';
 import { matchList, safeColor, pageOf, type Html, type Page } from '../layout.ts';
 import { movesList } from './moves.ts';
@@ -86,7 +87,7 @@ export function teamPageView(locale: Locale, page: Data): Page {
               ${page.players.map(
                 (entry) =>
                   html`<li>
-                    ${entry.name}
+                    <a href="${playerPath(entry.slug)}">${entry.name}</a>
                     <span class="muted"
                       >·
                       ${t(

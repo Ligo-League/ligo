@@ -3,6 +3,7 @@ import { t, type Locale } from '../../i18n/index.ts';
 import type { RegistrationEntry, registrationsOf } from '../../services/registration-players.ts';
 import type { rostersOf } from '../../services/rosters.ts';
 import type { Profile } from '../../services/me.ts';
+import { playerPath } from '../../services/paths.ts';
 import { csrfField, pageOf, type Html, type Page } from '../layout.ts';
 
 export const ME_ERRORS = ['invalid_nationality', 'invalid_birth_date', 'lineup_locked'] as const;
@@ -99,6 +100,7 @@ export function mePage(locale: Locale, data: MeData): Page {
         : '';
   const body = html`<h1>${t(locale, 'web.me.title')}</h1>
     ${flash}
+    <p><a href="${playerPath(player.slug)}">${t(locale, 'web.me.publicPage')}</a></p>
     <p>${t(locale, 'web.me.discord', { name: player.displayName })}</p>
     ${
       data.staffOf.length > 0

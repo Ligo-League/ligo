@@ -66,6 +66,16 @@ export function layout(locale: Locale, page: Page, nav: Nav): Html {
     </html>`;
 }
 
+/** "jeu. 20 nov.", in the league's time zone: a day with no time set. */
+export function formatDay(locale: Locale, at: number, timeZone: string): string {
+  return new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {
+    timeZone,
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(at);
+}
+
 /** "jeu. 20 nov., 21:00", in the league's time zone. */
 export function formatWhen(locale: Locale, at: number, timeZone: string): string {
   return new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {

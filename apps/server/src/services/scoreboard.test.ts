@@ -86,6 +86,7 @@ describe('the scoreboard of a match', () => {
     expect(rows?.find((entry) => entry.name === 'P2')).toEqual({
       playerId: p(2),
       name: 'P2',
+      slug: 'p2',
       hidden: true,
       values: {},
     });

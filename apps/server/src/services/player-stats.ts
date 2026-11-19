@@ -38,8 +38,9 @@ interface TeamRef {
 
 export interface PlayerMatchLine {
   id: number;
-  /** Its time, or the start of its week when it had none. */
+  /** Its time, or the start of its week when it had none (`timed` false). */
   at: number;
+  timed: boolean;
   competition: { name: string; path: string };
   season: { name: string; path: string };
   team: TeamRef;
@@ -208,6 +209,7 @@ export function playerStats(db: Reader, playerId: number, title: Title): PlayerS
       line: {
         id: matchId,
         at: league.scheduledAt ?? league.window.start,
+        timed: league.scheduledAt !== null,
         competition: {
           name: where.competition.name,
           path: competitionPath(where.orgSlug, where.competition.slug),

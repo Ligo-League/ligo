@@ -1,5 +1,6 @@
 import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
+import { playerPath } from '../../services/paths.ts';
 import type { Scoreboard } from '../../services/scoreboard.ts';
 import type { MatchPage } from '../../services/site.ts';
 import { formatWhen, matchOutcome, pageOf, type Html, type Page } from '../layout.ts';
@@ -7,7 +8,12 @@ import { formatWhen, matchOutcome, pageOf, type Html, type Page } from '../layou
 type Data = Extract<MatchPage, { ok: true }>;
 type Column = Scoreboard['columns'][number];
 
-function figure(locale: Locale, column: Column, value: number | null | undefined): string {
+/** A stat as the scoreboard and the player page show it. */
+export function figure(
+  locale: Locale,
+  column: Pick<Column, 'format'>,
+  value: number | null | undefined,
+): string {
   if (value === null || value === undefined) return '–';
   const number = (options: Intl.NumberFormatOptions) =>
     new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', options).format(value);
@@ -52,7 +58,7 @@ function gameScoreboard(
               : entry.rows.map(
                   (row) =>
                     html`<tr>
-                      <th scope="row">${row.name}</th>
+                      <th scope="row"><a href="${playerPath(row.slug)}">${row.name}</a></th>
                       ${
                         row.hidden
                           ? html`<td colspan="${String(columns.length)}" class="muted">

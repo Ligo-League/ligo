@@ -71,7 +71,8 @@ export function profileOf(db: Pick<Db, 'select'>, playerId: number): Profile | n
 const PSEUDO_REGIONS = new Set(['ZZ', 'EU', 'EZ', 'UN', 'QO']);
 const LETTERS = Array.from({ length: 26 }, (_letter, index) => String.fromCharCode(65 + index));
 
-function regionName(locale: Locale, code: string): string | undefined {
+/** A country's name in `locale`, from its ISO code; undefined for a code that names none. */
+export function regionName(locale: Locale, code: string): string | undefined {
   if (!/^[A-Z]{2}$/.test(code) || PSEUDO_REGIONS.has(code)) return undefined;
   return new Intl.DisplayNames(locale, { type: 'region', fallback: 'none' }).of(code);
 }

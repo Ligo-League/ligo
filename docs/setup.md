@@ -915,6 +915,23 @@ posts lose their buttons) and the time is announced in the schedule channel with
 4. From `/admin`: an organisation (`/admin/<org>`), its competitions (`/admin/<org>/<comp>`), the
    rules page, each season (`…/seasons/<id>`) and each division (`…/divisions/<id>`).
 
+## 53. Phase 3i: player pages
+
+1. Every account has a public page at `/players/<slug>`; `/me` links to yours (**Ma page
+   publique**), team pages link each player of their lineup, and the match scoreboard links each
+   name.
+2. The page shows the name, nationality, current teams (role and captain), each game account's
+   in-game name and declared rank, and whether stats are public. It never shows the Ubisoft
+   profile ID, the birth date, the Discord ID or the email.
+3. **Carrière**: one line per season lineup, with the division and the team's rank ("en cours"
+   while the season runs; `EX` for an excluded team).
+4. **Matchs et stats**: a game gets its tab (`/players/<slug>/r6`) once a stat sheet names the
+   player in a validated match, verified (their own team's or staff's entry). To try it, enter
+   a sheet on `/matches/<id>/stats` for a validated match. The tab shows totals per season and
+   per map, then the match log. A player who has not accepted public stats has their matches and
+   team results listed, with no figure.
+5. On your local database, most pages show a career only: Season 3 has almost no stat sheets.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

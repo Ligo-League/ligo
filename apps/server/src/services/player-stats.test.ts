@@ -65,6 +65,8 @@ describe('a player’s matches in one game', () => {
       {
         id: 1,
         at: expect.any(Number) as number,
+        // No time was agreed: the page shows the day only.
+        timed: false,
         competition: { name: 'LFR', path: '/mlb-group/lfr' },
         season: { name: 'Saison 3', path: '/mlb-group/lfr/saison-3' },
         team: { name: 'Alpha Esport', slug: 'alpha-esport', tag: 'ALP' },

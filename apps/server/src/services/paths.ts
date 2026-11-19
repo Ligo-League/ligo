@@ -1,4 +1,5 @@
 import { slugify } from '@ligo/core';
+import { TITLES, type Title } from '@ligo/titles';
 
 // Website addresses that the bot and the pages both build. A competition lives under its
 // organisation, `/:org/:comp`, since two organisations may pick the same competition slug
@@ -51,3 +52,20 @@ export const seasonPath = (
   competitionSlug: string,
   row: { id: number; name: string },
 ) => `${competitionPath(orgSlug, competitionSlug)}/${seasonSlug(row)}`;
+
+/** The word for each game in addresses: `/players/vexo/rocket-league`. */
+export const TITLE_WORDS: Readonly<Record<Title, string>> = {
+  r6: 'r6',
+  valorant: 'valorant',
+  rocket_league: 'rocket-league',
+  lol: 'lol',
+  cs: 'cs',
+};
+
+/** The game an address word names, or null. */
+export const titleOfWord = (word: string): Title | null =>
+  TITLES.find((title) => TITLE_WORDS[title] === word) ?? null;
+
+/** A player's page, or one game's tab of it (M-42). */
+export const playerPath = (slug: string, title?: Title) =>
+  title === undefined ? `/players/${slug}` : `/players/${slug}/${TITLE_WORDS[title]}`;

@@ -78,7 +78,7 @@ describe('registrations on /staff', () => {
 
     // The team's page lists its players; the filer reads the answer on the registration's page.
     const team = await (await request('/teams/kairos')).text();
-    expect(team).toMatch(/P1\s*<span class="muted"\s*>·\s*titulaire · capitaine/);
+    expect(team).toMatch(/>P1<\/a>\s*<span class="muted"\s*>·\s*titulaire · capitaine/);
     jar.clear();
     await logIn('/registrations/1');
     const filer = await (await request('/registrations/1')).text();

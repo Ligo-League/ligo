@@ -244,7 +244,12 @@ function latestPlace(db: Pick<Db, 'select'>, teamId: number): Place | null {
 export function rosterPlayers(
   db: Pick<Db, 'select'>,
   teamId: number,
-): { name: string; role: (typeof schema.rosterEntry.$inferSelect)['role']; captain: boolean }[] {
+): {
+  name: string;
+  slug: string;
+  role: (typeof schema.rosterEntry.$inferSelect)['role'];
+  captain: boolean;
+}[] {
   const { player, rosterEntry } = schema;
   const rosterSeason = db
     .select({ seasonId: rosterEntry.seasonId })
@@ -255,7 +260,12 @@ export function rosterPlayers(
     .get();
   if (!rosterSeason) return [];
   return db
-    .select({ name: player.displayName, role: rosterEntry.role, captain: rosterEntry.captain })
+    .select({
+      name: player.displayName,
+      slug: player.slug,
+      role: rosterEntry.role,
+      captain: rosterEntry.captain,
+    })
     .from(rosterEntry)
     .innerJoin(player, eq(rosterEntry.playerId, player.id))
     .where(
@@ -278,7 +288,7 @@ export type TeamPage =
       siblings: TeamLink[];
       officials: { name: string; role: string }[];
       /** Its roster of the latest season it has one: starters first, the captain marked. */
-      players: { name: string; role: string; captain: boolean }[];
+      players: { name: string; slug: string; role: string; captain: boolean }[];
       /** Its approved mercato moves of that season, latest first. */
       moves: PublicMove[];
       /** The latest season the team plays in, if any. */

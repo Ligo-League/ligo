@@ -159,11 +159,14 @@ describe('the scoreboard on the match page', () => {
     jar.clear();
     const page = await (await request('/matches/1')).text();
     expect(page).toContain('<caption>');
-    expect(page).toMatch(/<th scope="row">P1<\/th>\s*<td>11<\/td>\s*<td>6<\/td>\s*<td>3<\/td>/);
+    // Each name links to the player's page (phase 3i).
+    expect(page).toMatch(
+      /<th scope="row"><a href="\/players\/p1">P1<\/a><\/th>\s*<td>11<\/td>\s*<td>6<\/td>\s*<td>3<\/td>/,
+    );
     // K/D 2,00 and HS 50 % for P1, in French.
     expect(page).toContain('<td>2,00</td>');
     expect(page).toMatch(/<td>50\s%<\/td>/);
-    expect(page).not.toContain('<th scope="row">P9</th>');
+    expect(page).not.toContain('>P9</a></th>');
     expect(page).toContain('Pas de statistiques pour cette équipe.');
     // The warning across sides is not public.
     expect(page).not.toContain('Vérifiez les deux feuilles');

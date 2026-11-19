@@ -20,6 +20,8 @@ export interface ScoreboardColumn {
 export interface ScoreboardRow {
   playerId: number;
   name: string;
+  /** For the link to the player's page. */
+  slug: string;
   /** No stats consent: named, figures hidden. */
   hidden: boolean;
   values: Record<string, number | null>;
@@ -53,6 +55,7 @@ export function matchScoreboard(db: Pick<Db, 'select'>, matchId: number): Scoreb
       teamId: lineup.teamId,
       playerId: player.id,
       name: player.displayName,
+      slug: player.slug,
       consent: player.statsConsentAt,
     })
     .from(lineupMember)
@@ -104,7 +107,15 @@ export function matchScoreboard(db: Pick<Db, 'select'>, matchId: number): Scoreb
           );
           if (own.length === 0) return [];
           if (member.consent === null) {
-            return [{ playerId: member.playerId, name: member.name, hidden: true, values: {} }];
+            return [
+              {
+                playerId: member.playerId,
+                name: member.name,
+                slug: member.slug,
+                hidden: true,
+                values: {},
+              },
+            ];
           }
           const totals = Object.fromEntries(own.map((entry) => [entry.metric, entry.value]));
           const derived = computeDerived(stats, totals);
@@ -117,7 +128,15 @@ export function matchScoreboard(db: Pick<Db, 'select'>, matchId: number): Scoreb
             ),
             ...derived,
           };
-          return [{ playerId: member.playerId, name: member.name, hidden: false, values }];
+          return [
+            {
+              playerId: member.playerId,
+              name: member.name,
+              slug: member.slug,
+              hidden: false,
+              values,
+            },
+          ];
         })
         .sort(
           (x, y) =>
