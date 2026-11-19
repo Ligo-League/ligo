@@ -6,7 +6,7 @@ import {
   statsSettingsSchema,
   vetoSchema,
 } from '@ligo/core';
-import { schema } from '@ligo/db';
+import { orgSettingsSchema, schema } from '@ligo/db';
 import { describe, expect, it } from 'vitest';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import {
@@ -93,6 +93,21 @@ describe('ensurePlayer', () => {
     expect(slugOf('3', 'LEA')).toBe('lea-3');
     expect(slugOf('4', '!!!')).toBe('player');
     expect(slugOf('5', '日本')).toBe('player-2');
+  });
+
+  it('keeps slugs unique across organisations, since /players/:slug is global (M-42)', () => {
+    const db = leagueDatabase();
+    const other = db
+      .insert(schema.org)
+      .values({ name: 'Benelux', slug: 'benelux', settingsJson: orgSettingsSchema.parse({}) })
+      .returning()
+      .get();
+    expect(ensurePlayer(db, { orgId: 1, discordUserId: '1', displayName: 'Vexo' }, 1).slug).toBe(
+      'vexo',
+    );
+    expect(
+      ensurePlayer(db, { orgId: other.id, discordUserId: '2', displayName: 'Vexo' }, 1).slug,
+    ).toBe('vexo-2');
   });
 });
 

@@ -1,6 +1,6 @@
 import { slugify } from '@ligo/core';
 import { schema, type Db, type Tx } from '@ligo/db';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 const { player } = schema;
 
@@ -20,11 +20,12 @@ export function ensurePlayer(
     .get();
   if (existing) return existing;
 
-  // Discord names are not unique and may hold no letter at all; the slug must be unique per org.
+  // Discord names are not unique and may hold no letter at all; the slug must be unique across
+  // Ligo, since `/players/:slug` is one page per person (M-42).
   const slug = slugify(input.displayName);
   const base = slug.ok ? slug.slug : 'player';
   let candidate = base;
-  for (let suffix = 2; slugTaken(db, input.orgId, candidate); suffix += 1) {
+  for (let suffix = 2; slugTaken(db, candidate); suffix += 1) {
     candidate = `${base}-${suffix}`;
   }
 
@@ -41,11 +42,7 @@ export function ensurePlayer(
     .get();
 }
 
-function slugTaken(db: Db | Tx, orgId: number, slug: string): boolean {
-  const found = db
-    .select({ id: player.id })
-    .from(player)
-    .where(and(eq(player.orgId, orgId), eq(player.slug, slug)))
-    .get();
+function slugTaken(db: Db | Tx, slug: string): boolean {
+  const found = db.select({ id: player.id }).from(player).where(eq(player.slug, slug)).get();
   return found !== undefined;
 }

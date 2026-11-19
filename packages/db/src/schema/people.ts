@@ -54,7 +54,8 @@ export const player = sqliteTable(
     birthDate: text('birth_date'),
     createdAt: integer('created_at').notNull(),
   },
-  (t) => [unique('player_org_slug_unique').on(t.orgId, t.slug)],
+  // Unique across Ligo, not per organisation: `/players/:slug` is one page per person (M-42).
+  (t) => [unique('player_slug_unique').on(t.slug)],
 );
 
 export const gameAccount = sqliteTable(

@@ -450,7 +450,16 @@ function fixtureStaffId(
     .get();
   if (known) return known.id;
   const base = slugify(FIXTURE_STAFF.displayName);
-  const slug = base.ok ? base.slug : 'staff';
+  const stem = base.ok ? base.slug : 'staff';
+  // Player slugs are unique across Ligo (M-42): someone may already use the maintainer's name.
+  let slug = stem;
+  for (
+    let suffix = 2;
+    tx.select({ id: player.id }).from(player).where(eq(player.slug, slug)).get();
+    suffix += 1
+  ) {
+    slug = `${stem}-${String(suffix)}`;
+  }
   return tx
     .insert(player)
     .values({
