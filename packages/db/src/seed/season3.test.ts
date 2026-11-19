@@ -6,7 +6,7 @@ import { parse } from 'csv-parse/sync';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { loadStandingsInput } from '../queries/standings.ts';
-import { division, stage } from '../schema/index.ts';
+import { division, slot, stage } from '../schema/index.ts';
 import { openTestDatabase } from '../testing.ts';
 import { parseMatchesCsv } from './matches-csv.ts';
 import { parseTeamsCsv } from './parse-teams-csv.ts';
@@ -62,7 +62,12 @@ const score7: Score7Row[] = parse<Record<string, string>>(
 const SCORE7_POINTS_FOR_DRAW = 1;
 
 const db = openTestDatabase();
-seedLfr(db, teams.teams, 1000);
+// score7's snapshot is from before RPV left the league (19 November 2026): its teams as they were.
+seedLfr(
+  db,
+  teams.teams.map((entry) => ({ ...entry, excluded: null })),
+  1000,
+);
 const seedSummary = seedMatches(db, matches.matches, 2000);
 
 describe('LFR Season 3 from the committed fixtures', () => {
@@ -143,9 +148,24 @@ describe('LFR Season 3 as Ligo records it', () => {
   it('seeds every fixture without conflict, and holds no draw', () => {
     expect(summary.conflicts).toEqual([]);
     expect(summary.created.matches).toBe(record.matches.length);
-    // The 0–0 score7 shows for Nightwolves against Outsouki was two excluded teams, not a draw:
-    // their match stays without result and counts for neither (rules draft, 7.3).
+    // The 0–0 score7 shows for Nightwolves against Outsouki was no draw: neither team showed
+    // up, a forfeit by both (O-28; maintainer, 19 November 2026).
     expect(summary.draws).toEqual([]);
+    const both = record.matches.find(
+      (row) => row.teamA === 'NIGHTWOLVES' && row.teamB === 'OUTSOUKI',
+    );
+    expect(both?.result).toEqual({ kind: 'forfeit', forfeitBy: 'both' });
+  });
+
+  it('holds RPV as excluded: it left the league (maintainer, 19 November 2026)', () => {
+    expect(teams.teams.find((entry) => entry.tag === 'RPV')?.excluded).toBe('A quitté la LFR');
+    expect(
+      recordDb
+        .select()
+        .from(slot)
+        .all()
+        .filter((row) => row.status === 'excluded'),
+    ).toHaveLength(1);
   });
 
   it('holds only scores a map of R6 can end on', () => {

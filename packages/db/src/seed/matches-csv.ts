@@ -12,6 +12,8 @@ export const MATCH_CSV_COLUMNS = [
 ] as const;
 type Column = (typeof MATCH_CSV_COLUMNS)[number];
 const REQUIRED = ['division', 'week', 'team_a', 'team_b'] as const;
+/** `forfeit_by` when neither team showed up (O-28). */
+const BOTH = 'BOTH';
 
 /**
  * What the source recorded for a fixture. `draw` exists because score7 has drawn matches; the
@@ -20,7 +22,8 @@ const REQUIRED = ['division', 'week', 'team_a', 'team_b'] as const;
 export type MatchRowResult =
   | { kind: 'none' }
   | { kind: 'played'; scoreA: number; scoreB: number }
-  | { kind: 'forfeit'; forfeitBy: 'a' | 'b' }
+  /** `both`: neither team showed up, and each gets a forfeit loss (O-28). */
+  | { kind: 'forfeit'; forfeitBy: 'a' | 'b' | 'both' }
   | { kind: 'draw'; scoreA: number; scoreB: number };
 
 export interface MatchRow {
@@ -138,7 +141,8 @@ function readResult(
     case 'forfeit':
       if (forfeitBy === teamA) return { kind: 'forfeit', forfeitBy: 'a' };
       if (forfeitBy === teamB) return { kind: 'forfeit', forfeitBy: 'b' };
-      return `forfeit_by "${forfeitBy}" must be ${teamA} or ${teamB}`;
+      if (forfeitBy === BOTH) return { kind: 'forfeit', forfeitBy: 'both' };
+      return `forfeit_by "${forfeitBy}" must be ${teamA}, ${teamB} or ${BOTH}`;
     case 'played':
     case 'draw': {
       if (!scores.every((cell) => WHOLE_NUMBER.test(cell))) {
@@ -168,7 +172,14 @@ export function formatMatchesCsv(matches: readonly MatchRow[]): string {
       result: result.kind === 'none' ? '' : result.kind,
       score_a: 'scoreA' in result ? result.scoreA : '',
       score_b: 'scoreB' in result ? result.scoreB : '',
-      forfeit_by: result.kind === 'forfeit' ? (result.forfeitBy === 'a' ? teamA : teamB) : '',
+      forfeit_by:
+        result.kind !== 'forfeit'
+          ? ''
+          : result.forfeitBy === 'both'
+            ? BOTH
+            : result.forfeitBy === 'a'
+              ? teamA
+              : teamB,
     };
     return MATCH_CSV_COLUMNS.map((column) => cells[column]);
   });

@@ -1,7 +1,18 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { auditLog, club, competition, division, org, season, slot, team } from '../schema/index.ts';
+import {
+  auditLog,
+  club,
+  competition,
+  division,
+  org,
+  player,
+  sanction,
+  season,
+  slot,
+  team,
+} from '../schema/index.ts';
 import { openTestDatabase } from '../testing.ts';
 import { parseTeamsCsv, type TeamRow } from './parse-teams-csv.ts';
 import { LFR_DIVISION_NAMES, openLfrRegistration, seedLfr } from './seed-lfr.ts';
@@ -32,6 +43,7 @@ describe('parseTeamsCsv', () => {
           colors: ['#112233', '#FFFFFF'],
           logo: null,
           club: null,
+          excluded: null,
         },
         {
           division: 'Ligue 2',
@@ -42,6 +54,7 @@ describe('parseTeamsCsv', () => {
           colors: [],
           logo: null,
           club: null,
+          excluded: null,
         },
       ],
     });
@@ -107,6 +120,7 @@ describe('parseTeamsCsv', () => {
           colors: ['#FF0000', '#0000FF', '#000000'],
           logo: null,
           club: null,
+          excluded: null,
         },
         {
           division: 'Ligue 2',
@@ -117,6 +131,7 @@ describe('parseTeamsCsv', () => {
           colors: ['#F7BE50', '#000000'],
           logo: null,
           club: null,
+          excluded: null,
         },
       ],
     });
@@ -162,6 +177,52 @@ const BRAVO: TeamRow = {
 const TEAMS: TeamRow[] = [ALPHA, BRAVO];
 
 describe('seedLfr', () => {
+  it('excludes a team the file marks, once, as decided by the league’s staff member', () => {
+    const db = openTestDatabase();
+    seedLfr(db, TEAMS, 1000);
+    const marked = TEAMS.map((row) =>
+      row.tag === 'ALP' ? { ...row, excluded: 'A quitté la LFR' } : row,
+    );
+    expect(seedLfr(db, marked, 2000).created.exclusions).toBe(1);
+    const alpha = db
+      .select()
+      .from(team)
+      .all()
+      .find((row) => row.tag === 'ALP');
+    const alphaSlot = db
+      .select()
+      .from(slot)
+      .all()
+      .find((row) => row.teamId === alpha?.id);
+    expect(alphaSlot).toMatchObject({ status: 'excluded', excludedAt: 2000 });
+    const staff = db.select().from(player).all();
+    expect(staff).toMatchObject([{ discordUserId: '546017354535141381', displayName: 'Gipson62' }]);
+    expect(db.select().from(sanction).all()).toMatchObject([
+      {
+        targetKind: 'slot',
+        targetId: alphaSlot?.id,
+        kind: 'exclusion',
+        reason: 'A quitté la LFR',
+        decidedBy: staff[0]?.id,
+        startsAt: 2000,
+      },
+    ]);
+    expect(
+      db
+        .select()
+        .from(auditLog)
+        .all()
+        .find((row) => row.action === 'slot.exclude'),
+    ).toMatchObject({
+      actorPlayerId: staff[0]?.id,
+      entity: 'slot',
+      afterJson: { status: 'excluded', reason: 'A quitté la LFR' },
+    });
+    // Once: running the seed again changes nothing.
+    expect(seedLfr(db, marked, 3000).created.exclusions).toBe(0);
+    expect(db.select().from(sanction).all()).toHaveLength(1);
+  });
+
   it('creates LFR, Season 3, both divisions, and a team with an active slot per row', () => {
     const db = openTestDatabase();
     const summary = seedLfr(db, TEAMS, 1000);
@@ -175,6 +236,7 @@ describe('seedLfr', () => {
         clubs: 2,
         teams: 2,
         slots: 2,
+        exclusions: 0,
       },
       updated: { competitions: 0, seasons: 0, clubs: 0, teams: 0, slots: 0 },
       removed: { clubs: 0 },
@@ -268,6 +330,7 @@ describe('seedLfr', () => {
         clubs: 0,
         teams: 0,
         slots: 0,
+        exclusions: 0,
       },
       updated: { competitions: 0, seasons: 0, clubs: 0, teams: 0, slots: 0 },
       removed: { clubs: 0 },

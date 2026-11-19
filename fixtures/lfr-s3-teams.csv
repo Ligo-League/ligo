@@ -1,4 +1,4 @@
-division,name,tag,city,color_1,color_2,color_3,logo,club
+division,name,tag,city,color_1,color_2,color_3,logo,club,excluded
 Ligue 1,Civitas Esport,CIVITAS,,bleu,blanc,,civitas,
 Ligue 1,Devil Black Esport,DEVIL,,rouge,noir,,devil,
 Ligue 1,GREED Academy,GREED2,,violet,noir,,greed,Greed
@@ -7,7 +7,7 @@ Ligue 1,Nightwolves Esport,NIGHTWOLVES,,noir,blanc,,nightwolves,
 Ligue 1,NTS kastuki,NTS,,rose,rouge,,not_scam_katsuki,Not Scam
 Ligue 1,Outsouki,OUTSOUKI,,rouge,blanc,,outsouki,
 Ligue 1,RCK Esport,RCK,,rouge,bleu,noir,rck,
-Ligue 1,RPV Esport,RPV,,#F7BE50,noir,,rpv,
+Ligue 1,RPV Esport,RPV,,#F7BE50,noir,,rpv,,A quitté la LFR
 Ligue 1,W Mates,WMATES,,violet,noir,,wmates,W Mates
 Ligue 2,Askium Esport,ASKIUM,,violet,noir,,askium,
 Ligue 2,Click Gaming,CLICK,,noir,blanc,,click_gaming,

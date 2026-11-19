@@ -19,13 +19,15 @@ const HEADER = MATCH_CSV_COLUMNS.join(',');
 const parse = (...lines: string[]) => parseMatchesCsv([HEADER, ...lines].join('\n'), TEAMS);
 
 describe('parseMatchesCsv', () => {
-  it('reads a fixture with no result, a played match, a forfeit and a draw', () => {
+  it('reads a fixture with no result, a played match, a forfeit, a draw and a double forfeit', () => {
     expect(
       parse(
         'Ligue 1,1,RCK,RPV,,,,',
         'Ligue 1,2,RPV,GREED1,played,7,4,',
         'Ligue 2,1,SHADE,NOVA1,forfeit,,,NOVA1',
         'Ligue 1,3,GREED1,RCK,draw,0,0,',
+        // Neither team showed up (O-28).
+        'Ligue 1,4,RPV,RCK,forfeit,,,BOTH',
       ),
     ).toEqual({
       ok: true,
@@ -51,6 +53,13 @@ describe('parseMatchesCsv', () => {
           teamA: 'GREED1',
           teamB: 'RCK',
           result: { kind: 'draw', scoreA: 0, scoreB: 0 },
+        },
+        {
+          division: 'Ligue 1',
+          week: 4,
+          teamA: 'RPV',
+          teamB: 'RCK',
+          result: { kind: 'forfeit', forfeitBy: 'both' },
         },
       ],
     });
@@ -97,7 +106,7 @@ describe('parseMatchesCsv', () => {
         'line 7: a played match cannot end 7-7; use "draw" if the source says so',
         'line 8: score_a and score_b must be whole numbers',
         'line 9: a draw cannot end 7-4',
-        'line 10: forfeit_by "GREED1" must be RCK or RPV',
+        'line 10: forfeit_by "GREED1" must be RCK, RPV or BOTH',
         'line 11: a forfeit takes no score',
         'line 12: a match without result takes no score',
         'line 13: forfeit_by is only for a result of "forfeit"',
@@ -117,7 +126,7 @@ describe('formatMatchesCsv', () => {
       .tuple(score, score)
       .filter(([a, b]) => a !== b)
       .map(([scoreA, scoreB]) => ({ kind: 'played' as const, scoreA, scoreB })),
-    fc.constantFrom('a' as const, 'b' as const).map((forfeitBy) => ({
+    fc.constantFrom('a' as const, 'b' as const, 'both' as const).map((forfeitBy) => ({
       kind: 'forfeit' as const,
       forfeitBy,
     })),

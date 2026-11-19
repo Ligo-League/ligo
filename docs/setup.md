@@ -822,6 +822,18 @@ posts lose their buttons) and the time is announced in the schedule channel with
    Ligo once, by their Discord user ID. Nobody else opens that page.
 4. MLB Group's page, `/admin/mlb-group`, opens only for its owner's Discord account.
 
+## 47. Season 3 fixtures: a forfeit by both teams, and RPV's exclusion
+
+1. In `fixtures/lfr-s3-matches.csv`, `forfeit_by` takes `BOTH` when neither team showed up:
+   each gets a forfeit loss and nobody wins (O-28). Nightwolves against Outsouki (week 5) is
+   recorded so.
+2. `fixtures/lfr-s3-teams.csv` has an `excluded` column: the reason a team was excluded from
+   the season, empty for a team that plays on. RPV's says it left the LFR.
+3. Run `pnpm seed`: it prints `1 exclusions` once and excludes RPV as the website's staff
+   exclusion does (its slot, an `exclusion` sanction and the audit entry), recorded as decided by
+   the maintainer's account. No Discord announcement is posted. Running it again changes nothing,
+   and an exclusion made on the website is never undone by the seed.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

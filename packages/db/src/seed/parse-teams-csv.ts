@@ -12,6 +12,7 @@ export const TEAM_CSV_COLUMNS = [
   'color_3',
   'logo',
   'club',
+  'excluded',
 ] as const;
 const COLOR_COLUMNS = ['color_1', 'color_2', 'color_3'] as const;
 
@@ -51,6 +52,11 @@ export interface TeamRow {
    * absent: a club of its own, named like the roster.
    */
   club?: string | null;
+  /**
+   * Why the team was excluded from the season, when it was (it left the league, say); null or
+   * absent: it plays on. The seed records the exclusion once, as the league's staff decided it.
+   */
+  excluded?: string | null;
 }
 
 export type TeamsCsvResult = { ok: true; teams: TeamRow[] } | { ok: false; errors: string[] };
@@ -151,6 +157,9 @@ export function parseTeamsCsv(text: string, divisionNames: readonly string[]): T
       fail(`club "${club}" has no letter or digit to build a URL from`);
     }
 
+    const excluded = value('excluded');
+    if (excluded.length > 500) fail('excluded: the reason is longer than 500 characters');
+
     if (errors.length === before && slug.ok && colors.success) {
       teams.push({
         division,
@@ -161,6 +170,7 @@ export function parseTeamsCsv(text: string, divisionNames: readonly string[]): T
         colors: colors.data,
         logo: logo || null,
         club: club || null,
+        excluded: excluded || null,
       });
     }
   }

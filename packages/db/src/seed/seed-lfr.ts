@@ -22,6 +22,8 @@ import {
   competition,
   division,
   org,
+  player,
+  sanction,
   season,
   slot,
   team,
@@ -161,6 +163,8 @@ export interface SeedSummary {
     clubs: number;
     teams: number;
     slots: number;
+    /** Teams the file marks as excluded, excluded now. */
+    exclusions: number;
   };
   updated: { competitions: number; seasons: number; clubs: number; teams: number; slots: number };
   /** Clubs left without a roster because the file moved theirs to another club. */
@@ -184,6 +188,7 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
         clubs: 0,
         teams: 0,
         slots: 0,
+        exclusions: 0,
       },
       updated: { competitions: 0, seasons: 0, clubs: 0, teams: 0, slots: 0 },
       removed: { clubs: 0 },
@@ -355,6 +360,43 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
         tx.update(slot).set({ divisionId }).where(eq(slot.id, slotRow.id)).run();
         summary.updated.slots += 1;
       }
+
+      const reason = entry.excluded ?? null;
+      const current = reason === null ? undefined : tx.select().from(slot).where(slotWhere).get();
+      if (reason !== null && current?.status === 'active') {
+        // As `excludeSlot` in the server does for staff: status, sanction and audit together.
+        const decidedBy = fixtureStaffId(tx, orgId, now);
+        tx.update(slot)
+          .set({ status: 'excluded', excludedAt: now })
+          .where(eq(slot.id, current.id))
+          .run();
+        const stored = tx
+          .insert(sanction)
+          .values({
+            seasonId: seasonRow.id,
+            targetKind: 'slot',
+            targetId: current.id,
+            kind: 'exclusion',
+            startsAt: now,
+            reason,
+            decidedBy,
+          })
+          .returning({ id: sanction.id })
+          .get();
+        tx.insert(auditLog)
+          .values({
+            actorPlayerId: decidedBy,
+            actorKind: 'user',
+            action: 'slot.exclude',
+            entity: 'slot',
+            entityId: String(current.id),
+            beforeJson: { status: current.status },
+            afterJson: { status: 'excluded', sanctionId: stored.id, reason },
+            at: now,
+          })
+          .run();
+        summary.created.exclusions += 1;
+      }
     }
 
     // A club the file moved every roster away from holds nothing more: the file grouped it into
@@ -386,6 +428,38 @@ export function seedLfr(db: Db, teams: readonly TeamRow[], now: number): SeedSum
     }
     return summary;
   });
+}
+
+/**
+ * The league staff member who decided the exclusions the fixture records: the maintainer, who
+ * asked for RPV's (19 November 2026). Their player is created if Ligo does not know them yet.
+ */
+const FIXTURE_STAFF = { discordUserId: '546017354535141381', displayName: 'Gipson62' };
+
+function fixtureStaffId(
+  tx: Parameters<Parameters<Db['transaction']>[0]>[0],
+  orgId: number,
+  now: number,
+): number {
+  const known = tx
+    .select({ id: player.id })
+    .from(player)
+    .where(eq(player.discordUserId, FIXTURE_STAFF.discordUserId))
+    .get();
+  if (known) return known.id;
+  const base = slugify(FIXTURE_STAFF.displayName);
+  const slug = base.ok ? base.slug : 'staff';
+  return tx
+    .insert(player)
+    .values({
+      orgId,
+      slug,
+      displayName: FIXTURE_STAFF.displayName,
+      discordUserId: FIXTURE_STAFF.discordUserId,
+      createdAt: now,
+    })
+    .returning({ id: player.id })
+    .get().id;
 }
 
 const RULE_SETTINGS = ['rulesetJson', 'pointsJson', 'tiebreakJson', 'schedulingJson'] as const;
