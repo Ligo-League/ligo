@@ -266,10 +266,14 @@ section 16.
 - **Why it matters:** a schema change before the bot joins the real server.
 - **Until answered:** one staff role per server.
 - **Answer (partial, maintainer, 14 November 2026):** three levels: tier (division) staff,
-  competition staff, and group staff (MBL Group, every competition). Each level can do what the
+  competition staff, and group staff (MLB Group, every competition). Each level can do what the
   levels below it can. Still open: how tier and group staff are held. Proposal: a Discord role
   per level in each competition's server (a division's role, the competition's role), and for the
   group a list of people kept in Ligo, since the group spans several servers.
+- **Answer (partial, maintainer, 19 November 2026):** group staff is the organisation's owner,
+  stored in Ligo (M-20). Division (tier) staff come with phase 4, with each division's own
+  Discord roles; until then, competition staff act for every division. Still open for phase 4:
+  how a division's staff role is set.
 
 #### M-06 · Removing a sanction
 
@@ -377,24 +381,6 @@ section 16.
   its own (the day's matches each morning, the week's schedule, "game on"), and whether LFR
   wants any network in `approve` or `auto`.
 
-#### M-20 · Who opens the admin panel
-
-- **Question:** who may open each level of the admin panel (design doc section 7)? A
-  competition's staff, from their Discord role, for the competition and its leagues? And for
-  the organisation level (MBL Group: its competitions and Discord servers), a list of
-  organisation admins kept in Ligo, or the owners of the Discord servers?
-- **Why it matters:** the staff role itself is a setting of the panel, so someone must be able
-  to set it without already holding it, and a new competition needs someone to create it.
-- **Until answered:** nothing; the panel is the last step of phase 3.
-- **Answer (partial, maintainer, 14 November 2026):** it follows the staff levels (M-05): tier
-  staff open their division, competition staff their competition and its divisions, group staff
-  everything. Teams likewise: roster officials their roster, club officials the club and every
-  roster. Still open: who holds group staff first, so that someone can set the other roles.
-- **Answer (partial, maintainer, 15 November 2026):** a league's Discord settings (its server,
-  staff role and invitation link) are changed by whoever may manage its current server in
-  Discord: the owner, or the Manage Server permission. A competition created on the website is
-  linked to a server by its creator first, so the bot must be installed before.
-
 #### M-23 · The Ubisoft account at registration
 
 - **Question:** R6 players are identified by their Ubisoft `profileID`, but a player knows their
@@ -475,6 +461,39 @@ section 16.
 - **Answer:**
 
 ## Answered
+
+#### M-20 · Who opens the admin panel
+
+- **Question:** who may open each level of the admin panel (design doc section 7)? A
+  competition's staff, from their Discord role, for the competition and its leagues? And for
+  the organisation level (MLB Group: its competitions and Discord servers), a list of
+  organisation admins kept in Ligo, or the owners of the Discord servers?
+- **Why it matters:** the staff role itself is a setting of the panel, so someone must be able
+  to set it without already holding it, and a new competition needs someone to create it.
+- **Answer (partial, maintainer, 14 November 2026):** it follows the staff levels (M-05): tier
+  staff open their division, competition staff their competition and its divisions, group staff
+  everything. Teams likewise: roster officials their roster, club officials the club and every
+  roster. Still open: who holds group staff first, so that someone can set the other roles.
+- **Answer (partial, maintainer, 15 November 2026):** a league's Discord settings (its server,
+  staff role and invitation link) are changed by whoever may manage its current server in
+  Discord: the owner, or the Manage Server permission. A competition created on the website is
+  linked to a server by its creator first, so the bot must be installed before.
+- **Answer (maintainer, 19 November 2026):** an organisation's owner is the Ligo account that
+  created it, stored in Ligo, not taken from Discord: an organisation has several competitions,
+  each on its own server. The organisation may give an optional Discord invitation. Any
+  logged-in user who may manage a Discord server where the bot is installed may create an
+  organisation; the server is only checked. The owner opens everything in the organisation;
+  competition staff (the server's staff role) open their competition. MLB Group's owner is set
+  by migration 0025 (phase 3h-2).
+
+#### M-40 · Changing scoring settings during a season
+
+- **Question:** standings, forfeit counts and exclusions are computed from the settings, so
+  changing points, tie-breakers, forfeit scores or forfeit thresholds during a season rewrites the
+  table already played. What may the admin panel allow?
+- **Answer (maintainer, 19 November 2026):** those settings cannot change for a season once it
+  has a counted result (validated or forfeit), except by the organisation's owner, with a reason.
+  Every other setting can change at any time. Every change is audited.
 
 #### M-39 · The manual stat grid
 

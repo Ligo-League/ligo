@@ -343,6 +343,19 @@ M-xx : mainteneur).
   erreur se corrige par la sanction inverse.
 - **Appliquée par** : la page des sanctions du staff sur le site (phase 3f).
 
+### 6.5 Réglages du classement en cours de saison
+
+- Les points par victoire, le départage, les scores de forfait et les seuils de forfaits
+  (avertissement, exclusion) ne changent plus pour une saison dès qu'un résultat y compte (match
+  validé ou forfait) : le classement étant recalculé, un changement réécrirait les semaines déjà
+  jouées. Seul le propriétaire de l'organisation (MLB Group) peut encore les changer, avec un
+  motif.
+- Les autres réglages de la ligue peuvent changer à tout moment.
+- **Statut** : Décidée (19 novembre 2026).
+- **Appliquée par** : le panneau d'administration du site (phase 3h) refuse le changement, sauf au
+  propriétaire de l'organisation, qui donne un motif ; chaque changement est inscrit au journal
+  d'audit.
+
 **Appliquée par (tout l'article 6)** : le classement est **calculé** à partir des résultats
 validés, des forfaits et des sanctions, à chaque consultation. Personne ne le modifie à la main.
 
@@ -360,6 +373,8 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 - **Appliquée par** : le panneau du staff sur la page du match (phase 3f : la première, la
   seconde ou les deux équipes) ; le bot compte les forfaits de chaque équipe concernée dans la saison à chaque fois,
   ajoute l'avertissement puis prononce l'exclusion dans la même opération.
+- Les seuils d'avertissement et d'exclusion et le score d'un forfait sont figés en cours de
+  saison (voir 6.5).
 
 ### 7.2 Exclusion
 
