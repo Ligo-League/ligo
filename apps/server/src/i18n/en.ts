@@ -1289,6 +1289,11 @@ export const en: Record<MessageKey, string> = {
   'web.admin.settings.notSaved': 'Nothing is saved: correct the values shown.',
   'web.admin.settings.error.invalid': 'Not a valid value.',
   'web.admin.settings.error.not_integer': 'A whole number.',
+  'web.admin.settings.error.taken': 'Already in use.',
+  'web.admin.settings.error.reserved': 'This word is reserved by the site’s pages.',
+  'web.admin.settings.error.locked':
+    'Locked: a result already counts in the season. Only the organisation’s owner can change it, with a reason.',
+  'web.admin.settings.error.required': 'Required.',
   'web.admin.settings.error.form': 'Some settings do not fit together: check the values typed.',
   'web.admin.settings.section.general': 'General',
   'web.admin.settings.section.scheduling': 'Scheduling',

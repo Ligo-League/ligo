@@ -198,3 +198,34 @@ describe('a rule across several fields', () => {
     ).toEqual({ ok: false, errors: { deadline: 'invalid' } });
   });
 });
+
+describe('lines and pairs', () => {
+  const pairs = z.strictObject({
+    pool: z.array(z.string().min(1)),
+    score: z.strictObject({ win: z.tuple([z.int(), z.int()]) }).nullable(),
+  });
+  const fields: readonly SettingField[] = [
+    { path: 'pool', kind: { type: 'lines' } },
+    { path: 'score.win.0', kind: { type: 'optionalInt' } },
+    { path: 'score.win.1', kind: { type: 'optionalInt' } },
+  ];
+
+  it('shows a list of names one per line, and reads it back without blank lines', () => {
+    const current = { pool: ['Bank', 'Kafe Dostoyevsky'], score: null };
+    expect(settingsFormValues(current, fields)).toEqual({
+      pool: 'Bank\nKafe Dostoyevsky',
+      'score.win.0': '',
+      'score.win.1': '',
+    });
+    expect(
+      readSettingsForm(pairs, current, fields, {
+        pool: ' Bank \r\n\r\nNighthaven Labs\n',
+        'score.win.0': '7',
+        'score.win.1': '3',
+      }),
+    ).toEqual({
+      ok: true,
+      value: { pool: ['Bank', 'Nighthaven Labs'], score: { win: [7, 3] } },
+    });
+  });
+});

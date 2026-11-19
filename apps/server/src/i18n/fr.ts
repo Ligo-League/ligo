@@ -1339,6 +1339,11 @@ export const fr = {
   'web.admin.settings.notSaved': 'Rien n’est enregistré : corrigez les valeurs signalées.',
   'web.admin.settings.error.invalid': 'Valeur non valable.',
   'web.admin.settings.error.not_integer': 'Un nombre entier.',
+  'web.admin.settings.error.taken': 'Déjà utilisé.',
+  'web.admin.settings.error.reserved': 'Ce mot est réservé par les pages du site.',
+  'web.admin.settings.error.locked':
+    'Verrouillé : un résultat compte déjà dans la saison. Seul le propriétaire de l’organisation peut le changer, avec une raison.',
+  'web.admin.settings.error.required': 'Obligatoire.',
   'web.admin.settings.error.form':
     'Des réglages ne vont pas ensemble : vérifiez les valeurs saisies.',
   'web.admin.settings.section.general': 'Général',

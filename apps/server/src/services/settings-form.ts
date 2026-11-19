@@ -18,6 +18,8 @@ export type FieldKind =
   | { type: 'choiceList'; options: readonly string[]; size: number }
   /** A list of words typed in one input, separated by spaces or commas: a veto sequence. */
   | { type: 'words' }
+  /** A list of names that may hold spaces, one per line of a text area: a map pool. */
+  | { type: 'lines' }
   /**
    * A list of objects, one row of inputs each (`path.0.key`, `path.0.label.fr`…), with `size` rows
    * shown: the current ones and blank ones to add. An empty row is dropped; an optional column
@@ -30,7 +32,12 @@ export interface SettingField {
   kind: FieldKind;
 }
 
-export type SettingFieldError = 'invalid' | 'not_integer';
+/**
+ * What is wrong with a field: refused by the schema, or by its service (a name `taken`, a
+ * `reserved` word, a setting `locked`, a `required` reason).
+ */
+export type SettingFieldError =
+  'invalid' | 'not_integer' | 'taken' | 'reserved' | 'locked' | 'required';
 export type SettingErrors = Record<string, SettingFieldError>;
 
 const INTEGER = /^-?\d{1,9}$/;
@@ -41,9 +48,12 @@ const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 function setAt(target: Record<string, unknown>, path: string, value: unknown): void {
   const keys = path.split('.');
   let node = target;
-  for (const key of keys.slice(0, -1)) {
+  for (const [index, key] of keys.slice(0, -1).entries()) {
     const next = node[key];
-    if (typeof next !== 'object' || next === null) node[key] = {};
+    // A place in a list (`score.winner.0`) makes a list, so a tuple left null can be filled.
+    if (typeof next !== 'object' || next === null) {
+      node[key] = /^\d+$/.test(keys[index + 1] ?? '') ? [] : {};
+    }
     node = node[key] as Record<string, unknown>;
   }
   node[keys.at(-1) ?? path] = value;
@@ -51,7 +61,7 @@ function setAt(target: Record<string, unknown>, path: string, value: unknown): v
 
 /** The value an input gives, or the problem with what was typed. */
 function readInput(
-  kind: Exclude<FieldKind, { type: 'choiceList' | 'words' | 'rows' }>,
+  kind: Exclude<FieldKind, { type: 'choiceList' | 'words' | 'lines' | 'rows' }>,
   typed: string | undefined,
 ): { value: unknown } | { error: SettingFieldError } {
   const text = (typed ?? '').trim();
@@ -89,6 +99,13 @@ function readField(
     case 'words':
       return {
         value: (form[path] ?? '').split(/[\s,]+/).filter((word) => word !== ''),
+      };
+    case 'lines':
+      return {
+        value: (form[path] ?? '')
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter((line) => line !== ''),
       };
     case 'rows': {
       const rows: Record<string, unknown>[] = [];
@@ -148,6 +165,9 @@ export function settingsFormValues(
         break;
       case 'words':
         values[path] = list.map(shown).join(' ');
+        break;
+      case 'lines':
+        values[path] = list.map(shown).join('\n');
         break;
       case 'rows':
         for (let index = 0; index < kind.size; index += 1) {

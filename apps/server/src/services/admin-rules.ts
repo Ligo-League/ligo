@@ -37,15 +37,18 @@ const REASONS_MAX = 24;
 /** Blank rows the form adds to the current reasons, to add new ones. */
 const BLANK_REASONS = 3;
 
+/** Tie-breakers the admin panel accepts: only those the standings compute. */
+export const computedTiebreakSchema = tiebreakSchema.refine(
+  (tiebreak) =>
+    tiebreak.criteria.every((criterion) =>
+      (COMPUTED_TIEBREAKS as readonly string[]).includes(criterion),
+    ),
+  { error: 'The standings do not compute this criterion yet.' },
+);
+
 const rulesSchema = z.strictObject({
   points: pointsSchema,
-  tiebreak: tiebreakSchema.refine(
-    (tiebreak) =>
-      tiebreak.criteria.every((criterion) =>
-        (COMPUTED_TIEBREAKS as readonly string[]).includes(criterion),
-      ),
-    { error: 'The standings do not compute this criterion yet.' },
-  ),
+  tiebreak: computedTiebreakSchema,
   ruleset: rulesetSchema,
 });
 type Rules = z.infer<typeof rulesSchema>;

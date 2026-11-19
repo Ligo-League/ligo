@@ -41,6 +41,10 @@ export interface SectionView {
 const ERROR_KEYS = {
   invalid: 'web.admin.settings.error.invalid',
   not_integer: 'web.admin.settings.error.not_integer',
+  taken: 'web.admin.settings.error.taken',
+  reserved: 'web.admin.settings.error.reserved',
+  locked: 'web.admin.settings.error.locked',
+  required: 'web.admin.settings.error.required',
 } as const satisfies Record<string, MessageKey>;
 
 const select = (locale: Locale, name: string, options: readonly Option[], value: string): Html =>
