@@ -247,7 +247,14 @@ M-xx : mainteneur).
 - Une fois les salons de match créés par le bot, les propositions d'horaire, le veto et les
   résultats du match sont annoncés **dans le salon du match**. Le bot y épingle un message qui
   explique les étapes, avec un lien vers chaque page du site où elles se font.
-- **Statut** : Décidée ; appliquée à partir de la création des salons de match (phase 4).
+- Le salon du match ouvre **2 jours avant le début de la semaine** de jeu et ferme **48 heures
+  après que le résultat compte** (validé, forfait ou annulé) : un délai accordé par le staff, la
+  prolongation ou une contestation le laissent ouvert. Une fois fermé, les équipes le lisent
+  encore mais n'y écrivent plus ; il est supprimé en fin de saison, après sauvegarde de son
+  contenu. Les deux durées sont des réglages, tout comme le nom du salon (`w{week}-{tagA}-{tagB}`
+  par défaut, par exemple `w3-grd-rck`).
+- **Statut** : Décidée (M-44, mainteneur, 19 novembre 2026) ; appliquée à partir de la création
+  des salons de match (phase 4).
 
 ## 4. Côtés, hôte et veto
 

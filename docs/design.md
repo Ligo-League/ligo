@@ -570,7 +570,7 @@ Not commands (maintainer, 16 November 2026, section 3): proposing a time, the ve
 
 **Match channel lifecycle**
 
-1. **Publish.** A scheduled job runs a configurable number of days before each week. It creates the category `Semaine N` if missing and one channel per match named from `channel_template` (default `w{week}-{tagA}-{tagB}`).
+1. **Publish.** A scheduled job runs `open_days_before_week` days before each match week starts (default 2). It creates the week's category if missing, named from `category_template` (default `{division} · Semaine {week}`), and one channel per match named from `channel_template` (default `w{week}-{tagA}-{tagB}`). Both templates are format strings stored in the competition's settings, so a league may drop the week (`{tagA}-{tagB}`); the placeholders are `{week}`, `{tagA}`, `{tagB}` and `{division}` (the division's category prefix). A channel name follows Discord's rules (lower case, at most 100 characters). Ligo finds every channel by its stored ID, never by name (M-44, maintainer, 19 November 2026).
 2. **Permissions.** @everyone is denied View Channel; team role A, team role B, the staff role and the bot are allowed.
 3. **Control message**, pinned:
     - fixture, play window and deadline;
@@ -580,7 +580,7 @@ Not commands (maintainer, 16 November 2026, section 3): proposing a time, the ve
     - Once match channels exist, the notifications of a match (time proposals, the veto opening and its outcome, reports) are posted in the match's own channel, so the two teams answer where only they and staff can read, and have a place to discuss the match (maintainer, 13 November 2026). Until then they go to the league's schedule channel.
 4. **Deadlines.** At the end of the planned week with no agreed time, the bot posts the one-week extension. At the end of the extension it posts the automatic Sunday 21:00 slot.
 5. **Result.** Once validated (by the opponent's confirmation in LFR, or by staff), the bot posts the result card in the channel and in the results channel.
-6. **Archive.** A configurable number of days after validation, the team roles lose Send Messages and the channel moves to an archive category.
+6. **Archive.** `archive_hours_after_result` hours after the result counts (validated, forfeit or annulled; default 48), the team roles lose Send Messages, keep reading, and the channel moves to an archive category. A channel never closes by the calendar: extra time granted by staff, the extension week, a new time or a disputed result keep it open until the result counts (M-44). A category holds 50 channels at most, so archive categories are added as they fill.
 7. **Season end.** The transcript is exported as JSON to R2, then the channel is deleted.
 
 **Other managed channels**

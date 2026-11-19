@@ -533,6 +533,23 @@ section 16.
 
 ## Answered
 
+#### M-44 · When match channels open and close, and their names
+
+- **Question:** when does the bot create a match's channel and close it, and how is it named?
+- **Answer (maintainer, 19 November 2026):**
+  - It opens `open_days_before_week` days before the match week starts (2 by default and in
+    LFR).
+  - It closes `archive_hours_after_result` hours after the result counts (validated, forfeit or
+    annulled; 48 by default and in LFR), never by the calendar: extra time from staff, the
+    extension, a new time or a dispute keep it open. Closing removes Send Messages from the team
+    roles, who keep reading, and moves it to an archive category.
+  - At the season's end its transcript is saved, then the channel is deleted (design doc
+    section 6).
+  - Its name is a format string stored in the competition's settings, `w{week}-{tagA}-{tagB}` by
+    default; a league may drop the week (`{tagA}-{tagB}`). The week's category is one too,
+    `{division} · Semaine {week}` by default.
+- **Where:** design doc section 6; built in phase 4.
+
 #### M-42 · What a player page shows
 
 - **Question:** who has a public player page, does it show game accounts and ranks, and which
