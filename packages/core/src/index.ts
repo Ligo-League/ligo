@@ -7,6 +7,7 @@ export * from './mercato.ts';
 export * from './registration.ts';
 export * from './requests.ts';
 export * from './scheduling.ts';
+export * from './scoring-lock.ts';
 export * from './settings.ts';
 export * from './sides.ts';
 export * from './slug.ts';
