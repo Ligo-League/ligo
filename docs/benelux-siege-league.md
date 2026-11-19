@@ -354,7 +354,7 @@ The maintainer is not, so the plan borrows other people's trust.
   its teams), ask a server's admin before posting, and show rather than pitch: a standings image
   or stat page from a team's own matches.
 - **Twitter:** Ligo's progress, images and ideas, once the website is live. The first post with a
-  link needs the domain and the VPS (CLAUDE.md hosting triggers).
+  link needs the VPS (CLAUDE.md hosting triggers); the domain, `ligoleague.eu`, is bought.
 - **Small creators and casters** who speak Dutch: hard to find; broadcast rights and VODs for
   their portfolio in exchange.
 

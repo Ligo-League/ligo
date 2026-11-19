@@ -168,11 +168,12 @@ Review these areas line by line and flag anything uncertain in your summary:
 
 ## Hosting and domain: notify the maintainer
 
-The maintainer has **not bought a domain or a VPS yet**. Development runs on localhost.
+The domain is **`ligoleague.eu`** (bought on Porkbun, 18 November 2026). The maintainer has
+**not bought a VPS yet**, so nothing is served on it; development runs on localhost.
 
 In every task, check whether the work reaches one of the triggers below. If it does, **say so
-explicitly at the start of your plan**, before anything else: which trigger, why a public website,
-domain or VPS is now useful or necessary, and the cheapest option that covers it. Never assume
+explicitly at the start of your plan**, before anything else: which trigger, why a public website
+or VPS is now useful or necessary, and the cheapest option that covers it. Never assume
 hosting exists, and never bury this in the middle of a plan.
 
 Triggers:
@@ -194,7 +195,8 @@ Until a trigger is reached:
 
 Known cheap options to suggest:
 
-- Domain: `ligoleague.be` or `ligoleague.eu` (about €10 a year); `ligo.gg` later if the league grows.
+- Domain: `ligoleague.eu` is owned; use it (or a subdomain) for anything public. `ligo.gg` later
+  if the league grows.
 - Server: the OVHcloud VPS-1 from design doc section 13.
 
 When no trigger applies, one line in the plan is enough: "Hosting: nothing needed for this task."

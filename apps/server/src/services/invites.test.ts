@@ -6,8 +6,8 @@ const INVITE = { id: 3, nonce: 'n'.repeat(43) };
 
 describe('invitation links', () => {
   it('builds a link that only this invitation, nonce and secret match', () => {
-    const url = inviteUrl(new URL('https://ligoleague.be'), SECRET, INVITE);
-    expect(url).toMatch(/^https:\/\/ligoleague\.be\/join\/3\/[\w-]{43}$/);
+    const url = inviteUrl(new URL('https://ligoleague.eu'), SECRET, INVITE);
+    expect(url).toMatch(/^https:\/\/ligoleague\.eu\/join\/3\/[\w-]{43}$/);
     const token = url.split('/').at(-1) ?? '';
     expect(inviteTokenMatches(SECRET, INVITE, token)).toBe(true);
     expect(inviteTokenMatches(SECRET, { ...INVITE, id: 4 }, token)).toBe(false);
@@ -22,8 +22,8 @@ describe('invitation links', () => {
   });
 
   it('keeps a roster’s link and a registration’s apart', () => {
-    const url = rosterInviteUrl(new URL('https://ligoleague.be'), SECRET, INVITE);
-    expect(url).toMatch(/^https:\/\/ligoleague\.be\/invite\/3\/[\w-]{43}$/);
+    const url = rosterInviteUrl(new URL('https://ligoleague.eu'), SECRET, INVITE);
+    expect(url).toMatch(/^https:\/\/ligoleague\.eu\/invite\/3\/[\w-]{43}$/);
     const token = url.split('/').at(-1) ?? '';
     expect(inviteTokenMatches(SECRET, INVITE, token, 'roster')).toBe(true);
     expect(inviteTokenMatches(SECRET, INVITE, token)).toBe(false);
