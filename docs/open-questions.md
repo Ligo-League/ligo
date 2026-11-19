@@ -245,7 +245,13 @@ section 16.
   registration; both need to know whose place it is. RCK's case also says a team that breaks up
   keeps its place by playing out its forfeits, which the 50% rule and the exclusion threshold
   decide today.
-- **Until answered:** nothing changes; a slot stays the roster's. The answer is needed before
+- **Answer, in part (maintainer, 19 November 2026):**
+  - Question 1: either; each slot is held by a person or by a club (its owner deciding).
+  - Question 3: only between seasons; the holder registers another roster into the slot for the
+    next season, and staff approve it as any registration. No change of roster during a season.
+- **Still open:** questions 2 (who holds a slot at first) and 4 (handing it over, a holder who
+  leaves).
+- **Until answered:** nothing changes; a slot stays the roster's. The rest is needed before
   phase 6 (`closeSeason()`) and before Season 4's registration closes, if Season 3's places carry
   over to their holders.
 

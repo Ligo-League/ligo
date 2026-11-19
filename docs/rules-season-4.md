@@ -70,6 +70,20 @@ M-xx : mainteneur).
 - **Statut** : Décidée (M-22, mainteneur, 19 novembre 2026).
 - **Appliquée par** : les clubs arrivent avec l'inscription sur le site (phase 3).
 
+### 2.1 bis Titulaire d'une place
+
+- Une place dans une division a un **titulaire** : une personne ou un club (son propriétaire
+  décide). Le titulaire n'est pas forcément le propriétaire de l'équipe qui joue : en Saison 3,
+  la place de RCK est à Nivalem, pas à Ricky, propriétaire de RCK.
+- **Entre deux saisons**, le titulaire peut mettre une autre équipe à sa place pour la saison
+  suivante, à l'inscription de celle-ci ; le staff approuve, comme toute inscription. Pas de
+  changement d'équipe en cours de saison.
+- **Statut** : En partie décidée (M-41, mainteneur, 19 novembre 2026). Restent à trancher : qui
+  est titulaire au départ, si le titulaire peut céder la place à quelqu'un d'autre, et ce que
+  devient la place d'un titulaire qui quitte la ligue.
+- **Appliquée par** : rien encore ; aujourd'hui la place appartient à l'équipe qui joue. Viendra
+  avec l'inscription de la saison suivante et `closeSeason()` (phase 6).
+
 ### 2.2 Responsables
 
 - Deux niveaux : les responsables du **club** (le propriétaire et ses managers) agissent pour
