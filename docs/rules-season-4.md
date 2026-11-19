@@ -186,9 +186,12 @@ M-xx : mainteneur).
 - Ce sont des réglages de la compétition : une autre ligue peut laisser son mercato ouvert toute
   la saison, sans limite ni blocage, ou fermer les mouvements entre équipes d'un club.
 - **Statut** : Décidée (O-35, mainteneur, 16 et 19 novembre 2026).
-- **Appliquée par** : le staff ouvre les fenêtres sur le site ; les responsables déposent les
-  mouvements sur la page de gestion de l'équipe ; le staff les valide sur `/staff` ou avec les
-  boutons du bot (phase 3, en cours).
+- **Appliquée par** : le staff ouvre les fenêtres sur `/staff/mercato`, annoncées dans `#mercato` ;
+  les responsables déposent les mouvements sur la page du mercato de l'équipe
+  (`/teams/<équipe>/mercato`) ; le staff les valide ou les refuse sur `/staff` ou avec les
+  boutons du bot, et fait ses exceptions sur la page du mercato de l'équipe. Chaque mouvement
+  validé est annoncé dans `#mercato`, et les pages de l'équipe et de la saison les listent, sans
+  leur raison.
 
 ## 3. Programmation des matchs
 

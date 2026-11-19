@@ -749,6 +749,22 @@ posts lose their buttons) and the time is announced in the schedule channel with
    **Retirer** takes it back and strikes the post through.
 6. Staff cannot approve or refuse moves yet: that is 3f-12.
 
+## 42. Phase 3f-12: deciding mercato moves
+
+1. File a move as in step 41. The staff queue post now carries **Valider** and **Refuser**.
+2. As league staff, click **Valider** (or use `/staff`, section **Mouvements de mercato**). The
+   post shows who approved; `#mercato` announces the move and when the incoming player may play;
+   the team member who asked gets a direct message. The team's mercato page shows the incoming
+   player as **peut jouer à partir du …** for 24 hours (LFR).
+3. **Refuser** opens a form for the reason, which the team member reads in a direct message.
+4. Bring in a player who plays for another team (a transfer): approving it takes the player out
+   of that team's lineup, and its officials get a direct message, with a note when the player was
+   its captain.
+5. On a team's mercato page, staff see **Exception du staff**: the move applies at once, even
+   without a window, does not count, and is announced with its reason in the staff queue.
+6. The team's page and the season page list the approved moves, without their reasons.
+7. A player still blocked after a move cannot be named captain for a match.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
