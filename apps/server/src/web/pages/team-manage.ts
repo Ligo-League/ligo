@@ -350,6 +350,12 @@ export function teamManagePage(locale: Locale, data: TeamManageData): Page {
                 >`
             : ''
         }
+        ${
+          data.roster.inPlay && (data.roster.canManage || data.staff)
+            ? html` ·
+                <a href="/teams/${team.slug}/mercato">${t(locale, 'web.manage.mercatoLink')}</a>`
+            : ''
+        }
       </p>
       ${flashView(locale, data.flash)}
       <p>${t(locale, intro)}</p>

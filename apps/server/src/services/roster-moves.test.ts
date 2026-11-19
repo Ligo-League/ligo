@@ -2,7 +2,7 @@ import { mercatoSchema } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { leagueDatabase, rosterPlayerForTests, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import { leagueDatabase, mercatoLineups, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { openMercatoWindow } from './mercato-windows.ts';
 import type { Actor } from './permissions.ts';
 import { changeRole, fileMove, mercatoTeamView, withdrawMove } from './roster-moves.ts';
@@ -26,10 +26,7 @@ const MANAGER: Actor = {
 };
 const everyoneOnServer = () => Promise.resolve(true);
 
-/**
- * Alpha's lineup: P1 to P5 start, P1 captain, P6 a substitute; P7 and P8 are on its own list.
- * P9 plays for Bravo and is on Alpha's list too, ready for a transfer.
- */
+/** Alpha's and Bravo's lineups as `mercatoLineups` sets them, and LFR's window. */
 function league() {
   const db = leagueDatabase();
   setTeamOwner(
@@ -39,19 +36,7 @@ function league() {
     1,
   );
   const seasonId = db.select().from(schema.season).get()?.id ?? 0;
-  const ids: number[] = [];
-  for (let n = 1; n <= 9; n += 1) ids.push(rosterPlayerForTests(db, n === 9 ? 2 : 1, n));
-  const entry = (teamId: number, playerId: number, role: 'player' | 'sub', captain = false) =>
-    db
-      .insert(schema.rosterEntry)
-      .values({ seasonId, teamId, playerId, role, captain, validFrom: 1 })
-      .run();
-  ids.slice(0, 5).forEach((id, index) => entry(1, id, 'player', index === 0));
-  entry(1, ids[5] ?? 0, 'sub');
-  entry(2, ids[8] ?? 0, 'player', true);
-  db.insert(schema.rosterPlayer)
-    .values({ teamId: 1, playerId: ids[8] ?? 0, joinedAt: 2 })
-    .run();
+  const ids = mercatoLineups(db);
   const window = () =>
     openMercatoWindow(
       db,

@@ -255,6 +255,14 @@ export const fr = {
   'schedule.error.invalid_time': 'Heure illisible : tape-la comme 21:00.',
   'schedule.error.nonexistent_time':
     "Cette heure n'existe pas ce jour-là, à cause du changement d'heure. Choisis-en une autre.",
+  'mercato.move.swap': '{in} remplace {out}',
+  'mercato.move.in': 'arrivée de {in} ({role})',
+  'mercato.move.out': 'départ de {out}',
+  'mercato.move.from': '(vient de {team})',
+  'mercato.role.player': 'titulaire',
+  'mercato.role.sub': 'remplaçant',
+  'mercato.move.filed': '**Mercato — {team}** : {move}. Demandé par {member}. À traiter : {link}',
+  'mercato.move.withdrawn': "~~**Mercato — {team}** : {move}.~~ Retiré par l'équipe.",
   'mercato.window.opened':
     "**Mercato — {competition}, {season}** : fenêtre ouverte du {from} au {to}. {rules} Les mouvements se déposent sur la page de gestion de l'équipe, sur le site.",
   'mercato.window.limit': '{count} mouvements au plus par équipe.',
@@ -946,6 +954,74 @@ export const fr = {
   'web.manage.done.player_removed': 'Joueur retiré de l’équipe.',
   'web.me.rosters': 'Équipes où je joue',
   'web.me.joined': 'Tu as rejoint l’équipe.',
+  'web.manage.mercatoLink': "Mercato de l'effectif →",
+  'web.rosterMercato.title': 'Mercato — {team}',
+  'web.rosterMercato.free':
+    "La saison n'a pas encore commencé : l'effectif change librement, sans compter de mouvement.",
+  'web.rosterMercato.alwaysOpen': 'Le mercato de cette ligue est ouvert toute la saison.',
+  'web.rosterMercato.windowOpen': "Fenêtre de mercato ouverte jusqu'au {until}.",
+  'web.rosterMercato.nextWindow': 'Pas de fenêtre ouverte : la prochaine va du {from} au {to}.',
+  'web.rosterMercato.noWindow':
+    "Pas de fenêtre de mercato ouverte : le staff de la ligue l'annoncera.",
+  'web.rosterMercato.count': 'Mouvements comptés : {count} sur {limit}.',
+  'web.rosterMercato.countNoLimit': 'Mouvements comptés : {count}, sans limite.',
+  'web.rosterMercato.lineup': 'Effectif de la saison',
+  'web.rosterMercato.captain': 'capitaine',
+  'web.rosterMercato.startsAt': 'peut jouer à partir du {when}',
+  'web.rosterMercato.toSub': 'Passer remplaçant',
+  'web.rosterMercato.toStarter': 'Passer titulaire',
+  'web.rosterMercato.makeCaptain': 'Nommer capitaine',
+  'web.rosterMercato.roleHint':
+    "Passer titulaire ou remplaçant et changer de capitaine ne sont pas des mouvements : c'est immédiat, à tout moment, et l'historique le garde.",
+  'web.rosterMercato.fileTitle': 'Demander un mouvement',
+  'web.rosterMercato.fileHint':
+    "Un départ, une arrivée, ou un remplacement (les deux, qui compte pour un seul mouvement). Le joueur qui arrive doit d'abord avoir rejoint l'équipe par son lien d'invitation, sur la page de gestion. Le staff de la ligue valide ou refuse.",
+  'web.rosterMercato.out': 'Joueur qui part',
+  'web.rosterMercato.in': 'Joueur qui arrive',
+  'web.rosterMercato.role': 'Rôle du joueur qui arrive',
+  'web.rosterMercato.nobody': '— Personne —',
+  'web.rosterMercato.note': 'Message au staff (facultatif)',
+  'web.rosterMercato.file': 'Demander',
+  'web.rosterMercato.moves': 'Mouvements de la saison',
+  'web.rosterMercato.noMoves': 'Aucun mouvement cette saison.',
+  'web.rosterMercato.notCounted': 'non compté',
+  'web.rosterMercato.withdraw': 'Retirer',
+  'web.rosterMercato.back': "← Gérer l'équipe",
+  'web.rosterMercato.status.pending': 'En attente du staff',
+  'web.rosterMercato.status.approved': 'Validé',
+  'web.rosterMercato.status.rejected': 'Refusé',
+  'web.rosterMercato.status.withdrawn': 'Retiré',
+  'web.rosterMercato.done.filed': 'Mouvement demandé : le staff de la ligue va le traiter.',
+  'web.rosterMercato.done.withdrawn': 'Mouvement retiré.',
+  'web.rosterMercato.done.role': 'Effectif mis à jour.',
+  'web.rosterMercato.error.empty_move':
+    'Choisis un joueur qui part, un joueur qui arrive, ou les deux.',
+  'web.rosterMercato.error.not_in_lineup': "Ce joueur n'est pas dans l'effectif de la saison.",
+  'web.rosterMercato.error.captain_leaving':
+    "Le capitaine ne peut pas partir : nomme d'abord un autre capitaine.",
+  'web.rosterMercato.error.not_on_roster':
+    "Ce joueur n'a pas rejoint l'équipe : envoie-lui le lien d'invitation de la page de gestion.",
+  'web.rosterMercato.error.already_in_lineup': "Ce joueur est déjà dans l'effectif.",
+  'web.rosterMercato.error.intra_club_closed':
+    "Cette ligue n'autorise pas les mouvements entre équipes d'un même club.",
+  'web.rosterMercato.error.window_closed': "Aucune fenêtre de mercato n'est ouverte.",
+  'web.rosterMercato.error.limit_reached':
+    "L'équipe a atteint sa limite de mouvements pour cette fenêtre.",
+  'web.rosterMercato.error.too_many_starters':
+    'Il y aurait trop de titulaires : choisis un remplaçant, ou fais partir un titulaire.',
+  'web.rosterMercato.error.too_many_subs': 'Il y aurait trop de remplaçants.',
+  'web.rosterMercato.error.already_pending': 'Un mouvement en attente concerne déjà ce joueur.',
+  'web.rosterMercato.error.player_incomplete':
+    'Le joueur qui arrive doit compléter son profil (compte, nationalité, date de naissance, âge minimum) sur sa page.',
+  'web.rosterMercato.error.not_on_server':
+    "Le joueur qui arrive doit d'abord rejoindre le serveur Discord de la ligue.",
+  'web.rosterMercato.error.discord_unavailable':
+    'Discord ne répond pas : réessaie dans un instant.',
+  'web.rosterMercato.error.not_pending': 'Ce mouvement a déjà été traité.',
+  'web.rosterMercato.error.captain_not_starter': 'Le capitaine doit être titulaire.',
+  'web.rosterMercato.error.not_started':
+    'Ce joueur est encore bloqué après son arrivée : il ne peut pas encore être capitaine.',
+  'web.rosterMercato.error.not_found': 'Introuvable.',
   'web.manage.title': 'Gérer {team}',
   'web.manage.intro':
     "Les responsables de l'équipe et ses demandes : chaque changement part au staff de la ligue, ou s’applique tout de suite quand la ligue le prévoit.",

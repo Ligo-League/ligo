@@ -158,6 +158,30 @@ export function rosterPlayerForTests(db: Db, teamId: number, n: number): number 
   return id;
 }
 
+/**
+ * Lineups for the mercato, in leagueDatabase(): Alpha (team 1) has P1 to P5 starting, P1
+ * captain, and P6 a substitute; P7 and P8 are on its own list. P9 plays for Bravo (team 2) and is
+ * on Alpha's list too, ready for a transfer. Returns the players' IDs, P1 first.
+ */
+export function mercatoLineups(db: Db): number[] {
+  const seasonId =
+    db.select().from(schema.season).where(eq(schema.season.status, 'active')).get()?.id ?? 0;
+  const ids: number[] = [];
+  for (let n = 1; n <= 9; n += 1) ids.push(rosterPlayerForTests(db, n === 9 ? 2 : 1, n));
+  const entry = (teamId: number, n: number, role: 'player' | 'sub', captain = false) =>
+    db
+      .insert(schema.rosterEntry)
+      .values({ seasonId, teamId, playerId: ids[n - 1] ?? 0, role, captain, validFrom: 1 })
+      .run();
+  for (let n = 1; n <= 5; n += 1) entry(1, n, 'player', n === 1);
+  entry(1, 6, 'sub');
+  entry(2, 9, 'player', true);
+  db.insert(schema.rosterPlayer)
+    .values({ teamId: 1, playerId: ids[8] ?? 0, joinedAt: 2 })
+    .run();
+  return ids;
+}
+
 type Post = { channelId: string; messageId: string };
 
 /** Where `disputedReport` says its posts are, unless told otherwise. */

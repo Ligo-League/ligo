@@ -49,6 +49,7 @@ import { matchStaffRoutes } from './match-staff.ts';
 import { staffSanctionsRoutes } from './staff-sanctions.ts';
 import { leagueChannelsRoutes } from './league-channels.ts';
 import { staffMercatoRoutes } from './staff-mercato.ts';
+import { rosterMercatoRoutes } from './roster-mercato.ts';
 import { matchReportRoutes } from './match-report.ts';
 import { matchTimeRoutes } from './match-time.ts';
 import { vetoRoutes } from './veto.ts';
@@ -1007,6 +1008,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   });
 
   teamManageRoutes(app, { deps, render, notFound, forbidden, guard });
+  rosterMercatoRoutes(app, { deps, render, notFound, forbidden, guard }, memberOf);
 
   // Last of all: any third word is read as a season (see `keyOf`).
   app.get('/:org/:competition/:season', (c) => {

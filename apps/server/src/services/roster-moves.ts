@@ -583,3 +583,8 @@ export function changeRole(
     return { ok: true as const };
   });
 }
+
+/** The competition of the season under way the roster plays, if any: whose staff and server act. */
+export function moveCompetitionOf(db: Reader, teamId: number): number | null {
+  return seasonOf(db, teamId)?.competition.id ?? null;
+}
