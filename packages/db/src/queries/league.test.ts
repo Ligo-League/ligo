@@ -1,3 +1,4 @@
+import { mirroredForfeitScore } from '@ligo/core';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { auditLog, leagueGuild, season } from '../schema/index.ts';
@@ -96,7 +97,7 @@ describe('findGuildLeague', () => {
     if (!seeded3) throw new Error('No season');
     const settingsJson = {
       ...seeded3,
-      forfeit_score: [0, 0] as [number, number],
+      forfeit_score: mirroredForfeitScore(0, 0),
       exclusion_forfeit_score: null,
       map_pool: [],
       forfeits: { warning_at: 2, exclusion_at: 3 },

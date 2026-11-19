@@ -104,14 +104,16 @@ const SEASON: Omit<typeof season.$inferInsert, 'competitionId'> = {
   endsOn: '2026-12-20',
   status: 'active',
   // The official competitive pool of the current Ubisoft season, from the maintainer
-  // (13 November 2026). Rulebook: a warning at the 2nd forfeit, exclusion at the 3rd. A no-show
-  // is 7-0 (maintainer, 14 November 2026); a forfeit made by the 50% rule scores the same until
-  // O-27 says otherwise.
+  // (13 November 2026). Rulebook: a warning at the 2nd forfeit, exclusion at the 3rd. A forfeit
+  // scores Season 4's +4 / -7 (7-3 for the team that receives it, 0-7 for the team that forfeits;
+  // O-36), previewed on Season 3 before Ligo is official: the real Season 3 counted 7-0
+  // (maintainer, 19 November 2026). A forfeit made by the 50% rule scores the same until O-27
+  // says otherwise.
   settingsJson: {
     // The season's own points and tie-breakers (maintainer, 19 November 2026; M-40).
     points: LFR_POINTS,
     tiebreak: LFR_TIEBREAK,
-    forfeit_score: [7, 0],
+    forfeit_score: { winner: [7, 3], loser: [0, 7] },
     exclusion_forfeit_score: null,
     map_pool: [
       'Bank',

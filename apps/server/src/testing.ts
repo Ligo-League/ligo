@@ -58,7 +58,9 @@ export function leagueDatabase() {
   const seasonRow = db.select().from(schema.season).get();
   if (!seasonRow) throw new Error('seedLfr created no season');
   db.update(schema.season)
-    .set({ settingsJson: { ...seasonRow.settingsJson, forfeit_score: [0, 0] } })
+    .set({
+      settingsJson: { ...seasonRow.settingsJson, forfeit_score: { winner: [0, 0], loser: [0, 0] } },
+    })
     .run();
   seedMatches(
     db,

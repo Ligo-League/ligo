@@ -1,4 +1,9 @@
-import type { ForfeitThresholds, PointsSettings, TiebreakSettings } from './settings.ts';
+import type {
+  ForfeitScore,
+  ForfeitThresholds,
+  PointsSettings,
+  TiebreakSettings,
+} from './settings.ts';
 
 // The scoring lock (design doc section 7; M-40, maintainer, 19 November 2026). Standings,
 // forfeit counts and exclusions are computed from these settings every time, so changing one
@@ -9,8 +14,8 @@ import type { ForfeitThresholds, PointsSettings, TiebreakSettings } from './sett
 export interface ScoringSettings {
   points: PointsSettings;
   tiebreak: TiebreakSettings;
-  forfeit_score: readonly [number, number];
-  exclusion_forfeit_score: readonly [number, number] | null;
+  forfeit_score: ForfeitScore;
+  exclusion_forfeit_score: ForfeitScore | null;
   forfeits: ForfeitThresholds;
 }
 

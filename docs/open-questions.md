@@ -41,7 +41,7 @@ section 16.
 - **Question:** a no-show is 7–0 (answered below). What score does a forfeit get when the 50% rule
   creates it for an excluded team: 7–0 as well, or 0–0?
 - **Why it matters:** the score feeds rounds won and lost, so the difference that breaks ties.
-- **Until answered:** the same as a no-show, 7–0. It is its own season setting,
+- **Until answered:** the same as a no-show: 7–0, and 7–3 / 0–7 since O-36. It is its own season setting,
   `exclusion_forfeit_score`, so a different answer is a change of setting, not of code.
 - **Answer (partial, maintainer, 14 November 2026):** a team that does not show up loses 7–0, in
   Season 3 and probably in Season 4: the team that showed up must not lose on difference. It is a
@@ -59,8 +59,13 @@ section 16.
 - **Why it matters:** the score feeds rounds won and lost, so the difference that breaks ties.
   Other titles would take the same rule with their own values (Valorant, CS2, Call of Duty, any
   round-based game; goals in Rocket League).
-- **Until answered:** 7–0 (`forfeit_score`), the same score for both teams.
-- **What Ligo would need:** `forfeit_score` gives one score, read from each side, so the winner's
+- **Answer (maintainer, 19 November 2026):** decided for Season 4: +4 / −7, as proposed.
+  `forfeit_score` now gives each side its own rounds (`{ winner: [7, 3], loser: [0, 7] }`,
+  migration 0027). Ligo is not official yet, so Season 3 previews it too; the real Season 3
+  counted 7–0. A forfeit by both teams gives each `loser`. A forfeit made by the 50% rule follows
+  the same score until O-27 is answered.
+- **Until answered (before the answer):** 7–0 (`forfeit_score`), the same score for both teams.
+- **What Ligo needed:** `forfeit_score` gives one score, read from each side, so the winner's
   difference is always the opposite of the loser's. The proposal needs each side's own rounds for
   and against (winner 7–3, loser 0–7): a change of the setting's shape with a migration, as a
   setting per season, which the scoring lock (M-40) already freezes once a result counts. Ligo

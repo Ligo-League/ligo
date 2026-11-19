@@ -101,7 +101,7 @@ describe('loadStandingsInput', () => {
             forfeit: { winner: 1, loser: 0, counts_as_played: true },
           },
           tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
-          forfeit_score: [7, 0],
+          forfeit_score: { winner: [7, 0], loser: [0, 7] },
           exclusion_forfeit_score: null,
           map_pool: [],
           forfeits: { warning_at: 2, exclusion_at: 3 },
@@ -111,16 +111,21 @@ describe('loadStandingsInput', () => {
     expect(load(db).input).toMatchObject({
       points: { outcomes: { win: 1, loss: 0 }, forfeit: { winner: 1, loser: 0 } },
       tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
-      forfeitScore: [7, 0],
+      forfeitScore: { winner: [7, 0], loser: [0, 7] },
       // Unset: a forfeit made by the 50% rule scores like a no-show.
-      exclusionForfeitScore: [7, 0],
+      exclusionForfeitScore: { winner: [7, 0], loser: [0, 7] },
     });
     const settings = db.select().from(season).get()?.settingsJson;
     if (!settings) throw new Error('No season');
     db.update(season)
-      .set({ settingsJson: { ...settings, exclusion_forfeit_score: [0, 0] } })
+      .set({
+        settingsJson: { ...settings, exclusion_forfeit_score: { winner: [0, 0], loser: [0, 0] } },
+      })
       .run();
-    expect(load(db).input).toMatchObject({ forfeitScore: [7, 0], exclusionForfeitScore: [0, 0] });
+    expect(load(db).input).toMatchObject({
+      forfeitScore: { winner: [7, 0], loser: [0, 7] },
+      exclusionForfeitScore: { winner: [0, 0], loser: [0, 0] },
+    });
   });
 
   it('counts validated matches and forfeits of this stage, and nothing else', () => {
@@ -205,9 +210,9 @@ describe('loadStandingsInput', () => {
     const result = computeStandings(input);
     if (!result.ok) throw new Error(JSON.stringify(result.error));
     const tagOf = (entry: number) => teams.find((team) => team.entry === entry)?.tag;
-    // LFR scores a no-show 7-0: ZED leads on difference, BBB loses 7 rounds by forfeit.
+    // LFR scores a forfeit +4 / -7 (O-36): ZED leads on difference, BBB loses 7 rounds by forfeit.
     expect(result.rows.map((row) => [tagOf(row.entry), row.played, row.points, row.diff])).toEqual([
-      ['ZED', 1, 3, 7],
+      ['ZED', 1, 3, 4],
       ['BBB', 2, 3, -4],
       ['CCC', 1, 0, -3],
     ]);

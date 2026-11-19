@@ -1,7 +1,12 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { applyExclusions, type PendingMatch } from './exclusion.ts';
-import type { PointsSettings, TiebreakSettings } from './settings.ts';
+import {
+  type ForfeitScore,
+  mirroredForfeitScore,
+  type PointsSettings,
+  type TiebreakSettings,
+} from './settings.ts';
 import { computeStandings, type StandingsInput, type StandingsMatch } from './standings.ts';
 
 // The 50% rule as the maintainer settled it on 13 November 2026 (O-04): only matches really
@@ -154,7 +159,7 @@ describe('computeStandings with an excluded team', () => {
     matches: [],
     points: POINTS,
     tiebreak: TIEBREAK,
-    forfeitScore: [0, 0],
+    forfeitScore: mirroredForfeitScore(0, 0),
     pointDeltas: [],
     ...overrides,
   });
@@ -183,16 +188,21 @@ describe('computeStandings with an excluded team', () => {
   // its own setting, the no-show score when unset (O-27).
   it('scores a forfeit the rule creates with the exclusion setting, a no-show with its own', () => {
     const matches = [forfeit(X, 1, 'a'), forfeit(2, X, 'a'), played(X, 3, 7, 5)];
-    const rowsWith = (exclusionForfeitScore?: [number, number]) => {
+    const rowsWith = (exclusionForfeitScore?: ForfeitScore) => {
       const result = computeStandings(
-        input({ matches, excluded: [X], forfeitScore: [7, 0], exclusionForfeitScore }),
+        input({
+          matches,
+          excluded: [X],
+          forfeitScore: mirroredForfeitScore(7, 0),
+          exclusionForfeitScore,
+        }),
       );
       if (!result.ok) throw new Error(JSON.stringify(result.error));
       return (entry: number) => result.rows.find((row) => row.entry === entry);
     };
     // 1 of 3 played: X's no-show against 1 and its win against 3 become forfeits by the rule; 2
     // did not show up against X, which stays a no-show.
-    const own = rowsWith([0, 0]);
+    const own = rowsWith(mirroredForfeitScore(0, 0));
     expect(own(1)).toMatchObject({ wins: 1, scoreFor: 0, scoreAgainst: 0 });
     expect(own(3)).toMatchObject({ wins: 1, scoreFor: 0, scoreAgainst: 0 });
     expect(own(2)).toMatchObject({ losses: 1, scoreFor: 0, scoreAgainst: 7 });

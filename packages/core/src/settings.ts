@@ -356,6 +356,26 @@ export const forfeitThresholdsSchema = z.strictObject({
 });
 export type ForfeitThresholds = z.infer<typeof forfeitThresholdsSchema>;
 
+/** Rounds for and rounds against one side of a forfeit: feeds F, C and D. */
+const forfeitRoundsSchema = z.tuple([z.int().min(0), z.int().min(0)]);
+
+/**
+ * The rounds each side of a forfeit gets. The two sides need not mirror each other: LFR Season 4
+ * gives the team that receives the forfeit 7-3 (+4, Season 3's average difference of a played
+ * match) and the team that forfeits 0-7 (-7), so forfeiting is never better than losing (O-36,
+ * maintainer, 19 November 2026). When both teams forfeit, each gets `loser`.
+ */
+export const forfeitScoreSchema = z.strictObject({
+  winner: forfeitRoundsSchema,
+  loser: forfeitRoundsSchema,
+});
+export type ForfeitScore = z.infer<typeof forfeitScoreSchema>;
+
+/** A forfeit scored like a played match: the loser gets the winner's rounds the other way round. */
+export function mirroredForfeitScore(winnerRounds: number, loserRounds: number): ForfeitScore {
+  return { winner: [winnerRounds, loserRounds], loser: [loserRounds, winnerRounds] };
+}
+
 /** `season.settings_json`. */
 export const seasonSettingsSchema = z.strictObject({
   /**
@@ -366,16 +386,12 @@ export const seasonSettingsSchema = z.strictObject({
   points: pointsSchema,
   tiebreak: tiebreakSchema,
   /**
-   * Rounds credited to the winner and to the loser of a forfeit recorded by staff (a team that
-   * did not show up); feeds F, C and D. LFR: 7-0, so the team that showed up loses nothing on
-   * difference (maintainer, 14 November 2026).
+   * The rounds of a forfeit recorded by staff (a team that did not show up), side by side.
+   * LFR: 7-3 / 0-7 (+4 / -7) from Season 4, previewed on Season 3 (O-36); 7-0 before.
    */
-  forfeit_score: z.tuple([z.int().min(0), z.int().min(0)]),
+  forfeit_score: forfeitScoreSchema,
   /** The same for a forfeit the 50% rule creates for an excluded team; null: `forfeit_score`. */
-  exclusion_forfeit_score: z
-    .tuple([z.int().min(0), z.int().min(0)])
-    .nullable()
-    .default(null),
+  exclusion_forfeit_score: forfeitScoreSchema.nullable().default(null),
   map_pool: z
     .array(z.string().min(1))
     .refine(hasNoDuplicates, { error: 'A map can appear only once.' }),

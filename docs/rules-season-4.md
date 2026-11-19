@@ -316,15 +316,17 @@ M-xx : mainteneur).
 
 - **3 points par victoire**, 0 par défaite. Un forfait compte comme un match joué : 3 points à
   l'adversaire, 0 à l'équipe forfait.
-- Score d'un forfait en manches : **7–0** pour une équipe qui ne se présente pas : l'équipe
-  présente ne perd rien à la différence de manches. C'est un réglage de la saison.
+- Score d'un forfait en manches : l'équipe qui reçoit le forfait gagne **7–3** (+4 de
+  différence de manches, la différence moyenne d'un match joué de la Saison 3) et l'équipe
+  forfait perd **0–7** (−7), pour qu'un forfait ne soit jamais plus avantageux qu'une défaite.
+  Quand aucune des deux équipes ne se présente, chacune perd 0–7.
+- C'est un réglage de la saison, fixé avant la saison et figé dès qu'un résultat compte : chaque
+  côté du forfait a ses propres manches gagnées et perdues.
 - Un forfait créé par la règle des 50 % (voir 7.3) a son propre réglage ; en attendant O-27, il
-  vaut aussi 7–0.
-- **En discussion pour la Saison 4 (O-36)** : l'équipe qui reçoit le forfait gagnerait +4 de
-  différence de manches (comme un 7–3, la différence moyenne d'un match de la Saison 3) et
-  l'équipe forfait −7 (comme un 0–7), pour qu'un forfait ne soit jamais plus avantageux qu'une
-  défaite. Valeur fixée avant la saison, sans changement en cours de saison.
-- **Statut** : Décidée, sauf le score d'un forfait créé par la règle des 50 % (O-27). Question posée aux équipes le 19 novembre 2026 (O-36).
+  compte comme une absence : 7–3 et 0–7.
+- **Statut** : Décidée (O-36, 19 novembre 2026), sauf le score d'un forfait créé par la règle
+  des 50 % (O-27). La Saison 3 comptait 7–0 ; Ligo, pas encore officiel, lui applique déjà la
+  règle de la Saison 4 pour la montrer.
 
 ### 6.2 Colonnes
 
@@ -469,9 +471,8 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 
 ## À trancher avant la Saison 4
 
-| Question | Sujet                                          | En attendant                        |
-| -------- | ---------------------------------------------- | ----------------------------------- |
-| O-17     | Coupe de France : forme du tableau, côtés      | Non appliqué                        |
-| O-22     | Qui peut se déclarer disponible (recrutement)  | Joueurs sans équipe, mercato ouvert |
-| O-27     | Score d'un forfait créé par la règle des 50 %  | 7–0, comme une absence              |
-| O-36     | Différence de manches d'un forfait (+4 / −7 ?) | 7–0 pour les deux équipes           |
+| Question | Sujet                                         | En attendant                        |
+| -------- | --------------------------------------------- | ----------------------------------- |
+| O-17     | Coupe de France : forme du tableau, côtés     | Non appliqué                        |
+| O-22     | Qui peut se déclarer disponible (recrutement) | Joueurs sans équipe, mercato ouvert |
+| O-27     | Score d'un forfait créé par la règle des 50 % | 7–3 / 0–7, comme une absence        |

@@ -12,7 +12,7 @@ const LFR: ScoringSettings = {
     forfeit: { winner: 3, loser: 0, counts_as_played: true },
   },
   tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
-  forfeit_score: [7, 0],
+  forfeit_score: { winner: [7, 0], loser: [0, 7] },
   exclusion_forfeit_score: null,
   forfeits: { warning_at: 2, exclusion_at: 3 },
 };
@@ -31,7 +31,7 @@ describe('which scoring settings an edit changes', () => {
       scoringChanges(LFR, {
         ...LFR,
         tiebreak: { criteria: ['diff', 'points'], unresolved_tie: 'shared' },
-        exclusion_forfeit_score: [7, 0],
+        exclusion_forfeit_score: { winner: [7, 0], loser: [0, 7] },
       }),
     ).toEqual(['tiebreak', 'exclusion_forfeit_score']);
   });
@@ -42,7 +42,7 @@ describe('which scoring settings an edit changes', () => {
         const settings: ScoringSettings = {
           ...LFR,
           points: { ...LFR.points, outcomes: { win, loss: 0 } },
-          forfeit_score: [rounds, 0],
+          forfeit_score: { winner: [rounds, 0], loser: [0, rounds] },
         };
         const reordered = {
           forfeits: settings.forfeits,

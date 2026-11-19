@@ -542,3 +542,44 @@ describe('0026: MLB Group and its owner', () => {
     ]);
   });
 });
+
+describe('0027: each side of a forfeit has its own rounds', () => {
+  it('turns a single pair into mirrored sides, and leaves sides already split alone', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0026_mlb_group_owner');
+    db.$client.pragma('foreign_keys = OFF');
+    db.$client
+      .exec(`insert into season (id, competition_id, name, starts_on, ends_on, settings_json, status)
+      values (1, 1, 'Saison 3', '2026-10-19', '2026-12-20',
+              '{"forfeit_score":[7,0],"exclusion_forfeit_score":null,"map_pool":[]}', 'active'),
+             (2, 1, 'Saison 2', '2026-06-01', '2026-08-01',
+              '{"forfeit_score":[7,0],"exclusion_forfeit_score":[0,0]}', 'closed'),
+             (3, 1, 'Saison 4', '2027-01-04', '2027-03-14',
+              '{"forfeit_score":{"winner":[7,3],"loser":[0,7]},"exclusion_forfeit_score":null}',
+              'registration')`);
+
+    migrateUpTo(db, '0027_forfeit_score_sides');
+
+    const settings = (id: number) =>
+      JSON.parse(
+        (
+          db.$client.prepare('select settings_json as s from season where id = ?').get(id) as {
+            s: string;
+          }
+        ).s,
+      ) as Record<string, unknown>;
+    expect(settings(1)).toEqual({
+      forfeit_score: { winner: [7, 0], loser: [0, 7] },
+      exclusion_forfeit_score: null,
+      map_pool: [],
+    });
+    expect(settings(2)).toEqual({
+      forfeit_score: { winner: [7, 0], loser: [0, 7] },
+      exclusion_forfeit_score: { winner: [0, 0], loser: [0, 0] },
+    });
+    expect(settings(3)).toEqual({
+      forfeit_score: { winner: [7, 3], loser: [0, 7] },
+      exclusion_forfeit_score: null,
+    });
+  });
+});

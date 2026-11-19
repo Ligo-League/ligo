@@ -1,6 +1,11 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import type { PointsSettings, TiebreakSettings } from './settings.ts';
+import {
+  type ForfeitScore,
+  mirroredForfeitScore,
+  type PointsSettings,
+  type TiebreakSettings,
+} from './settings.ts';
 import {
   computeStandings,
   rankChanges,
@@ -16,6 +21,10 @@ const POINTS: PointsSettings = {
   outcomes: { win: 3, loss: 0 },
   forfeit: { winner: 3, loser: 0, counts_as_played: true },
 };
+const SEVEN_NIL = mirroredForfeitScore(7, 0);
+// Season 4 (O-36, maintainer, 19 November 2026): the team that receives the forfeit gets +4, as if
+// it won 7-3; the team that forfeits gets -7, as if it lost 0-7.
+const SEASON_4: ForfeitScore = { winner: [7, 3], loser: [0, 7] };
 const TIEBREAK: TiebreakSettings = { criteria: ['points', 'diff'], unresolved_tie: 'shared' };
 
 const input = (overrides: Partial<StandingsInput>): StandingsInput => ({
@@ -23,7 +32,7 @@ const input = (overrides: Partial<StandingsInput>): StandingsInput => ({
   matches: [],
   points: POINTS,
   tiebreak: TIEBREAK,
-  forfeitScore: [0, 0],
+  forfeitScore: mirroredForfeitScore(0, 0),
   pointDeltas: [],
   ...overrides,
 });
@@ -178,14 +187,29 @@ describe('computeStandings: forfeits', () => {
   });
 
   it('credits the forfeit score to the opponent of the team that forfeited (7-0, Season 2)', () => {
-    const rows = rowsOf({ forfeitScore: [7, 0], matches: [forfeit(1, 2, 'a')] });
+    const rows = rowsOf({ forfeitScore: SEVEN_NIL, matches: [forfeit(1, 2, 'a')] });
     expect(rowOf(rows, 2)).toMatchObject({ wins: 1, scoreFor: 7, scoreAgainst: 0, diff: 7 });
     expect(rowOf(rows, 1)).toMatchObject({ losses: 1, scoreFor: 0, scoreAgainst: 7, diff: -7 });
   });
 
+  it('credits each side its own score when they are not mirrored (+4 / -7, Season 4)', () => {
+    const rows = rowsOf({ forfeitScore: SEASON_4, matches: [forfeit(1, 2, 'a')] });
+    expect(rowOf(rows, 2)).toMatchObject({ wins: 1, points: 3, scoreFor: 7, scoreAgainst: 3 });
+    expect(rowOf(rows, 2).diff).toBe(4);
+    expect(rowOf(rows, 1)).toMatchObject({ losses: 1, points: 0, scoreFor: 0, scoreAgainst: 7 });
+    expect(rowOf(rows, 1).diff).toBe(-7);
+  });
+
+  it("gives both teams the loser's side when both forfeit (+4 / -7, Season 4)", () => {
+    const rows = rowsOf({ forfeitScore: SEASON_4, matches: [forfeit(1, 2, 'both')] });
+    for (const entry of [1, 2]) {
+      expect(rowOf(rows, entry)).toMatchObject({ scoreFor: 0, scoreAgainst: 7, diff: -7 });
+    }
+  });
+
   // O-28: when neither team shows up, each gets what a team that forfeits gets, and nobody wins.
   it('gives each team a forfeit loss when both forfeit', () => {
-    const rows = rowsOf({ forfeitScore: [7, 0], matches: [forfeit(1, 2, 'both')] });
+    const rows = rowsOf({ forfeitScore: SEVEN_NIL, matches: [forfeit(1, 2, 'both')] });
     for (const entry of [1, 2]) {
       expect(rowOf(rows, entry)).toMatchObject({
         played: 1,
@@ -224,7 +248,7 @@ describe('computeStandings: forfeits', () => {
       ...POINTS,
       forfeit: { winner: 3, loser: 0, counts_as_played: false },
     };
-    const rows = rowsOf({ points, forfeitScore: [7, 0], matches: [forfeit(1, 2, 'b')] });
+    const rows = rowsOf({ points, forfeitScore: SEVEN_NIL, matches: [forfeit(1, 2, 'b')] });
     expect(rowOf(rows, 1)).toMatchObject({ played: 0, wins: 0, losses: 0, points: 3, diff: 7 });
     expect(rowOf(rows, 2)).toMatchObject({ played: 0, wins: 0, losses: 0, points: 0, diff: -7 });
   });
@@ -304,7 +328,7 @@ describe('computeStandings: properties', () => {
     forfeitWinner: fc.integer({ min: 0, max: 3 }),
     forfeitLoser: fc.integer({ min: -1, max: 0 }),
     countsAsPlayed: fc.boolean(),
-    forfeitScore: fc.constantFrom<[number, number]>([0, 0], [7, 0]),
+    forfeitScore: fc.constantFrom<ForfeitScore>(mirroredForfeitScore(0, 0), SEVEN_NIL, SEASON_4),
   });
 
   const league = fc.integer({ min: 2, max: 8 }).chain((size) => {
@@ -344,7 +368,7 @@ describe('computeStandings: properties', () => {
       forfeitWinner: number;
       forfeitLoser: number;
       countsAsPlayed: boolean;
-      forfeitScore: [number, number];
+      forfeitScore: ForfeitScore;
     },
   ): StandingsInput => ({
     ...generated,
@@ -377,8 +401,13 @@ describe('computeStandings: properties', () => {
         const deltas = standings.pointDeltas.reduce((total, d) => total + d.delta, 0);
 
         expect(rows).toHaveLength(standings.entries.length);
-        expect(sum(rows, (row) => row.diff)).toBe(0);
-        expect(sum(rows, (row) => row.scoreFor)).toBe(sum(rows, (row) => row.scoreAgainst));
+        // Every played match moves as many rounds for as against; a forfeit moves its two sides,
+        // which need not mirror each other.
+        const [winnerFor, winnerAgainst] = chosen.forfeitScore.winner;
+        const [loserFor, loserAgainst] = chosen.forfeitScore.loser;
+        const forfeitDiff = winnerFor - winnerAgainst + loserFor - loserAgainst;
+        // Subtracted rather than compared, so no forfeit (0 × a negative) is not -0.
+        expect(sum(rows, (row) => row.diff) - forfeitCount * forfeitDiff).toBe(0);
         expect(sum(rows, (row) => row.played)).toBe(2 * counted);
         expect(sum(rows, (row) => row.wins)).toBe(counted);
         expect(sum(rows, (row) => row.losses)).toBe(counted);

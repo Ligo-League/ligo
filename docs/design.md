@@ -349,7 +349,11 @@ Every scoring rule belongs to the season (maintainer, 19 November 2026; M-40): `
 `season.settings_json`:
 
 ```json
-{ "forfeit_score": [7, 0], "exclusion_forfeit_score": null, "map_pool": [] }
+{
+  "forfeit_score": { "winner": [7, 3], "loser": [0, 7] },
+  "exclusion_forfeit_score": null,
+  "map_pool": []
+}
 ```
 
 - Each win is worth 3 points in Season 3, as score7 is set (Season 2 gave 1). There are no draws in R6 competitive settings, so score7's N column is not shown.
@@ -357,7 +361,7 @@ Every scoring rule belongs to the season (maintainer, 19 November 2026; M-40): `
 - score7 shows one Season 3 match as a 0–0 draw worth a point each (Nightwolves against Outsouki, week 5). Neither team showed up, and score7 cannot record a forfeit by both sides, so staff typed a draw. Ligo's fixture records it as a forfeit by both (`forfeit_by` = `BOTH`, maintainer, 19 November 2026). Both teams had been excluded at their third forfeit, and the teams file marks them so (its `excluded` column, with RPV, which left the league), so the 50% rule makes their match count for neither (O-01). When two teams that are not excluded both fail to show up, staff record a forfeit by both: each gets a forfeit loss (no points, the losing side of the forfeit score, a match played, a forfeit towards its own warning and exclusion), and nobody wins (O-28).
 - F counts rounds won, C rounds lost, and D = F − C. Columns: J, V, D, F, C, D, PTS.
 - Ranking: points, then D. Season 2 shows it: Vaevictis and Origin's Esport both have 8 points; D 23 beats D 21.
-- **Forfeit score** is a season setting, `forfeit_score`: `[7, 0]` in LFR (Seasons 2 and 3; maintainer, 14 November 2026), so a team that showed up loses nothing on D. score7 counted Season 3's forfeits 0–0. It feeds F and C, so it changes D.
+- **Forfeit score** is a season setting, `forfeit_score`: the rounds for and against of each side, `winner` and `loser`, which need not mirror each other. LFR Season 4: `{ "winner": [7, 3], "loser": [0, 7] }`, so the team that receives a forfeit gets +4 (Season 3's average difference of a played match, 4.05 over 39 matches) and the team that forfeits −7, and forfeiting is never better than losing (O-36, maintainer, 19 November 2026). When both teams forfeit, each gets `loser`. Ligo previews it on Season 3, which really counted 7–0 (`{ "winner": [7, 0], "loser": [0, 7] }`, maintainer, 14 November 2026; score7 counted 0–0): Ligo is not official yet. It feeds F and C, so it changes D; summed over a table, D is no longer zero.
 - A forfeit the 50% rule creates for an excluded team scores `exclusion_forfeit_score`; `null` (the default) means the same as `forfeit_score`. Whether LFR wants a different score there is O-27.
 - **Unresolved ties** (same points and same D) follow `unresolved_tie`:
     - `shared`: both teams show the same rank (default);

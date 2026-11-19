@@ -273,8 +273,11 @@ describe('seedLfr', () => {
         startsOn: '2026-10-19',
         endsOn: '2026-12-20',
         status: 'active',
-        // A no-show is 7-0 (maintainer, 14 November 2026).
-        settingsJson: { forfeit_score: [7, 0], exclusion_forfeit_score: null },
+        // Season 4's +4 / -7, previewed on Season 3 (O-36, maintainer, 19 November 2026).
+        settingsJson: {
+          forfeit_score: { winner: [7, 3], loser: [0, 7] },
+          exclusion_forfeit_score: null,
+        },
       },
     ]);
     // The pool itself is checked in its own test below.
@@ -474,7 +477,7 @@ describe('seedLfr', () => {
     const old = {
       points: scoring?.points,
       tiebreak: scoring?.tiebreak,
-      forfeit_score: [0, 0],
+      forfeit_score: { winner: [0, 0], loser: [0, 0] },
       map_pool: [],
     };
     db.$client.prepare('UPDATE season SET settings_json = ?').run(JSON.stringify(old));

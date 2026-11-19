@@ -1,5 +1,10 @@
 import { applyExclusions, type PendingMatch } from './exclusion.ts';
-import type { PointsSettings, TiebreakCriterion, TiebreakSettings } from './settings.ts';
+import type {
+  ForfeitScore,
+  PointsSettings,
+  TiebreakCriterion,
+  TiebreakSettings,
+} from './settings.ts';
 
 // Standings are computed from results and settings every time; they are never stored or edited
 // (design doc sections 4 and 5).
@@ -31,10 +36,10 @@ export interface StandingsInput {
   matches: readonly StandingsMatch[];
   points: PointsSettings;
   tiebreak: TiebreakSettings;
-  /** Rounds credited to the winner and to the loser of a forfeit. */
-  forfeitScore: readonly [number, number];
+  /** The rounds each side of a forfeit gets. */
+  forfeitScore: ForfeitScore;
   /** The same for a forfeit the 50% rule makes; `forfeitScore` when absent. */
-  exclusionForfeitScore?: readonly [number, number];
+  exclusionForfeitScore?: ForfeitScore;
   /** Sanction point deltas; several per entry add up. */
   pointDeltas: readonly { entry: number; delta: number }[];
   /** The stage's matches that do not count yet, void ones aside; the 50% rule needs them. */
@@ -129,7 +134,7 @@ export function computeStandings(input: StandingsInput): StandingsResult {
       if (match.result.forfeitedBy === 'both') {
         // Neither team showed up: each gets what a team that forfeits gets, and nobody wins.
         for (const tally of [a, b]) {
-          creditLoss(tally, score, forfeit.loser);
+          creditRounds(tally, score.loser, forfeit.loser);
           if (forfeit.counts_as_played) {
             tally.played += 1;
             tally.losses += 1;
@@ -138,7 +143,9 @@ export function computeStandings(input: StandingsInput): StandingsResult {
         continue;
       }
       const [winner, loser] = match.result.forfeitedBy === 'a' ? [b, a] : [a, b];
-      credit(winner, loser, score, forfeit.winner, forfeit.loser);
+      // Each side gets its own rounds: they need not mirror each other (O-36).
+      creditRounds(winner, score.winner, forfeit.winner);
+      creditRounds(loser, score.loser, forfeit.loser);
       if (forfeit.counts_as_played) countMatch(winner, loser);
     } else {
       // A league phase played as a series needs its own rule for rounds (design doc section 5).
@@ -151,7 +158,8 @@ export function computeStandings(input: StandingsInput): StandingsResult {
       const [winner, loser] = aWon ? [a, b] : [b, a];
       const score: [number, number] = aWon ? [game.a, game.b] : [game.b, game.a];
       const { outcomes } = input.points;
-      credit(winner, loser, score, outcomes.win, outcomes.loss);
+      creditRounds(winner, score, outcomes.win);
+      creditRounds(loser, [score[1], score[0]], outcomes.loss);
       countMatch(winner, loser);
     }
   }
@@ -207,31 +215,16 @@ export function computeStandings(input: StandingsInput): StandingsResult {
   return { ok: true, rows, unresolvedTies };
 }
 
-function credit(
-  winner: Tally,
-  loser: Tally,
-  score: readonly [number, number],
-  winnerPoints: number,
-  loserPoints: number,
+/** One team's rounds for and against in a match, and its points. */
+function creditRounds(
+  tally: Tally,
+  [scoreFor, scoreAgainst]: readonly [number, number],
+  points: number,
 ): void {
-  const [winnerScore, loserScore] = score;
-  winner.scoreFor += winnerScore;
-  winner.scoreAgainst += loserScore;
-  loser.scoreFor += loserScore;
-  loser.scoreAgainst += winnerScore;
-  winner.diff = winner.scoreFor - winner.scoreAgainst;
-  loser.diff = loser.scoreFor - loser.scoreAgainst;
-  winner.points += winnerPoints;
-  loser.points += loserPoints;
-}
-
-/** One team's side of a forfeit it lost: the loser's rounds and points, with no winner. */
-function creditLoss(loser: Tally, score: readonly [number, number], points: number): void {
-  const [winnerScore, loserScore] = score;
-  loser.scoreFor += loserScore;
-  loser.scoreAgainst += winnerScore;
-  loser.diff = loser.scoreFor - loser.scoreAgainst;
-  loser.points += points;
+  tally.scoreFor += scoreFor;
+  tally.scoreAgainst += scoreAgainst;
+  tally.diff = tally.scoreFor - tally.scoreAgainst;
+  tally.points += points;
 }
 
 function countMatch(winner: Tally, loser: Tally): void {

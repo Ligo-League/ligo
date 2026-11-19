@@ -4,6 +4,7 @@ import type { z } from 'zod';
 import {
   DEFAULT_DISPUTE_REASONS,
   DEFAULT_VETO,
+  mirroredForfeitScore,
   pointsSchema,
   rulesetSchema,
   schedulingSchema,
@@ -70,7 +71,7 @@ const LFR_S3 = {
       forfeit: { winner: 3, loser: 0, counts_as_played: true },
     },
     tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
-    forfeit_score: [7, 0],
+    forfeit_score: { winner: [7, 0], loser: [0, 7] },
     exclusion_forfeit_score: null,
     map_pool: [],
     forfeits: { warning_at: 2, exclusion_at: 3 },
@@ -95,9 +96,16 @@ describe('LFR Season 3 settings', () => {
   });
 
   it('accepts the Season 2 forfeit score of 7-0', () => {
-    expect(accepts(seasonSettingsSchema, { ...SCORING, forfeit_score: [7, 0], map_pool: [] })).toBe(
-      true,
-    );
+    const forfeit_score = mirroredForfeitScore(7, 0);
+    expect(forfeit_score).toEqual({ winner: [7, 0], loser: [0, 7] });
+    expect(accepts(seasonSettingsSchema, { ...SCORING, forfeit_score, map_pool: [] })).toBe(true);
+  });
+
+  // O-36 (maintainer, 19 November 2026): +4 for the team that receives the forfeit (7-3), -7 for
+  // the team that forfeits (0-7). Each side has its own rounds, so they need not mirror.
+  it('accepts the Season 4 forfeit score of +4 / -7', () => {
+    const forfeit_score = { winner: [7, 3], loser: [0, 7] };
+    expect(accepts(seasonSettingsSchema, { ...SCORING, forfeit_score, map_pool: [] })).toBe(true);
   });
 });
 
@@ -283,19 +291,23 @@ describe('schedulingSchema', () => {
 
 describe('seasonSettingsSchema', () => {
   it('holds its own points and tie-breakers, so changing them leaves past seasons as they were', () => {
-    const value = { ...SCORING, forfeit_score: [7, 0], map_pool: [] };
+    const value = { ...SCORING, forfeit_score: { winner: [7, 0], loser: [0, 7] }, map_pool: [] };
     expect(seasonSettingsSchema.parse(value)).toMatchObject(SCORING);
     expect(accepts(seasonSettingsSchema, { ...value, points: undefined })).toBe(false);
     expect(accepts(seasonSettingsSchema, { ...value, tiebreak: undefined })).toBe(false);
   });
 
   it('accepts a map pool of distinct names', () => {
-    const value = { ...SCORING, forfeit_score: [0, 0], map_pool: ['Map A', 'Map B', 'Map C'] };
+    const value = {
+      ...SCORING,
+      forfeit_score: { winner: [0, 0], loser: [0, 0] },
+      map_pool: ['Map A', 'Map B', 'Map C'],
+    };
     expect(seasonSettingsSchema.parse(value)).toMatchObject(value);
   });
 
   it('warns at the 2nd forfeit and excludes at the 3rd unless the season says otherwise', () => {
-    const stored = { ...SCORING, forfeit_score: [0, 0], map_pool: [] };
+    const stored = { ...SCORING, forfeit_score: { winner: [0, 0], loser: [0, 0] }, map_pool: [] };
     // Settings stored before this key existed must keep reading.
     expect(seasonSettingsSchema.parse(stored).forfeits).toEqual({ warning_at: 2, exclusion_at: 3 });
     const custom = { ...stored, forfeits: { warning_at: null, exclusion_at: 5 } };
@@ -303,12 +315,16 @@ describe('seasonSettingsSchema', () => {
   });
 
   it('scores forfeits made by an exclusion as no-shows unless the season sets their own score', () => {
-    const stored = { ...SCORING, forfeit_score: [7, 0], map_pool: [] };
+    const stored = { ...SCORING, forfeit_score: { winner: [7, 0], loser: [0, 7] }, map_pool: [] };
     // Settings stored before this key existed must keep reading.
     expect(seasonSettingsSchema.parse(stored).exclusion_forfeit_score).toBeNull();
-    const own = { ...stored, exclusion_forfeit_score: [0, 0] };
-    expect(seasonSettingsSchema.parse(own).exclusion_forfeit_score).toEqual([0, 0]);
-    expect(accepts(seasonSettingsSchema, { ...stored, exclusion_forfeit_score: [-1, 0] })).toBe(
+    const own = { ...stored, exclusion_forfeit_score: { winner: [0, 0], loser: [0, 0] } };
+    expect(seasonSettingsSchema.parse(own).exclusion_forfeit_score).toEqual({
+      winner: [0, 0],
+      loser: [0, 0],
+    });
+    const negative = { winner: [-1, 0], loser: [0, 0] };
+    expect(accepts(seasonSettingsSchema, { ...stored, exclusion_forfeit_score: negative })).toBe(
       false,
     );
   });
@@ -319,19 +335,52 @@ describe('seasonSettingsSchema', () => {
     ['an unknown key', { warning_at: 2, exclusion_at: 3, ban_at: 4 }],
   ])('refuses forfeit thresholds with %s', (_label, forfeits) => {
     expect(
-      accepts(seasonSettingsSchema, { ...SCORING, forfeit_score: [0, 0], map_pool: [], forfeits }),
+      accepts(seasonSettingsSchema, {
+        ...SCORING,
+        forfeit_score: { winner: [0, 0], loser: [0, 0] },
+        map_pool: [],
+        forfeits,
+      }),
     ).toBe(false);
   });
 
   it.each([
-    ['a negative forfeit score', { ...SCORING, forfeit_score: [-1, 0], map_pool: [] }],
-    ['a fractional forfeit score', { ...SCORING, forfeit_score: [7.5, 0], map_pool: [] }],
-    ['a forfeit score with one number', { ...SCORING, forfeit_score: [7], map_pool: [] }],
-    ['a forfeit score with three numbers', { ...SCORING, forfeit_score: [7, 0, 0], map_pool: [] }],
+    [
+      'a negative forfeit score',
+      { ...SCORING, forfeit_score: { winner: [7, 0], loser: [-1, 7] }, map_pool: [] },
+    ],
+    [
+      'a fractional forfeit score',
+      { ...SCORING, forfeit_score: { winner: [7.5, 0], loser: [0, 7] }, map_pool: [] },
+    ],
+    [
+      'a side with one number',
+      { ...SCORING, forfeit_score: { winner: [7], loser: [0, 7] }, map_pool: [] },
+    ],
+    [
+      'a side with three numbers',
+      { ...SCORING, forfeit_score: { winner: [7, 0, 0], loser: [0, 7] }, map_pool: [] },
+    ],
+    ['a missing side', { ...SCORING, forfeit_score: { winner: [7, 0] }, map_pool: [] }],
+    [
+      'an unknown side',
+      { ...SCORING, forfeit_score: { winner: [7, 0], loser: [0, 7], both: [0, 7] }, map_pool: [] },
+    ],
+    ['the old single pair', { ...SCORING, forfeit_score: [7, 0], map_pool: [] }],
     ['a missing forfeit score', { ...SCORING, map_pool: [] }],
     ['a missing map pool', { ...SCORING, forfeit_score: [0, 0] }],
-    ['an empty map name', { ...SCORING, forfeit_score: [0, 0], map_pool: [''] }],
-    ['the same map twice', { ...SCORING, forfeit_score: [0, 0], map_pool: ['Map A', 'Map A'] }],
+    [
+      'an empty map name',
+      { ...SCORING, forfeit_score: { winner: [0, 0], loser: [0, 0] }, map_pool: [''] },
+    ],
+    [
+      'the same map twice',
+      {
+        ...SCORING,
+        forfeit_score: { winner: [0, 0], loser: [0, 0] },
+        map_pool: ['Map A', 'Map A'],
+      },
+    ],
   ])('refuses %s', (_label, value) => {
     expect(accepts(seasonSettingsSchema, value)).toBe(false);
   });
@@ -467,8 +516,11 @@ describe('JSON round trip', () => {
       fc.record({
         points: fc.constant(LFR_S3.season.points),
         tiebreak: fc.constant(LFR_S3.season.tiebreak),
-        forfeit_score: fc.tuple(score, score),
-        exclusion_forfeit_score: fc.option(fc.tuple(score, score), { nil: null }),
+        forfeit_score: fc.record({ winner: fc.tuple(score, score), loser: fc.tuple(score, score) }),
+        exclusion_forfeit_score: fc.option(
+          fc.record({ winner: fc.tuple(score, score), loser: fc.tuple(score, score) }),
+          { nil: null },
+        ),
         map_pool: fc.uniqueArray(fc.string({ minLength: 1 }), { maxLength: 12 }),
         forfeits: fc.record({
           warning_at: fc.option(positive, { nil: null }),

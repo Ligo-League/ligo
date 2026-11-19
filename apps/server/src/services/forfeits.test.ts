@@ -100,7 +100,7 @@ describe('recordForfeit', () => {
             forfeit: { winner: 3, loser: 0, counts_as_played: true },
           },
           tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
-          forfeit_score: [0, 0],
+          forfeit_score: { winner: [0, 0], loser: [0, 0] },
           exclusion_forfeit_score: null,
           map_pool: [],
           forfeits: { warning_at: null, exclusion_at: 2 },
