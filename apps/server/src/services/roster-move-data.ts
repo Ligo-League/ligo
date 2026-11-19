@@ -213,6 +213,8 @@ export interface MoveView {
   requestedAt: number;
   requester: string;
   note: string | null;
+  /** Why staff made it, for a staff exception (O-35). */
+  exceptionReason: string | null;
   reason: string | null;
 }
 
@@ -229,6 +231,7 @@ export function viewOf(db: Reader, row: MoveRow): MoveView {
     requestedAt: row.requestedAt,
     requester: nameOf(db, row.requestedBy),
     note: row.note,
+    exceptionReason: payload.exceptionReason,
     reason: row.reason,
   };
 }

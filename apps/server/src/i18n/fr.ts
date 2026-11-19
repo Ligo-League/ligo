@@ -261,8 +261,30 @@ export const fr = {
   'mercato.move.from': '(vient de {team})',
   'mercato.role.player': 'titulaire',
   'mercato.role.sub': 'remplaçant',
-  'mercato.move.filed': '**Mercato — {team}** : {move}. Demandé par {member}. À traiter : {link}',
-  'mercato.move.withdrawn': "~~**Mercato — {team}** : {move}.~~ Retiré par l'équipe.",
+  'mercato.move.queue':
+    "**Mercato — {team}** : {move}. Demandé par {member}. Page de l'équipe : {link}",
+  'mercato.move.notCounted': 'Ne compte pas dans la limite de mouvements.',
+  'mercato.outcome.approved': '✅ Validé par {member}.',
+  'mercato.outcome.auto': '✅ Appliqué automatiquement.',
+  'mercato.outcome.exception': '✅ Exception du staff ({member}) : {reason}',
+  'mercato.outcome.rejected': '❌ Refusé par {member} : {reason}',
+  'mercato.outcome.withdrawn': "↩️ Retiré par l'équipe.",
+  'mercato.button.approve': 'Valider',
+  'mercato.button.reject': 'Refuser',
+  'mercato.form.title': 'Refuser le mouvement #{id}',
+  'mercato.form.reason': 'Raison',
+  'mercato.form.reasonHint': "L'équipe la lira.",
+  'mercato.announce': '**{competition}** — {team} : {move}.',
+  'mercato.announce.startsAt': '{player} pourra jouer à partir du {when}.',
+  'mercato.dm.approved': 'Mercato — ton mouvement pour {team} est validé : {move}.',
+  'mercato.dm.rejected':
+    'Mercato — ton mouvement pour {team} est refusé : {move}. Raison : {reason}',
+  'mercato.dm.transferred':
+    'Mercato — {player} quitte {team} pour {to}, mouvement validé par le staff de la ligue.',
+  'mercato.dm.lostCaptain':
+    "{team} n'a plus de capitaine : nommez-en un sur la page du mercato de l'équipe.",
+  'mercato.dmFailed':
+    "Le message privé sur le mouvement de {team} n'a pas pu être envoyé : la page de l'équipe montre la décision.",
   'mercato.window.opened':
     "**Mercato — {competition}, {season}** : fenêtre ouverte du {from} au {to}. {rules} Les mouvements se déposent sur la page de gestion de l'équipe, sur le site.",
   'mercato.window.limit': '{count} mouvements au plus par équipe.',
@@ -1021,6 +1043,11 @@ export const fr = {
   'web.rosterMercato.error.captain_not_starter': 'Le capitaine doit être titulaire.',
   'web.rosterMercato.error.not_started':
     'Ce joueur est encore bloqué après son arrivée : il ne peut pas encore être capitaine.',
+  'web.rosterMercato.error.not_linked': "Ce serveur n'est relié à aucune ligue.",
+  'web.rosterMercato.error.not_staff': 'Réservé au staff de la ligue.',
+  'web.rosterMercato.error.reason_required': 'Donne une raison.',
+  'web.rosterMercato.error.not_allowed':
+    "Réservé au staff de la ligue et aux responsables de l'équipe.",
   'web.rosterMercato.error.not_found': 'Introuvable.',
   'web.manage.title': 'Gérer {team}',
   'web.manage.intro':

@@ -1,5 +1,5 @@
 import { html } from 'hono/html';
-import { moveLine } from '../../discord/mercato-posts.ts';
+import { moveLine } from '../../discord/move-posts.ts';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
 import type { LineupMember, MercatoTeamView, MoveView } from '../../services/roster-moves.ts';
 import { csrfField, formatWhen, pageOf, type Html, type Page } from '../layout.ts';

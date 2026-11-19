@@ -82,7 +82,7 @@ describe('a roster’s mercato page', () => {
     expect(moves()).toMatchObject([{ status: 'pending', teamId: 1 }]);
     expect(gateway.posted.at(-1)).toMatchObject({ channelId: QUEUE });
     expect(gateway.posted.at(-1)?.message.content).toBe(
-      `**Mercato — Alpha Esport** : P7 remplace P5. Demandé par Manager. À traiter : <http://localhost:3000${PAGE}>`,
+      `**Mercato — Alpha Esport** : P7 remplace P5. Demandé par Manager. Page de l'équipe : <http://localhost:3000${PAGE}>`,
     );
     const page = await (await request(`${PAGE}?done=filed`)).text();
     expect(page).toContain('Mouvements comptés : 1 sur 3.');
@@ -92,7 +92,7 @@ describe('a roster’s mercato page', () => {
     expect(where(await post(`${PAGE}/moves/${id}/withdraw`, {}))).toBe(`${PAGE}?done=withdrawn`);
     expect(moves()[0]?.status).toBe('withdrawn');
     expect(gateway.posted.at(-1)?.message.content).toBe(
-      "~~**Mercato — Alpha Esport** : P7 remplace P5.~~ Retiré par l'équipe.",
+      `**Mercato — Alpha Esport** : P7 remplace P5. Demandé par Manager. Page de l'équipe : <http://localhost:3000${PAGE}>\n↩️ Retiré par l'équipe.`,
     );
   });
 

@@ -1,7 +1,7 @@
 import type { RoleChange } from '@ligo/core';
 import { findRoster } from '@ligo/db';
 import type { Context, Hono } from 'hono';
-import { announceMoveFiled, announceMoveWithdrawn } from '../discord/mercato-posts.ts';
+import { announceMoveFiled, announceMoveWithdrawn } from '../discord/move-posts.ts';
 import type { MemberCheck } from '../services/registration-players.ts';
 import {
   changeRole,
@@ -120,7 +120,9 @@ export function rosterMercatoRoutes(app: Hono<Env>, kit: RouteKit, memberOf: Mem
       if (id === null) return notFound(c);
       const reply = withdrawMove(db, actor, roster.teamId, id, deps.now());
       if (!reply.ok) return refused(c, back, reply.error);
-      await announceMoveWithdrawn(discord, reply, roster.name);
+      if (deps.login) {
+        await announceMoveWithdrawn(discord, reply, roster, deps.login.publicUrl);
+      }
       return back('done=withdrawn');
     }),
   );
