@@ -721,6 +721,20 @@ posts lose their buttons) and the time is announced in the schedule channel with
 2. Nothing changes on the site or in Discord yet: the windows page and the moves come next
    (3f-10 to 3f-12).
 
+## 40. Phase 3f-10: mercato windows
+
+1. Choose the league's `#mercato` channel: on `/mbl-group/lfr/discord/channels` (row **Mercato**)
+   or with `/league channel kind:Mercato channel:#mercato`. Run `pnpm discord:register` first, so
+   Discord offers the new choice. The bot posts a notice there.
+2. As league staff, open `http://localhost:3000/staff` and follow **Fenêtres de mercato**
+   (`/staff/mercato`). The form is prefilled with LFR's settings: 3 moves per team, 24 hours.
+3. Enter the opening and the close (in Paris time) and click **Ouvrir la fenêtre**. The table
+   shows it as **À venir** or **Ouverte**, and `#mercato` announces it with its dates, limit and
+   block (Discord shows the dates in each reader's own time zone).
+4. **Fermer maintenant** closes an open window early; **Annuler** cancels one still to come. Each
+   is announced in `#mercato`. Two windows of a season cannot overlap.
+5. Teams cannot file moves yet: that is 3f-11.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

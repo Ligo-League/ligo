@@ -550,7 +550,7 @@ One bot instance joins every league's Discord server (LFR, LFV, FRFL, LFRL). Eac
 | `/match report match score_a score_b screenshot` | team officials, captains and staff | Reports a BO1 result; the screenshot becomes `evidence`; the reply links to the match page. A score per map comes with series |
 | `/register`, `/mercato`                          | team officials          | Links to the website forms                                                                              |
 | `/stream title match:<autocomplete>`             | commentators            | Returns the mandatory title, e.g. "LFR Ligue 1 – RCK Esport VS Greed Esport"                            |
-| `/league channel`, `/league channels`            | staff                   | Staff queue, schedule and results channels, results also per division; the list                         |
+| `/league channel`, `/league channels`            | staff                   | Staff queue, schedule, results and mercato channels, results also per division; the list                |
 | `/week publish week:<n>`                         | staff                   | Creates that week's channels now instead of on schedule                                                 |
 | `/accreditation grant\|revoke`                   | staff                   | Commentator accreditations                                                                              |
 | `/admin sync [dry_run]`                          | staff                   | Runs the reconciler; dry run prints the diff                                                            |
@@ -652,6 +652,7 @@ Ligo is a tool for esport leagues with divisions that happens to host MBL Group 
 | `/me`                          | logged-in player        | Linked accounts, nationality, stats consent                                                                                    |
 | `/staff/*`                     | staff                   | Validation queue, requests waiting (registrations, mercato, team officials), sanctions, forfeits, accreditations, unknown players, jobs, rules versions |
 | `/staff/sanctions`             | staff                   | Each team's status, forfeits and automatic exclusion, the season's sanctions; give a sanction, exclude, reinstate on appeal, switch the automatic exclusion (phase 3f) |
+| `/staff/mercato`               | staff                   | The season's mercato windows: open one (dates in the league's time zone, limit and block from the settings), close it early or cancel it; announced in `#mercato` (phase 3f) |
 | `/:org/:comp/discord/channels` | staff                   | The channels the bot posts in (staff queue, schedule, results, results per division), chosen among the league server's text channels, as `/league channel` does (phase 3f) |
 | `/evidence/:id`                | staff and the match's teams | A score screenshot the server kept; never public                                                                           |
 | `/admin/*`                     | see M-20                | The admin panel: organisation, then each competition, then each league (division), with their settings and Discord setup       |
