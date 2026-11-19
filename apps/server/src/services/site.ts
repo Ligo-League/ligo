@@ -14,6 +14,7 @@ import { findCompetitionAt, type CompetitionKey } from './competitions.ts';
 import { competitionPath, seasonSlug } from './paths.ts';
 import { leagueStandings, type StandingsTable } from './standings.ts';
 import { listTeamStaff } from './team-staff.ts';
+import { seasonMoves, type PublicMove } from './roster-move-data.ts';
 
 // What the public pages of the website show (design doc section 7). Everything here is public:
 // results count only once validated, and no evidence or Discord ID leaves this module.
@@ -139,6 +140,8 @@ export type SeasonPage =
       fixtures: DivisionFixtures[];
       /** Results that count, latest week first. */
       latest: MatchLine[];
+      /** The season's approved mercato moves, latest first. */
+      moves: PublicMove[];
     }
   | { ok: false; error: 'not_found' };
 
@@ -197,6 +200,7 @@ export function seasonPage(
     standings: standings.ok ? standings.tables : [],
     fixtures,
     latest,
+    moves: seasonMoves(db, row.id, null),
   };
 }
 
@@ -275,6 +279,8 @@ export type TeamPage =
       officials: { name: string; role: string }[];
       /** Its roster of the latest season it has one: starters first, the captain marked. */
       players: { name: string; role: string; captain: boolean }[];
+      /** Its approved mercato moves of that season, latest first. */
+      moves: PublicMove[];
       /** The latest season the team plays in, if any. */
       season: Omit<Place, 'seasonId'> | null;
       matches: MatchLine[];
@@ -296,6 +302,7 @@ export function teamPage(db: Pick<Db, 'select'>, slug: string): TeamPage {
       )
     : [];
   const players = rosterPlayers(db, roster.teamId);
+  const moves = place ? seasonMoves(db, place.seasonId, roster.teamId) : [];
   const siblings = listClubRosters(db, roster.club.id)
     .filter((other) => other.teamId !== roster.teamId)
     .map((other) => ({ name: other.name, tag: other.tag, slug: other.slug }));
@@ -312,6 +319,7 @@ export function teamPage(db: Pick<Db, 'select'>, slug: string): TeamPage {
     siblings,
     officials,
     players,
+    moves,
     season: place && {
       competition: place.competition,
       season: place.season,

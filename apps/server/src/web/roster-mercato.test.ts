@@ -215,3 +215,23 @@ describe('league staff and moves', () => {
     expect(moves()).toMatchObject([{ status: 'pending' }]);
   });
 });
+
+describe('the public history of moves', () => {
+  it('shows approved moves on the team, the old team and the season pages, never the reason', async () => {
+    const { request, post, logIn, p } = site();
+    await logIn(PAGE, 'code-lea');
+    await post(`${PAGE}/exception`, {
+      out: p(5),
+      in: p(9),
+      role: 'player',
+      reason: 'Motif privé',
+    });
+    for (const path of ['/teams/alpha-esport', '/teams/bravo', '/mbl-group/lfr/saison-3']) {
+      const page = await (await request(path)).text();
+      expect(page).toContain('<h2>Mercato</h2>');
+      expect(page).toMatch(/Alpha Esport<\/a>\s*:\s*P9 remplace P5 \(vient de Bravo\)/);
+      expect(page).not.toContain('Motif privé');
+    }
+    expect(await (await request('/teams/charlie')).text()).not.toContain('<h2>Mercato</h2>');
+  });
+});

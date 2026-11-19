@@ -4,6 +4,7 @@ import { t, type Locale } from '../../i18n/index.ts';
 import type { SeasonPage } from '../../services/site.ts';
 import type { StandingsTable } from '../../services/standings.ts';
 import { matchList, pageOf, type Html, type Page } from '../layout.ts';
+import { movesList } from './moves.ts';
 
 type Data = Extract<SeasonPage, { ok: true }>;
 
@@ -96,6 +97,7 @@ export function seasonPageView(locale: Locale, page: Data): Page {
         ? html`<div class="card">${matchList(locale, page.latest, competition.timeZone)}</div>`
         : html`<p class="muted">${t(locale, 'web.season.noResults')}</p>`
     }
+    ${movesList(locale, page.moves, competition.timeZone)}
     <h2>${t(locale, 'web.season.fixtures')}</h2>
     ${
       page.fixtures.length > 0

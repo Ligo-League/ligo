@@ -1060,6 +1060,7 @@ export const fr = {
   'web.rosterMercato.error.not_allowed':
     "Réservé au staff de la ligue et aux responsables de l'équipe.",
   'web.rosterMercato.error.not_found': 'Introuvable.',
+  'web.moves.title': 'Mercato',
   'web.manage.title': 'Gérer {team}',
   'web.manage.intro':
     "Les responsables de l'équipe et ses demandes : chaque changement part au staff de la ligue, ou s’applique tout de suite quand la ligue le prévoit.",

@@ -1016,6 +1016,7 @@ export const en: Record<MessageKey, string> = {
   'web.rosterMercato.error.reason_required': 'Give a reason.',
   'web.rosterMercato.error.not_allowed': "For the league's staff and the team's officials only.",
   'web.rosterMercato.error.not_found': 'Not found.',
+  'web.moves.title': 'Mercato',
   'web.manage.title': 'Manage {team}',
   'web.manage.intro':
     "The team's officials and its requests: each change goes to league staff, or applies at once where the league allows it.",

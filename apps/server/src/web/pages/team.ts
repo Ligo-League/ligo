@@ -2,6 +2,7 @@ import { html } from 'hono/html';
 import { t, type Locale } from '../../i18n/index.ts';
 import type { TeamPage } from '../../services/site.ts';
 import { matchList, safeColor, pageOf, type Html, type Page } from '../layout.ts';
+import { movesList } from './moves.ts';
 
 type Data = Extract<TeamPage, { ok: true }>;
 const ROLE_KEYS = {
@@ -105,6 +106,7 @@ export function teamPageView(locale: Locale, page: Data): Page {
             ${matchList(locale, page.matches, season.competition.timeZone)}
           </div>`
         : html`<p class="muted">${t(locale, 'web.team.noMatches')}</p>`
-    }`;
+    }
+    ${season ? movesList(locale, page.moves, season.competition.timeZone) : ''}`;
   return pageOf(team.name, body);
 }

@@ -258,3 +258,45 @@ export function auditMove(
     })
     .run();
 }
+
+/** An approved move, as the team and season pages show it. */
+export interface PublicMove {
+  at: number;
+  team: { name: string; slug: string };
+  move: MoveView;
+}
+
+/**
+ * The season's approved moves, latest first: all of them, or those of one roster, the moves
+ * that took one of its players included. Their reasons stay off public pages: a reason can
+ * accuse a player.
+ */
+export function seasonMoves(db: Reader, seasonId: number, teamId: number | null): PublicMove[] {
+  return db
+    .select({ request, team: { name: team.name, slug: team.slug } })
+    .from(request)
+    .innerJoin(team, eq(request.teamId, team.id))
+    .where(
+      and(
+        eq(request.kind, 'roster_move'),
+        eq(request.seasonId, seasonId),
+        eq(request.status, 'approved'),
+      ),
+    )
+    .orderBy(desc(request.decidedAt), desc(request.id))
+    .all()
+    .flatMap((row) => {
+      const payload = row.request.payloadJson;
+      if (!isMovePayload(payload)) return [];
+      if (teamId !== null && row.request.teamId !== teamId && payload.fromTeamId !== teamId) {
+        return [];
+      }
+      return [
+        {
+          at: row.request.decidedAt ?? row.request.requestedAt,
+          team: row.team,
+          move: viewOf(db, { ...row.request, payloadJson: payload }),
+        },
+      ];
+    });
+}
