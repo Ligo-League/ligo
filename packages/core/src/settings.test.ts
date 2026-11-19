@@ -65,6 +65,11 @@ const LFR_S3 = {
   },
   // A no-show is 7-0 (maintainer, 14 November 2026).
   season: {
+    points: {
+      outcomes: { win: 3, loss: 0 },
+      forfeit: { winner: 3, loser: 0, counts_as_played: true },
+    },
+    tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
     forfeit_score: [7, 0],
     exclusion_forfeit_score: null,
     map_pool: [],
@@ -74,6 +79,8 @@ const LFR_S3 = {
 };
 
 const accepts = (schema: z.ZodType, value: unknown) => schema.safeParse(value).success;
+/** A season's own points and tie-breakers, copied from the competition at its creation. */
+const SCORING = { points: LFR_S3.season.points, tiebreak: LFR_S3.season.tiebreak };
 
 describe('LFR Season 3 settings', () => {
   it.each([
@@ -88,7 +95,9 @@ describe('LFR Season 3 settings', () => {
   });
 
   it('accepts the Season 2 forfeit score of 7-0', () => {
-    expect(accepts(seasonSettingsSchema, { forfeit_score: [7, 0], map_pool: [] })).toBe(true);
+    expect(accepts(seasonSettingsSchema, { ...SCORING, forfeit_score: [7, 0], map_pool: [] })).toBe(
+      true,
+    );
   });
 });
 
@@ -273,13 +282,20 @@ describe('schedulingSchema', () => {
 });
 
 describe('seasonSettingsSchema', () => {
+  it('holds its own points and tie-breakers, so changing them leaves past seasons as they were', () => {
+    const value = { ...SCORING, forfeit_score: [7, 0], map_pool: [] };
+    expect(seasonSettingsSchema.parse(value)).toMatchObject(SCORING);
+    expect(accepts(seasonSettingsSchema, { ...value, points: undefined })).toBe(false);
+    expect(accepts(seasonSettingsSchema, { ...value, tiebreak: undefined })).toBe(false);
+  });
+
   it('accepts a map pool of distinct names', () => {
-    const value = { forfeit_score: [0, 0], map_pool: ['Map A', 'Map B', 'Map C'] };
+    const value = { ...SCORING, forfeit_score: [0, 0], map_pool: ['Map A', 'Map B', 'Map C'] };
     expect(seasonSettingsSchema.parse(value)).toMatchObject(value);
   });
 
   it('warns at the 2nd forfeit and excludes at the 3rd unless the season says otherwise', () => {
-    const stored = { forfeit_score: [0, 0], map_pool: [] };
+    const stored = { ...SCORING, forfeit_score: [0, 0], map_pool: [] };
     // Settings stored before this key existed must keep reading.
     expect(seasonSettingsSchema.parse(stored).forfeits).toEqual({ warning_at: 2, exclusion_at: 3 });
     const custom = { ...stored, forfeits: { warning_at: null, exclusion_at: 5 } };
@@ -287,7 +303,7 @@ describe('seasonSettingsSchema', () => {
   });
 
   it('scores forfeits made by an exclusion as no-shows unless the season sets their own score', () => {
-    const stored = { forfeit_score: [7, 0], map_pool: [] };
+    const stored = { ...SCORING, forfeit_score: [7, 0], map_pool: [] };
     // Settings stored before this key existed must keep reading.
     expect(seasonSettingsSchema.parse(stored).exclusion_forfeit_score).toBeNull();
     const own = { ...stored, exclusion_forfeit_score: [0, 0] };
@@ -302,20 +318,20 @@ describe('seasonSettingsSchema', () => {
     ['a missing threshold', { warning_at: 2 }],
     ['an unknown key', { warning_at: 2, exclusion_at: 3, ban_at: 4 }],
   ])('refuses forfeit thresholds with %s', (_label, forfeits) => {
-    expect(accepts(seasonSettingsSchema, { forfeit_score: [0, 0], map_pool: [], forfeits })).toBe(
-      false,
-    );
+    expect(
+      accepts(seasonSettingsSchema, { ...SCORING, forfeit_score: [0, 0], map_pool: [], forfeits }),
+    ).toBe(false);
   });
 
   it.each([
-    ['a negative forfeit score', { forfeit_score: [-1, 0], map_pool: [] }],
-    ['a fractional forfeit score', { forfeit_score: [7.5, 0], map_pool: [] }],
-    ['a forfeit score with one number', { forfeit_score: [7], map_pool: [] }],
-    ['a forfeit score with three numbers', { forfeit_score: [7, 0, 0], map_pool: [] }],
-    ['a missing forfeit score', { map_pool: [] }],
-    ['a missing map pool', { forfeit_score: [0, 0] }],
-    ['an empty map name', { forfeit_score: [0, 0], map_pool: [''] }],
-    ['the same map twice', { forfeit_score: [0, 0], map_pool: ['Map A', 'Map A'] }],
+    ['a negative forfeit score', { ...SCORING, forfeit_score: [-1, 0], map_pool: [] }],
+    ['a fractional forfeit score', { ...SCORING, forfeit_score: [7.5, 0], map_pool: [] }],
+    ['a forfeit score with one number', { ...SCORING, forfeit_score: [7], map_pool: [] }],
+    ['a forfeit score with three numbers', { ...SCORING, forfeit_score: [7, 0, 0], map_pool: [] }],
+    ['a missing forfeit score', { ...SCORING, map_pool: [] }],
+    ['a missing map pool', { ...SCORING, forfeit_score: [0, 0] }],
+    ['an empty map name', { ...SCORING, forfeit_score: [0, 0], map_pool: [''] }],
+    ['the same map twice', { ...SCORING, forfeit_score: [0, 0], map_pool: ['Map A', 'Map A'] }],
   ])('refuses %s', (_label, value) => {
     expect(accepts(seasonSettingsSchema, value)).toBe(false);
   });
@@ -449,6 +465,8 @@ describe('JSON round trip', () => {
       'season',
       seasonSettingsSchema,
       fc.record({
+        points: fc.constant(LFR_S3.season.points),
+        tiebreak: fc.constant(LFR_S3.season.tiebreak),
         forfeit_score: fc.tuple(score, score),
         exclusion_forfeit_score: fc.option(fc.tuple(score, score), { nil: null }),
         map_pool: fc.uniqueArray(fc.string({ minLength: 1 }), { maxLength: 12 }),

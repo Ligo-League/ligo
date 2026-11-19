@@ -792,6 +792,12 @@ posts lose their buttons) and the time is announced in the schedule channel with
    round and headshot rate. A player without stats consent is named without figures. The warning
    of step 7 shows on the match page too, to the two teams and staff only.
 
+## 44. Phase 3h: each season's own points
+
+1. Restart `pnpm dev` if it was not running: migration 0025 copies LFR's points and
+   tie-breakers into each season's settings. The standings read the season's from now on, so a
+   later change for a new season leaves Season 3's table as it is. Nothing visible changes.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

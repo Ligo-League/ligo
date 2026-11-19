@@ -185,8 +185,9 @@ export function loadStandingsInput(
       matches,
       pending,
       excluded: teams.filter((row) => row.excluded).map((row) => row.entry),
-      points: context.competition.pointsJson,
-      tiebreak: context.competition.tiebreakJson,
+      // The season's own: changing the competition's leaves past seasons as they were (M-40).
+      points: context.season.settingsJson.points,
+      tiebreak: context.season.settingsJson.tiebreak,
       forfeitScore: context.season.settingsJson.forfeit_score,
       exclusionForfeitScore:
         context.season.settingsJson.exclusion_forfeit_score ??

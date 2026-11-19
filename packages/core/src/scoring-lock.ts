@@ -5,11 +5,10 @@ import type { ForfeitThresholds, PointsSettings, TiebreakSettings } from './sett
 // rewrites the weeks already played. Once a result counts in a season (validated or forfeit),
 // they stay as they are, except for the organisation's owner, who gives a reason.
 
-/** The settings a season's standings are computed from. */
+/** The settings a season's standings are computed from, all in `season.settings_json`. */
 export interface ScoringSettings {
   points: PointsSettings;
   tiebreak: TiebreakSettings;
-  /** `season.settings_json.forfeit_score`. */
   forfeit_score: readonly [number, number];
   exclusion_forfeit_score: readonly [number, number] | null;
   forfeits: ForfeitThresholds;

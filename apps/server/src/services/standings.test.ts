@@ -119,8 +119,15 @@ describe('getStandings', () => {
 
   it('throws when the settings ask for a criterion the engine cannot compute', () => {
     const db = leagueDatabase();
-    db.update(schema.competition)
-      .set({ tiebreakJson: { criteria: ['points', 'h2h_points'], unresolved_tie: 'shared' } })
+    const settings = db.select().from(schema.season).get()?.settingsJson;
+    if (!settings) throw new Error('No season');
+    db.update(schema.season)
+      .set({
+        settingsJson: {
+          ...settings,
+          tiebreak: { criteria: ['points', 'h2h_points'], unresolved_tie: 'shared' },
+        },
+      })
       .run();
     expect(() => getStandings(db, { guildId: TEST_GUILD })).toThrow(/unsupported_criterion/);
   });

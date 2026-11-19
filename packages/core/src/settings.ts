@@ -4,7 +4,10 @@ import { z } from 'zod';
 // (design doc sections 4 and 5). Every schema is strict and holds only the keys the design doc
 // names: a phase that needs a new setting adds it here with its tests.
 
-/** `competition.points_json`: standings points per match outcome. */
+/**
+ * Standings points per match outcome: `season.settings_json.points` counts; the competition's
+ * `points_json` is what a new season copies (maintainer, 19 November 2026).
+ */
 export const pointsSchema = z.strictObject({
   outcomes: z.strictObject({ win: z.int(), loss: z.int() }),
   forfeit: z.strictObject({
@@ -32,7 +35,10 @@ export type UnresolvedTieMode = (typeof UNRESOLVED_TIE_MODES)[number];
 
 const hasNoDuplicates = (values: readonly string[]) => new Set(values).size === values.length;
 
-/** `competition.tiebreak_json`: ranking criteria in order, then what to do when they all tie. */
+/**
+ * Ranking criteria in order, then what to do when they all tie: `season.settings_json.tiebreak`
+ * counts; the competition's `tiebreak_json` is what a new season copies.
+ */
 export const tiebreakSchema = z.strictObject({
   criteria: z
     .array(z.enum(TIEBREAK_CRITERIA))
@@ -352,6 +358,13 @@ export type ForfeitThresholds = z.infer<typeof forfeitThresholdsSchema>;
 
 /** `season.settings_json`. */
 export const seasonSettingsSchema = z.strictObject({
+  /**
+   * The season's own points and tie-breakers, copied from the competition when the season is
+   * created, so changing the competition's leaves the seasons already played as they were
+   * (maintainer, 19 November 2026; M-40).
+   */
+  points: pointsSchema,
+  tiebreak: tiebreakSchema,
   /**
    * Rounds credited to the winner and to the loser of a forfeit recorded by staff (a team that
    * did not show up); feeds F, C and D. LFR: 7-0, so the team that showed up loses nothing on

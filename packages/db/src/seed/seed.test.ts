@@ -401,7 +401,13 @@ describe('seedLfr', () => {
     ];
     expect(db.select().from(season).get()?.settingsJson.map_pool).toEqual(pool);
 
-    const old = { forfeit_score: [0, 0], map_pool: [] };
+    const scoring = db.select().from(season).get()?.settingsJson;
+    const old = {
+      points: scoring?.points,
+      tiebreak: scoring?.tiebreak,
+      forfeit_score: [0, 0],
+      map_pool: [],
+    };
     db.$client.prepare('UPDATE season SET settings_json = ?').run(JSON.stringify(old));
     expect(seedLfr(db, TEAMS, 2000).updated).toEqual({
       competitions: 0,

@@ -479,3 +479,44 @@ describe('0024: stats', () => {
     ).toThrow(/CHECK/);
   });
 });
+
+describe('0025: each season’s own points and tie-breakers', () => {
+  it('copies the competition’s into every season without its own, and keeps a season’s own', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0024_stats');
+    const run = (sql: string) => db.$client.exec(sql);
+    const POINTS = '{"outcomes":{"win":3,"loss":0}}';
+    const TIEBREAK = '{"criteria":["points","diff"],"unresolved_tie":"shared"}';
+    db.$client.pragma('foreign_keys = OFF');
+    run(
+      `insert into org (id, name, slug, settings_json) values (1, 'MBL Group', 'mbl-group', '{}')`,
+    );
+    run(`insert into competition (id, org_id, title, name, slug, participant_mode, ruleset_json,
+           points_json, tiebreak_json, scheduling_json, stat_schema_version, theme_json)
+         values (1, 1, 'r6', 'LFR', 'lfr', 'team', '{}', '${POINTS}', '${TIEBREAK}', '{}', 1, '{}')`);
+    run(`insert into season (id, competition_id, name, starts_on, ends_on, settings_json, status)
+         values (1, 1, 'Saison 3', '2026-10-19', '2026-12-20', '{"forfeit_score":[7,0]}', 'active'),
+                (2, 1, 'Saison 2', '2026-06-01', '2026-08-01',
+                 '{"forfeit_score":[7,0],"points":{"outcomes":{"win":1,"loss":0}}}', 'closed')`);
+
+    migrateUpTo(db, '0025_season_points');
+
+    const settings = (id: number) =>
+      JSON.parse(
+        (
+          db.$client.prepare('select settings_json as s from season where id = ?').get(id) as {
+            s: string;
+          }
+        ).s,
+      ) as Record<string, unknown>;
+    expect(settings(1)).toEqual({
+      forfeit_score: [7, 0],
+      points: { outcomes: { win: 3, loss: 0 } },
+      tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
+    });
+    expect(settings(2)).toEqual({
+      forfeit_score: [7, 0],
+      points: { outcomes: { win: 1, loss: 0 } },
+    });
+  });
+});

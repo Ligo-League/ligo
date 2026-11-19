@@ -7,6 +7,8 @@ import {
   requestsSchema,
   teamRolesSchema,
   vetoSchema,
+  type PointsSettings,
+  type TiebreakSettings,
 } from '@ligo/core';
 import { slugify } from '@ligo/core';
 import { R6_GAME_SCORE } from '@ligo/titles';
@@ -37,6 +39,13 @@ const ORG: typeof org.$inferInsert = {
   locale: 'fr',
   settingsJson: orgSettingsSchema.parse({}),
 };
+/** 3 points per win in Season 3, as the league's score7 tables are configured. */
+const LFR_POINTS: PointsSettings = {
+  outcomes: { win: 3, loss: 0 },
+  forfeit: { winner: 3, loser: 0, counts_as_played: true },
+};
+const LFR_TIEBREAK: TiebreakSettings = { criteria: ['points', 'diff'], unresolved_tie: 'shared' };
+
 const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   title: 'r6',
   name: 'LFR',
@@ -71,12 +80,9 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
     // No deadline for the stat grid; a tolerance of 3 kills (M-39, 19 November 2026).
     stats: statsSettingsSchema.parse({}),
   },
-  // 3 points per win in Season 3, as the league's score7 tables are configured.
-  pointsJson: {
-    outcomes: { win: 3, loss: 0 },
-    forfeit: { winner: 3, loser: 0, counts_as_played: true },
-  },
-  tiebreakJson: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
+  // What a new season copies (3 points per win, as score7's Season 3 tables are configured).
+  pointsJson: LFR_POINTS,
+  tiebreakJson: LFR_TIEBREAK,
   // Rulebook: one extra week without an agreed time, then Sunday 21:00, French time.
   schedulingJson: {
     rounds_per_week: 1,
@@ -97,6 +103,9 @@ const SEASON: Omit<typeof season.$inferInsert, 'competitionId'> = {
   // is 7-0 (maintainer, 14 November 2026); a forfeit made by the 50% rule scores the same until
   // O-27 says otherwise.
   settingsJson: {
+    // The season's own points and tie-breakers (maintainer, 19 November 2026; M-40).
+    points: LFR_POINTS,
+    tiebreak: LFR_TIEBREAK,
     forfeit_score: [7, 0],
     exclusion_forfeit_score: null,
     map_pool: [

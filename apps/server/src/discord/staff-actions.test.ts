@@ -136,6 +136,11 @@ describe('announceForfeit', () => {
       .update(schema.season)
       .set({
         settingsJson: {
+          points: {
+            outcomes: { win: 3, loss: 0 },
+            forfeit: { winner: 3, loser: 0, counts_as_played: true },
+          },
+          tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
           forfeit_score: [0, 0],
           exclusion_forfeit_score: null,
           map_pool: [],

@@ -90,11 +90,17 @@ describe('loadStandingsInput', () => {
     expect(input.entries).toEqual([3, 2, 1]);
   });
 
-  it('reads the rule settings of the competition and the season', () => {
+  it('reads the season’s own rule settings, not the competition’s', () => {
     const db = seeded([]);
+    // Season 2's 1 point per win, while the competition gives 3 to new seasons.
     db.update(season)
       .set({
         settingsJson: {
+          points: {
+            outcomes: { win: 1, loss: 0 },
+            forfeit: { winner: 1, loser: 0, counts_as_played: true },
+          },
+          tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
           forfeit_score: [7, 0],
           exclusion_forfeit_score: null,
           map_pool: [],
@@ -103,7 +109,7 @@ describe('loadStandingsInput', () => {
       })
       .run();
     expect(load(db).input).toMatchObject({
-      points: { outcomes: { win: 3, loss: 0 }, forfeit: { winner: 3, loser: 0 } },
+      points: { outcomes: { win: 1, loss: 0 }, forfeit: { winner: 1, loser: 0 } },
       tiebreak: { criteria: ['points', 'diff'], unresolved_tie: 'shared' },
       forfeitScore: [7, 0],
       // Unset: a forfeit made by the 50% rule scores like a no-show.

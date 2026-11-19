@@ -92,7 +92,10 @@ describe('findGuildLeague', () => {
   it('prefers the latest season that has left registration', () => {
     const db = seeded();
     linkGuild(db, { guildId: GUILD, staffRoleId: STAFF_ROLE }, 2000);
+    const seeded3 = db.select().from(season).get()?.settingsJson;
+    if (!seeded3) throw new Error('No season');
     const settingsJson = {
+      ...seeded3,
       forfeit_score: [0, 0] as [number, number],
       exclusion_forfeit_score: null,
       map_pool: [],

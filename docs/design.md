@@ -329,9 +329,9 @@ The team development tools add tables and change three existing ones (practice m
 
 **Points and standings**
 
-The rules are split by owner: points and tie-breaks belong to the competition, the forfeit score to the season.
+Every scoring rule belongs to the season (maintainer, 19 November 2026; M-40): `season.settings_json` holds its own `points` and `tiebreak`, copied from the competition's `points_json` and `tiebreak_json` when the season is created (migration 0025 copied them into the existing seasons). Standings read the season's, so changing the competition's only changes the seasons created afterwards, and a season's own stay as they are once a result counts in it (section 7, the scoring lock). Season 2's 1 point per win and Season 3's 3 can live side by side.
 
-`competition.points_json`:
+`season.settings_json.points` (and the competition's `points_json`, its default):
 
 ```json
 {
@@ -340,7 +340,7 @@ The rules are split by owner: points and tie-breaks belong to the competition, t
 }
 ```
 
-`competition.tiebreak_json`:
+`season.settings_json.tiebreak` (and the competition's `tiebreak_json`):
 
 ```json
 { "criteria": ["points", "diff"], "unresolved_tie": "shared" }
