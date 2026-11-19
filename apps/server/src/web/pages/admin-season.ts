@@ -4,7 +4,12 @@ import type { SeasonAdminView } from '../../services/admin-seasons.ts';
 import type { SettingErrors } from '../../services/settings-form.ts';
 import { csrfField, pageOf, type Html, type Page } from '../layout.ts';
 import { scoringFields } from './admin-rules.ts';
-import { settingsSections, type FieldView, type SectionView } from './settings-fields.ts';
+import {
+  settingErrorKey,
+  settingsSections,
+  type FieldView,
+  type SectionView,
+} from './settings-fields.ts';
 
 // A season in the admin panel (phase 3h; design doc section 7, M-40): creating it, then its
 // name, dates, scoring settings, forfeit scores and thresholds, map pool and status.
@@ -104,9 +109,7 @@ export const SEASON_SECTIONS: readonly SectionView[] = [
 
 const fieldError = (locale: Locale, errors: SettingErrors, path: string) => {
   const error = errors[path];
-  return error
-    ? html`<p class="field-error">${t(locale, `web.admin.settings.error.${error}`)}</p>`
-    : '';
+  return error ? html`<p class="field-error">${t(locale, settingErrorKey(error))}</p>` : '';
 };
 
 export function seasonNewView(

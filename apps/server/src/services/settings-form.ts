@@ -34,10 +34,18 @@ export interface SettingField {
 
 /**
  * What is wrong with a field: refused by the schema, or by its service (a name `taken`, a
- * `reserved` word, a setting `locked`, a `required` reason).
+ * `reserved` word, a setting `locked`, a `required` reason, a channel `not_in_server` or where the
+ * bot `cannot_post`).
  */
 export type SettingFieldError =
-  'invalid' | 'not_integer' | 'taken' | 'reserved' | 'locked' | 'required';
+  | 'invalid'
+  | 'not_integer'
+  | 'taken'
+  | 'reserved'
+  | 'locked'
+  | 'required'
+  | 'not_in_server'
+  | 'cannot_post';
 export type SettingErrors = Record<string, SettingFieldError>;
 
 const INTEGER = /^-?\d{1,9}$/;

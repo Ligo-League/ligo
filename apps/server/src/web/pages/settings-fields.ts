@@ -1,6 +1,6 @@
 import { html } from 'hono/html';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
-import type { SettingErrors } from '../../services/settings-form.ts';
+import type { SettingErrors, SettingFieldError } from '../../services/settings-form.ts';
 import type { Html } from '../layout.ts';
 
 // How the admin panel shows a settings form (phase 3h): sections of fields, each named by its
@@ -51,7 +51,12 @@ const ERROR_KEYS = {
   reserved: 'web.admin.settings.error.reserved',
   locked: 'web.admin.settings.error.locked',
   required: 'web.admin.settings.error.required',
+  not_in_server: 'league.error.channel_not_in_server',
+  cannot_post: 'league.error.cannot_post',
 } as const satisfies Record<string, MessageKey>;
+
+/** What a field's problem says. */
+export const settingErrorKey = (error: SettingFieldError): MessageKey => ERROR_KEYS[error];
 
 const select = (locale: Locale, name: string, options: readonly Option[], value: string): Html =>
   html`<select name="${name}">

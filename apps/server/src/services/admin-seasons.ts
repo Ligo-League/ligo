@@ -7,7 +7,7 @@ import {
   type SeasonSettings,
 } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
-import { and, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { openCompetition } from './admin-competitions.ts';
 import { COMPUTED_TIEBREAKS, computedTiebreakSchema } from './admin-rules.ts';
@@ -27,7 +27,7 @@ import {
 // latest season. Standings are computed from the scoring settings every time, so once a result
 // counts in the season they change only through the organisation's owner, with a reason.
 
-const { auditLog, match, season, stage } = schema;
+const { auditLog, division, match, season, stage } = schema;
 type Reader = Pick<Db, 'select'>;
 type SeasonStatus = (typeof schema.SEASON_STATUSES)[number];
 type SeasonRow = typeof season.$inferSelect;
@@ -231,7 +231,7 @@ export function createSeason(
 }
 
 /** The season of this competition, for its owner and staff. */
-function openSeason(db: Reader, user: OrgUser, key: Key & { seasonId: number }) {
+export function openSeason(db: Reader, user: OrgUser, key: Key & { seasonId: number }) {
   const access = openCompetition(db, user, key.orgSlug, key.compSlug, key.staffIds);
   if (!access.ok) return access;
   const row = db
@@ -258,6 +258,8 @@ export type SeasonAdminView =
       locked: boolean;
       /** The statuses the season may still take, in order. */
       nextStatuses: SeasonStatus[];
+      /** Its divisions, top level first. */
+      divisions: { id: number; name: string; level: number; categoryPrefix: string }[];
     }
   | { ok: false; error: 'not_found' | 'not_allowed' };
 
@@ -287,6 +289,17 @@ export function seasonAdmin(
     values: settingsFormValues(formOf(seasonRow), SEASON_FIELDS),
     locked: resultCounts(db, seasonRow.id),
     nextStatuses: statusesAfter(seasonRow.status),
+    divisions: db
+      .select({
+        id: division.id,
+        name: division.name,
+        level: division.level,
+        categoryPrefix: division.categoryPrefix,
+      })
+      .from(division)
+      .where(eq(division.seasonId, seasonRow.id))
+      .orderBy(asc(division.level), asc(division.name))
+      .all(),
   };
 }
 

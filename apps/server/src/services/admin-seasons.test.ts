@@ -170,6 +170,7 @@ describe('a season’s page', () => {
       'settings.forfeits.exclusion_at': '3',
     });
     expect(open.values['settings.map_pool']?.split('\n')).toContain('Nighthaven Labs');
+    expect(open.divisions.map((division) => division.categoryPrefix)).toEqual(['L1', 'L2']);
     expect(view(SEASON_3)).toMatchObject({ locked: true, nextStatuses: ['cup', 'closed'] });
   });
 
