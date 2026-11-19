@@ -144,6 +144,7 @@ describe('a competition’s general settings', () => {
       owner: true,
       competition: { id: lfr.id, name: 'LFR', title: 'r6' },
       values: { 'ruleset.result_validation': 'opponent', 'scheduling.auto_slot.time': '21:00' },
+      seasons: [{ name: 'Saison 3', startsOn: '2026-10-19', status: 'active' }],
     });
     expect(competitionAdmin(db, STAFFER, 'mlb-group', 'lfr', [lfr.id])).toMatchObject({
       ok: true,

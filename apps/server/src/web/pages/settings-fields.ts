@@ -12,6 +12,9 @@ type Option = { value: string; label: MessageKey };
 
 export type FieldInput =
   | { type: 'text'; maxlength?: number }
+  | { type: 'date' }
+  /** One entry per line: a map pool. */
+  | { type: 'textarea'; rows: number }
   | { type: 'number'; min?: number; max?: number; optional?: boolean }
   | { type: 'select'; options: readonly Option[] }
   | { type: 'checkbox' }
@@ -34,7 +37,10 @@ export interface FieldView {
 export interface SectionView {
   title: MessageKey;
   fields: readonly FieldView[];
-  /** What a rule across several of the section's fields says when it fails, by their shared path. */
+  /**
+   * What a rule across several of the section's fields says when it fails, by their shared path;
+   * a group the service refuses for another reason (`locked`) says that reason.
+   */
   groups?: Readonly<Record<string, MessageKey>>;
 }
 
@@ -67,6 +73,10 @@ function input(locale: Locale, field: FieldView, values: Readonly<Record<string,
         value="${value}"
         maxlength="${String(kind.maxlength ?? 100)}"
       />`;
+    case 'date':
+      return html`<input type="date" name="${path}" value="${value}" required />`;
+    case 'textarea':
+      return html`<textarea name="${path}" rows="${String(kind.rows)}">${value}</textarea>`;
     case 'number':
       return html`<input
         name="${path}"
@@ -142,9 +152,13 @@ export function settingsSections(
     (section) =>
       html`<fieldset>
         <legend>${t(locale, section.title)}</legend>
-        ${Object.entries(section.groups ?? {}).map(([group, message]) =>
-          errors[group] ? html`<p class="field-error">${t(locale, message)}</p>` : '',
-        )}
+        ${Object.entries(section.groups ?? {}).map(([group, message]) => {
+          const error = errors[group];
+          if (!error) return '';
+          return html`<p class="field-error">
+            ${t(locale, error === 'invalid' ? message : ERROR_KEYS[error])}
+          </p>`;
+        })}
         ${section.fields.map((field) => {
           const error = errors[field.path];
           return html`<label>${t(locale, field.label)} ${input(locale, field, values)}</label>

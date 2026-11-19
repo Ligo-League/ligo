@@ -867,6 +867,26 @@ posts lose their buttons) and the time is announced in the schedule channel with
 4. Anything refused keeps what was typed, says what is wrong on its field (or on its section for
    a rule across fields, such as "a BO3 picks 2 maps"), and saves nothing.
 
+## 50. Phase 3h-6: seasons in the admin panel
+
+1. The competition's admin page lists its seasons, the latest first. Follow **Créer une saison**
+   (`/admin/<org>/<competition>/seasons/new`): a name and the first and last days. A name
+   already used, or one whose address another season has (`Saison 4` and `saison-4`), is
+   refused, and so are `rules`, `register` and `discord`.
+2. The new season opens for registration at once. It takes the competition's points and
+   tie-breakers and the latest season's forfeit scores, thresholds and maps. It has no divisions
+   yet (step 3h-7) and no schedule (phase 4).
+3. The season's page (`/admin/<org>/<competition>/seasons/<id>`) changes its name, dates,
+   points, tie-breakers, forfeit score (each side's rounds won and lost), the 50% rule's forfeit
+   score (all four empty: the usual one), the warning and exclusion thresholds (empty: never)
+   and the veto's maps, one per line.
+4. Try the lock on Season 3, which has results: as staff, change the points; the page says they
+   are locked and saves nothing. Change the maps instead; that saves. As MLB Group's owner, the
+   same page asks for a reason, which the audit log keeps.
+5. **Statut**: the season moves only forward (registration, in progress, cup, finished), skipping
+   any it does not use. Registration is open only in the first. Changing the status posts
+   nothing on Discord and creates no schedule.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

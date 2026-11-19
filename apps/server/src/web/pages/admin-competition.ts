@@ -258,6 +258,33 @@ export function competitionPageView(locale: Locale, data: CompetitionPageData): 
         <li><a href="${path}/discord">${t(locale, 'web.admin.comp.discord')}</a></li>
         <li><a href="${path}/discord/channels">${t(locale, 'web.admin.comp.channels')}</a></li>
       </ul>
+      <section class="card stack">
+        <h2>${t(locale, 'web.admin.comp.seasons')}</h2>
+        ${
+          view.seasons.length === 0
+            ? html`<p class="muted">${t(locale, 'web.admin.comp.noSeason')}</p>`
+            : html`<ul>
+                ${view.seasons.map(
+                  (season) =>
+                    html`<li>
+                      <a href="/admin/${org.slug}/${competition.slug}/seasons/${String(season.id)}"
+                        >${season.name}</a
+                      >
+                      · ${t(locale, `web.season.status.${season.status}`)} ·
+                      ${t(locale, 'web.admin.comp.seasonDates', {
+                        from: season.startsOn,
+                        to: season.endsOn,
+                      })}
+                    </li>`,
+                )}
+              </ul>`
+        }
+        <p>
+          <a href="/admin/${org.slug}/${competition.slug}/seasons/new"
+            >${t(locale, 'web.admin.comp.newSeason')}</a
+          >
+        </p>
+      </section>
       <form class="card stack" method="post" action="/admin/${org.slug}/${competition.slug}">
         ${csrfField(data.csrf)}
         ${settingsSections(

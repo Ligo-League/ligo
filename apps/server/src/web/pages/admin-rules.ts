@@ -47,52 +47,57 @@ function vetoFields(formats: readonly string[]): FieldView[] {
   ]);
 }
 
+/** The points and tie-breakers, at `prefix` (the competition's, or a season's under `settings.`). */
+export function scoringFields(prefix = ''): FieldView[] {
+  return [
+    { path: `${prefix}points.outcomes.win`, label: 'web.admin.rules.pointsWin', input: int() },
+    { path: `${prefix}points.outcomes.loss`, label: 'web.admin.rules.pointsLoss', input: int() },
+    {
+      path: `${prefix}points.forfeit.winner`,
+      label: 'web.admin.rules.pointsForfeitWinner',
+      input: int(),
+    },
+    {
+      path: `${prefix}points.forfeit.loser`,
+      label: 'web.admin.rules.pointsForfeitLoser',
+      input: { type: 'number' },
+    },
+    {
+      path: `${prefix}points.forfeit.counts_as_played`,
+      label: 'web.admin.rules.forfeitPlayed',
+      input: { type: 'checkbox' },
+    },
+    {
+      path: `${prefix}tiebreak.criteria`,
+      label: 'web.admin.rules.tiebreak',
+      help: 'web.admin.rules.tiebreakHelp',
+      input: {
+        type: 'selectList',
+        size: COMPUTED_TIEBREAKS.length,
+        options: COMPUTED_TIEBREAKS.map((value) => ({ value, label: TIEBREAK_LABELS[value] })),
+      },
+    },
+    {
+      path: `${prefix}tiebreak.unresolved_tie`,
+      label: 'web.admin.rules.unresolvedTie',
+      input: {
+        type: 'select',
+        options: options([
+          ['shared', 'web.admin.rules.unresolved.shared'],
+          ['tiebreak_match', 'web.admin.rules.unresolved.tiebreak_match'],
+          ['staff_decision', 'web.admin.rules.unresolved.staff_decision'],
+        ]),
+      },
+    },
+  ];
+}
+
 /** The rules form's sections, with one veto format block per format the competition has. */
 export function rulesSections(view: View): SectionView[] {
   return [
     {
       title: 'web.admin.rules.section.scoring',
-      fields: [
-        { path: 'points.outcomes.win', label: 'web.admin.rules.pointsWin', input: int() },
-        { path: 'points.outcomes.loss', label: 'web.admin.rules.pointsLoss', input: int() },
-        {
-          path: 'points.forfeit.winner',
-          label: 'web.admin.rules.pointsForfeitWinner',
-          input: int(),
-        },
-        {
-          path: 'points.forfeit.loser',
-          label: 'web.admin.rules.pointsForfeitLoser',
-          input: { type: 'number' },
-        },
-        {
-          path: 'points.forfeit.counts_as_played',
-          label: 'web.admin.rules.forfeitPlayed',
-          input: { type: 'checkbox' },
-        },
-        {
-          path: 'tiebreak.criteria',
-          label: 'web.admin.rules.tiebreak',
-          help: 'web.admin.rules.tiebreakHelp',
-          input: {
-            type: 'selectList',
-            size: COMPUTED_TIEBREAKS.length,
-            options: COMPUTED_TIEBREAKS.map((value) => ({ value, label: TIEBREAK_LABELS[value] })),
-          },
-        },
-        {
-          path: 'tiebreak.unresolved_tie',
-          label: 'web.admin.rules.unresolvedTie',
-          input: {
-            type: 'select',
-            options: options([
-              ['shared', 'web.admin.rules.unresolved.shared'],
-              ['tiebreak_match', 'web.admin.rules.unresolved.tiebreak_match'],
-              ['staff_decision', 'web.admin.rules.unresolved.staff_decision'],
-            ]),
-          },
-        },
-      ],
+      fields: scoringFields(),
     },
     {
       title: 'web.admin.rules.section.games',

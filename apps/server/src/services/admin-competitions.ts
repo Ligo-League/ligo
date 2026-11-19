@@ -6,7 +6,7 @@ import {
 } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
 import { R6_GAME_SCORE, TITLES, type Title } from '@ligo/titles';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { OrgUser } from './orgs.ts';
 import {
@@ -22,7 +22,7 @@ import {
 // participant mode are fixed once the competition exists: addresses and stats depend on them.
 // The scoring settings (points, tie-breakers) and the rules come in their own forms (3h-5).
 
-const { auditLog, competition, org } = schema;
+const { auditLog, competition, org, season } = schema;
 type Reader = Pick<Db, 'select'>;
 
 const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
@@ -182,6 +182,14 @@ export type CompetitionAdminView =
       };
       /** Each general field's current value, as typed in its form. */
       values: Record<string, string>;
+      /** Its seasons, the latest first. */
+      seasons: {
+        id: number;
+        name: string;
+        startsOn: string;
+        endsOn: string;
+        status: (typeof schema.SEASON_STATUSES)[number];
+      }[];
     }
   | { ok: false; error: 'not_found' | 'not_allowed' };
 
@@ -241,6 +249,18 @@ export function competitionAdmin(
       participantMode: row.participantMode,
     },
     values: settingsFormValues(general, GENERAL_FIELDS),
+    seasons: db
+      .select({
+        id: season.id,
+        name: season.name,
+        startsOn: season.startsOn,
+        endsOn: season.endsOn,
+        status: season.status,
+      })
+      .from(season)
+      .where(eq(season.competitionId, row.id))
+      .orderBy(desc(season.startsOn), desc(season.id))
+      .all(),
   };
 }
 
