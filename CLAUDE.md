@@ -3,8 +3,8 @@
 Ligo is a league platform for esports competitions: a Discord bot, a website, a league engine
 (schedules, standings, brackets) and replay-based stats. First user: LFR (French Rainbow Six Siege
 league, Ligue 1 and Ligue 2; 10 and 12 teams in Season 3, and a division's size is data, never a
-constant). Later: other leagues (Benelux R6, LFV Valorant,
-LFRL Rocket League, FRFL FACEIT mixed R6) on the same instance.
+constant), run by the organisation **MLB Group** (MLB, not MBL). Later: other leagues (Benelux
+R6, LFV Valorant, LFRL Rocket League, FRFL FACEIT mixed R6) on the same instance.
 
 The full specification is `docs/design.md` (the design document). **Read the relevant section
 before starting any task.** If this file and the design document disagree, the design document wins;
@@ -168,8 +168,9 @@ Review these areas line by line and flag anything uncertain in your summary:
 
 ## Hosting and domain: notify the maintainer
 
-The domain is **`ligoleague.eu`** (bought on Porkbun, 18 November 2026). The maintainer has
-**not bought a VPS yet**, so nothing is served on it; development runs on localhost.
+The domain is **`ligoleague.eu`** (bought on Porkbun, 18 November 2026). The server will be a
+**netcup VPS**, which the maintainer gets access to soon (19 November 2026). Until it is set up,
+nothing is served on the domain; development runs on localhost.
 
 In every task, check whether the work reaches one of the triggers below. If it does, **say so
 explicitly at the start of your plan**, before anything else: which trigger, why a public website
@@ -197,9 +198,19 @@ Known cheap options to suggest:
 
 - Domain: `ligoleague.eu` is owned; use it (or a subdomain) for anything public. `ligo.gg` later
   if the league grows.
-- Server: the OVHcloud VPS-1 from design doc section 13.
+- Server: the netcup VPS (maintainer, 19 November 2026; design doc section 13).
 
 When no trigger applies, one line in the plan is enough: "Hosting: nothing needed for this task."
+
+## After phase 3: the look
+
+Once phase 3 is done, the work puts everything together into a complete-looking website based
+on `design-proposals/` (proposal E, the merged one), and makes the images the bot posts in
+Discord or for social media look like the website (maintainer, 19 November 2026).
+
+**Tell the maintainer** as soon as Ligo has enough features to build the website's appearance
+from the proposals: say so explicitly at the end of the task where that becomes true, with what
+the proposals cover that exists and what does not yet.
 
 ## Don't
 
