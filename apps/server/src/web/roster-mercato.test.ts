@@ -226,7 +226,7 @@ describe('the public history of moves', () => {
       role: 'player',
       reason: 'Motif privé',
     });
-    for (const path of ['/teams/alpha-esport', '/teams/bravo', '/mbl-group/lfr/saison-3']) {
+    for (const path of ['/teams/alpha-esport', '/teams/bravo', '/mlb-group/lfr/saison-3']) {
       const page = await (await request(path)).text();
       expect(page).toContain('<h2>Mercato</h2>');
       expect(page).toMatch(/Alpha Esport<\/a>\s*:\s*P9 remplace P5 \(vient de Bravo\)/);

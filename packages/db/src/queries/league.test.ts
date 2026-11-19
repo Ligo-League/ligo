@@ -70,7 +70,7 @@ describe('findGuildLeague', () => {
 
     expect(findGuildLeague(db, GUILD)).toMatchObject({
       guild: { staffRoleId: STAFF_ROLE },
-      org: { slug: 'mbl-group', locale: 'fr' },
+      org: { slug: 'mlb-group', locale: 'fr' },
       competition: { slug: 'lfr', title: 'r6' },
       season: { name: 'Saison 3', status: 'active' },
       divisions: [

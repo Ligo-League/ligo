@@ -17,8 +17,8 @@ import { ensurePlayer } from './services/players.ts';
 
 export const TEST_GUILD = '876543210987654321';
 export const TEST_STAFF_ROLE = '111111111111111111';
-/** The seeded LFR's address: MBL Group's competition `lfr`. */
-export const LFR_KEY = { org: 'mbl-group', competition: 'lfr' } as const;
+/** The seeded LFR's address: MLB Group's competition `lfr`. */
+export const LFR_KEY = { org: 'mlb-group', competition: 'lfr' } as const;
 
 const teamRow = (division: string, tag: string, name: string): TeamRow => ({
   division,

@@ -17,7 +17,7 @@ describe('/register', () => {
     expect(await run(TEST_GUILD)).toEqual([
       {
         content:
-          'Les inscriptions sont ouvertes pour LFR, Saison 4 : http://localhost:3000/mbl-group/lfr/register',
+          'Les inscriptions sont ouvertes pour LFR, Saison 4 : http://localhost:3000/mlb-group/lfr/register',
         ephemeral: true,
       },
     ]);

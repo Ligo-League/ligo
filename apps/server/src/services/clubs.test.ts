@@ -9,7 +9,7 @@ import { ensurePlayer } from './players.ts';
 import { listTeamStaff } from './team-staff.ts';
 
 // Clubs and rosters before any competition (M-33, maintainer, 15 November 2026). The league
-// database has the group MBL Group (org 1), LFR (R6), and the teams Alpha Esport, Bravo, Charlie,
+// database has the group MLB Group (org 1), LFR (R6), and the teams Alpha Esport, Bravo, Charlie,
 // Xray and Yankee, each the roster of a club of the same name.
 
 const CLUB: ClubForm = {

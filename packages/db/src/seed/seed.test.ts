@@ -180,7 +180,13 @@ describe('seedLfr', () => {
       removed: { clubs: 0 },
     });
     expect(db.select().from(org).all()).toMatchObject([
-      { name: 'MBL Group', slug: 'mbl-group', locale: 'fr' },
+      {
+        name: 'MLB Group',
+        slug: 'mlb-group',
+        locale: 'fr',
+        // Its owner, given by the maintainer (M-20, 19 November 2026).
+        ownerDiscordUserId: '994597181476569170',
+      },
     ]);
     expect(db.select().from(competition).all()).toMatchObject([
       {

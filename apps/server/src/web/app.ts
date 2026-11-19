@@ -366,6 +366,12 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     return c.redirect(found.path + url.pathname.slice(`/c/${slug}`.length) + url.search, 301);
   });
 
+  // MLB Group's addresses before its name's typo was fixed (migration 0026): `/mbl-group/...`.
+  app.get('/mbl-group/*', (c) => {
+    const url = new URL(c.req.url);
+    return c.redirect(`/mlb-group${url.pathname.slice('/mbl-group'.length)}${url.search}`, 301);
+  });
+
   // A competition's pages live under its organisation, `/:org/:competition` (design doc section
   // 7). Each of these routes ends in a word no other route uses in that place; the season page,
   // `/:org/:competition/:season`, matches any third word, so it is registered last of all.

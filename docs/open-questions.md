@@ -503,7 +503,7 @@ section 16.
   logged-in user who may manage a Discord server where the bot is installed may create an
   organisation; the server is only checked. The owner opens everything in the organisation;
   competition staff (the server's staff role) open their competition. MLB Group's owner is set
-  by migration 0025 (phase 3h-2).
+  by migration 0026 (phase 3h-2).
 
 #### M-40 · Changing scoring settings during a season
 

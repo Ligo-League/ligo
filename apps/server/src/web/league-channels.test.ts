@@ -12,7 +12,7 @@ const RESULTS = '800000000000000002';
 const L1_RESULTS = '800000000000000003';
 const ELSEWHERE = '800000000000000009';
 const LEA = { id: '222222222222222222', displayName: 'Léa Staff' };
-const PAGE = '/mbl-group/lfr/discord/channels';
+const PAGE = '/mlb-group/lfr/discord/channels';
 
 function site() {
   const db = leagueDatabase();

@@ -54,7 +54,7 @@ describe('discordSettings', () => {
     const { db, gateway, user } = setup();
     expect(await discordSettings(db, gateway, user, LFR_KEY, null)).toEqual({
       ok: true,
-      competition: { id: 1, name: 'LFR', slug: 'lfr', path: '/mbl-group/lfr' },
+      competition: { id: 1, name: 'LFR', slug: 'lfr', path: '/mlb-group/lfr' },
       current: { guildId: TEST_GUILD, staffRoleId: TEST_STAFF_ROLE, inviteUrl: null },
       servers: [
         { id: TEST_GUILD, name: 'LFR Staging' },
@@ -234,7 +234,7 @@ describe('adminCompetitions', () => {
   it('lists the competitions whose server the user may manage', async () => {
     const { db, gateway, user } = setup();
     expect(await adminCompetitions(db, gateway, ANA_ID)).toEqual([
-      { name: 'LFR', path: '/mbl-group/lfr' },
+      { name: 'LFR', path: '/mlb-group/lfr' },
     ]);
     expect(await adminCompetitions(db, gateway, '799999999999999999')).toEqual([]);
     gateway.failing = true;

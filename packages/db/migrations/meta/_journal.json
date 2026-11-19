@@ -183,6 +183,13 @@
       "when": 1795110352960,
       "tag": "0025_season_points",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1795110666728,
+      "tag": "0026_mlb_group_owner",
+      "breakpoints": true
     }
   ]
 }

@@ -23,7 +23,7 @@ async function site(db = openLineups(registrationDatabase()), players = 6) {
     if (discordUserId) browser.gateway.members.set(`876543210987654321:${discordUserId}`, []);
   }
   const register = (fields: Record<string, string> = {}) =>
-    browser.post('/mbl-group/lfr/register', {
+    browser.post('/mlb-group/lfr/register', {
       team: String(kairos.teamId),
       rules_version: '1',
       rules_accepted: '1',
@@ -36,32 +36,32 @@ const where = (response: Response) => response.headers.get('location');
 describe('the registration form', () => {
   it('is offered on the home page while a season takes registrations', async () => {
     const text = await (await (await site()).request('/')).text();
-    expect(text).toMatch(/<a href="\/mbl-group\/lfr\/register"\s*>S’inscrire<\/a\s*>/);
+    expect(text).toMatch(/<a href="\/mlb-group\/lfr\/register"\s*>S’inscrire<\/a\s*>/);
     const closed = await (await (await site(leagueDatabase())).request('/')).text();
-    expect(closed).not.toContain('/mbl-group/lfr/register');
+    expect(closed).not.toContain('/mlb-group/lfr/register');
   });
 
   it('asks to log in first, then offers the member’s rosters and the rulebook', async () => {
     const browser = await site();
-    const anonymous = await browser.request('/mbl-group/lfr/register');
-    expect(where(anonymous)).toBe('/auth/login?next=%2Fmbl-group%2Flfr%2Fregister');
-    await browser.logIn('/mbl-group/lfr/register');
-    const text = await (await browser.request('/mbl-group/lfr/register')).text();
+    const anonymous = await browser.request('/mlb-group/lfr/register');
+    expect(where(anonymous)).toBe('/auth/login?next=%2Fmlb-group%2Flfr%2Fregister');
+    await browser.logIn('/mlb-group/lfr/register');
+    const text = await (await browser.request('/mlb-group/lfr/register')).text();
     expect(text).toContain('Kairos [KRS] · 6 joueur(s)');
-    expect(text).toContain('href="/mbl-group/lfr/rules"');
+    expect(text).toContain('href="/mlb-group/lfr/rules"');
   });
 
   it('sends a member without a roster to create their club first', async () => {
     const browser = await site();
-    await browser.logIn('/mbl-group/lfr/register', 'code-ben');
-    const text = await (await browser.request('/mbl-group/lfr/register')).text();
+    await browser.logIn('/mlb-group/lfr/register', 'code-ben');
+    const text = await (await browser.request('/mlb-group/lfr/register')).text();
     expect(text).toContain('href="/clubs/new"');
     expect(text).not.toContain('name="team"');
   });
 
   it('files the registration, then opens its page to pick the lineup', async () => {
     const browser = await site();
-    await browser.logIn('/mbl-group/lfr/register');
+    await browser.logIn('/mlb-group/lfr/register');
     expect(where(await browser.register())).toBe('/registrations/1');
     expect(browser.db.select().from(schema.request).get()).toMatchObject({
       teamId: browser.teamId,
@@ -74,7 +74,7 @@ describe('the registration form', () => {
 
   it('shows the form again with each problem under its field', async () => {
     const browser = await site();
-    await browser.logIn('/mbl-group/lfr/register');
+    await browser.logIn('/mlb-group/lfr/register');
     const refused = await browser.register({ rules_accepted: '' });
     expect(refused.status).toBe(400);
     expect(await refused.text()).toContain('field-error');
@@ -83,8 +83,8 @@ describe('the registration form', () => {
 
   it('says when registration is closed', async () => {
     const browser = await site(leagueDatabase());
-    await browser.logIn('/mbl-group/lfr/register');
-    expect(await (await browser.request('/mbl-group/lfr/register')).text()).toContain(
+    await browser.logIn('/mlb-group/lfr/register');
+    expect(await (await browser.request('/mlb-group/lfr/register')).text()).toContain(
       'Inscriptions fermées',
     );
   });
@@ -93,7 +93,7 @@ describe('the registration form', () => {
 describe('the registration’s page', () => {
   async function filed(players = 6) {
     const browser = await site(undefined, players);
-    await browser.logIn('/mbl-group/lfr/register');
+    await browser.logIn('/mlb-group/lfr/register');
     await browser.register();
     const [a = 0, b = 0, c = 0, d = 0, e = 0, f = 0] = browser.playerIds;
     const lineup = (fields: Record<string, string>) =>
@@ -137,7 +137,7 @@ describe('the registration’s page', () => {
 
   it('points to the roster’s page while it has no players', async () => {
     const browser = await site(undefined, 0);
-    await browser.logIn('/mbl-group/lfr/register');
+    await browser.logIn('/mlb-group/lfr/register');
     await browser.register();
     const page = await (await browser.request('/registrations/1')).text();
     expect(page).toContain('href="/teams/kairos/manage#players"');

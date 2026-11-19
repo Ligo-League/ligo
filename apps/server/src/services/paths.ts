@@ -10,6 +10,7 @@ import { slugify } from '@ligo/core';
  * those routes. Checked when organisations are created (phase 3h).
  */
 export const RESERVED_ORG_SLUGS: readonly string[] = [
+  'admin',
   'auth',
   'c',
   'clubs',
@@ -18,6 +19,8 @@ export const RESERVED_ORG_SLUGS: readonly string[] = [
   'join',
   'logos',
   'matches',
+  // MLB Group's address before its name's typo was fixed: it redirects (migration 0026).
+  'mbl-group',
   'me',
   'players',
   'r6',

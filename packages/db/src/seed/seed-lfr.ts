@@ -31,11 +31,14 @@ import type { TeamRow } from './parse-teams-csv.ts';
 // LFR Season 3 as described in the design doc (sections 5 and 16). Data, not rules: every value
 // below is an ordinary row or setting that staff will be able to change.
 const LFR_TIME_ZONE_SETTING = 'Europe/Paris';
-// MBL Group runs the LFR and its other leagues (design doc section 1); its slug is the first
-// part of their addresses, `/mbl-group/lfr/...` (migration 0022 renamed the first seed's "LFR").
+// MLB Group runs the LFR and its other leagues (design doc section 1); its slug is the first
+// part of their addresses, `/mlb-group/lfr/...` (migration 0022 renamed the first seed's "LFR",
+// migration 0026 fixed the name's typo, "MBL"). Its owner is the maintainer's given account
+// (M-20, 19 November 2026).
 const ORG: typeof org.$inferInsert = {
-  name: 'MBL Group',
-  slug: 'mbl-group',
+  name: 'MLB Group',
+  slug: 'mlb-group',
+  ownerDiscordUserId: '994597181476569170',
   locale: 'fr',
   settingsJson: orgSettingsSchema.parse({}),
 };

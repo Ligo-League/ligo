@@ -51,7 +51,7 @@ describe('the home page', () => {
     expect(page.headers.get('content-type')).toContain('text/html');
     expect(page.text).toContain('<html lang="fr">');
     expect(page.text).toContain('<h2>LFR</h2>');
-    expect(page.text).toContain('<a href="/mbl-group/lfr/saison-3">Saison 3</a>');
+    expect(page.text).toContain('<a href="/mlb-group/lfr/saison-3">Saison 3</a>');
     expect(page.text).toContain('En cours');
   });
 
@@ -64,7 +64,7 @@ describe('the home page', () => {
 
 describe('a season page', () => {
   it('shows the standings of each division, the latest results and the fixtures', async () => {
-    const { text, status } = await site().get('/mbl-group/lfr/saison-3');
+    const { text, status } = await site().get('/mlb-group/lfr/saison-3');
     expect(status).toBe(200);
     expect(text).toContain('<title>LFR — Saison 3 · Ligo</title>');
     expect(text).toContain('<h3>Ligue 1</h3>');
@@ -82,14 +82,14 @@ describe('a season page', () => {
   it('shows a forfeit by both teams without a winner', async () => {
     const db = leagueDatabase();
     db.update(schema.game).set({ forfeitSide: 'both' }).where(eq(schema.game.matchId, 2)).run();
-    const { text } = await site({ db }).get('/mbl-group/lfr/saison-3');
+    const { text } = await site({ db }).get('/mlb-group/lfr/saison-3');
     expect(text).toContain('<span class="score">Forfait des deux équipes</span>');
     expect(text).not.toContain('Forfait de Charlie');
   });
 
   it('answers 404 for an unknown competition or season', async () => {
     const { get } = site();
-    for (const path of ['/c/lfv/saison-3', '/mbl-group/lfr/saison-9']) {
+    for (const path of ['/c/lfv/saison-3', '/mlb-group/lfr/saison-9']) {
       const page = await get(path);
       expect(page.status).toBe(404);
       expect(page.text).toContain('Page introuvable');
@@ -116,7 +116,7 @@ describe('a team page', () => {
     expect(text).toContain('Alpha Esport <span class="muted">(ALP)</span>');
     expect(text).toContain('Ana');
     expect(text).toContain('Propriétaire');
-    expect(text).toMatch(/<a href="\/mbl-group\/lfr\/saison-3"\s*>LFR · Saison 3 · Ligue 1<\/a/);
+    expect(text).toMatch(/<a href="\/mlb-group\/lfr\/saison-3"\s*>LFR · Saison 3 · Ligue 1<\/a/);
     expect(text).toContain('7 – 4');
     // No Discord ID on a public page.
     expect(text).not.toContain('700000000000000001');
@@ -141,7 +141,7 @@ describe('a team page', () => {
       .set({ name: '<script>alert(1)</script>' })
       .where(eq(schema.team.id, 1))
       .run();
-    for (const path of ['/teams/alpha-esport', '/mbl-group/lfr/saison-3', '/matches/1']) {
+    for (const path of ['/teams/alpha-esport', '/mlb-group/lfr/saison-3', '/matches/1']) {
       const { text } = await get(path);
       expect(text).not.toContain('<script>alert(1)</script>');
       expect(text).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
@@ -248,7 +248,7 @@ describe('a club page', () => {
 describe('competition addresses', () => {
   it('serve a season under its organisation, and nothing under another', async () => {
     const { get } = site();
-    expect((await get('/mbl-group/lfr/saison-3')).status).toBe(200);
+    expect((await get('/mlb-group/lfr/saison-3')).status).toBe(200);
     expect((await get('/other-group/lfr/saison-3')).status).toBe(404);
   });
 
@@ -256,10 +256,17 @@ describe('competition addresses', () => {
     const { app } = site();
     const old = await app.request('/c/lfr/saison-3');
     expect(old.status).toBe(301);
-    expect(old.headers.get('location')).toBe('/mbl-group/lfr/saison-3');
+    expect(old.headers.get('location')).toBe('/mlb-group/lfr/saison-3');
     const rules = await app.request('/c/lfr/rules/2?x=1');
-    expect(rules.headers.get('location')).toBe('/mbl-group/lfr/rules/2?x=1');
+    expect(rules.headers.get('location')).toBe('/mlb-group/lfr/rules/2?x=1');
     expect((await app.request('/c/nope/saison-3')).status).toBe(404);
+  });
+
+  it('send MBL Group’s addresses, a typo, to MLB Group’s for good (migration 0026)', async () => {
+    const { app } = site();
+    const old = await app.request('/mbl-group/lfr/rules/2?x=1');
+    expect(old.status).toBe(301);
+    expect(old.headers.get('location')).toBe('/mlb-group/lfr/rules/2?x=1');
   });
 
   it("keep every fixed first segment of the site's routes out of organisation slugs", () => {

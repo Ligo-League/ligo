@@ -19,7 +19,7 @@ describe('listLeagues', () => {
   it('lists each competition with its seasons and their URL slugs', () => {
     expect(listLeagues(leagueDatabase())).toEqual([
       {
-        competition: { name: 'LFR', slug: 'lfr', path: '/mbl-group/lfr' },
+        competition: { name: 'LFR', slug: 'lfr', path: '/mlb-group/lfr' },
         seasons: [{ name: 'Saison 3', slug: 'saison-3', status: 'active' }],
       },
     ]);

@@ -520,3 +520,25 @@ describe('0025: each season’s own points and tie-breakers', () => {
     });
   });
 });
+
+describe('0026: MLB Group and its owner', () => {
+  it('fixes the name’s typo and gives the organisation its owner, once', () => {
+    const db = openDatabase(':memory:');
+    migrateUpTo(db, '0025_season_points');
+    db.$client.exec(`insert into org (id, name, slug, settings_json)
+      values (1, 'MBL Group', 'mbl-group', '{}'), (2, 'Other', 'other', '{}')`);
+
+    migrateUpTo(db, '0026_mlb_group_owner');
+
+    expect(
+      db.$client
+        .prepare(
+          'select id, name, slug, owner_discord_user_id as owner, invite_url as invite from org',
+        )
+        .all(),
+    ).toEqual([
+      { id: 1, name: 'MLB Group', slug: 'mlb-group', owner: '994597181476569170', invite: null },
+      { id: 2, name: 'Other', slug: 'other', owner: null, invite: null },
+    ]);
+  });
+});

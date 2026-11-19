@@ -24,6 +24,15 @@ export const org = sqliteTable(
     slug: text('slug').notNull().unique(),
     locale: text('locale', { enum: LOCALES }).notNull().default('fr'),
     settingsJson: jsonText(orgSettingsSchema)('settings_json').notNull(),
+    // The organisation's owner: the Discord account that created it, kept in Ligo, not read from
+    // Discord, since its competitions sit on several servers (M-20, maintainer, 19 November
+    // 2026). Null only for an organisation made before owners existed and not yet given one.
+    ownerDiscordUserId: text('owner_discord_user_id'),
+    // Optional: the organisation's own Discord invitation, checked with Discord when set.
+    inviteUrl: text('invite_url'),
+    description: text('description'),
+    // In the asset store, as a team logo is.
+    logoKey: text('logo_key'),
   },
   (t) => [check('org_locale_check', oneOf(t.locale, LOCALES))],
 );

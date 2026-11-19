@@ -135,7 +135,7 @@ M-xx : mainteneur).
   capitaine titulaire, une équipe par compétition, âge, serveur Discord et verrouillage des
   effectifs décidés (mainteneur, 14 et 15 novembre 2026).
 - **Appliquée par** : `/clubs/new`, la page de l'équipe et `/me` ; les joueurs rejoignent
-  l'équipe par son lien d'invitation ; `/mbl-group/lfr/register` inscrit l'équipe ; tout responsable
+  l'équipe par son lien d'invitation ; `/mlb-group/lfr/register` inscrit l'équipe ; tout responsable
   qui peut inscrire l'équipe (propriétaire, managers du club, managers de l'équipe, pas le
   coach) compose l'effectif sur la page de l'inscription ou retire l'inscription ; le staff valide sur `/staff`, en choisissant
   la division (12 équipes au plus), ou refuse avec une raison. La validation donne à l'équipe sa
