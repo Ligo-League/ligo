@@ -834,6 +834,22 @@ posts lose their buttons) and the time is announced in the schedule channel with
    the maintainer's account. No Discord announcement is posted. Running it again changes nothing,
    and an exclusion made on the website is never undone by the seed.
 
+## 48. Phase 3h-4: competitions in the admin panel
+
+1. As an organisation's owner, open `/admin/<org>` and follow **Créer une compétition**
+   (`/admin/<org>/new`): the game, a name, an address and whether teams or mixed players take
+   part. The game, address and mode do not change afterwards. The competition starts with
+   defaults: staff validate every result, 3 points per win, one round a week, Paris time.
+2. Its page, `/admin/<org>/<competition>`, links to its Discord page: link its server there
+   first, as for LFR (section 26).
+3. The same page changes the general settings: the name, how results are validated, scheduling
+   (time zone, rounds per week, extension weeks, the automatic time or none), who answers each
+   kind of team request and how fast, and how many managers and coaches a team may have. The
+   organisation's owner and the competition's staff (its server's staff role) open it. A refused
+   value keeps what was typed and says what is wrong; nothing is saved then. Every save is
+   audited.
+4. `/admin` now leads staff to their competition's page.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |

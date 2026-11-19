@@ -21,8 +21,11 @@ const { auditLog, competition, org } = schema;
 type Reader = Pick<Db, 'select'>;
 
 const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
-/** Words the admin panel's own routes use where a competition's slug goes: `/admin/:org/new`. */
-export const RESERVED_COMPETITION_SLUGS: readonly string[] = ['new'];
+/**
+ * Words the admin panel's own routes use where a competition's slug goes: `/admin/:org/new`,
+ * `/admin/:org/logo`, `/admin/:org/owner`.
+ */
+export const RESERVED_COMPETITION_SLUGS: readonly string[] = ['logo', 'new', 'owner'];
 
 /** What a new competition starts with: lenient defaults a league then changes. */
 const DEFAULT_POINTS: PointsSettings = {

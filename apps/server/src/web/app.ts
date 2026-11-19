@@ -57,6 +57,7 @@ import { matchTimeRoutes } from './match-time.ts';
 import { vetoRoutes } from './veto.ts';
 import { matchStatsRoutes } from './match-stats.ts';
 import { adminOrgRoutes } from './admin-orgs.ts';
+import { adminCompetitionRoutes } from './admin-competitions.ts';
 import { matchScoreboard } from '../services/scoreboard.ts';
 import { rosterRoutes } from './rosters.ts';
 import { rostersOf } from '../services/rosters.ts';
@@ -375,6 +376,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
 
   // Before the competition routes, which would read `/admin/x` and `/orgs/new` as one.
   adminOrgRoutes(app, { deps, render, notFound, forbidden, guard });
+  adminCompetitionRoutes(app, { deps, render, notFound, forbidden, guard });
 
   // A competition's pages live under its organisation, `/:org/:competition` (design doc section
   // 7). Each of these routes ends in a word no other route uses in that place; the season page,

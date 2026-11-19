@@ -73,7 +73,7 @@ describe('an organisation’s admin page', () => {
     jar.clear();
     await logIn('/admin/mlb-group', 'code-owner');
     const page = await (await request('/admin/mlb-group')).text();
-    expect(page).toContain('<a href="/mlb-group/lfr">LFR</a>');
+    expect(page).toContain('<a href="/admin/mlb-group/lfr">LFR</a>');
     expect(page).toContain('action="/admin/mlb-group/owner"');
   });
 
@@ -146,6 +146,6 @@ describe('the admin home', () => {
     await logIn('/admin');
     const page = await (await request('/admin')).text();
     expect(page).toContain('Vous ne possédez aucune organisation.');
-    expect(page).toContain('<a href="/mlb-group/lfr/discord/channels">LFR</a>');
+    expect(page).toContain('<a href="/admin/mlb-group/lfr">LFR</a>');
   });
 });

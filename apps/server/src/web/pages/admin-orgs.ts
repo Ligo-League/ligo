@@ -78,7 +78,7 @@ export function adminHomeView(locale: Locale, data: AdminHomeData): Page {
       <p><a href="/orgs/new">${t(locale, 'web.admin.create')}</a></p>
       <h2>${t(locale, 'web.admin.staff')}</h2>
       ${list(
-        data.staff.map((entry) => ({ name: entry.name, href: `${entry.path}/discord/channels` })),
+        data.staff.map((entry) => ({ name: entry.name, href: `/admin${entry.path}` })),
         'web.admin.staffNone',
       )}`,
   );
@@ -196,14 +196,15 @@ export function orgPageView(locale: Locale, data: OrgPageData): Page {
               ${view.competitions.map(
                 (entry) =>
                   html`<li>
-                    <a href="/${org.slug}/${entry.slug}">${entry.name}</a> ·
-                    <a href="/${org.slug}/${entry.slug}/discord"
-                      >${t(locale, 'web.admin.org.discord')}</a
+                    <a href="/admin/${org.slug}/${entry.slug}">${entry.name}</a> ·
+                    <a href="/${org.slug}/${entry.slug}"
+                      >${t(locale, 'web.admin.org.publicPage')}</a
                     >
                   </li>`,
               )}
             </ul>`
       }
+      <p><a href="${base}/new">${t(locale, 'web.admin.org.newCompetition')}</a></p>
       <h2>${t(locale, 'web.admin.org.settings')}</h2>
       <form class="card stack" method="post" action="${base}">
         ${csrfField(data.csrf)}
