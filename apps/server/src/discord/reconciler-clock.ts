@@ -48,7 +48,7 @@ export async function syncManagedLeagues(
     try {
       if (!rulesetSchema.parse(row.rulesetJson).discord.manage) continue;
       const now = deps.now();
-      const target = leagueTarget(deps.db, row.id, now);
+      const target = leagueTarget(deps.db, row.id, now, deps.gateway.botUserId());
       if (!target.ok) {
         deps.logger.warn(
           { competitionId: row.id, error: target.error },

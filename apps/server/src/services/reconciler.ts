@@ -12,6 +12,7 @@ import { schema, type Db } from '@ligo/db';
 import { and, eq } from 'drizzle-orm';
 import type { DiscordGateway, GuildChange, ResolvedOverwrite } from '../discord/gateway.ts';
 import { withGuildLock } from './guild-lock.ts';
+import { desiredMatchChannels } from './match-channels.ts';
 import { desiredTeamRoles } from './team-roles.ts';
 
 // The reconciler (phase 4; design doc section 6, "Reconciler"). It reads the league's server,
@@ -257,33 +258,40 @@ export type LeagueTarget =
 
 /**
  * What Ligo wants in a competition's own server, when the league lets Ligo manage it
- * (`ruleset.discord`): its team roles; match channels come with 4-7 and MOSS channels with 4-8.
- * Until then nothing else is wanted, and what Ligo made stays (channels are only deleted once
- * released).
+ * (`ruleset.discord`): its team roles and its match channels; MOSS channels come with 4-8. What
+ * Ligo made and no longer wants goes, except channels, which stay until released (4-9).
+ * `botUserId` lets the bot into the private channels it posts in.
  */
 export function leagueTarget(
   db: Pick<Db, 'select'>,
   competitionId: number,
   now: number,
+  botUserId: string | null,
 ): LeagueTarget {
   const row = db.select().from(competition).where(eq(competition.id, competitionId)).get();
   if (!row) return { ok: false, error: 'not_found' };
   const settings = rulesetSchema.parse(row.rulesetJson).discord;
   if (!settings.manage) return { ok: false, error: 'not_managed' };
   const linked = db
-    .select({ guildId: leagueGuild.guildId })
+    .select({ guildId: leagueGuild.guildId, staffRoleId: leagueGuild.staffRoleId })
     .from(leagueGuild)
     .where(eq(leagueGuild.competitionId, competitionId))
     .get();
   if (!linked) return { ok: false, error: 'not_linked' };
+  const roles = desiredTeamRoles(db, competitionId, settings, now);
+  const channels = desiredMatchChannels(db, {
+    competitionId,
+    guildId: linked.guildId,
+    staffRoleId: linked.staffRoleId,
+    settings,
+    teamRoleKeys: new Set(roles.map((role) => role.key)),
+    botUserId,
+    now,
+  });
   return {
     ok: true,
     guildId: linked.guildId,
-    desired: {
-      roles: desiredTeamRoles(db, competitionId, settings, now),
-      categories: [],
-      channels: [],
-    },
+    desired: { roles, categories: channels.categories, channels: channels.channels },
   };
 }
 
@@ -294,7 +302,7 @@ export function syncLeague(
   competitionId: number,
   options: SyncOptions,
 ): Promise<LeagueSyncReply> {
-  const target = leagueTarget(db, competitionId, options.now);
+  const target = leagueTarget(db, competitionId, options.now, gateway.botUserId());
   if (!target.ok) return Promise.resolve(target);
   return syncGuild(db, gateway, target.guildId, target.desired, options);
 }

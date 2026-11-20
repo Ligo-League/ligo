@@ -222,6 +222,13 @@ export const en: Record<MessageKey, string> = {
   'sync.op.forget': 'Objects deleted by hand, to forget',
   'command.league.sync.description': 'Syncs the roles and channels Ligo manages on this server.',
   'command.league.sync.option.dry_run': 'Only shows what would change.',
+  'command.league.week.description': 'Opens a week’s match channels now.',
+  'command.league.week.option.week': 'The play week.',
+  'league.week.opened':
+    'Week {week} opened ({divisions}): its match channels arrive within a minute.',
+  'league.week.alreadyOpen': 'Week {week} was already open ({divisions}).',
+  'league.week.error.no_season': 'The league has no season under way.',
+  'league.week.error.no_matches': 'No published match that week.',
   'web.admin.sync.title': 'Discord server: sync',
   'web.admin.sync.intro':
     'Ligo compares the league’s server with what should be there: the team roles, the match channels and the MOSS channels. It never touches what it did not create, and deletes a channel only after keeping its content. It syncs on its own within a minute of a change in Ligo, and every 10 minutes to put right what was changed by hand; the button does it now.',
@@ -372,7 +379,7 @@ export const en: Record<MessageKey, string> = {
   'help.page.register':
     '**`/register`** — register a team\nOpen to everyone, while registration is open.\n\nThe bot gives the link to the form on the website. First, your club and team exist on the website ("Create a club" on your page), and your players joined the team from its invitation link, each with their own account and their page filled in (R6 account, rank, nationality, date of birth, stats consent). The form registers the team and records that you accept the rulebook; you then pick among its players the starters, the substitutes and the captain, a starter.',
   'help.page.league':
-    "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Match schedule: extensions and agreed times, until each match has its own channel.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `kind` Mercato: the mercato's windows and approved moves, mentioning nobody.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.\n\n**`/league sync`** — syncs the roles and channels Ligo manages on this server, once server management is turned on in the settings. `dry_run`: only shows what would change. Ligo also does it on its own every 10 minutes.",
+    "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Match schedule: extensions and agreed times, until each match has its own channel.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `kind` Mercato: the mercato's windows and approved moves, mentioning nobody.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.\n\n**`/league sync`** — syncs the roles and channels Ligo manages on this server, once server management is turned on in the settings. `dry_run`: only shows what would change. Ligo also does it on its own every 10 minutes.\n\n**`/league week`** — opens a week's match channels (`week`) now, without waiting for their usual opening a few days before the week.",
   'veto.title': '**Veto — {fixture}** (BO{bestOf})',
   'veto.roles':
     '{chooser} picks the starting side and starts the veto; {other} picks the overtime side. Host: {host}.',
@@ -1514,6 +1521,14 @@ export const en: Record<MessageKey, string> = {
   'web.admin.schedule.done.draft': 'Draft saved.',
   'web.admin.schedule.done.reshuffle': 'Drawn again.',
   'web.admin.schedule.done.publish': 'Schedule published: the matches are created.',
+  'web.admin.schedule.done.open-week':
+    'Week opened: its match channels arrive within a minute, if Ligo manages the server.',
+  'web.admin.schedule.error.no_matches': 'No match that week.',
+  'web.admin.schedule.openWeekHelp':
+    'A week’s match channels open on their own a few days before it (a Discord server setting). You may open a week earlier.',
+  'web.admin.schedule.openedWeeks': 'Weeks opened early: {weeks}.',
+  'web.admin.schedule.openWeekLabel': 'Week',
+  'web.admin.schedule.openWeek': 'Open its channels now',
   'web.admin.division.title': '{name} ({season})',
   'web.admin.division.newTitle': 'New division: {season}',
   'web.admin.division.createButton': 'Add the division',

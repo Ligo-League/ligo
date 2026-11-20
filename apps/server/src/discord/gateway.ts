@@ -24,6 +24,10 @@ export interface DiscordGateway {
     message: OutgoingMessage,
   ): Promise<{ messageId: string; url: string }>;
   editMessage(channelId: string, messageId: string, message: OutgoingMessage): Promise<void>;
+  /** Pins a message in its channel (Pin Messages). Rejects when Discord refuses. */
+  pinMessage(channelId: string, messageId: string): Promise<void>;
+  /** The bot's own user ID, once connected; null before. Match channels let it in by it. */
+  botUserId(): string | null;
   /** Sends a direct message. Rejects when the member closed them or left every shared server. */
   sendDirectMessage(userId: string, message: OutgoingMessage): Promise<void>;
   /** Downloads a file attached to a command. Rejects other hosts and files over `maxBytes`. */
@@ -208,6 +212,15 @@ export function createDiscordGateway(current: () => Client): DiscordGateway {
     async editMessage(channelId, messageId, message) {
       const channel = await sendable(channelId);
       await channel.messages.edit(messageId, toDiscordMessage(message));
+    },
+
+    async pinMessage(channelId, messageId) {
+      const channel = await sendable(channelId);
+      await channel.messages.pin(messageId);
+    },
+
+    botUserId() {
+      return current().user?.id ?? null;
     },
 
     async sendDirectMessage(userId, message) {

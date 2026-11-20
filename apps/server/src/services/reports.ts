@@ -756,7 +756,12 @@ export function voidMatch(
     'void',
     (tx, found) => {
       setGameStatus(tx, found, 'void');
-      tx.update(match).set({ status: 'void' }).where(eq(match.id, found.id)).run();
+      // `validated_at` is when the result stopped waiting, annulled included: the match's
+      // channel is archived from it (design doc section 6).
+      tx.update(match)
+        .set({ status: 'void', validatedAt: now })
+        .where(eq(match.id, found.id))
+        .run();
     },
     now,
   );

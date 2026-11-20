@@ -238,6 +238,13 @@ export const fr = {
   'command.league.sync.description':
     'Synchronise les rôles et les salons que Ligo gère sur ce serveur.',
   'command.league.sync.option.dry_run': 'Montre seulement ce qui changerait.',
+  'command.league.week.description': 'Ouvre tout de suite les salons des matchs d’une semaine.',
+  'command.league.week.option.week': 'La semaine de jeu.',
+  'league.week.opened':
+    'Semaine {week} ouverte ({divisions}) : ses salons de match arrivent dans la minute.',
+  'league.week.alreadyOpen': 'La semaine {week} était déjà ouverte ({divisions}).',
+  'league.week.error.no_season': 'La ligue n’a pas de saison en cours.',
+  'league.week.error.no_matches': 'Aucun match publié pour cette semaine.',
   'web.admin.sync.title': 'Serveur Discord : synchronisation',
   'web.admin.sync.intro':
     'Ligo compare le serveur de la ligue avec ce qui doit y être : les rôles des équipes, les salons des matchs et les salons MOSS. Il ne touche jamais à ce qu’il n’a pas créé, et ne supprime un salon qu’après en avoir gardé le contenu. Il synchronise tout seul dans la minute qui suit un changement dans Ligo, et toutes les 10 minutes pour remettre en ordre ce qui a été changé à la main ; le bouton le fait tout de suite.',
@@ -398,7 +405,7 @@ export const fr = {
   'help.page.register':
     "**`/register`** — inscrire une équipe\nOuvert à tous, pendant les inscriptions.\n\nLe bot donne le lien du formulaire sur le site. D'abord, ton club et ton équipe existent sur le site (« Créer un club » sur ta page), et tes joueurs l'ont rejointe par son lien d'invitation, chacun avec son propre compte et sa page remplie (compte R6, rang, nationalité, date de naissance, accord sur les statistiques). Le formulaire inscrit l'équipe et enregistre l'acceptation du règlement ; tu choisis ensuite parmi ses joueurs les titulaires, les remplaçants et le capitaine, un titulaire.",
   'help.page.league':
-    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `kind` Mercato : les fenêtres de mercato et les mouvements validés, sans mentionner personne.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.\n\n**`/league sync`** — synchronise les rôles et les salons que Ligo gère sur ce serveur, une fois la gestion du serveur activée dans les réglages. `dry_run` : montre seulement ce qui changerait. Ligo le fait aussi tout seul toutes les 10 minutes.",
+    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `kind` Mercato : les fenêtres de mercato et les mouvements validés, sans mentionner personne.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.\n\n**`/league sync`** — synchronise les rôles et les salons que Ligo gère sur ce serveur, une fois la gestion du serveur activée dans les réglages. `dry_run` : montre seulement ce qui changerait. Ligo le fait aussi tout seul toutes les 10 minutes.\n\n**`/league week`** — ouvre tout de suite les salons des matchs d'une semaine (`week`), sans attendre leur ouverture habituelle, quelques jours avant la semaine.",
   'veto.title': '**Veto — {fixture}** (BO{bestOf})',
   'veto.roles':
     '{chooser} choisit le côté de départ et commence le veto ; {other} choisit le côté en prolongation. Hôte : {host}.',
@@ -1571,6 +1578,14 @@ export const fr = {
   'web.admin.schedule.done.draft': 'Brouillon enregistré.',
   'web.admin.schedule.done.reshuffle': 'Nouveau tirage fait.',
   'web.admin.schedule.done.publish': 'Calendrier publié : les matchs sont créés.',
+  'web.admin.schedule.done.open-week':
+    'Semaine ouverte : ses salons de match arrivent dans la minute, si Ligo gère le serveur.',
+  'web.admin.schedule.error.no_matches': 'Aucun match cette semaine-là.',
+  'web.admin.schedule.openWeekHelp':
+    'Les salons des matchs d’une semaine s’ouvrent d’eux-mêmes quelques jours avant elle (réglage du serveur Discord). Vous pouvez ouvrir une semaine plus tôt.',
+  'web.admin.schedule.openedWeeks': 'Semaines ouvertes en avance : {weeks}.',
+  'web.admin.schedule.openWeekLabel': 'Semaine',
+  'web.admin.schedule.openWeek': 'Ouvrir ses salons maintenant',
   'web.admin.division.title': '{name} ({season})',
   'web.admin.division.newTitle': 'Nouvelle division : {season}',
   'web.admin.division.createButton': 'Ajouter la division',

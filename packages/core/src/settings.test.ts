@@ -92,7 +92,7 @@ const LFR_S3 = {
     map_pool: [],
     forfeits: { warning_at: 2, exclusion_at: 3 },
   },
-  stage: { seed: 20261019, weeks_off: [], extra_round_weeks: [], best_of: 1 },
+  stage: { seed: 20261019, weeks_off: [], extra_round_weeks: [], best_of: 1, opened_weeks: [] },
 };
 
 const accepts = (schema: z.ZodType, value: unknown) => schema.safeParse(value).success;
@@ -467,7 +467,14 @@ describe('stageConfigSchema', () => {
       weeks_off: [],
       extra_round_weeks: [],
       best_of: 1,
+      opened_weeks: [],
     });
+  });
+
+  it('keeps the play weeks staff opened before the usual day, each once', () => {
+    expect(stageConfigSchema.parse({ opened_weeks: [3, 1] }).opened_weeks).toEqual([3, 1]);
+    expect(accepts(stageConfigSchema, { opened_weeks: [0] })).toBe(false);
+    expect(accepts(stageConfigSchema, { opened_weeks: [2, 2] })).toBe(false);
   });
 
   it('plays its matches as a BO1 unless staff choose BO3 or BO5 (a National league)', () => {
@@ -481,6 +488,7 @@ describe('stageConfigSchema', () => {
       weeks_off: ['2027-02-17'],
       extra_round_weeks: ['2027-01-11'],
       best_of: 1,
+      opened_weeks: [],
     };
     expect(stageConfigSchema.parse(value)).toEqual(value);
   });
@@ -656,8 +664,9 @@ describe('JSON round trip', () => {
           weeks_off: fc.array(isoDay, { maxLength: 6 }),
           extra_round_weeks: fc.array(isoDay, { maxLength: 6 }),
           best_of: fc.constantFrom(1 as const, 3 as const, 5 as const),
+          opened_weeks: fc.uniqueArray(fc.integer({ min: 1, max: 60 }), { maxLength: 6 }),
         },
-        { requiredKeys: ['weeks_off', 'extra_round_weeks', 'best_of'] },
+        { requiredKeys: ['weeks_off', 'extra_round_weeks', 'best_of', 'opened_weeks'] },
       ),
     ],
   ] as const;

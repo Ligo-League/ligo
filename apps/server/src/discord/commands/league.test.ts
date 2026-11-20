@@ -293,7 +293,7 @@ describe('/league sync', () => {
     return setup;
   }
 
-  it('answers privately, after deferring: a dry run lists, a sync makes the five team roles', async () => {
+  it('answers privately, after deferring: a dry run lists, a sync makes the roles and channels', async () => {
     const { context, gateway } = managed(true);
     const interaction = fakeInteraction('league', sync(STAFF, true));
     await leagueCommand.execute(interaction, context);
@@ -303,7 +303,8 @@ describe('/league sync', () => {
     expect(gateway.changes).toEqual([]);
     const applied = fakeInteraction('league', sync(STAFF));
     await leagueCommand.execute(applied, context);
-    expect(applied.replies[0]?.content).toContain('Changements : 5 sur 5');
+    // Five team roles, then match 3's category and channel.
+    expect(applied.replies[0]?.content).toContain('Changements : 7 sur 7');
     const again = fakeInteraction('league', sync(STAFF, true));
     await leagueCommand.execute(again, context);
     expect(again.replies).toEqual([
@@ -322,5 +323,39 @@ describe('/league sync', () => {
     expect(replies[0]).toMatchObject({ ephemeral: true });
     expect(replies[0]?.content).not.toContain('Synchronisation');
     expect(gateway.changes).toEqual([]);
+  });
+});
+
+describe('/league week', () => {
+  const week = (n: number, who: FakeInput = STAFF): FakeInput => ({
+    ...who,
+    subcommand: 'week',
+    options: { week: n },
+  });
+
+  it('opens a week’s channels now, once, audited', async () => {
+    const { run, db } = session();
+    expect((await run(week(3)))[0]).toEqual({
+      content: 'Semaine 3 ouverte (Ligue 1) : ses salons de match arrivent dans la minute.',
+      ephemeral: true,
+    });
+    expect((await run(week(3)))[0]?.content).toBe('La semaine 3 était déjà ouverte (Ligue 1).');
+    const audits = db.select().from(schema.auditLog).all();
+    expect(audits.filter((row) => row.action === 'schedule.open_week')).toHaveLength(1);
+  });
+
+  it('says when no match is published that week, and refuses who is not staff', async () => {
+    const { run, db } = session();
+    expect((await run(week(9)))[0]?.content).toBe('Aucun match publié pour cette semaine.');
+    expect((await run(week(3, { ...STAFF, memberRoleIds: [] })))[0]?.content).toBe(
+      'Cette commande est réservée au staff de la ligue.',
+    );
+    expect(
+      db
+        .select()
+        .from(schema.auditLog)
+        .all()
+        .filter((row) => row.action === 'schedule.open_week'),
+    ).toEqual([]);
   });
 });

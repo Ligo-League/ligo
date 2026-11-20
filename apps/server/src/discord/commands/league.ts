@@ -10,6 +10,7 @@ import {
 } from '../../services/league-channels.ts';
 import { requireStaff } from '../../services/permissions.ts';
 import { syncLeague } from '../../services/reconciler.ts';
+import { openLeagueWeek } from '../../services/week-open.ts';
 import { syncReplyLines } from '../sync-text.ts';
 import { described, english, MAX_CHOICE_LENGTH, MAX_CHOICES, STAFF_ONLY } from './describe.ts';
 import type { Command, CommandContext, CommandInteraction } from './types.ts';
@@ -71,6 +72,28 @@ async function syncServer(interaction: CommandInteraction, context: CommandConte
   });
   await interaction.reply({
     content: syncReplyLines(locale, reply, dryRun).join('\n'),
+    ephemeral: true,
+  });
+}
+
+/** Opens a play week's match channels now (design doc section 6), for league staff. */
+async function openWeek(interaction: CommandInteraction, context: CommandContext): Promise<void> {
+  const { locale } = context;
+  const week = interaction.options.getInteger('week') ?? 0;
+  const reply = openLeagueWeek(context.db, interaction, week, context.now());
+  if (!reply.ok) {
+    const key =
+      reply.error === 'no_season' || reply.error === 'no_matches'
+        ? (`league.week.error.${reply.error}` as const)
+        : (`league.error.${reply.error}` as const);
+    await interaction.reply({ content: t(locale, key), ephemeral: true });
+    return;
+  }
+  await interaction.reply({
+    content: t(locale, reply.alreadyOpen ? 'league.week.alreadyOpen' : 'league.week.opened', {
+      week: String(week),
+      divisions: reply.divisions.join(', '),
+    }),
     ephemeral: true,
   });
 }
@@ -142,6 +165,21 @@ export const leagueCommand: Command = {
           },
         ],
       },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: 'week',
+        ...described('command.league.week.description'),
+        options: [
+          {
+            type: ApplicationCommandOptionType.Integer,
+            name: 'week',
+            ...described('command.league.week.option.week'),
+            required: true,
+            min_value: 1,
+            max_value: 200,
+          },
+        ],
+      },
     ],
   },
 
@@ -154,6 +192,10 @@ export const leagueCommand: Command = {
     }
     if (interaction.options.getSubcommand() === 'sync') {
       await syncServer(interaction, context);
+      return;
+    }
+    if (interaction.options.getSubcommand() === 'week') {
+      await openWeek(interaction, context);
       return;
     }
     const kind = interaction.options.getString('kind');

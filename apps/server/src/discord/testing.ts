@@ -282,7 +282,14 @@ export interface FakeGateway extends DiscordGateway {
   changes: { guildId: string; change: GuildChange; reason: string }[];
   /** Kinds of change Discord refuses, as for a role above the bot's. */
   refused: Set<GuildChange['kind']>;
+  /** Messages pinned, as `channelId:messageId`. */
+  pinned: string[];
+  /** The bot's user ID; null as before it connects. */
+  botId: string | null;
 }
+
+/** The fake bot's own user ID. */
+export const FAKE_BOT_ID = '900000000000000999';
 
 /** Applies one change to a snapshot as Discord would; returns the ID of what it created. */
 function changeSnapshot(guild: GuildSnapshot, change: GuildChange, freshId: () => string) {
@@ -400,6 +407,22 @@ export function fakeGateway(): FakeGateway {
     snapshots: new Map(),
     changes: [],
     refused: new Set(),
+    pinned: [],
+    botId: FAKE_BOT_ID,
+    pinMessage(channelId, messageId) {
+      if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
+      if (
+        !gateway.posted.some(
+          (entry) => entry.channelId === channelId && entry.messageId === messageId,
+        )
+      )
+        return Promise.reject(new Error('Unknown message'));
+      gateway.pinned.push(`${channelId}:${messageId}`);
+      return Promise.resolve();
+    },
+    botUserId() {
+      return gateway.botId;
+    },
     postMessage(channelId, message) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       const messageId = String(900_000_000_000_000_000n + BigInt(gateway.posted.length + 1));

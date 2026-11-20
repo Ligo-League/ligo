@@ -10,6 +10,7 @@ import { schema, type Db } from '@ligo/db';
 import { and, asc, count, countDistinct, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { openSeason } from './admin-seasons.ts';
+import { markWeekOpen, stageHasWeek } from './week-open.ts';
 import type { OrgUser } from './orgs.ts';
 
 // A season's schedule (phase 4; design doc section 5, "Scheduling"; M-45, maintainer,
@@ -61,7 +62,8 @@ export interface ScheduleDivision {
     /** The play week it holds in the draft, if any. */
     playWeek: number | null;
   }[];
-  published: { matches: number; weeks: number } | null;
+  /** Its matches and weeks, and the weeks whose channels staff opened early (`opened_weeks`). */
+  published: { matches: number; weeks: number; openedWeeks: number[] } | null;
 }
 
 export type ScheduleAdminView =
@@ -185,7 +187,11 @@ function divisionView(
       .from(match)
       .where(eq(match.stageId, stageRow.id))
       .get();
-    published = { matches: totals?.matches ?? 0, weeks: totals?.weeks ?? 0 };
+    published = {
+      matches: totals?.matches ?? 0,
+      weeks: totals?.weeks ?? 0,
+      openedWeeks: stageConfigSchema.parse(stageRow.configJson).opened_weeks,
+    };
   }
 
   return {
@@ -249,7 +255,8 @@ export type ScheduleReply =
         | 'no_draft'
         | 'too_few_teams'
         | 'too_many_teams'
-        | 'overrun';
+        | 'overrun'
+        | 'no_matches';
     };
 
 /** The division of this season, for its owner and staff, with its round robin stage if any. */
@@ -460,6 +467,30 @@ export function publishSchedule(
       },
       now,
     );
+  });
+  return { ok: true };
+}
+
+/**
+ * Opens a published division's play week now (design doc section 6): its match channels come on
+ * the reconciler's next check instead of `open_days_before_week` days before the week. Audited.
+ */
+export function openScheduleWeek(
+  db: Db,
+  user: OrgUser,
+  key: Key,
+  divisionId: number,
+  week: number,
+  now: number,
+): ScheduleReply {
+  const access = openDivision(db, user, key, divisionId);
+  if (!access.ok) return access;
+  const { stageRow } = access;
+  if (!stageRow || stageRow.status === 'draft') return { ok: false, error: 'no_draft' };
+  if (!Number.isInteger(week) || !stageHasWeek(db, stageRow.id, week))
+    return { ok: false, error: 'no_matches' };
+  db.transaction((tx) => {
+    markWeekOpen(tx, stageRow, week, user.playerId, now);
   });
   return { ok: true };
 }

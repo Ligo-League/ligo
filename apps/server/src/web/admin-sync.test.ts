@@ -79,15 +79,18 @@ describe('the sync page', () => {
     // The dry run changed nothing.
     expect(db.select().from(schema.discordObject).all()).toHaveLength(1);
     const done = where(await post(SYNC, {}));
-    expect(done).toBe(`${SYNC}?applied=6&failed=0`);
-    expect(db.select().from(schema.discordObject).all()).toHaveLength(5);
+    // Five team roles, and match 3's channel in its week's category: 7 objects and a forgotten one.
+    expect(done).toBe(`${SYNC}?applied=8&failed=0`);
+    expect(db.select().from(schema.discordObject).all()).toHaveLength(7);
     const after = await (await request(done ?? '')).text();
-    expect(after).toContain('Synchronisation faite. Changements : 6 ; refusés par Discord : 0.');
+    expect(after).toContain('Synchronisation faite. Changements : 8 ; refusés par Discord : 0.');
     expect(after).toContain('Le serveur est à jour');
     expect(after).toContain('Créé par Ligo : Alpha Esport');
-    expect(gateway.changes.map((entry) => entry.change.kind)).toEqual(
-      Array.from({ length: 5 }, () => 'create_role'),
-    );
+    expect(gateway.changes.map((entry) => entry.change.kind)).toEqual([
+      ...Array.from({ length: 5 }, () => 'create_role'),
+      'create_category',
+      'create_text_channel',
+    ]);
   });
 
   it('says when Discord does not answer', async () => {

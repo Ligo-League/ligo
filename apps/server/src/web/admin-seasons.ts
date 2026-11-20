@@ -12,6 +12,7 @@ import {
 import type { OrgUser } from '../services/orgs.ts';
 import {
   publishSchedule,
+  openScheduleWeek,
   reshuffleSchedule,
   saveScheduleDraft,
   scheduleAdmin,
@@ -34,7 +35,8 @@ import { staffCompetitions } from './roles.ts';
 // `/admin/:org/:comp/seasons/new`, then `/admin/:org/:comp/seasons/:id` with its status form,
 // and its divisions at `…/seasons/:id/divisions/new` and `…/seasons/:id/divisions/:division`.
 // Its schedule (phase 4, M-45) at `…/seasons/:id/schedule`, each division's draft saved, drawn
-// again or published by a POST to `…/schedule/:division/draft|reshuffle|publish`.
+// again or published by a POST to `…/schedule/:division/draft|reshuffle|publish`; once published,
+// `…/open-week` opens a week's match channels now.
 
 const userOf = (viewer: Viewer): OrgUser => ({
   playerId: viewer.playerId,
@@ -330,14 +332,25 @@ export function adminSeasonRoutes(app: Hono<Env>, kit: RouteKit): void {
             )
           : action === 'reshuffle'
             ? reshuffleSchedule(db, user, key, divisionId, newSeed, now)
-            : publishSchedule(
-                db,
-                user,
-                key,
-                divisionId,
-                { acceptOverrun: form.accept_overrun === 'yes' },
-                now,
-              );
+            : action === 'open-week'
+              ? openScheduleWeek(
+                  db,
+                  user,
+                  key,
+                  divisionId,
+                  typeof form.week === 'string' && /^\d{1,3}$/.test(form.week)
+                    ? Number(form.week)
+                    : 0,
+                  now,
+                )
+              : publishSchedule(
+                  db,
+                  user,
+                  key,
+                  divisionId,
+                  { acceptOverrun: form.accept_overrun === 'yes' },
+                  now,
+                );
       const page = `${pageOf(key)}/schedule`;
       const anchor = `#division-${String(divisionId)}`;
       if (reply.ok) return c.redirect(`${page}?done=${action}${anchor}`, 303);

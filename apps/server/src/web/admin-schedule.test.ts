@@ -107,6 +107,21 @@ describe('the schedule page', () => {
     expect(where(await post(`${base}/reshuffle`, {}))).toContain('?error=published');
   });
 
+  it('opens a published week’s channels early, and says which weeks are open', async () => {
+    const { request, post, base, asStaff, stageRow } = site();
+    await asStaff();
+    await post(`${base}/draft`, { best_of: '1' });
+    expect(where(await post(`${base}/open-week`, { week: '1' }))).toContain('?error=no_draft');
+    await post(`${base}/publish`, {});
+    expect(await (await request(SCHEDULE)).text()).toContain('Ouvrir ses salons maintenant');
+    expect(where(await post(`${base}/open-week`, { week: '2' }))).toContain('?done=open-week');
+    expect(stageRow()?.configJson).toMatchObject({ opened_weeks: [2] });
+    const page = await (await request(`${SCHEDULE}?done=open-week`)).text();
+    expect(page).toContain('Semaines ouvertes en avance : w2.');
+    expect(page).toContain('ses salons de match arrivent dans la minute');
+    expect(where(await post(`${base}/open-week`, { week: '99' }))).toContain('?error=no_matches');
+  });
+
   it('asks staff to tick the box before publishing past the season’s end', async () => {
     const { request, postAll, post, base, asStaff, matchCount } = site();
     await asStaff();

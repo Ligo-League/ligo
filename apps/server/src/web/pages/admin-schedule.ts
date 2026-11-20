@@ -6,7 +6,7 @@ import { csrfField, formatDay, pageOf, type Html, type Page } from '../layout.ts
 // A season's schedule in the admin panel (phase 4; design doc section 5, M-45): each division's
 // draft, with its weeks to mark and the calendar it gives, then publishing.
 
-export const SCHEDULE_DONE = ['draft', 'reshuffle', 'publish'] as const;
+export const SCHEDULE_DONE = ['draft', 'reshuffle', 'publish', 'open-week'] as const;
 export type ScheduleDone = (typeof SCHEDULE_DONE)[number];
 export const SCHEDULE_ERRORS = [
   'overrun',
@@ -15,6 +15,7 @@ export const SCHEDULE_ERRORS = [
   'invalid',
   'too_few_teams',
   'too_many_teams',
+  'no_matches',
 ] as const;
 export type ScheduleError = (typeof SCHEDULE_ERRORS)[number];
 
@@ -35,6 +36,7 @@ const ERROR_KEYS = {
   invalid: 'web.admin.schedule.error.invalid',
   too_few_teams: 'web.admin.schedule.problem.too_few_teams',
   too_many_teams: 'web.admin.schedule.problem.too_many_teams',
+  no_matches: 'web.admin.schedule.error.no_matches',
 } as const satisfies Record<ScheduleError, MessageKey>;
 
 /** A calendar date (`YYYY-MM-DD`) as the other pages show a day. */
@@ -151,6 +153,38 @@ function preview(locale: Locale, base: string, csrf: string, division: ScheduleD
     </form>`;
 }
 
+/** Opening a published week's match channels now, before their usual day. */
+function openWeekForm(
+  locale: Locale,
+  base: string,
+  csrf: string,
+  division: ScheduleDivision,
+): Html {
+  const published = division.published;
+  if (!published || published.weeks === 0) return html``;
+  const weeks = Array.from({ length: published.weeks }, (_, index) => index + 1);
+  return html`<form class="stack" method="post" action="${base}/${String(division.id)}/open-week">
+    ${csrfField(csrf)}
+    <p class="muted">${t(locale, 'web.admin.schedule.openWeekHelp')}</p>
+    ${
+      published.openedWeeks.length > 0
+        ? html`<p>
+            ${t(locale, 'web.admin.schedule.openedWeeks', {
+              weeks: published.openedWeeks.map((week) => `w${String(week)}`).join(', '),
+            })}
+          </p>`
+        : ''
+    }
+    <label
+      >${t(locale, 'web.admin.schedule.openWeekLabel')}
+      <select name="week">
+        ${weeks.map((week) => html`<option value="${String(week)}">w${String(week)}</option>`)}
+      </select></label
+    >
+    <button type="submit">${t(locale, 'web.admin.schedule.openWeek')}</button>
+  </form>`;
+}
+
 function divisionCard(
   locale: Locale,
   base: string,
@@ -182,6 +216,7 @@ function divisionCard(
           ${preview(locale, base, data.csrf, division)}`
         : ''
     }
+    ${division.status === 'published' ? openWeekForm(locale, base, data.csrf, division) : ''}
   </section>`;
 }
 

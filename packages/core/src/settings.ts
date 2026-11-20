@@ -41,7 +41,8 @@ export type TiebreakCriterion = (typeof TIEBREAK_CRITERIA)[number];
 export const UNRESOLVED_TIE_MODES = ['shared', 'tiebreak_match', 'staff_decision'] as const;
 export type UnresolvedTieMode = (typeof UNRESOLVED_TIE_MODES)[number];
 
-const hasNoDuplicates = (values: readonly string[]) => new Set(values).size === values.length;
+const hasNoDuplicates = (values: readonly (string | number)[]) =>
+  new Set(values).size === values.length;
 
 /**
  * Ranking criteria in order, then what to do when they all tie: `season.settings_json.tiebreak`
@@ -454,5 +455,10 @@ export const stageConfigSchema = z.strictObject({
   extra_round_weeks: z.array(z.iso.date()).default([]),
   /** Every match of the stage: BO1 in LFR's leagues, BO3 in a National league. */
   best_of: z.union([z.literal(1), z.literal(3), z.literal(5)]).default(1),
+  /** Play weeks whose match channels staff opened before the usual day (`/week publish`). */
+  opened_weeks: z
+    .array(z.int().min(1).max(200))
+    .refine(hasNoDuplicates, { error: 'A week can be opened only once.' })
+    .default([]),
 });
 export type StageConfig = z.infer<typeof stageConfigSchema>;
