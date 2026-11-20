@@ -38,6 +38,18 @@ M-xx : mainteneur).
   ferait dépasser 12 équipes dans une division est refusée (phase 3), et le calendrier n'est
   généré que pour une division dans la limite (phase 4).
 
+### 1.1 bis Staff de division
+
+- Une division peut avoir **son propre staff** : les membres d'un rôle du serveur Discord de la
+  ligue, choisi par le staff de la ligue. Ils gèrent les matchs de cette division (résultats,
+  contestations, forfaits, horaires), ses sanctions et les demandes de ses équipes.
+- Les réglages de la compétition, les saisons, les inscriptions et les fenêtres de mercato restent
+  au staff de la ligue, qui peut aussi tout faire dans chaque division.
+- Sans rôle choisi, le staff de la ligue gère la division.
+- **Statut** : Décidée (M-05, mainteneur, 20 novembre 2026).
+- **Appliquée par** : le rôle se choisit sur la page de la division dans l'administration ; chaque
+  action est vérifiée sur le serveur, rôle relu sur Discord (phase 4).
+
 ### 1.2 Format des matchs
 
 - Ligue 1 et Ligue 2 : **BO1**, une carte jouée après le veto.
@@ -54,6 +66,22 @@ M-xx : mainteneur).
 - Le staff met le pool à jour quand Ubisoft le modifie.
 - **Statut** : Décidée.
 - **Appliquée par** : le veto ne propose que les cartes du pool.
+
+### 1.4 Calendrier
+
+- Ligo tire le calendrier au sort pour chaque division : chaque équipe rencontre chaque autre une
+  fois (aller simple), **un tour par semaine**. Avec un nombre impair d'équipes, une équipe est
+  exempte à chaque tour.
+- Le staff peut retirer des **semaines sans match** (vacances) : les semaines de jeu les sautent
+  et sont numérotées à la suite (semaine 1, 2…). La dernière semaine en découle ; si elle dépasse
+  la fin prévue de la saison, Ligo prévient le staff, qui décale les dates ou fait jouer deux
+  tours une semaine. Avec 12 équipes, la saison régulière compte 11 semaines.
+- Une fois publié, le calendrier n'est plus tiré à nouveau : un changement est une modification
+  du match, enregistrée dans l'historique.
+- Le nombre de tours par semaine et le format aller simple ou aller-retour sont des réglages.
+- **Statut** : Décidée (M-45, mainteneur, 20 novembre 2026).
+- **Appliquée par** : la page du calendrier de la saison dans l'administration : brouillon par
+  division, nouveau tirage, semaines sans match, avertissement, puis publication (phase 4).
 
 ## 2. Équipes
 
@@ -208,6 +236,18 @@ M-xx : mainteneur).
   boutons du bot, et fait ses exceptions sur la page du mercato de l'équipe. Chaque mouvement
   validé est annoncé dans `#mercato`, et les pages de l'équipe et de la saison les listent, sans
   leur raison.
+
+### 2.6 Rôle Discord de l'équipe
+
+- Chaque équipe a **son rôle** sur le serveur Discord de la ligue. Le bot le donne aux joueurs de
+  l'effectif de la saison et aux responsables de l'équipe, et le retire à ceux qui partent.
+- Le rôle ouvre le salon de chaque match de l'équipe et son salon MOSS.
+- Le bot crée le rôle d'une équipe qui n'en a pas, à son nom et à ses couleurs. Le staff peut à
+  la place relier un rôle déjà existant à l'équipe. Le bot ne supprime jamais un rôle ou un salon
+  qu'il n'a pas créé.
+- **Statut** : Décidée (M-46, mainteneur, 20 novembre 2026).
+- **Appliquée par** : le bot, qui compare le serveur avec Ligo au démarrage, après chaque
+  changement et sur demande du staff, et corrige les écarts (phase 4).
 
 ## 3. Programmation des matchs
 

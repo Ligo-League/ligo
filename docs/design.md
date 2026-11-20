@@ -189,7 +189,7 @@ A player is one person on Ligo, whatever they play: one Discord account, one `pl
 **Who acts, by level** (maintainer, 14 November 2026)
 
 - **Teams, two levels:** roster officials act for one roster; club officials act for every roster of their club and manage the club itself.
-- **Leagues, three levels:** tier (division) staff, competition staff, and group staff (the whole `org`, for example MLB Group with LFR, LFV and LFRL). Each level can do what the levels below it can. Competition staff hold the staff role of the competition's Discord server. Group staff is the organisation's **owner**: the Ligo account that created it, stored in Ligo as its Discord user ID (`org.owner_discord_user_id`), not read from Discord, since an organisation spans several servers (maintainer, 19 November 2026; M-20). Tier staff come with phase 4, with each division's own Discord roles (M-05).
+- **Leagues, three levels:** tier (division) staff, competition staff, and group staff (the whole `org`, for example MLB Group with LFR, LFV and LFRL). Each level can do what the levels below it can. Competition staff hold the staff role of the competition's Discord server. Group staff is the organisation's **owner**: the Ligo account that created it, stored in Ligo as its Discord user ID (`org.owner_discord_user_id`), not read from Discord, since an organisation spans several servers (maintainer, 19 November 2026; M-20). Tier staff come with phase 4: a division's staff role is an existing role of the competition's server that staff pick on the division's admin page (`division.staff_role_id`, optional); its holders act for that division's matches, results, forfeits, times, sanctions and team requests, and competition staff keep the competition's settings, seasons, registrations and mercato windows (maintainer, 20 November 2026; M-05).
 
 **Schema v1**
 
@@ -231,7 +231,7 @@ competition    id, org_id, title, name, slug, participant_mode ('team'|'mixed'),
                ruleset_json, points_json, tiebreak_json, scheduling_json, stat_schema_version, theme_json
 season         id, competition_id, name, starts_on, ends_on, settings_json, status ('registration'|'active'|'cup'|'closed')
 division       id, season_id, name, kind ('league'|'regional'), level, region NULL, category_prefix,
-               results_channel_id NULL
+               results_channel_id NULL, staff_role_id NULL   -- staff_role_id: phase 4, M-05
 slot           id, division_id, team_id, status ('active'|'frozen'|'withdrawn'|'excluded'),
                forfeits, excluded_at NULL
 roster_entry   id, season_id, team_id, player_id, role ('player'|'sub'), captain, valid_from, valid_to NULL
@@ -241,6 +241,7 @@ mercato_window id, season_id, opens_at, closes_at, max_moves_per_team NULL, lock
 stage          id, season_id, division_id NULL, ord,
                kind ('round_robin'|'single_elim'|'double_elim'|'barrage'|'ladder'),
                config_json, status ('draft'|'published'|'closed')
+               -- round robin config_json: seed, legs (1|2), weeks_off (play weeks skip them; M-45)
 stage_entry    id, stage_id, slot_id NULL, player_id NULL, seed   -- match_slot.source_ref points at id
 
 -- matches and results
@@ -298,6 +299,11 @@ audit_log      id, actor_player_id NULL, actor_kind ('user'|'bot'|'system'), act
                before_json NULL, after_json NULL, at
 queue_post     id, entity ('request'|'match'|'dispute'), entity_id, channel_id, message_id, posted_at
                -- the bot's posts in the staff queue, to mark them handled from Discord or the website
+discord_object guild_id, kind ('team_role'|'week_category'|'archive_category'|'match_channel'|'moss_channel'),
+               key, discord_id, created_by_ligo, created_at, UNIQUE(guild_id, kind, key)
+               -- every role, category and channel the reconciler manages, found by its stored ID;
+               -- created_by_ligo is false for a role staff linked (M-46): Ligo never deletes those
+               -- (phase 4)
 image_cache    key PK, object_key, created_at
 ```
 
@@ -374,6 +380,10 @@ Every scoring rule belongs to the season (maintainer, 19 November 2026; M-40): `
 **Scheduling (`scheduling_json`)**
 
 1. **Round robin by the circle method.** Shuffle with a stored seed; pair position i with n − 1 − i; keep position 0 fixed and rotate the rest each round. `rounds_per_week: 1` gives 9 weeks for 10 teams. The rulebook's "4 weeks, 2 matches per week" is a Season 2 leftover to correct for Season 4.
+    - An odd count adds a rest: one team rests each round, and gets no match and no channel that week. Sides alternate so each team is side A about half the time (A and B are only an order: sides, host and bans come from the ranks, item 6).
+    - `legs` (1, or 2 for home and away) repeats the rounds with the sides swapped.
+    - **Weeks follow rounds** (maintainer, 20 November 2026; M-45). Each play week holds `rounds_per_week` rounds. On the draft, staff mark weeks off (a holiday break), kept in the stage's `config_json`; play weeks skip them and are numbered in order (`w1`, `w2`, …), each one's window coming from the season's first day (`weekWindow`). The last week follows; when it passes the season's `ends_on`, Ligo warns and staff move the dates or give a week two rounds.
+    - Staff generate a draft per division on the season's schedule page (preview, reshuffle with a new seed, weeks off), then publish it: the stage becomes `published` and its matches are created, audited. A published schedule is never generated again; changes are audited match edits.
 2. **Date negotiation.** Teams agree a date and time on the match page; the bot posts the proposal and the other team accepts or declines with a button, in Discord or on the page (`match_proposal`). A time must fall in the match's week or its extension; staff can set any time from the match page's staff panel. A team's new proposal replaces its pending one.
 3. **Extension and auto-scheduling.** When the planned week ends without an agreed time, the bot grants the extension and at once sets the match to Sunday 21:00 of the extension week (`auto_scheduled = true`), announcing both in the schedule channel. A time the teams agree afterwards replaces it. If the bot was off past that Sunday slot, it sets nothing and staff decide. (Confirmed for Season 4 by the maintainer, 14 November 2026: O-13. The announcement says the teams can still agree another time.)
 4. **Settings** (`scheduling_json`): `time_zone` (`Europe/Paris`), `extension_weeks` (1), `auto_slot` (`{ "weekday": 7, "time": "21:00" }`, or null for none). `packages/core/scheduling.ts` computes the period; a clock in the server checks every minute.
@@ -570,7 +580,7 @@ Not commands (maintainer, 16 November 2026, section 3): proposing a time, the ve
 
 **Match channel lifecycle**
 
-1. **Publish.** A scheduled job runs `open_days_before_week` days before each match week starts (default 2). It creates the week's category if missing, named from `category_template` (default `{division} · Semaine {week}`), and one channel per match named from `channel_template` (default `w{week}-{tagA}-{tagB}`). Both templates are format strings stored in the competition's settings, so a league may drop the week (`{tagA}-{tagB}`); the placeholders are `{week}`, `{tagA}`, `{tagB}` and `{division}` (the division's category prefix). A channel name follows Discord's rules (lower case, at most 100 characters). Ligo finds every channel by its stored ID, never by name (M-44, maintainer, 19 November 2026).
+1. **Publish.** A scheduled job runs `open_days_before_week` days before each match week starts (default 2). It creates the week's category if missing, named from `category_template` (default `{division} · Semaine {week}`), and one channel per match named from `channel_template` (default `w{week}-{tagA}-{tagB}`). Both templates are format strings stored in the competition's settings, so a league may drop the week (`{tagA}-{tagB}`); the placeholders are `{week}`, `{tagA}`, `{tagB}` and `{division}` (the division's category prefix). A channel name follows Discord's rules (lower case, at most 100 characters). Ligo finds every channel by its stored ID, never by name (M-44, maintainer, 19 November 2026). A category template without `{week}` (for example `Organisation {division}`, as LFR's server is laid out today) gives one category per division; a category holds 50 channels at most, so when one is full Ligo adds the next, numbered (`Organisation Ligue 1 (2)`).
 2. **Permissions.** @everyone is denied View Channel; team role A, team role B, the staff role and the bot are allowed.
 3. **Control message**, pinned:
     - fixture, play window and deadline;
@@ -594,8 +604,11 @@ Not commands (maintainer, 16 November 2026, section 3): proposing a time, the ve
 
 - **Desired state** comes from the database: team roles, role membership (rostered players and team staff with linked accounts), categories, match and MOSS channels with their permission overwrites, archive state.
 - **Actual state** is fetched from the guild. The diff produces ordered operations: create roles, categories and channels, edit overwrites, add or remove member roles, move or archive channels.
-- It runs on startup, after any change to desired state, and through `/admin sync`.
-- Every created object's ID is stored and names are never used for lookup, so manual renames or deletions are repaired on the next run.
+- It runs on startup, after any change to desired state, and through `/admin sync`; the website's sync page shows the same diff as a dry run before applying it.
+- Every created object's ID is stored in `discord_object` and names are never used for lookup, so manual renames or deletions are repaired on the next run.
+- **Team roles** (maintainer, 20 November 2026; M-46): Ligo creates a role for each roster that has none in the server, named and coloured after it. Staff may link an existing role to a roster instead, on the admin page; Ligo then manages who holds it. Holders are the season lineup's players and the roster's officials with a Discord account.
+- **Never deletes what it did not create.** The diff only touches objects in `discord_object`; a linked role is never deleted, and channels and categories made by hand are left alone.
+- **One Ligo per server.** Two Ligo instances (local development and production) managing one server would fight over it; local development uses its own test server (`docs/setup.md`).
 
 **Bot setup**
 
@@ -667,6 +680,8 @@ Ligo is a tool for esport leagues with divisions that happens to host MLB Group 
 | `/admin/:org/new`              | organisation owner      | Creates a competition: game, name, slug and participant mode, fixed afterwards; settings from defaults (phase 3h) |
 | `/admin/:org/:comp/rules`      | organisation owner, competition staff | The competition's rules: the points and tie-breakers new seasons copy, map score, veto, promotion, registration, mercato, stats, dispute reasons (phase 3h) |
 | `/admin/:org/:comp/seasons/:id` | organisation owner, competition staff | A season (created at `…/seasons/new`): name, dates, points and tie-breakers, forfeit scores and thresholds under the scoring lock (M-40), map pool; its status, forward only (phase 3h) |
+| `/admin/:org/:comp/seasons/:id/schedule` | organisation owner, competition staff | Each division's round robin: a draft (preview, reshuffle, weeks off, the warning when the last week passes the season's end), then publish; a published schedule is not generated again (phase 4, M-45) |
+| `/admin/:org/:comp/discord/sync` | organisation owner, competition staff | What the reconciler would change in the league's server (dry run), then apply it; team roles created or linked (phase 4, M-46) |
 | `/admin/:org/:comp/seasons/:id/divisions/:division` | organisation owner, competition staff | A division (added at `…/divisions/new`): name, kind, level, region, Discord category prefix, results channel among the league server's text channels, where the bot posts a notice first (phase 3h) |
 | `/admin/:org/:comp`            | organisation owner, competition staff | The competition's general settings: name, result validation, scheduling, team requests, team roles (phase 3h) |
 | `/admin/:org`                  | organisation owner      | Name, language, description, Discord invitation, logo, handover, its competitions (phase 3h) |
@@ -1411,6 +1426,10 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Positioning           | League first, tournaments second: the operating system of a league and a data tool for its teams, never a copy of Strave (section 1)   | You           |
 | Paid tier             | An idea for later: premium adds features and never makes a free one worse; league running and team improvement stay free (section 18)   | You           |
 | Social images         | One design rendered in every frame (square, portrait, landscape, preview); a posting mode per network: `manual` by default with a free share button, `approve` or `auto`; X only with the league's own developer app and a monthly cap, €0 by default (section 11) | You |
+| Calendar              | Weeks follow rounds: `rounds_per_week` rounds per play week, weeks off marked by staff, the last week follows, a warning past the season's end; a rest for an odd count (20 November 2026, M-45) | You |
+| Team roles            | Ligo creates a role per roster that has none, or staff link an existing one; Ligo never deletes what it did not create (20 November 2026, M-46) | You |
+| Division staff        | An existing server role per division, picked by staff; its holders act for that division only (20 November 2026, M-05) | You |
+| One Ligo per server   | Local development uses its own Discord test server; production keeps the staging server until LFR's (20 November 2026) | You |
 
 **Still open**
 

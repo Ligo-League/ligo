@@ -80,7 +80,10 @@ section 16.
   (phase 4).
 - **Until answered:** Ligo gives Ligue 2 weeks 10 and 11 after the season's planned end, and
   computes no promotion or relegation.
-- **Answer:**
+- **Answer (partial, maintainer, 20 November 2026), from Season 4:** weeks follow rounds (M-45):
+  a 12-team division plays 11 weeks, plus any weeks off, and Ligo warns staff when the last week
+  passes the season's end date. Still open for the owner: Season 3's rounds 10 and 11, and the
+  places that go up, play a barrage or go down with 12 teams.
 
 #### O-23 · Replacement teams in Ligue 2
 
@@ -330,22 +333,6 @@ section 16.
 - **Until answered:** Season 3 is the only real table in the tests.
 - **Answer:**
 
-#### M-05 · Several staff roles
-
-- **Question:** depending on O-08, should the platform store several staff roles with different
-  rights, or keep one?
-- **Why it matters:** a schema change before the bot joins the real server.
-- **Until answered:** one staff role per server.
-- **Answer (partial, maintainer, 14 November 2026):** three levels: tier (division) staff,
-  competition staff, and group staff (MLB Group, every competition). Each level can do what the
-  levels below it can. Still open: how tier and group staff are held. Proposal: a Discord role
-  per level in each competition's server (a division's role, the competition's role), and for the
-  group a list of people kept in Ligo, since the group spans several servers.
-- **Answer (partial, maintainer, 19 November 2026):** group staff is the organisation's owner,
-  stored in Ligo (M-20). Division (tier) staff come with phase 4, with each division's own
-  Discord roles; until then, competition staff act for every division. Still open for phase 4:
-  how a division's staff role is set.
-
 #### M-06 · Removing a sanction
 
 - **Question:** should a sanction be revocable, or only offset by another one?
@@ -532,6 +519,46 @@ section 16.
 - **Answer:**
 
 ## Answered
+
+#### M-45 · How the rounds of a round robin become weeks
+
+- **Question:** a division's round robin has n − 1 rounds (n with an odd count), which may not
+  fit the season's dates: 12 teams need 11 rounds, Season 4's placeholder dates hold 10 weeks,
+  and holidays may need weeks off. How do rounds map to weeks?
+- **Answer (maintainer, 20 November 2026):** weeks follow rounds. Each play week holds
+  `rounds_per_week` rounds (1 in LFR). On the draft calendar, staff mark weeks off (a holiday
+  break); the play weeks skip them, and the last week follows. When it passes the season's end
+  date, Ligo warns, and staff move the dates or give a week two rounds. Weeks are numbered by play
+  week (`w1`, `w2`, …), not by calendar week. With an odd count, one team rests each round.
+- **Where:** design doc section 5, "Scheduling"; built in phase 4 (4-1, 4-4).
+
+#### M-46 · Team roles on a server that already has them
+
+- **Question:** LFR's real server already has a role per team, made by hand. When Ligo manages a
+  server's team roles, does it create its own, adopt the existing ones, or both?
+- **Answer (maintainer, 20 November 2026):** Ligo creates a role for each roster that has none,
+  named and coloured after it. On the admin page, staff may link an existing role to a roster
+  instead; Ligo then manages who holds it. Ligo never deletes a role or a channel it did not
+  create.
+- **Where:** design doc section 6, "Reconciler"; built in phase 4 (4-6).
+
+#### M-05 · Several staff roles
+
+- **Question:** depending on O-08, should the platform store several staff roles with different
+  rights, or keep one?
+- **Answer (partial, maintainer, 14 November 2026):** three levels: tier (division) staff,
+  competition staff, and group staff (MLB Group, every competition). Each level can do what the
+  levels below it can.
+- **Answer (partial, maintainer, 19 November 2026):** group staff is the organisation's owner,
+  stored in Ligo (M-20). Division (tier) staff come with phase 4, with each division's own
+  Discord roles; until then, competition staff act for every division.
+- **Answer (maintainer, 20 November 2026):** on the division's admin page, staff pick an existing
+  role of the competition's server as the division's staff role (`division.staff_role_id`,
+  optional). Its holders act for that division only: its matches, results, forfeits, times and
+  sanctions, and its teams' requests. The competition's settings, seasons, registrations and
+  mercato windows stay with competition staff. Without a role, competition staff act for the
+  division, as today.
+- **Where:** design doc sections 4 and 7; built in phase 4 (4-6).
 
 #### M-44 · When match channels open and close, and their names
 

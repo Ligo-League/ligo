@@ -1009,6 +1009,31 @@ Every day after that:
 - **A new VPS:** steps 2 to 4, then `/opt/ligo/deploy/restore.sh`, which brings back the
   database and the files and starts Ligo. It refuses if a database is already there.
 
+## 57. A test server of your own for local development
+
+From phase 4, Ligo creates and changes roles and channels in the league's Discord server. Two
+Ligos managing one server, each with its own database, would fight over it: production
+(`ligoleague.eu`) keeps the staging server, and `pnpm dev` moves to a server of its own. Do this
+once, before step 4-5 of phase 4.
+
+1. **Create the server.** In Discord: **+** (Add a Server) > **Create My Own** > **For me and my
+   friends**, named for example `Ligo Dev`.
+2. **A Staff role:** Server Settings > **Roles** > **Create Role**, named `Staff`; give it to
+   yourself (Members > your name > **+**). Copy the server's ID and the role's ID (right-click >
+   **Copy ID**, with Developer Mode on, step 3.4).
+3. **Invite your staging bot** (the application `pnpm dev` uses, not the production one): on
+   your local site, open `/mlb-group/lfr/discord` and follow its install link, or use the invite
+   address `pnpm discord:register` prints. Pick `Ligo Dev`.
+4. **Local `.env`:** set `DISCORD_GUILD_ID` to the new server's ID and `DISCORD_STAFF_ROLE_ID` to
+   the new role's ID. Leave the production values on the VPS as they are.
+5. **Commands:** `pnpm discord:register` registers the slash commands on `Ligo Dev`.
+6. **Move your local LFR** to the new server: start `pnpm dev`, log in on
+   `http://localhost:3000`, open `/mlb-group/lfr/discord`, choose `Ligo Dev` and its Staff role,
+   and save. Then pick the bot's channels again on `/mlb-group/lfr/discord/channels`, since moving
+   forgets the old server's.
+7. **Remove the staging bot from the staging server** (Server Settings > Members > the bot >
+   **Kick**), so only the production bot answers there and each command shows once.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |
