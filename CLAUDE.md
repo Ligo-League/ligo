@@ -106,7 +106,8 @@ These are summaries; the design doc (sections 4, 5, 8, 9) has the details.
 - **Results count once validated.** In LFR the opponent's confirmation validates
   (`result_validation: 'opponent'`, since 14 November 2026); a disputed result waits for staff.
   Other leagues may need staff for every result (`'staff'`). A result needs a screenshot
-  `evidence` row.
+  `evidence` row, and, where `moss.required` is on (LFR), every player's MOSS file uploaded on
+  the website: only staff may validate without one, with a reason (M-47, phase 5).
 - **Only staff can record a forfeit.** Forfeit score is a season setting (7–0 in LFR).
   Exclusion applies the 50% rule (design doc section 5).
 - **Every staff mutation writes `audit_log` in the same transaction.**

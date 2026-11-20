@@ -304,10 +304,11 @@ audit_log      id, actor_player_id NULL, actor_kind ('user'|'bot'|'system'), act
                before_json NULL, after_json NULL, at
 queue_post     id, entity ('request'|'match'|'dispute'), entity_id, channel_id, message_id, posted_at
                -- the bot's posts in the staff queue, to mark them handled from Discord or the website
-discord_object guild_id, kind ('team_role'|'week_category'|'archive_category'|'moss_category'|'match_channel'|'moss_channel'),
+discord_object guild_id, kind ('team_role'|'week_category'|'archive_category'|'match_channel'),
                key, discord_id, created_by_ligo, created_at, UNIQUE(guild_id, kind, key)
                -- every role, category and channel the reconciler manages, found by its stored ID;
-               -- created_by_ligo is false for a role staff linked (M-46): Ligo never deletes those
+               -- created_by_ligo is false for a role staff linked (M-46): Ligo never deletes those;
+               -- MOSS kinds were dropped (M-47, migration 0031)
                -- (phase 4)
 image_cache    key PK, object_key, created_at
 ```
@@ -317,6 +318,7 @@ image_cache    key PK, object_key, created_at
 - Standings are never stored. They are computed from `validated` and `forfeit` matches plus `sanction` point deltas, then cached by a version counter.
 - `game.score_a` and `score_b` are the official score. For replay games they equal the count of `game_round` winners per side.
 - In LFR a result counts as soon as the opponent confirms it: both teams agree it is right, so staff are not needed (maintainer, 14 November 2026; the Season 3 rulebook had the administration validate). A disputed result waits for staff. `ruleset_json.result_validation` is `'opponent'` in LFR; a league that wants staff to validate every result sets `'staff'`. When the confirmation validates, the report's post in the staff queue is marked as needing nothing.
+- **MOSS before validation** (maintainer, 20 November 2026; M-47; phase 5). When `ruleset_json.moss.required` is on (LFR; off by default), a result cannot be validated until every player who played the match (from its lineup, substitutes who came in included) has a MOSS file on the website (`evidence` kind `moss`). The opponent's confirmation then waits for the last file; the teams can never validate without them. League staff may validate anyway with a written reason (a file lost in a crash), audited, and sanction the team apart. A forfeit needs none.
 - Only staff can record a forfeit. A team can never claim a forfeit win itself.
 - A player can be on one roster per competition at a time, and staff members cannot be on any roster in a competition they staff.
 - Every staff mutation writes `audit_log` in the same transaction.
@@ -585,7 +587,7 @@ Not commands (maintainer, 16 November 2026, section 3): proposing a time, the ve
 
 **Match channel lifecycle**
 
-What Ligo manages in a league's server is `ruleset_json.discord`, off by default (`manage: false`, `moss: false`): a league turns it on once its server is ready. It holds the team role name (`team_role_template`, `{name}` or `{tag}`; `team_roles_mentionable`), `open_days_before_week` (2), `archive_hours_after_result` (48), and the name templates below: `channel_template`, `category_template`, `archive_category_template` (`Archives · {division}`), `moss_channel_template` (`moss-{tag}`) and `moss_category_template` (`MOSS · {division}`). A template using a placeholder it may not is refused (phase 4).
+What Ligo manages in a league's server is `ruleset_json.discord`, off by default (`manage: false`): a league turns it on once its server is ready. It holds the team role name (`team_role_template`, `{name}` or `{tag}`; `team_roles_mentionable`), `open_days_before_week` (2), `archive_hours_after_result` (48), and the name templates below: `channel_template`, `category_template`, `archive_category_template` (`Archives · {division}`). A template using a placeholder it may not is refused (phase 4).
 
 
 1. **Publish.** A match's channel opens `open_days_before_week` days before its week starts (default 2), or as soon as staff open the week early (`/league week`, or the schedule page; kept in the stage's `opened_weeks`). The reconciler's check every 30 seconds notices the moment. It creates the week's category if missing, named from `category_template` (default `{division} · Semaine {week}`), and one channel per match named from `channel_template` (default `w{week}-{tagA}-{tagB}`). Both templates are format strings stored in the competition's settings, so a league may drop the week (`{tagA}-{tagB}`); the placeholders are `{week}`, `{tagA}`, `{tagB}` and `{division}` (the division's category prefix). A channel name follows Discord's rules (lower case, at most 100 characters). Ligo finds every channel by its stored ID, never by name (M-44, maintainer, 19 November 2026). A category template without `{week}` (for example `Organisation {division}`, as LFR's server is laid out today) gives one category per division; a category holds 50 channels at most, so when one is full Ligo adds the next, numbered (`Organisation Ligue 1 (2)`).
@@ -604,14 +606,14 @@ What Ligo manages in a league's server is `ruleset_json.discord`, off by default
 
 **Other managed channels**
 
-- `moss-<tag>`: one private channel per team (team role and staff only), replacing the rulebook's "Moss-\[équipe\]". The bot posts a receipt there when a MOSS file is uploaded on the website.
+- No MOSS channel (maintainer, 20 November 2026; M-47): the rulebook's "Moss-\[équipe\]" channel is replaced by uploads on the website, since Discord's attachment limit is below a usual MOSS file.
 - `#mercato`: the bot posts each approved transfer using the rulebook's form fields, with its `roster-move` image. One such channel per league; these posts mention nobody, since a mercato can bring many moves.
 - Results channel: every result that counts (validated reports, staff entries and corrections, forfeits). A division can have its own (`division.results_channel_id`), else the league's applies; several divisions may share one. A new season copies each division's channel from the previous season's division of the same level (phase 4).
 - Mixed-team matches (FRFL): each lineup member is allowed individually, and the channel is named `m{n}-{yyyy-mm-dd}`.
 
 **Reconciler**
 
-- **Desired state** comes from the database: team roles, role membership (rostered players and team staff with linked accounts), categories, match and MOSS channels with their permission overwrites, archive state.
+- **Desired state** comes from the database: team roles, role membership (rostered players and team staff with linked accounts), categories, match channels with their permission overwrites, archive state.
 - **Actual state** is fetched from the guild. The diff produces ordered operations: create roles, categories and channels, edit overwrites, add or remove member roles, move or archive channels.
 - It runs once the bot is connected, then every 10 minutes, and through `/league sync`. Between those runs, a check every 30 seconds reads only the database: a league whose desired state changed since its last sync (a lineup, an official, a linked role, whichever page or command made the change) is synced then; the website's sync page (`/admin/:org/:comp/discord/sync`) shows the same diff as a dry run before applying it. Only for a league that turned `ruleset.discord.manage` on; one run at a time per server.
 - It makes the changes one by one and stores each created object's ID at once, so a refusal halfway (a role above the bot's, a missing permission) leaves nothing unknown: what needed the missing object is reported, and the next run finishes. Each run that changes something writes one `audit_log` row with its counts (actor `bot`, or the staff member who asked).
@@ -798,7 +800,7 @@ Replays are parsed in the uploader's browser by a WebAssembly build of the title
 3. The page shows the lobbies found, map, players matched to lineups, unknown players and round winners. The player confirms.
 4. `POST /api/replays` sends the normalised JSON, hashes and parser version. The server stores `replay_file` rows (`unverified`) and runs grouping and stitching at once; they are cheap on JSON.
 5. `POST /api/replays/sign` returns presigned R2 PUT URLs. The browser uploads raw files 3 at a time with progress, and warns before the tab is closed. Each completed file enqueues `verify_replay`.
-6. The same page takes the MOSS file and score screenshots, stored under `evidence/` in R2. MOSS is visible to staff only.
+6. The same page takes the MOSS files, one per player who played (the player, or a team official for them), and score screenshots, stored under `evidence/` in R2. MOSS is visible to staff only, never in Discord (M-47): Discord's attachment limit is below a usual MOSS file. They are only kept in case of suspected cheating: every MOSS file of a season is deleted when staff close it, or earlier, `moss.retention_days` after its upload when the league sets it (null by default). Staff may hold a match's MOSS files during an investigation, with a reason, audited: held files stay until staff release them.
 
 **Server jobs**
 
@@ -1275,7 +1277,7 @@ Volume `/data` holds the SQLite database and the image cache.
 
 `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `SESSION_SECRET`, `PUBLIC_URL`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `DATABASE_PATH`, `STORAGE_DIR` (files the server keeps until R2, such as score screenshots).
 
-**R2 bucket layout:** `replays/<match_id>/<sha256>.rec` (raw files, kept one season), `evidence/<match_id>/` (screenshots, MOSS; staff-only access through the server), `backups/db/`, `transcripts/<season_id>/`, `logos/`. The bucket is private; CORS allows only `PUT` from `PUBLIC_URL`.
+**R2 bucket layout:** `replays/<match_id>/<sha256>.rec` (raw files, kept one season), `evidence/<match_id>/` (screenshots, MOSS; staff-only access through the server; MOSS deleted at season close or after `moss.retention_days`, unless held, M-47), `backups/db/`, `transcripts/<season_id>/`, `logos/`. The bucket is private; CORS allows only `PUT` from `PUBLIC_URL`.
 
 **Deploy** (maintainer, 19 November 2026)
 
@@ -1324,7 +1326,7 @@ Pure league logic gets exhaustive unit and property tests. Replay handling gets 
 | Verification           | Tampered JSON fixtures                                                    | Server re-parse flags edited kills, scores and players as `mismatch`                                                                                                            |
 | Stitching              | Synthetic segment fixtures                                                | Single lobby; crash mid-round; full restart; swapped team indices; extra rounds after the end; more lobbies than recorded re-hosts                                              |
 | Stat grid              | Validation per title                                                      | Range checks, kills/deaths consistency, goals = score                                                                                                                           |
-| Reconciler             | Fake guild states                                                         | Fresh server, renamed channel, deleted role, missing permission, archived week, MOSS channels                                                                                   |
+| Reconciler             | Fake guild states                                                         | Fresh server, renamed channel, deleted role, missing permission, archived week                                                                                   |
 | Database               | Migrations                                                                | From empty, and from the previous release's snapshot                                                                                                                            |
 | End to end             | Staging Discord server and staging bucket                                 | Publish a week, report, confirm and validate a result, upload a re-hosted map, see standings update                                                                             |
 | Map veto | Official competitive pool; BLAST 2025 sequences (BO1 alternate bans down to one map), and a coin toss for the decider's side in BO3 and BO5 | You |
@@ -1348,7 +1350,7 @@ The work is eleven phases; phase 1 alone replaces score7's standings. Season 3 r
     - team requests (2c): teams change their own officials through requests that staff approve or refuse, every staff-queue post recorded. Accepted when a full week of results comes in through teams and is validated by staff with no manual table edits; that week runs during the Season 3 shadow run, alongside phase 3, instead of blocking it (maintainer, 14 November 2026).
 3. **Website.** Discord login; public standings, fixtures, team, player and match pages; the rulebook page; registration with rules acceptance and stats consent; mercato; the manual stat grid; a page for every action of phases 1 and 2 (result reports and confirmation, the validation queue, result entry, forfeits, sanctions, exclusions, team officials and their requests, league channels, match times and the veto), with one page of every request waiting that marks the Discord posts as handled; the admin panel (section 7), with every setting phases 1 to 3 have, Discord channels included. The bot drops the commands section 3 no longer gives it (maintainer, 16 November 2026). Done when Season 4 registrations are taken on the website, and every action of phases 1 and 2 can be done there.
     - **Then the look** (maintainer, 19 November 2026): with phase 3 done and the netcup VPS set up, the website gets its complete appearance from `design-proposals/` (proposal E), and the images the bot posts in Discord or for social media are made to look like the website. Two features come with it, since both show Ligo's look outside its own pages (maintainer, 19 November 2026): the images page in `manual` mode (section 11), and widgets other websites embed in an iframe under `/embed/...` (a league's standings or fixtures on a club's or the league's own site; M-43). Every other page refuses to be framed (`frame-ancestors 'none'`), so only `/embed/...` may be.
-4. **Schedule and channels.** Round-robin generation, `/season publish`, weekly channels, MOSS channels, the reconciler across the league servers, team roles; their settings (categories, channel templates, team roles) in the admin panel. Done when Season 4's weeks are generated, published, run and archived automatically.
+4. **Schedule and channels.** Round-robin generation, `/season publish`, weekly channels, the reconciler across the league servers, team roles; their settings (categories, channel templates, team roles) in the admin panel. Done when Season 4's weeks are generated, published, run and archived automatically.
 5. **R6 replays.** WebAssembly build of the fork, browser uploader, normaliser, raw upload and server verification, stitching and review, match cards. Done when a re-hosted map uploaded by both teams stitches automatically and verifies, and a tampered JSON is caught.
 6. **Season end and cups.** `closeSeason()` with promotion, relegation and barrages (format pending); Coupe de France bracket with BO1 → BO3 → BO5; tie-break matches. Done when Season 4 closes and the cup runs to a final on the platform.
 7. **FRFL mixed mode.** Lineups per match, balanced proposals, OpenSkill, player standings, per-user channels. Done when one FRFL week runs end to end.
@@ -1417,7 +1419,7 @@ Most configuration is now settled by the Season 3 rulebook and your answers. Mos
 | Rosters               | 5 players and up to 2 substitutes, one of them captain; one owner, up to 3 managers and 1 coach (settings)                                | Rulebook, you |
 | Team requests         | Teams change their own officials by request; staff approve additions and handovers within 24 h, with a reason to refuse; removals apply at once | You           |
 | Mercato               | Settings (O-35, M-22): always open by default; LFR announced windows only, 3 moves per team, every incoming player blocked 24 h; a swap is one move; consent through the roster's link; staff exceptions | Rulebook, you |
-| MOSS                  | Mandatory for every match                                                                                                                 | Rulebook      |
+| MOSS                  | Mandatory for every match, one file per player who played, uploaded on the website; no validation without them except by staff with a reason; deleted at season close or sooner (20 November 2026, M-47) | Rulebook, you |
 | Replays | Mandatory from Season 4, at least one team per match; accepting public player stats is required at registration | You |
 | Platform structure    | Ligo's own home at `/`, games as entry points, `/:org/:comp/:season`, global clubs and teams, a league alone is an organisation with one competition, Ligo's mark always in the footer (section 7) | You |
 | Player stats and privacy | Sharing player stats is in Ligo's Privacy Policy and terms of use, accepted by every account; a hard requirement, not a setting (16 November 2026) | You |

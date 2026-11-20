@@ -532,6 +532,27 @@ section 16.
   week (`w1`, `w2`, …), not by calendar week. With an odd count, one team rests each round.
 - **Where:** design doc section 5, "Scheduling"; built in phase 4 (4-1, 4-4).
 
+#### M-47 · MOSS files: where, how long, and before validation
+
+- **Question:** the rulebook asks for MOSS files in a `Moss-[équipe]` Discord channel, which the
+  design doc kept as one private channel per team. Discord's attachment limit is below a usual
+  MOSS file (two screens). Where do they go, how long are they kept, and what do they block?
+- **Answer (maintainer, 20 November 2026):**
+  - MOSS files are uploaded on the website, never in Discord: no MOSS channels.
+  - One file per player who played the match (substitutes who came in included); the player
+    uploads it, or a team official for them. Never public; staff only.
+  - A match cannot be validated until every MOSS file is there. The teams can never validate
+    without them; league staff may, with a written reason, audited. A forfeit needs none.
+  - A setting, `moss.required`: on for LFR, off by default for a new league.
+  - They are only kept in case of suspected cheating: every MOSS file of a season is deleted
+    when staff close the season, or earlier, a number of days after its upload, when the league
+    sets one (off by default).
+  - Staff may hold a match's MOSS files during an investigation (with a reason, audited): held
+    files are not deleted until staff release them.
+- **Where:** design doc sections 4, 6 and 7; the MOSS channels are dropped from phase 4 (4-8);
+  the upload, the check before validation, deletion and holding come with phase 5, with the
+  replay uploader.
+
 #### M-46 · Team roles on a server that already has them
 
 - **Question:** LFR's real server already has a role per team, made by hand. When Ligo manages a

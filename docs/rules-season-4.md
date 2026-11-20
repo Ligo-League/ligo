@@ -245,7 +245,7 @@ M-xx : mainteneur).
 
 - Chaque équipe a **son rôle** sur le serveur Discord de la ligue. Le bot le donne aux joueurs de
   l'effectif de la saison et aux responsables de l'équipe, et le retire à ceux qui partent.
-- Le rôle ouvre le salon de chaque match de l'équipe et son salon MOSS.
+- Le rôle ouvre le salon de chaque match de l'équipe.
 - Le bot crée le rôle d'une équipe qui n'en a pas, à son nom et à ses couleurs. Le staff peut à
   la place relier un rôle déjà existant à l'équipe. Le bot ne supprime jamais un rôle ou un salon
   qu'il n'a pas créé.
@@ -527,7 +527,17 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 
 ## 10. Divers
 
-- **MOSS** obligatoire pour chaque match ; les fichiers MOSS ne sont jamais publics.
+- **MOSS** obligatoire pour chaque match : chaque joueur qui a joué envoie son fichier MOSS **sur
+  le site** (lui-même, ou un responsable de l'équipe pour lui), jamais sur Discord. Les fichiers
+  MOSS ne sont jamais publics : seul le staff les voit.
+- **Un match ne peut pas être validé tant qu'il manque un fichier MOSS.** Les équipes ne peuvent
+  pas passer outre ; le staff de la ligue peut valider malgré tout, avec un motif écrit (par
+  exemple un fichier perdu après un plantage), et peut sanctionner l'équipe à part. Un forfait
+  n'en demande pas.
+- Les fichiers MOSS ne servent qu'en cas de soupçon de triche : ils sont supprimés à la clôture
+  de la saison, ou plus tôt, un nombre de jours après leur envoi, si la ligue le règle. Le staff
+  peut garder ceux d'un match pendant une enquête (avec un motif) ; ils ne sont supprimés qu'une
+  fois l'enquête close.
 - Un membre du staff de la ligue ne joue pas dans le championnat.
 - Un joueur banni pour triche l'est sur toutes les ligues du groupe (LFR, LFV, LFRL).
 - **Replays obligatoires** : pour chaque match, au moins une équipe envoie les replays de
@@ -539,8 +549,9 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
   exemple plus de 5 kills par manche) ; un écart entre les kills d'une équipe et les morts de
   l'autre est signalé au staff. Les replays remplacent toujours la saisie manuelle.
 - **Statut** : Règlement S3 ; replays obligatoires décidés ; saisie manuelle des statistiques
-  décidée (M-39, mainteneur, 19 novembre 2026). MOSS et replays sur le site en phase 5,
-  statistiques manuelles en phase 3.
+  décidée (M-39, mainteneur, 19 novembre 2026) ; MOSS sur le site, avant la validation, et leur
+  conservation décidés (M-47, mainteneur, 20 novembre 2026). MOSS et replays sur le site en
+  phase 5 (réglage `moss.required`, activé pour la LFR), statistiques manuelles en phase 3.
 
 ---
 

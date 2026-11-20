@@ -1056,7 +1056,7 @@ it on a season of your own, or approve a few registrations into Season 4 first (
 ## 59. Phase 4-5: syncing the league's server
 
 Ligo can now compare the league's Discord server with what it should hold and put it right:
-the team roles (4-6), match channels (4-7) and MOSS channels (4-8) come next, so for now there
+the team roles (4-6) and match channels (4-7) come next, so for now there
 is nothing to create. It acts only for a league whose Discord settings turn it on
 (`ruleset.discord.manage`; the switch comes on the competition's admin page in 4-10).
 
