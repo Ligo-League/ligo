@@ -76,6 +76,30 @@ services:
     stop_grace_period: 30s
     logging: *logging
 
+  # The files Litestream does not cover (design doc section 13), copied to R2 by
+  # deploy/backup-storage.sh each night and brought back by deploy/restore.sh. Started only by
+  # those scripts (the `tools` profile).
+  files:
+    image: rclone/rclone:1.75.2
+    profiles: [tools]
+    user: '1000:1000'
+    environment:
+      RCLONE_CONFIG_R2_TYPE: s3
+      RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+      RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?set R2_ACCESS_KEY_ID in deploy/.env}
+      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?set R2_SECRET_ACCESS_KEY in deploy/.env}
+      RCLONE_CONFIG_R2_ENDPOINT: ${R2_ENDPOINT:-https://${R2_ACCOUNT_ID:?set R2_ACCOUNT_ID in deploy/.env}.r2.cloudflarestorage.com}
+      # The token reaches this bucket only: rclone must not try to create it.
+      RCLONE_CONFIG_R2_NO_CHECK_BUCKET: 'true'
+      R2_BUCKET: ${R2_BUCKET:?set R2_BUCKET in deploy/.env}
+      # The remote is all in these variables: no config file, and rclone's cache in /tmp since
+      # user 1000 has no home here.
+      RCLONE_CONFIG: /dev/null
+      XDG_CACHE_HOME: /tmp
+    volumes:
+      - ${DATA_DIR:-/srv/ligo/data}:/data
+    logging: *logging
+
 volumes:
   caddy_data:
   caddy_config:

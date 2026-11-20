@@ -963,6 +963,54 @@ after the first new migration, for example
 database gets no copy. Ligo never deletes these copies: remove old ones yourself when you no
 longer need them. To go back to one, stop the server and copy it over `data/ligo.db`.
 
+## 56. Running Ligo on the VPS
+
+The files are in `deploy/` (its README lists them). Everything below runs on the VPS, except
+step 1 and the logo copy in step 5. Replace `<vps>` with `ligoleague.eu` once the DNS points at
+the VPS, or with its IPv4 address before.
+
+1. **Push `main`** to GitHub: the VPS deploys what GitHub has.
+2. **Your SSH key on root.** If netcup gave you a root password: `ssh-copy-id root@<vps>`, then
+   check that `ssh root@<vps>` logs in without asking for it.
+3. **Prepare the VPS, once,** as root. Read the script before running it:
+   ```
+   curl -fsSL https://raw.githubusercontent.com/Ligo-League/ligo/main/deploy/setup-vps.sh -o setup-vps.sh
+   less setup-vps.sh
+   bash setup-vps.sh
+   ```
+   It installs Docker, creates the `ligo` user with your key, clones the repository into
+   `/opt/ligo`, turns on the firewall (22, 80, 443), turns off password logins and sets up the
+   nightly copy of the files to R2. From now on, log in as `ligo@<vps>`.
+4. **The secrets:** `cd /opt/ligo/deploy && cp .env.example .env && chmod 600 .env`, then fill
+   `.env` in with `nano .env` (the values of section 54). They stay in that file only.
+5. **The prepared logos**, from your PC (they are not in git):
+   `scp -r data/assets/render ligo@<vps>:/srv/ligo/data/assets/`
+6. **Start:** `/opt/ligo/deploy/update.sh`. The first time, it builds the image (a few minutes)
+   and Caddy gets the HTTPS certificate. It ends with "Deployed …" once the database and Discord
+   answer.
+7. **Fill the database** (a new one is empty), in `/opt/ligo/deploy`:
+   `docker compose run --rm server node packages/db/src/cli/seed.ts`
+8. **The slash commands** on the server of `DISCORD_GUILD_ID`:
+   `docker compose run --rm --no-deps server node apps/server/src/discord/register.ts`
+9. Open `https://ligoleague.eu` and log in with Discord.
+10. **Rehearse a restore** (once now, then once a season): `/opt/ligo/deploy/restore.sh --rehearse`
+    restores R2's copy into a new folder of `/srv/ligo/data` and checks it, without touching the
+    live database. Delete that folder afterwards.
+
+Every day after that:
+
+- **Deploy a change:** push `main`, then `/opt/ligo/deploy/update.sh`. It refuses if files were
+  changed by hand on the VPS.
+- **Logs:** `cd /opt/ligo/deploy && docker compose logs -f server` (`caddy`, `litestream` alike).
+- **Backups:** Litestream copies each change to R2 within seconds (`backups/db`), one full copy
+  a night, kept 30 days; the screenshots, logos and the copies before migrations go each night
+  at 03:30 (`backups/files`). `systemctl list-timers ligo-backup-files` shows the next one, and
+  `/opt/ligo/deploy/backup-storage.sh` runs one now.
+- **A new VPS:** steps 2 to 4, then `/opt/ligo/deploy/restore.sh`, which brings back the
+  database and the files and starts Ligo. It refuses if a database is already there.
+
+## If something goes wrong
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
