@@ -47,8 +47,12 @@ M-xx : mainteneur).
   au staff de la ligue, qui peut aussi tout faire dans chaque division.
 - Sans rôle choisi, le staff de la ligue gère la division.
 - **Statut** : Décidée (M-05, mainteneur, 20 novembre 2026).
-- **Appliquée par** : le rôle se choisit sur la page de la division dans l'administration ; chaque
-  action est vérifiée sur le serveur, rôle relu sur Discord (phase 4).
+- **Appliquée par** : le rôle se choisit sur la page de la division dans l'administration (ni
+  @everyone, ni le rôle du staff de la ligue, ni celui d'une équipe) ; chaque action est vérifiée
+  sur le serveur, rôle relu sur Discord (phase 4). Le staff de division voit sur `/staff` les
+  résultats, contestations et demandes de ses divisions, et sur `/staff/sanctions` leurs équipes ;
+  il a le panneau du staff sur la page de leurs matchs, et les boutons du bot pour eux. La coupe,
+  qui mêle les divisions, reste au staff de la ligue.
 
 ### 1.2 Format des matchs
 

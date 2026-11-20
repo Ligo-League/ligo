@@ -13,7 +13,7 @@ import {
   type SanctionsFlash,
 } from './pages/staff-sanctions.ts';
 import type { RouteKit } from './route-kit.ts';
-import { staffCompetitions, webActor } from './roles.ts';
+import { staffScopes, webActor } from './roles.ts';
 
 // `/staff/sanctions` (phase 3f-4; design doc section 3): league staff give sanctions, exclude a
 // team, reinstate it on appeal and switch its automatic exclusion, through the same services as
@@ -41,7 +41,8 @@ export function staffSanctionsRoutes(app: Hono<Env>, kit: RouteKit): void {
     if (!deps.login) return notFound(c);
     const viewer = c.get('viewer');
     if (!viewer) return c.redirect('/auth/login?next=/staff/sanctions', 303);
-    const competitions = await staffCompetitions(db, deps.roles, viewer, deps.now());
+    // League staff, and a division's staff for their divisions' teams (M-05).
+    const competitions = await staffScopes(db, deps.roles, viewer, deps.now());
     if (competitions.length === 0) return forbidden(c);
     const leagues: LeagueSanctions[] = [];
     for (const competition of competitions) {

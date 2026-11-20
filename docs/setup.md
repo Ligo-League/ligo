@@ -1089,6 +1089,19 @@ it. A player who is not on the server is listed by the sync, not an error.
 - **The bot's role must sit above the team roles** (Server Settings > Roles, drag it up), or
   Discord refuses to give them; the sync page lists what Discord refused.
 
+## 61. Phase 4-6: division staff
+
+A division can have its own staff (M-05): the holders of a role of the league's server, picked
+on the division's admin page (`/admin/mlb-group/lfr/seasons/<id>/divisions/<id>`, **Rôle du staff
+de la division**). They handle that division's matches, results, disputes, forfeits, times,
+sanctions and its teams' requests, on the website and with the bot's buttons; the league's staff
+keep everything else. @everyone, the league's staff role and a team's role are refused.
+
+To try it: create a role (say `Staff L1`) in the server, pick it for Ligue 1, give it to a
+second account, and log in with it. `/staff` shows Ligue 1 only, a Ligue 1 match page has the
+staff panel, a Ligue 2 match page and `/admin` do not. A role taken away in Discord stops counting
+within a minute.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |

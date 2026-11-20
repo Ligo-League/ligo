@@ -1,8 +1,8 @@
 import { schema, type Db } from '@ligo/db';
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import type { DiscordGateway } from '../discord/gateway.ts';
 import type { MemberCheck } from '../services/registration-players.ts';
-import type { Actor } from '../services/permissions.ts';
+import { divisionStaffOf, type Actor } from '../services/permissions.ts';
 
 // Who is league staff on the website: the members holding the staff role in the league's Discord
 // server, asked of the bot, so Discord stays the only staff list (maintainer, 14 November 2026).
@@ -93,6 +93,59 @@ export async function staffCompetitions(
     if (held.includes(guild.staffRoleId)) staff.push({ id: guild.id, name: guild.name });
   }
   return staff;
+}
+
+export interface StaffScope {
+  id: number;
+  name: string;
+  /**
+   * Null for league staff, who see the whole competition; else the divisions whose staff role
+   * the user holds (M-05), by ID, with their names, who see those divisions' matches and teams.
+   */
+  divisions: { id: number; name: string }[] | null;
+}
+
+/**
+ * Where the user is staff: each competition whose staff role they hold, and each where they hold
+ * only some divisions' staff roles, with those divisions. One question to Discord per server.
+ */
+export async function staffScopes(
+  db: Pick<Db, 'select'>,
+  roles: RoleReader,
+  user: WebUser,
+  now: number,
+): Promise<StaffScope[]> {
+  const { discordUserId } = user;
+  if (discordUserId === null) return [];
+  const guilds = db
+    .select({
+      guildId: schema.leagueGuild.guildId,
+      staffRoleId: schema.leagueGuild.staffRoleId,
+      id: schema.competition.id,
+      name: schema.competition.name,
+    })
+    .from(schema.leagueGuild)
+    .innerJoin(schema.competition, eq(schema.leagueGuild.competitionId, schema.competition.id))
+    .orderBy(asc(schema.competition.name))
+    .all();
+  const scopes: StaffScope[] = [];
+  for (const guild of guilds) {
+    const held = await roles(guild.guildId, discordUserId, now);
+    if (held.includes(guild.staffRoleId)) {
+      scopes.push({ id: guild.id, name: guild.name, divisions: null });
+      continue;
+    }
+    const ids = divisionStaffOf(db, guild.id, held);
+    if (ids.length === 0) continue;
+    const divisions = db
+      .select({ id: schema.division.id, name: schema.division.name })
+      .from(schema.division)
+      .where(inArray(schema.division.id, ids))
+      .orderBy(asc(schema.division.level), asc(schema.division.name))
+      .all();
+    scopes.push({ id: guild.id, name: guild.name, divisions });
+  }
+  return scopes;
 }
 
 /**

@@ -87,7 +87,7 @@ import { staffPage } from './pages/staff.ts';
 import { teamPageView } from './pages/team.ts';
 import {
   createMemberCheck,
-  staffCompetitions,
+  staffScopes,
   webActor,
   type RoleReader,
   type WebUser,
@@ -840,7 +840,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     },
     status: 200 | 400 = 200,
   ) => {
-    const staffOf = await staffCompetitions(db, deps.roles, viewer, deps.now());
+    const scopes = await staffScopes(db, deps.roles, viewer, deps.now());
     const stored = gameProfileOf(db, viewer.playerId);
     const game = gameProfileForm(locale, {
       values: state.game?.values ?? {
@@ -857,8 +857,13 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       c,
       mePage(locale, {
         profile,
-        staffOf: staffOf.map((competition) => competition.name),
-        admin: staffOf.length > 0 || ownedOrgs(db, viewer).length > 0,
+        staffOf: scopes.map((scope) =>
+          scope.divisions
+            ? `${scope.name} (${scope.divisions.map((division) => division.name).join(', ')})`
+            : scope.name,
+        ),
+        // The admin panel is the league staff's: a division's staff have none of it (M-05).
+        admin: scopes.some((scope) => scope.divisions === null) || ownedOrgs(db, viewer).length > 0,
         countries: countryChoices(locale),
         csrf: viewer.csrf,
         flash: state.flash,
@@ -931,19 +936,26 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     if (!login) return notFound(c);
     const viewer = c.get('viewer');
     if (!viewer) return c.redirect('/auth/login?next=/staff', 303);
-    const competitions = await staffCompetitions(db, deps.roles, viewer, deps.now());
+    const competitions = await staffScopes(db, deps.roles, viewer, deps.now());
     if (competitions.length === 0) return forbidden(c);
     const leagues = [];
     for (const competition of competitions) {
       const league = findLeague(db, competition.id);
       if (!league) continue;
+      const divisions = competition.divisions?.map((division) => division.id) ?? null;
+      // Registrations and mercato moves stay the league staff's (M-05).
+      const whole = divisions === null;
       leagues.push({
-        name: competition.name,
+        name: whole
+          ? competition.name
+          : `${competition.name} (${(competition.divisions ?? []).map((d) => d.name).join(', ')})`,
         path: findCompetitionById(db, competition.id)?.path ?? null,
         timeZone: league.competition.schedulingJson.time_zone,
-        queue: staffQueue(db, league),
-        registrations: await registrationsToApprove(db, memberOf, league.competition.id),
-        moves: movesToDecide(db, league.competition.id),
+        queue: staffQueue(db, league, divisions),
+        registrations: whole
+          ? await registrationsToApprove(db, memberOf, league.competition.id)
+          : [],
+        moves: whole ? movesToDecide(db, league.competition.id) : [],
       });
     }
     const done = oneOf(STAFF_DONE, c.req.query('done'));

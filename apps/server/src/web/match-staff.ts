@@ -66,10 +66,10 @@ export function matchStaffRoutes(
   const { db, locale } = deps;
   const discord = { db, gateway: deps.gateway, assets: deps.assets, locale };
 
-  /** The viewer as league staff of the match's league, or null. */
+  /** The viewer as staff of the match's league or of its division (M-05), or null. */
   const staffOf = async (viewer: Viewer, found: LeagueMatch): Promise<Actor | null> => {
     const actor = await webActor(db, deps.roles, viewer, found.competitionId, deps.now());
-    return actor && requireStaff(db, actor).ok ? actor : null;
+    return actor && requireStaff(db, actor, { matchId: found.id }).ok ? actor : null;
   };
 
   /** The staff panel, for league staff of the match's league; nothing for anyone else. */
