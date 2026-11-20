@@ -299,7 +299,7 @@ audit_log      id, actor_player_id NULL, actor_kind ('user'|'bot'|'system'), act
                before_json NULL, after_json NULL, at
 queue_post     id, entity ('request'|'match'|'dispute'), entity_id, channel_id, message_id, posted_at
                -- the bot's posts in the staff queue, to mark them handled from Discord or the website
-discord_object guild_id, kind ('team_role'|'week_category'|'archive_category'|'match_channel'|'moss_channel'),
+discord_object guild_id, kind ('team_role'|'week_category'|'archive_category'|'moss_category'|'match_channel'|'moss_channel'),
                key, discord_id, created_by_ligo, created_at, UNIQUE(guild_id, kind, key)
                -- every role, category and channel the reconciler manages, found by its stored ID;
                -- created_by_ligo is false for a role staff linked (M-46): Ligo never deletes those
@@ -607,7 +607,7 @@ Not commands (maintainer, 16 November 2026, section 3): proposing a time, the ve
 - It runs on startup, after any change to desired state, and through `/admin sync`; the website's sync page shows the same diff as a dry run before applying it.
 - Every created object's ID is stored in `discord_object` and names are never used for lookup, so manual renames or deletions are repaired on the next run.
 - **Team roles** (maintainer, 20 November 2026; M-46): Ligo creates a role for each roster that has none in the server, named and coloured after it. Staff may link an existing role to a roster instead, on the admin page; Ligo then manages who holds it. Holders are the season lineup's players and the roster's officials with a Discord account.
-- **Never deletes what it did not create.** The diff only touches objects in `discord_object`; a linked role is never deleted, and channels and categories made by hand are left alone.
+- **Never deletes what it did not create.** The diff only touches objects in `discord_object`; a linked role is never deleted, and channels and categories made by hand are left alone. It deletes a role or a category it made once nothing needs it (a category only when nothing else is inside), but a channel only once released, when its transcript is saved (season end): a mistake in the desired state can never erase a conversation. An overwrite made by hand stays; one for a Ligo team role that no longer belongs on the channel (a slot handed over) is removed.
 - **One Ligo per server.** Two Ligo instances (local development and production) managing one server would fight over it; local development uses its own test server (`docs/setup.md`).
 
 **Bot setup**
