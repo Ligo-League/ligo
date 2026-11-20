@@ -1034,6 +1034,25 @@ once, before step 4-5 of phase 4.
 7. **Remove the staging bot from the staging server** (Server Settings > Members > the bot >
    **Kick**), so only the production bot answers there and each command shows once.
 
+## 58. Phase 4-4: a season's schedule
+
+The schedule page draws each division's round robin and creates its matches (design doc
+section 5, M-45). On your local database, Season 4 has its divisions and no teams yet, so try
+it on a season of your own, or approve a few registrations into Season 4 first (section 24).
+
+1. As the organisation's owner or with the staff role, open the season in the admin panel
+   (`/admin/mlb-group/lfr/seasons/<id>`) and follow **Calendrier**.
+2. For a division with at least two teams, click **Créer le brouillon**. The preview lists each
+   week's matches, with the team that rests when the count is odd, and the regular season's last
+   day.
+3. Tick **Sans match** for a holiday week, or **Un tour de plus** for a week that holds one
+   more round, then **Enregistrer le brouillon**: the play weeks move, and their numbers
+   (`w1`, `w2`…) follow. **Nouveau tirage** draws again; the weeks you ticked stay.
+4. When the last week ends after the season's last day, the page says so: move the season's
+   dates, add a round to a week, or tick the box and publish anyway.
+5. **Publier le calendrier** creates the matches; the division then shows how many, over how
+   many weeks, and the draft's buttons are gone. A published schedule cannot be drawn again.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |

@@ -218,7 +218,10 @@ export function seasonPageView(locale: Locale, data: SeasonPageData): Page {
                 )}
               </ul>`
         }
-        <p><a href="${base}/divisions/new">${t(locale, 'web.admin.season.newDivision')}</a></p>
+        <p>
+          <a href="${base}/divisions/new">${t(locale, 'web.admin.season.newDivision')}</a> ·
+          <a href="${base}/schedule">${t(locale, 'web.admin.schedule.link')}</a>
+        </p>
       </section>
       ${lockNotice(locale, view)}
       <form class="card stack" method="post" action="${base}">
