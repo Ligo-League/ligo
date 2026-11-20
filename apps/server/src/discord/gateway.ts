@@ -1,8 +1,12 @@
+import type { ChannelPermission, GuildSnapshot } from '@ligo/core';
 import {
   ChannelType,
   DiscordAPIError,
+  OverwriteType,
   PermissionFlagsBits,
+  type CategoryChannel,
   type Client,
+  type PermissionOverwriteOptions,
   type TextChannel,
 } from 'discord.js';
 import { isDiscordAttachmentUrl } from '../services/attachments.ts';
@@ -58,6 +62,52 @@ export interface DiscordGateway {
     guildId: string,
     username: string,
   ): Promise<{ id: string; displayName: string } | null>;
+  /**
+   * What the reconciler compares (design doc section 6): the server's roles, categories, text
+   * channels with their permission overwrites, and members with their roles. Null when the bot
+   * is not in the server. Rejects when Discord is unreachable.
+   */
+  guildSnapshot(guildId: string): Promise<GuildSnapshot | null>;
+  /**
+   * Makes one change the reconciler decided, with `reason` in the server's audit log. Returns
+   * the ID of what it created, null otherwise. Rejects when Discord refuses (a missing
+   * permission, a role above the bot's) or is unreachable.
+   */
+  changeGuild(guildId: string, change: GuildChange, reason: string): Promise<string | null>;
+}
+
+/** One change to a server, every object named by its Discord ID. */
+export type GuildChange =
+  | { kind: 'create_role'; name: string; color: number | null; mentionable: boolean }
+  | {
+      kind: 'edit_role';
+      roleId: string;
+      name?: string;
+      color?: number | null;
+      mentionable?: boolean;
+    }
+  | { kind: 'create_category'; name: string }
+  | {
+      kind: 'create_text_channel';
+      name: string;
+      parentId: string;
+      overwrites: ResolvedOverwrite[];
+    }
+  /** A category or a text channel: a new name, and for a text channel a new category. */
+  | { kind: 'edit_channel'; channelId: string; name?: string; parentId?: string }
+  | ({ kind: 'set_overwrite'; channelId: string } & ResolvedOverwrite)
+  | { kind: 'remove_overwrite'; channelId: string; targetId: string }
+  | { kind: 'add_member_role'; userId: string; roleId: string }
+  | { kind: 'remove_member_role'; userId: string; roleId: string }
+  /** A category or a text channel. */
+  | { kind: 'delete_channel'; channelId: string }
+  | { kind: 'delete_role'; roleId: string };
+
+export interface ResolvedOverwrite {
+  targetId: string;
+  targetType: 'role' | 'member';
+  allow: readonly ChannelPermission[];
+  deny: readonly ChannelPermission[];
 }
 
 export interface GuildTextChannel {
@@ -79,6 +129,36 @@ const isDiscordError = (error: unknown, ...codes: number[]) =>
   error instanceof DiscordAPIError && typeof error.code === 'number' && codes.includes(error.code);
 
 const DOWNLOAD_TIMEOUT_MS = 10_000;
+
+/** Ligo's permission names and Discord's flags (`@ligo/core` CHANNEL_PERMISSIONS). */
+const PERMISSION_FLAGS = {
+  view_channel: 'ViewChannel',
+  send_messages: 'SendMessages',
+  read_message_history: 'ReadMessageHistory',
+  attach_files: 'AttachFiles',
+  embed_links: 'EmbedLinks',
+  add_reactions: 'AddReactions',
+  pin_messages: 'PinMessages',
+} as const satisfies Record<ChannelPermission, keyof typeof PermissionFlagsBits>;
+const PERMISSIONS = Object.entries(PERMISSION_FLAGS) as [
+  ChannelPermission,
+  (typeof PERMISSION_FLAGS)[ChannelPermission],
+][];
+const flagsOf = (names: readonly ChannelPermission[]) =>
+  names.map((name) => PermissionFlagsBits[PERMISSION_FLAGS[name]]);
+/** The whole overwrite: what it allows, what it denies, and every other flag Ligo sets unset. */
+const overwriteOptions = (
+  allow: readonly ChannelPermission[],
+  deny: readonly ChannelPermission[],
+) =>
+  Object.fromEntries(
+    PERMISSIONS.map(([name, flag]) => [
+      flag,
+      allow.includes(name) ? true : deny.includes(name) ? false : null,
+    ]),
+  ) as PermissionOverwriteOptions;
+const overwriteType = (type: 'role' | 'member') =>
+  type === 'role' ? OverwriteType.Role : OverwriteType.Member;
 
 /** Reads a stream to the end, giving up as soon as it holds more than `maxBytes`. */
 export async function readCapped(
@@ -229,6 +309,155 @@ export function createDiscordGateway(current: () => Client): DiscordGateway {
       } catch (error) {
         if (isDiscordError(error, UNKNOWN_INVITE)) return null;
         throw error;
+      }
+    },
+
+    async guildSnapshot(guildId) {
+      let guild;
+      try {
+        guild = await current().guilds.fetch(guildId);
+      } catch (error) {
+        if (isDiscordError(error, UNKNOWN_GUILD)) return null;
+        throw error;
+      }
+      const [roles, channels, members] = await Promise.all([
+        guild.roles.fetch(),
+        guild.channels.fetch(),
+        guild.members.fetch(),
+      ]);
+      const listed = [...channels.values()].filter((channel) => channel !== null);
+      return {
+        everyoneId: guild.id,
+        roles: [...roles.values()].map((role) => ({
+          id: role.id,
+          name: role.name,
+          color: role.colors.primaryColor === 0 ? null : role.colors.primaryColor,
+          mentionable: role.mentionable,
+        })),
+        categories: listed
+          .filter(
+            (channel): channel is CategoryChannel => channel.type === ChannelType.GuildCategory,
+          )
+          .map((channel) => ({ id: channel.id, name: channel.name })),
+        channels: listed
+          .filter((channel): channel is TextChannel => channel.type === ChannelType.GuildText)
+          .map((channel) => ({
+            id: channel.id,
+            name: channel.name,
+            parentId: channel.parentId,
+            overwrites: [...channel.permissionOverwrites.cache.values()].map((overwrite) => ({
+              id: overwrite.id,
+              type: overwrite.type === OverwriteType.Role ? ('role' as const) : ('member' as const),
+              allow: PERMISSIONS.filter(([, flag]) =>
+                overwrite.allow.has(PermissionFlagsBits[flag]),
+              ).map(([name]) => name),
+              deny: PERMISSIONS.filter(([, flag]) =>
+                overwrite.deny.has(PermissionFlagsBits[flag]),
+              ).map(([name]) => name),
+            })),
+          })),
+        members: [...members.values()].map((member) => ({
+          id: member.id,
+          // Every member holds @everyone, whose ID is the server's.
+          roleIds: [...member.roles.cache.keys()].filter((id) => id !== guild.id),
+        })),
+      };
+    },
+
+    async changeGuild(guildId, change, reason) {
+      const guild = await current().guilds.fetch(guildId);
+      const channel = async (id: string) => {
+        const found = await guild.channels.fetch(id);
+        if (!found) throw new Error(`Channel ${id} is gone`);
+        return found;
+      };
+      switch (change.kind) {
+        case 'create_role': {
+          const role = await guild.roles.create({
+            name: change.name,
+            colors: { primaryColor: change.color ?? 0 },
+            mentionable: change.mentionable,
+            reason,
+          });
+          return role.id;
+        }
+        case 'edit_role': {
+          await guild.roles.edit(change.roleId, {
+            ...(change.name === undefined ? {} : { name: change.name }),
+            ...(change.color === undefined ? {} : { colors: { primaryColor: change.color ?? 0 } }),
+            ...(change.mentionable === undefined ? {} : { mentionable: change.mentionable }),
+            reason,
+          });
+          return null;
+        }
+        case 'create_category': {
+          const created = await guild.channels.create({
+            name: change.name,
+            type: ChannelType.GuildCategory,
+            reason,
+          });
+          return created.id;
+        }
+        case 'create_text_channel': {
+          const created = await guild.channels.create({
+            name: change.name,
+            type: ChannelType.GuildText,
+            parent: change.parentId,
+            permissionOverwrites: change.overwrites.map((overwrite) => ({
+              id: overwrite.targetId,
+              type: overwriteType(overwrite.targetType),
+              allow: flagsOf(overwrite.allow),
+              deny: flagsOf(overwrite.deny),
+            })),
+            reason,
+          });
+          return created.id;
+        }
+        case 'edit_channel': {
+          const found = await channel(change.channelId);
+          if (found.type === ChannelType.GuildCategory) {
+            if (change.name !== undefined) await found.setName(change.name, reason);
+          } else if (found.type === ChannelType.GuildText) {
+            await found.edit({
+              ...(change.name === undefined ? {} : { name: change.name }),
+              // Moving keeps the channel's own overwrites: they are what Ligo manages.
+              ...(change.parentId === undefined
+                ? {}
+                : { parent: change.parentId, lockPermissions: false }),
+              reason,
+            });
+          }
+          return null;
+        }
+        case 'set_overwrite': {
+          const found = await channel(change.channelId);
+          if (found.type !== ChannelType.GuildText) throw new Error('Not a text channel');
+          // `create` replaces the whole overwrite of that role or member.
+          await found.permissionOverwrites.create(
+            change.targetId,
+            overwriteOptions(change.allow, change.deny),
+            { type: overwriteType(change.targetType), reason },
+          );
+          return null;
+        }
+        case 'remove_overwrite': {
+          const found = await channel(change.channelId);
+          if (found.type !== ChannelType.GuildText) throw new Error('Not a text channel');
+          await found.permissionOverwrites.delete(change.targetId, reason);
+          return null;
+        }
+        case 'add_member_role':
+          await guild.members.addRole({ user: change.userId, role: change.roleId, reason });
+          return null;
+        case 'remove_member_role':
+          await guild.members.removeRole({ user: change.userId, role: change.roleId, reason });
+          return null;
+        case 'delete_channel':
+          await (await channel(change.channelId)).delete(reason);
+          return null;
+        case 'delete_role':
+          await guild.roles.delete(change.roleId, reason);
+          return null;
       }
     },
   };

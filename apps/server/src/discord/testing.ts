@@ -1,4 +1,5 @@
 import { openTestDatabase } from '@ligo/db/testing';
+import type { GuildSnapshot } from '@ligo/core';
 import type {
   AutocompleteChoice,
   AutocompleteInteraction,
@@ -13,7 +14,7 @@ import type {
 } from './commands/types.ts';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeAssetStore, PNG_HEADER_FOR_TESTS } from '../assets/store.ts';
-import type { DiscordGateway, GuildTextChannel } from './gateway.ts';
+import type { DiscordGateway, GuildChange, GuildTextChannel } from './gateway.ts';
 
 type OptionValue =
   | string
@@ -271,6 +272,112 @@ export interface FakeGateway extends DiscordGateway {
   invites: Map<string, { guildId: string; expiresAt: number | null }>;
   /** Members found by username, by `guildId:username` (lower case). */
   usernames: Map<string, { id: string; displayName: string }>;
+  /** What the reconciler reads of each server; `changeGuild` changes it as Discord would. */
+  snapshots: Map<string, GuildSnapshot>;
+  /** Every change made to a server, in order. */
+  changes: { guildId: string; change: GuildChange; reason: string }[];
+  /** Kinds of change Discord refuses, as for a role above the bot's. */
+  refused: Set<GuildChange['kind']>;
+}
+
+/** Applies one change to a snapshot as Discord would; returns the ID of what it created. */
+function changeSnapshot(guild: GuildSnapshot, change: GuildChange, freshId: () => string) {
+  const channel = (id: string) => {
+    const found = guild.channels.find((candidate) => candidate.id === id);
+    if (!found) throw new Error(`Unknown channel ${id}`);
+    return found;
+  };
+  const member = (id: string) => {
+    const found = guild.members.find((candidate) => candidate.id === id);
+    if (!found) throw new Error(`Unknown member ${id}`);
+    return found;
+  };
+  switch (change.kind) {
+    case 'create_role': {
+      const id = freshId();
+      guild.roles.push({
+        id,
+        name: change.name,
+        color: change.color,
+        mentionable: change.mentionable,
+      });
+      return id;
+    }
+    case 'edit_role': {
+      const role = guild.roles.find((candidate) => candidate.id === change.roleId);
+      if (!role) throw new Error(`Unknown role ${change.roleId}`);
+      if (change.name !== undefined) role.name = change.name;
+      if (change.color !== undefined) role.color = change.color;
+      if (change.mentionable !== undefined) role.mentionable = change.mentionable;
+      return null;
+    }
+    case 'create_category': {
+      const id = freshId();
+      guild.categories.push({ id, name: change.name });
+      return id;
+    }
+    case 'create_text_channel': {
+      const id = freshId();
+      guild.channels.push({
+        id,
+        name: change.name,
+        parentId: change.parentId,
+        overwrites: change.overwrites.map((overwrite) => ({
+          id: overwrite.targetId,
+          type: overwrite.targetType,
+          allow: [...overwrite.allow],
+          deny: [...overwrite.deny],
+        })),
+      });
+      return id;
+    }
+    case 'edit_channel': {
+      const category = guild.categories.find((candidate) => candidate.id === change.channelId);
+      if (category) {
+        if (change.name !== undefined) category.name = change.name;
+        return null;
+      }
+      const found = channel(change.channelId);
+      if (change.name !== undefined) found.name = change.name;
+      if (change.parentId !== undefined) found.parentId = change.parentId;
+      return null;
+    }
+    case 'set_overwrite': {
+      const found = channel(change.channelId);
+      found.overwrites = [
+        ...found.overwrites.filter((overwrite) => overwrite.id !== change.targetId),
+        {
+          id: change.targetId,
+          type: change.targetType,
+          allow: [...change.allow],
+          deny: [...change.deny],
+        },
+      ];
+      return null;
+    }
+    case 'remove_overwrite': {
+      const found = channel(change.channelId);
+      found.overwrites = found.overwrites.filter((overwrite) => overwrite.id !== change.targetId);
+      return null;
+    }
+    case 'add_member_role':
+      member(change.userId).roleIds.push(change.roleId);
+      return null;
+    case 'remove_member_role': {
+      const found = member(change.userId);
+      found.roleIds = found.roleIds.filter((id) => id !== change.roleId);
+      return null;
+    }
+    case 'delete_channel':
+      guild.channels = guild.channels.filter((candidate) => candidate.id !== change.channelId);
+      guild.categories = guild.categories.filter((candidate) => candidate.id !== change.channelId);
+      return null;
+    case 'delete_role':
+      guild.roles = guild.roles.filter((role) => role.id !== change.roleId);
+      for (const one of guild.members)
+        one.roleIds = one.roleIds.filter((id) => id !== change.roleId);
+      return null;
+  }
 }
 
 /** An in-memory Discord: messages are kept in a list, downloads return `downloadData`. */
@@ -286,6 +393,9 @@ export function fakeGateway(): FakeGateway {
     guilds: new Map(),
     invites: new Map(),
     usernames: new Map(),
+    snapshots: new Map(),
+    changes: [],
+    refused: new Set(),
     postMessage(channelId, message) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       const messageId = String(900_000_000_000_000_000n + BigInt(gateway.posted.length + 1));
@@ -348,6 +458,27 @@ export function fakeGateway(): FakeGateway {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       const key = `${guildId}:${username.trim().toLowerCase()}`;
       return Promise.resolve(gateway.usernames.get(key) ?? null);
+    },
+    guildSnapshot(guildId) {
+      if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
+      const guild = gateway.snapshots.get(guildId);
+      // A copy: the reconciler must see the server as it was when read.
+      return Promise.resolve(guild ? (JSON.parse(JSON.stringify(guild)) as GuildSnapshot) : null);
+    },
+    changeGuild(guildId, change, reason) {
+      if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
+      if (gateway.refused.has(change.kind)) return Promise.reject(new Error('Missing Permissions'));
+      const guild = gateway.snapshots.get(guildId);
+      if (!guild) return Promise.reject(new Error('Unknown Guild'));
+      try {
+        const created = changeSnapshot(guild, change, () =>
+          String(950_000_000_000_000_000n + BigInt(gateway.changes.length + 1)),
+        );
+        gateway.changes.push({ guildId, change, reason });
+        return Promise.resolve(created);
+      } catch (error) {
+        return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+      }
     },
   };
   return gateway;
