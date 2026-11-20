@@ -1252,16 +1252,18 @@ Volume `/data` holds the SQLite database and the image cache.
 
 **R2 bucket layout:** `replays/<match_id>/<sha256>.rec` (raw files, kept one season), `evidence/<match_id>/` (screenshots, MOSS; staff-only access through the server), `backups/db/`, `transcripts/<season_id>/`, `logos/`. The bucket is private; CORS allows only `PUT` from `PUBLIC_URL`.
 
-**Deploy**
+**Deploy** (maintainer, 19 November 2026)
 
-1. GitHub Actions runs tests, builds both images and pushes them to GitHub Container Registry.
-2. A deploy job connects over SSH and runs `docker compose pull && docker compose up -d`.
-3. The server takes a SQLite backup (`VACUUM INTO`) before applying migrations.
+1. The maintainer runs `deploy/update.sh` over SSH: it pulls `main`, builds the images on the VPS (ARM or x86 alike) and restarts Compose. No secret is stored in GitHub. GitHub Actions building images and deploying come later.
+2. The server takes a SQLite backup (`VACUUM INTO`, under `data/backups/`) before applying pending migrations, and never deletes one.
+3. Caddy forwards the original scheme and host; the server reads them only when `TRUST_PROXY` is set, so its one-address rule (section 7) sees `https://ligoleague.eu`, not the proxy's `http`.
+
+**Discord applications.** Production runs its own Discord application, separate from the staging one the maintainer's `pnpm dev` uses: two processes on one bot token would both answer every command and button. Production serves the staging server first; LFR's real server is linked from `/mlb-group/lfr/discord` when the league moves to Ligo (maintainer, 19 November 2026).
 
 **Backups and restore**
 
-- Litestream replicates continuously. A nightly job also uploads a full snapshot.
-- Until R2 (phase 5), the files under `STORAGE_DIR` (score screenshots) are on the VPS disk only: the nightly job copies that folder too. Litestream covers the database alone.
+- Litestream replicates the database to R2 continuously from the first deployment (maintainer, 19 November 2026). A nightly job also uploads a full snapshot.
+- The files under `STORAGE_DIR` (score screenshots) and the prepared logos stay on the VPS disk until phase 5 moves them to R2: the nightly job copies those folders to the same bucket with rclone. Litestream covers the database alone.
 - `deploy/restore.sh` provisions a fresh VPS: installs Docker, pulls images, restores the database from R2, starts Compose.
 - Rehearse the restore once per season.
 

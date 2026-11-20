@@ -172,7 +172,10 @@ Review these areas line by line and flag anything uncertain in your summary:
 
 The domain is **`ligoleague.eu`** (bought on Porkbun, 18 November 2026). The server will be a
 **netcup VPS**, which the maintainer gets access to soon (19 November 2026). Until it is set up,
-nothing is served on the domain; development runs on localhost.
+nothing is served on the domain; development runs on localhost. Its deployment is planned
+(design doc section 13): Docker Compose built on the VPS by `deploy/update.sh`, a production
+Discord application separate from the staging one, the staging server first, database backups
+to R2 with Litestream.
 
 In every task, check whether the work reaches one of the triggers below. If it does, **say so
 explicitly at the start of your plan**, before anything else: which trigger, why a public website

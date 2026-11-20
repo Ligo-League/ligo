@@ -932,6 +932,28 @@ posts lose their buttons) and the time is announced in the schedule channel with
    team results listed, with no figure.
 5. On your local database, most pages show a career only: Season 3 has almost no stat sheets.
 
+## 54. Deploying to the VPS: what to prepare
+
+The deployment (design doc section 13) comes in steps D-1 to D-6; the first start is done
+together. These accounts and values can be prepared now. Keep every secret in a password
+manager; they go into `deploy/.env` on the VPS only, never in git or in a chat.
+
+1. **The VPS.** Note whether the netcup plan is ARM or x86 (either works: images are built on
+   the VPS), its IPv4 and IPv6 addresses, and add your SSH public key to it.
+2. **DNS at Porkbun.** For `ligoleague.eu` and `www.ligoleague.eu`: an `A` record to the IPv4
+   address and an `AAAA` record to the IPv6 one. Caddy gets the HTTPS certificate once they
+   point at the VPS.
+3. **A production Discord application** (Developer Portal > New Application, for example
+   "Ligo"), separate from your staging one, which `pnpm dev` keeps using:
+   - Bot: reset and keep the token; turn on **Server Members Intent**;
+   - OAuth2: keep the client ID and secret; add the redirect
+     `https://ligoleague.eu/auth/callback`;
+   - invite it to the staging server with the permissions of section 6 of the design doc.
+4. **Cloudflare R2.** Create a bucket (for example `ligo`) and an API token with **Object Read &
+   Write** on that bucket only; keep the account ID, access key ID and secret access key. The
+   free tier covers 10 GB.
+5. **A session secret** for production: `openssl rand -base64 48`, different from your local one.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
