@@ -95,7 +95,7 @@ export function createDiscordClient(deps: {
   const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
   });
-  const gateway = createDiscordGateway(client);
+  const gateway = createDiscordGateway(() => client);
   const contextNow = (): CommandContext => ({
     locale: DEFAULT_LOCALE,
     gatewayPingMs: client.ws.ping,

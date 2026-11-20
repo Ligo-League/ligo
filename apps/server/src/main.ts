@@ -14,6 +14,7 @@ import { commands } from './discord/commands/index.ts';
 import { forms } from './discord/forms.ts';
 import { createDiscordGateway } from './discord/gateway.ts';
 import { DEFAULT_LOCALE } from './i18n/index.ts';
+import { keepConnecting } from './discord/connect.ts';
 import { loginHint } from './discord/login-hint.ts';
 import { createLogger } from './logger.ts';
 import { createWebApp, loadStaticFiles } from './web/app.ts';
@@ -45,18 +46,12 @@ logger.info({ path: databasePath }, 'Database ready');
 const assets = createLocalAssetStore(resolve(config.assetsDir));
 const evidence = createLocalEvidenceStore(resolve(config.storageDir), SCREENSHOT_MAX_BYTES, logger);
 const publicUrl = new URL(config.web.publicUrl);
-const client = createDiscordClient({
-  commands,
-  buttons,
-  forms,
-  logger,
-  db,
-  assets,
-  evidence,
-  publicUrl,
-});
+const newClient = () =>
+  createDiscordClient({ commands, buttons, forms, logger, db, assets, evidence, publicUrl });
+// Replaced by a new one when a login fails and is tried again (see keepConnecting below).
+let client = newClient();
 // Calls through the gateway fail until the bot is connected; the website then sees no roles.
-const gateway = createDiscordGateway(client);
+const gateway = createDiscordGateway(() => client);
 
 const login = config.web.login && {
   oauth: createDiscordOAuth({
@@ -94,24 +89,19 @@ const server = serve(
 
 // Deadlines need the bot to post, so the clock starts once Discord is ready.
 const CLOCK_INTERVAL_MS = 60_000;
-let stopClock: () => void = () => undefined;
-client.once(Events.ClientReady, () => {
-  stopClock = startClock(
-    {
-      db,
-      gateway,
-      logger,
-      locale: DEFAULT_LOCALE,
-      publicUrl,
-      now: () => Date.now(),
-    },
-    CLOCK_INTERVAL_MS,
-  );
-});
+let stopClock: (() => void) | null = null;
+const startClockOnReady = () => {
+  client.once(Events.ClientReady, () => {
+    stopClock ??= startClock(
+      { db, gateway, logger, locale: DEFAULT_LOCALE, publicUrl, now: () => Date.now() },
+      CLOCK_INTERVAL_MS,
+    );
+  });
+};
 
 const shutdown = (signal: string) => {
   logger.info({ signal }, 'Shutting down');
-  stopClock();
+  stopClock?.();
   server.close();
   void client.destroy().finally(() => {
     db.$client.close();
@@ -121,9 +111,23 @@ const shutdown = (signal: string) => {
 process.once('SIGINT', shutdown);
 process.once('SIGTERM', shutdown);
 
-try {
-  await client.login(config.discordToken);
-} catch (error) {
-  logger.fatal({ err: error }, loginHint(error) ?? 'Could not connect to Discord');
+// The website is already up: if Discord cannot be reached, the bot keeps trying in the
+// background. A wrong token or a missing intent stops the server, since only .env or the
+// Developer Portal can fix them.
+let firstAttempt = true;
+const connected = await keepConnecting({
+  attempt: async () => {
+    // A client whose login failed cannot log in again (discord.js marks it destroyed).
+    if (!firstAttempt) client = newClient();
+    firstAttempt = false;
+    startClockOnReady();
+    await client.login(config.discordToken);
+  },
+  hint: loginHint,
+  log: logger,
+  wait: (ms) => new Promise((done) => setTimeout(done, ms)),
+});
+if (!connected.ok) {
+  logger.fatal({ err: connected.error }, connected.hint);
   process.exit(1);
 }

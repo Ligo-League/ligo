@@ -107,9 +107,13 @@ export async function readCapped(
   return data;
 }
 
-export function createDiscordGateway(client: Client): DiscordGateway {
+/**
+ * Discord as the services see it. `current` gives the connected client at each call: the server
+ * replaces the client when a login fails and is tried again (`keepConnecting`).
+ */
+export function createDiscordGateway(current: () => Client): DiscordGateway {
   const sendable = async (channelId: string) => {
-    const channel = await client.channels.fetch(channelId);
+    const channel = await current().channels.fetch(channelId);
     if (!channel?.isSendable()) throw new Error(`Channel ${channelId} cannot receive messages`);
     return channel;
   };
@@ -127,7 +131,7 @@ export function createDiscordGateway(client: Client): DiscordGateway {
     },
 
     async sendDirectMessage(userId, message) {
-      const user = await client.users.fetch(userId);
+      const user = await current().users.fetch(userId);
       await user.send(toDiscordMessage(message));
     },
 
@@ -145,7 +149,7 @@ export function createDiscordGateway(client: Client): DiscordGateway {
     },
 
     async memberRoleIds(guildId, userId) {
-      const guild = await client.guilds.fetch(guildId);
+      const guild = await current().guilds.fetch(guildId);
       try {
         const member = await guild.members.fetch(userId);
         return [...member.roles.cache.keys()];
@@ -157,7 +161,7 @@ export function createDiscordGateway(client: Client): DiscordGateway {
 
     async manageableGuilds(userId) {
       const found: { id: string; name: string }[] = [];
-      for (const guild of client.guilds.cache.values()) {
+      for (const guild of current().guilds.cache.values()) {
         try {
           const member = await guild.members.fetch(userId);
           if (guild.ownerId === userId || member.permissions.has(PermissionFlagsBits.ManageGuild)) {
@@ -172,7 +176,7 @@ export function createDiscordGateway(client: Client): DiscordGateway {
 
     async guildRoles(guildId) {
       try {
-        const guild = await client.guilds.fetch(guildId);
+        const guild = await current().guilds.fetch(guildId);
         const roles = await guild.roles.fetch();
         return [...roles.values()]
           .filter((role) => role.id !== guild.id && !role.managed)
@@ -186,7 +190,7 @@ export function createDiscordGateway(client: Client): DiscordGateway {
 
     async guildTextChannels(guildId) {
       try {
-        const guild = await client.guilds.fetch(guildId);
+        const guild = await current().guilds.fetch(guildId);
         const channels = await guild.channels.fetch();
         const position = (id: string | null) =>
           id === null ? -1 : (channels.get(id)?.rawPosition ?? -1);
@@ -209,7 +213,7 @@ export function createDiscordGateway(client: Client): DiscordGateway {
     async findMember(guildId, username) {
       const wanted = username.trim().toLowerCase();
       if (wanted === '') return null;
-      const guild = await client.guilds.fetch(guildId);
+      const guild = await current().guilds.fetch(guildId);
       // Discord matches names starting with the query; only the exact username is taken.
       const found = await guild.members.search({ query: wanted, limit: MEMBER_SEARCH_LIMIT });
       const member = [...found.values()].find((one) => one.user.username.toLowerCase() === wanted);
@@ -218,7 +222,7 @@ export function createDiscordGateway(client: Client): DiscordGateway {
 
     async resolveInvite(url) {
       try {
-        const invite = await client.fetchInvite(url);
+        const invite = await current().fetchInvite(url);
         return invite.guild
           ? { guildId: invite.guild.id, expiresAt: invite.expiresTimestamp }
           : null;
