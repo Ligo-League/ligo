@@ -224,10 +224,34 @@ export const en: Record<MessageKey, string> = {
   'command.league.sync.option.dry_run': 'Only shows what would change.',
   'web.admin.sync.title': 'Discord server: sync',
   'web.admin.sync.intro':
-    'Ligo compares the league’s server with what should be there: the team roles, the match channels and the MOSS channels. It never touches what it did not create, and deletes a channel only after keeping its content. It syncs on its own every 10 minutes; the button does it now.',
+    'Ligo compares the league’s server with what should be there: the team roles, the match channels and the MOSS channels. It never touches what it did not create, and deletes a channel only after keeping its content. It syncs on its own within a minute of a change in Ligo, and every 10 minutes to put right what was changed by hand; the button does it now.',
   'web.admin.sync.button': 'Sync now',
   'web.admin.sync.done': 'Sync done. Changes: {applied}; refused by Discord: {failed}.',
   'web.admin.sync.link': 'Sync the Discord server',
+  'web.admin.sync.roles.title': 'Team roles',
+  'web.admin.sync.roles.intro':
+    'Each team of a season under way has a role, given to its players for the season and its officials. Ligo creates one for a team that has none; you may link an existing role instead. Ligo then gives that role to the team’s members and takes it from everyone else, but never renames or deletes it. The bot’s role must sit above the team roles.',
+  'web.admin.sync.roles.none': 'No team in a season under way.',
+  'web.admin.sync.roles.made': 'Created by Ligo: {role}',
+  'web.admin.sync.roles.linked': 'Linked: {role}',
+  'web.admin.sync.roles.missing': 'No role yet: the next sync creates it.',
+  'web.admin.sync.roles.pick': 'Existing role',
+  'web.admin.sync.roles.link': 'Link this role',
+  'web.admin.sync.roles.unlink': 'Unlink',
+  'web.admin.sync.roles.done.link': 'Role linked. The next sync gives it to the team’s members.',
+  'web.admin.sync.roles.done.unlink':
+    'Role unlinked. It stays on the server; the next sync creates a role for the team.',
+  'web.admin.sync.roles.error.not_linked': 'No Discord server is linked to this competition.',
+  'web.admin.sync.roles.error.not_in_server': 'The bot is not on the league’s server.',
+  'web.admin.sync.roles.error.discord_unavailable':
+    'Discord is not answering right now. Try again in a moment.',
+  'web.admin.sync.roles.error.unknown_role': 'That role is no longer on the server.',
+  'web.admin.sync.roles.error.reserved_role':
+    'That role is @everyone or a staff role: it cannot be a team’s.',
+  'web.admin.sync.roles.error.role_taken': 'That role is already another team’s.',
+  'web.admin.sync.roles.error.not_a_roster': 'That team plays in no season under way.',
+  'web.admin.sync.roles.error.not_a_link':
+    'That role was not linked by staff: there is nothing to unlink.',
   'league.channel.notice.resultsDivision':
     'Validated results of {division} will be announced here.',
   'league.channel.setDivision': 'Channel saved: {kind} of {division} in <#{channel}>.',

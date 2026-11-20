@@ -1,15 +1,18 @@
 import { rulesetSchema } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
-import { syncLeague } from '../services/reconciler.ts';
+import { leagueTarget, syncGuild } from '../services/reconciler.ts';
 import type { DiscordGateway } from './gateway.ts';
 
 // The reconciler's own runs (design doc section 6, "Reconciler"): once the bot is connected,
-// then every few minutes, for every league that lets Ligo manage its server. Changes made by
-// hand in Discord are put right within that time; a sync after a change in Ligo comes from the
-// change itself.
+// then every few minutes, for every league that lets Ligo manage its server, so changes made by
+// hand in Discord are put right within that time. In between, a quick check reads only the
+// database: a league whose wanted state changed (a lineup, an official, a role linked) is synced
+// within seconds, whichever page or command made the change.
 
 /** Often enough to repair a hand-made change soon, rarely enough to stay far from Discord's limits. */
 export const SYNC_INTERVAL_MS = 10 * 60_000;
+/** How often the database is read for a league whose wanted state changed. No Discord call. */
+export const CHANGE_CHECK_MS = 30_000;
 
 export interface ReconcilerDeps {
   db: Db;
@@ -22,8 +25,18 @@ export interface ReconcilerDeps {
   now(): number;
 }
 
-/** One run over every managed league, one after the other. Never throws. */
-export async function syncManagedLeagues(deps: ReconcilerDeps): Promise<void> {
+/** The wanted state each league's server was last synced to, by competition. */
+export type LastSynced = Map<number, string>;
+
+/**
+ * One run over every managed league, one after the other. With `onlyChanged`, a league is
+ * synced only when its wanted state differs from the last sync's. Never throws.
+ */
+export async function syncManagedLeagues(
+  deps: ReconcilerDeps,
+  last: LastSynced = new Map(),
+  onlyChanged = false,
+): Promise<void> {
   let competitions;
   try {
     competitions = deps.db.select().from(schema.competition).all();
@@ -34,9 +47,20 @@ export async function syncManagedLeagues(deps: ReconcilerDeps): Promise<void> {
   for (const row of competitions) {
     try {
       if (!rulesetSchema.parse(row.rulesetJson).discord.manage) continue;
-      const reply = await syncLeague(deps.db, deps.gateway, row.id, {
+      const now = deps.now();
+      const target = leagueTarget(deps.db, row.id, now);
+      if (!target.ok) {
+        deps.logger.warn(
+          { competitionId: row.id, error: target.error },
+          'League server sync did not run',
+        );
+        continue;
+      }
+      const wanted = JSON.stringify(target.desired);
+      if (onlyChanged && last.get(row.id) === wanted) continue;
+      const reply = await syncGuild(deps.db, deps.gateway, target.guildId, target.desired, {
         dryRun: false,
-        now: deps.now(),
+        now,
         actorPlayerId: null,
       });
       if (!reply.ok) {
@@ -44,7 +68,11 @@ export async function syncManagedLeagues(deps: ReconcilerDeps): Promise<void> {
           { competitionId: row.id, error: reply.error },
           'League server sync did not run',
         );
-      } else if (reply.failures.length > 0) {
+        continue;
+      }
+      // Kept even when Discord refused a part: the next full run tries again, not every check.
+      last.set(row.id, wanted);
+      if (reply.failures.length > 0) {
         deps.logger.warn(
           {
             competitionId: row.id,
@@ -63,19 +91,33 @@ export async function syncManagedLeagues(deps: ReconcilerDeps): Promise<void> {
   }
 }
 
-/** Runs now, then every `intervalMs`, a run never starting while the last one goes on. */
-export function startReconciler(deps: ReconcilerDeps, intervalMs = SYNC_INTERVAL_MS): () => void {
+/**
+ * Runs now, then every `intervalMs`, and checks for changes every `checkMs`; a run never starts
+ * while another goes on.
+ */
+export function startReconciler(
+  deps: ReconcilerDeps,
+  intervalMs = SYNC_INTERVAL_MS,
+  checkMs = CHANGE_CHECK_MS,
+): () => void {
+  const last: LastSynced = new Map();
   let running = false;
-  const run = () => {
+  const run = (onlyChanged: boolean) => {
     if (running) return;
     running = true;
-    void syncManagedLeagues(deps).finally(() => {
+    void syncManagedLeagues(deps, last, onlyChanged).finally(() => {
       running = false;
     });
   };
-  run();
-  const timer = setInterval(run, intervalMs);
+  run(false);
+  const full = setInterval(() => {
+    run(false);
+  }, intervalMs);
+  const check = setInterval(() => {
+    run(true);
+  }, checkMs);
   return () => {
-    clearInterval(timer);
+    clearInterval(full);
+    clearInterval(check);
   };
 }

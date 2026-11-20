@@ -1,4 +1,5 @@
 import { schema } from '@ligo/db';
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { leagueDatabase, TEST_GUILD } from '../testing.ts';
 import { syncManagedLeagues } from './reconciler-clock.ts';
@@ -68,5 +69,24 @@ describe('syncManagedLeagues', () => {
         message: 'League server sync did not run',
       },
     ]);
+  });
+});
+
+describe('the quick check between full runs', () => {
+  it('syncs a league only once its wanted state changed', async () => {
+    const { db, gateway, logger, snapshots } = setUp(true);
+    const deps = { db, gateway, logger, now: () => NOW };
+    const last = new Map<number, string>();
+    await syncManagedLeagues(deps, last, true);
+    expect(snapshots()).toBe(1);
+    await syncManagedLeagues(deps, last, true);
+    expect(snapshots()).toBe(1);
+    // A team withdraws: its role is no longer wanted.
+    db.update(schema.slot).set({ status: 'withdrawn' }).where(eq(schema.slot.teamId, 1)).run();
+    await syncManagedLeagues(deps, last, true);
+    expect(snapshots()).toBe(2);
+    // A full run syncs anyway, to put right what was changed by hand in Discord.
+    await syncManagedLeagues(deps, last);
+    expect(snapshots()).toBe(3);
   });
 });

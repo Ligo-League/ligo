@@ -1072,6 +1072,23 @@ is nothing to create. It acts only for a league whose Discord settings turn it o
 
 Never let two Ligos manage one server (section 57): local development uses its own test server.
 
+## 60. Phase 4-6: team roles
+
+With `ruleset.discord.manage` on, each team of a season not closed yet gets a role in the league's
+server, named after it (`team_role_template`, `{name}` by default) and in its first colour. The
+team's season lineup, its officials and its club's officials hold it; anyone else holding it loses
+it. A player who is not on the server is listed by the sync, not an error.
+
+- **Link an existing role:** on the sync page, **Rôles des équipes** lists each team and its role.
+  Pick a role already on the server and **Lier ce rôle**: Ligo deletes the one it had made for
+  that team (if any), gives the linked role to the team's members and takes it from others, but
+  never renames or deletes it. **Délier** gives it back to you as it is; the next sync makes a new
+  role for the team. @everyone and the staff roles cannot be linked.
+- **When it happens:** within 30 seconds of a change in Ligo (a lineup, an official, a link),
+  and every 10 minutes for changes made by hand in Discord.
+- **The bot's role must sit above the team roles** (Server Settings > Roles, drag it up), or
+  Discord refuses to give them; the sync page lists what Discord refused.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |

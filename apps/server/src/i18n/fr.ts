@@ -240,11 +240,36 @@ export const fr = {
   'command.league.sync.option.dry_run': 'Montre seulement ce qui changerait.',
   'web.admin.sync.title': 'Serveur Discord : synchronisation',
   'web.admin.sync.intro':
-    'Ligo compare le serveur de la ligue avec ce qui doit y être : les rôles des équipes, les salons des matchs et les salons MOSS. Il ne touche jamais à ce qu’il n’a pas créé, et ne supprime un salon qu’après en avoir gardé le contenu. Il synchronise tout seul toutes les 10 minutes ; le bouton le fait tout de suite.',
+    'Ligo compare le serveur de la ligue avec ce qui doit y être : les rôles des équipes, les salons des matchs et les salons MOSS. Il ne touche jamais à ce qu’il n’a pas créé, et ne supprime un salon qu’après en avoir gardé le contenu. Il synchronise tout seul dans la minute qui suit un changement dans Ligo, et toutes les 10 minutes pour remettre en ordre ce qui a été changé à la main ; le bouton le fait tout de suite.',
   'web.admin.sync.button': 'Synchroniser maintenant',
   'web.admin.sync.done':
     'Synchronisation faite. Changements : {applied} ; refusés par Discord : {failed}.',
   'web.admin.sync.link': 'Synchroniser le serveur Discord',
+  'web.admin.sync.roles.title': 'Rôles des équipes',
+  'web.admin.sync.roles.intro':
+    'Chaque équipe d’une saison en cours a un rôle, donné à ses joueurs de la saison et à ses responsables. Ligo crée celui d’une équipe qui n’en a pas ; vous pouvez lier à la place un rôle qui existe déjà. Ligo donne alors ce rôle aux membres de l’équipe et le retire à tous les autres, mais ne le renomme et ne le supprime jamais. Le rôle du bot doit être au-dessus des rôles des équipes.',
+  'web.admin.sync.roles.none': 'Aucune équipe dans une saison en cours.',
+  'web.admin.sync.roles.made': 'Créé par Ligo : {role}',
+  'web.admin.sync.roles.linked': 'Lié : {role}',
+  'web.admin.sync.roles.missing': 'Pas encore de rôle : la prochaine synchronisation le crée.',
+  'web.admin.sync.roles.pick': 'Rôle existant',
+  'web.admin.sync.roles.link': 'Lier ce rôle',
+  'web.admin.sync.roles.unlink': 'Délier',
+  'web.admin.sync.roles.done.link':
+    'Rôle lié. La prochaine synchronisation le donne aux membres de l’équipe.',
+  'web.admin.sync.roles.done.unlink':
+    'Rôle délié. Il reste sur le serveur ; la prochaine synchronisation crée un rôle pour l’équipe.',
+  'web.admin.sync.roles.error.not_linked': 'Aucun serveur Discord n’est relié à cette ligue.',
+  'web.admin.sync.roles.error.not_in_server': 'Le bot n’est pas dans le serveur de la ligue.',
+  'web.admin.sync.roles.error.discord_unavailable':
+    'Discord ne répond pas pour le moment. Réessayez dans un instant.',
+  'web.admin.sync.roles.error.unknown_role': 'Ce rôle n’existe plus sur le serveur.',
+  'web.admin.sync.roles.error.reserved_role':
+    'Ce rôle est @everyone ou un rôle du staff : il ne peut pas être celui d’une équipe.',
+  'web.admin.sync.roles.error.role_taken': 'Ce rôle est déjà celui d’une autre équipe.',
+  'web.admin.sync.roles.error.not_a_roster': 'Cette équipe ne joue dans aucune saison en cours.',
+  'web.admin.sync.roles.error.not_a_link':
+    'Ce rôle n’a pas été lié par le staff : il n’y a rien à délier.',
   'league.channel.notice.resultsDivision':
     'Les résultats validés de {division} seront annoncés ici.',
   'league.channel.setDivision': 'Salon enregistré : {kind} de {division} dans <#{channel}>.',

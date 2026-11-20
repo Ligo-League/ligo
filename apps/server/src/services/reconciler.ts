@@ -11,12 +11,14 @@ import {
 import { schema, type Db } from '@ligo/db';
 import { and, eq } from 'drizzle-orm';
 import type { DiscordGateway, GuildChange, ResolvedOverwrite } from '../discord/gateway.ts';
+import { withGuildLock } from './guild-lock.ts';
+import { desiredTeamRoles } from './team-roles.ts';
 
 // The reconciler (phase 4; design doc section 6, "Reconciler"). It reads the league's server,
 // compares it with what the database wants (`@ligo/core` reconcile), and makes the changes one
 // by one, in order. Each object it creates is stored in `discord_object` as soon as it exists,
 // so a failure halfway leaves nothing unknown behind and the next run carries on. One run at a
-// time per server: two at once would both create what is missing.
+// time per server (`withGuildLock`).
 
 const { auditLog, competition, discordObject, leagueGuild } = schema;
 
@@ -42,19 +44,6 @@ export type SyncReply =
 /** The reason Discord shows in the server's audit log for each change. */
 const REASON = 'Ligo: league server sync';
 
-const running = new Map<string, Promise<unknown>>();
-
-/** Runs `task` after any sync of the same server still under way. */
-function oneAtATime<T>(guildId: string, task: () => Promise<T>): Promise<T> {
-  const before = running.get(guildId) ?? Promise.resolve();
-  const next = before.then(task, task);
-  running.set(guildId, next);
-  void next.finally(() => {
-    if (running.get(guildId) === next) running.delete(guildId);
-  });
-  return next;
-}
-
 const identity = (kind: string, key: string) => `${kind}\u0000${key}`;
 
 /** Thrown when an operation needs an object an earlier one could not create. */
@@ -67,7 +56,7 @@ export function syncGuild(
   desired: DesiredState,
   options: SyncOptions,
 ): Promise<SyncReply> {
-  return oneAtATime(guildId, () => runSync(db, gateway, guildId, desired, options));
+  return withGuildLock(guildId, () => runSync(db, gateway, guildId, desired, options));
 }
 
 async function runSync(
@@ -262,26 +251,50 @@ async function runSync(
 export type LeagueSyncReply =
   SyncReply | { ok: false; error: 'not_found' | 'not_linked' | 'not_managed' };
 
-/** Syncs a competition's own server, when the league lets Ligo manage it (`ruleset.discord`). */
-export async function syncLeague(
-  db: Db,
-  gateway: DiscordGateway,
+export type LeagueTarget =
+  | { ok: true; guildId: string; desired: DesiredState }
+  | { ok: false; error: 'not_found' | 'not_linked' | 'not_managed' };
+
+/**
+ * What Ligo wants in a competition's own server, when the league lets Ligo manage it
+ * (`ruleset.discord`): its team roles; match channels come with 4-7 and MOSS channels with 4-8.
+ * Until then nothing else is wanted, and what Ligo made stays (channels are only deleted once
+ * released).
+ */
+export function leagueTarget(
+  db: Pick<Db, 'select'>,
   competitionId: number,
-  options: SyncOptions,
-): Promise<LeagueSyncReply> {
+  now: number,
+): LeagueTarget {
   const row = db.select().from(competition).where(eq(competition.id, competitionId)).get();
   if (!row) return { ok: false, error: 'not_found' };
-  if (!rulesetSchema.parse(row.rulesetJson).discord.manage)
-    return { ok: false, error: 'not_managed' };
+  const settings = rulesetSchema.parse(row.rulesetJson).discord;
+  if (!settings.manage) return { ok: false, error: 'not_managed' };
   const linked = db
     .select({ guildId: leagueGuild.guildId })
     .from(leagueGuild)
     .where(eq(leagueGuild.competitionId, competitionId))
     .get();
   if (!linked) return { ok: false, error: 'not_linked' };
-  // What Ligo wants there: team roles come with 4-6, match channels with 4-7 and MOSS
-  // channels with 4-8. Until then it wants nothing, and leaves alone what it made (channels are
-  // only deleted once released).
-  const desired: DesiredState = { roles: [], categories: [], channels: [] };
-  return syncGuild(db, gateway, linked.guildId, desired, options);
+  return {
+    ok: true,
+    guildId: linked.guildId,
+    desired: {
+      roles: desiredTeamRoles(db, competitionId, settings, now),
+      categories: [],
+      channels: [],
+    },
+  };
+}
+
+/** Syncs a competition's own server to `leagueTarget`. */
+export function syncLeague(
+  db: Db,
+  gateway: DiscordGateway,
+  competitionId: number,
+  options: SyncOptions,
+): Promise<LeagueSyncReply> {
+  const target = leagueTarget(db, competitionId, options.now);
+  if (!target.ok) return Promise.resolve(target);
+  return syncGuild(db, gateway, target.guildId, target.desired, options);
 }

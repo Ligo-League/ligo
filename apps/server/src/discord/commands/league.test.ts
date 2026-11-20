@@ -293,12 +293,20 @@ describe('/league sync', () => {
     return setup;
   }
 
-  it('answers privately, after deferring, that the server is up to date', async () => {
-    const { context } = managed(true);
+  it('answers privately, after deferring: a dry run lists, a sync makes the five team roles', async () => {
+    const { context, gateway } = managed(true);
     const interaction = fakeInteraction('league', sync(STAFF, true));
     await leagueCommand.execute(interaction, context);
     expect(interaction.deferredEphemeral).toBe(true);
-    expect(interaction.replies).toEqual([
+    expect(interaction.replies[0]).toMatchObject({ ephemeral: true });
+    expect(interaction.replies[0]?.content).toContain('Rôles à créer : 5');
+    expect(gateway.changes).toEqual([]);
+    const applied = fakeInteraction('league', sync(STAFF));
+    await leagueCommand.execute(applied, context);
+    expect(applied.replies[0]?.content).toContain('Changements : 5 sur 5');
+    const again = fakeInteraction('league', sync(STAFF, true));
+    await leagueCommand.execute(again, context);
+    expect(again.replies).toEqual([
       { content: 'Le serveur est à jour : rien à changer.', ephemeral: true },
     ]);
   });

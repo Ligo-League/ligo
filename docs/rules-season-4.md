@@ -246,8 +246,12 @@ M-xx : mainteneur).
   la place relier un rôle déjà existant à l'équipe. Le bot ne supprime jamais un rôle ou un salon
   qu'il n'a pas créé.
 - **Statut** : Décidée (M-46, mainteneur, 20 novembre 2026).
-- **Appliquée par** : le bot, qui compare le serveur avec Ligo au démarrage, après chaque
-  changement et sur demande du staff, et corrige les écarts (phase 4).
+- **Appliquée par** : le bot, qui compare le serveur avec Ligo au démarrage, dans la minute qui
+  suit chaque changement, toutes les 10 minutes et sur demande du staff, et corrige les écarts
+  (phase 4). Le rôle va aux équipes d'une saison pas encore close, tant qu'elles jouent : une
+  équipe retirée ou exclue le perd, et toutes le perdent à la clôture de la saison. Les
+  responsables du club ont le rôle de chacune de ses équipes. Le staff relie un rôle existant sur
+  la page de synchronisation du serveur (`/admin/<organisation>/<ligue>/discord/sync`).
 
 ## 3. Programmation des matchs
 
