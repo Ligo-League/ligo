@@ -19,7 +19,8 @@ export type CategoryKind = (typeof CATEGORY_KINDS)[number];
 export const CHANNEL_KINDS = ['match_channel', 'moss_channel'] as const;
 export type ChannelKind = (typeof CHANNEL_KINDS)[number];
 /** `discord_object.kind`. */
-export type ObjectKind = 'team_role' | CategoryKind | ChannelKind;
+export const OBJECT_KINDS = ['team_role', ...CATEGORY_KINDS, ...CHANNEL_KINDS] as const;
+export type ObjectKind = (typeof OBJECT_KINDS)[number];
 
 /** A role by the key of a team role Ligo manages, or by its ID (@everyone, staff roles). */
 export type RoleRef = { key: string } | { id: string };

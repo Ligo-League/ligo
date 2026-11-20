@@ -22,12 +22,13 @@ import { openTestDatabase } from './testing.ts';
 // today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`,
 // 0004 `veto_step`, 0007 `request` and `queue_post`, 0009 `club`, 0010 `club_staff`, 0013
 // `rules_version`, 0014 `registration_invite` and `registration_player`, 0021 `match_captain`, 0023
-// `mercato_window`, 0024 `stat` and `stat_sheet`.
+// `mercato_window`, 0024 `stat` and `stat_sheet`, 0029 `discord_object`.
 const SCHEMA_TABLES = [
   'audit_log',
   'club',
   'club_staff',
   'competition',
+  'discord_object',
   'dispute',
   'division',
   'evidence',

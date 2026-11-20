@@ -142,6 +142,39 @@ describe('database constraints', () => {
     });
   });
 
+  describe('discord_object', () => {
+    // What the reconciler created or staff linked in a league's server (phase 4; M-46).
+    const GUILD = '900000000000000000';
+    function insert(kind: string, key: string, discordId: string, guild = GUILD) {
+      const { db } = seededDatabase();
+      const run = (k: string, ky: string, id: string, g: string) =>
+        db.$client
+          .prepare(
+            `insert into discord_object (guild_id, kind, key, discord_id, created_by_ligo, created_at)
+             values (?, ?, ?, ?, 1, 10)`,
+          )
+          .run(g, k, ky, id);
+      run('team_role', 'team:1', '800000000000000001', GUILD);
+      return () => run(kind, key, discordId, guild);
+    }
+
+    it('keeps one object per kind and key in a server, and the same key in another server', () => {
+      expect(insert('team_role', 'team:1', '800000000000000002')).toThrow(/UNIQUE/);
+      expect(
+        insert('team_role', 'team:1', '800000000000000002', '900000000000000009'),
+      ).not.toThrow();
+      expect(insert('moss_channel', 'team:1', '800000000000000002')).not.toThrow();
+    });
+
+    it('refuses one Discord object for two keys, such as one role linked to two teams', () => {
+      expect(insert('team_role', 'team:2', '800000000000000001')).toThrow(/UNIQUE/);
+    });
+
+    it('refuses an unknown kind', () => {
+      expect(insert('voice_channel', 'match:1', '800000000000000002')).toThrow(/CHECK/);
+    });
+  });
+
   describe('veto_step', () => {
     function insert(seq: number, values: string) {
       const { db } = seededDatabase();

@@ -204,6 +204,13 @@
       "when": 1795124062345,
       "tag": "0028_player_slug_global",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1795176051349,
+      "tag": "0029_discord_objects",
+      "breakpoints": true
     }
   ]
 }

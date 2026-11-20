@@ -1,4 +1,5 @@
 import {
+  OBJECT_KINDS,
   pointsSchema,
   rulesetSchema,
   schedulingSchema,
@@ -46,6 +47,29 @@ export const competition = sqliteTable(
     unique('competition_org_slug_unique').on(t.orgId, t.slug),
     check('competition_title_check', oneOf(t.title, TITLES)),
     check('competition_participant_mode_check', oneOf(t.participantMode, PARTICIPANT_MODES)),
+  ],
+);
+
+// What the reconciler manages in a league's server, found by its stored ID, never by name
+// (design doc section 6; M-46). `key` names what it is for (`team:12`, `match:40`,
+// `division:3:week:2`). `created_by_ligo` is false for a role staff linked: Ligo manages who
+// holds it and never deletes it. No foreign key to league_guild: a league that moves to another
+// server leaves the old server's rows behind, and they are never read again.
+export const discordObject = sqliteTable(
+  'discord_object',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    guildId: text('guild_id').notNull(),
+    kind: text('kind', { enum: OBJECT_KINDS }).notNull(),
+    key: text('key').notNull(),
+    discordId: text('discord_id').notNull(),
+    createdByLigo: integer('created_by_ligo', { mode: 'boolean' }).notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [
+    unique('discord_object_guild_kind_key_unique').on(t.guildId, t.kind, t.key),
+    unique('discord_object_guild_discord_id_unique').on(t.guildId, t.discordId),
+    check('discord_object_kind_check', oneOf(t.kind, OBJECT_KINDS)),
   ],
 );
 
@@ -104,6 +128,8 @@ export const division = sqliteTable(
     categoryPrefix: text('category_prefix').notNull(),
     // Where this division's results are announced; null falls back to the league's channel.
     resultsChannelId: text('results_channel_id'),
+    // The server role whose holders act for this division only (M-05); null: competition staff.
+    staffRoleId: text('staff_role_id'),
   },
   (t) => [
     unique('division_season_name_unique').on(t.seasonId, t.name),
