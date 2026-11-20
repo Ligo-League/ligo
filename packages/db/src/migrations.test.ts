@@ -1,4 +1,12 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { is } from 'drizzle-orm';
@@ -581,5 +589,68 @@ describe('0027: each side of a forfeit has its own rounds', () => {
       forfeit_score: { winner: [7, 3], loser: [0, 7] },
       exclusion_forfeit_score: null,
     });
+  });
+});
+
+describe('the copy taken before migrations (design doc section 13)', () => {
+  const NOW = Date.UTC(2026, 10, 20, 9, 30, 15, 250);
+  /** A database file in its own folder, stopped at `tag`, with one organisation in it. */
+  function oldDatabase(tag: string) {
+    const folder = mkdtempSync(join(tmpdir(), 'ligo-backup-'));
+    const db = openDatabase(join(folder, 'ligo.db'));
+    migrateUpTo(db, tag);
+    db.$client.exec(
+      `insert into org (id, name, slug, settings_json) values (1, 'MLB', 'mlb', '{}')`,
+    );
+    return { db, folder, backups: join(folder, 'backups') };
+  }
+
+  it('copies the database as it was, then migrates it', () => {
+    const { db, folder, backups } = oldDatabase('0027_forfeit_score_sides');
+    try {
+      const { backup } = applyMigrations(db, { backup: { dir: backups, now: NOW } });
+      expect(backup).toBe(
+        join(backups, 'ligo-2026-11-20T09-30-15-250Z-before-0028_player_slug_global.db'),
+      );
+      const copy = openDatabase(backup ?? '');
+      // The organisation, at 0027: the index 0028 adds is not there yet.
+      expect(copy.$client.prepare('select slug from org').all()).toEqual([{ slug: 'mlb' }]);
+      const indexes = (client: typeof copy.$client) =>
+        client.prepare(`select name from sqlite_master where name = 'player_slug_unique'`).all();
+      expect(indexes(copy.$client)).toEqual([]);
+      copy.$client.close();
+      expect(indexes(db.$client)).toEqual([{ name: 'player_slug_unique' }]);
+    } finally {
+      db.$client.close();
+      rmSync(folder, { recursive: true, force: true });
+    }
+  });
+
+  it('takes no copy when nothing is pending, and never removes one', () => {
+    const { db, folder, backups } = oldDatabase('0027_forfeit_score_sides');
+    try {
+      applyMigrations(db, { backup: { dir: backups, now: NOW } });
+      expect(applyMigrations(db, { backup: { dir: backups, now: NOW + 1 } })).toEqual({
+        backup: null,
+      });
+      expect(readdirSync(backups)).toHaveLength(1);
+    } finally {
+      db.$client.close();
+      rmSync(folder, { recursive: true, force: true });
+    }
+  });
+
+  it('takes no copy of a new database, which holds nothing yet', () => {
+    const folder = mkdtempSync(join(tmpdir(), 'ligo-backup-'));
+    const db = openDatabase(join(folder, 'ligo.db'));
+    try {
+      expect(applyMigrations(db, { backup: { dir: join(folder, 'backups'), now: NOW } })).toEqual({
+        backup: null,
+      });
+      expect(existsSync(join(folder, 'backups'))).toBe(false);
+    } finally {
+      db.$client.close();
+      rmSync(folder, { recursive: true, force: true });
+    }
   });
 });

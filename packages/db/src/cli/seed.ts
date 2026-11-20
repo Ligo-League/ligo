@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { openDatabase } from '../client.ts';
-import { applyMigrations } from '../migrate.ts';
+import { applyMigrations, backupFolder } from '../migrate.ts';
 import { linkGuild } from '../seed/link-guild.ts';
 import { parseMatchesCsv } from '../seed/matches-csv.ts';
 import { parseTeamsCsv } from '../seed/parse-teams-csv.ts';
@@ -44,8 +44,9 @@ const path = resolve(process.env.DATABASE_PATH ?? './data/ligo.db');
 mkdirSync(dirname(path), { recursive: true });
 const db = openDatabase(path);
 try {
-  applyMigrations(db);
   const now = Date.now();
+  const { backup } = applyMigrations(db, { backup: { dir: backupFolder(path), now } });
+  if (backup) console.log(`Copied the database before migrating: ${backup}`);
 
   const summary = seedLfr(db, teams.teams, now);
   if (hasChanges(summary)) {

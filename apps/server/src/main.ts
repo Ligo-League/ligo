@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { serve } from '@hono/node-server';
 import { dirname, resolve } from 'node:path';
-import { applyMigrations, openDatabase } from '@ligo/db';
+import { applyMigrations, backupFolder, openDatabase } from '@ligo/db';
 import { createLocalEvidenceStore } from './assets/evidence-store.ts';
 import { createLocalAssetStore } from './assets/store.ts';
 import { SCREENSHOT_MAX_BYTES } from './services/results.ts';
@@ -35,7 +35,11 @@ const logger = createLogger(config.logLevel);
 const databasePath = resolve(config.databasePath);
 mkdirSync(dirname(databasePath), { recursive: true });
 const db = openDatabase(databasePath);
-applyMigrations(db);
+// A copy before any schema change, kept in `backups/` next to the database (design doc section 13).
+const { backup } = applyMigrations(db, {
+  backup: { dir: backupFolder(databasePath), now: Date.now() },
+});
+if (backup) logger.info({ backup }, 'Copied the database before migrating');
 logger.info({ path: databasePath }, 'Database ready');
 
 const assets = createLocalAssetStore(resolve(config.assetsDir));

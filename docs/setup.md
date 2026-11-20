@@ -954,6 +954,15 @@ manager; they go into `deploy/.env` on the VPS only, never in git or in a chat.
    free tier covers 10 GB.
 5. **A session secret** for production: `openssl rand -base64 48`, different from your local one.
 
+## 55. Copies of the database before schema changes
+
+Whenever the server (`pnpm dev`), `pnpm db:migrate` or `pnpm seed` is about to apply new
+migrations to a database that already has some, it first copies it to `data/backups/`, named
+after the first new migration, for example
+`ligo-2026-11-20T09-30-15-250Z-before-0029_match_channels.db`. The log says so. A new, empty
+database gets no copy. Ligo never deletes these copies: remove old ones yourself when you no
+longer need them. To go back to one, stop the server and copy it over `data/ligo.db`.
+
 | Message or symptom                                                                | Cause and fix                                                                                               |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Invalid configuration: DISCORD_TOKEN is missing …`                               | `.env` is absent or a value is empty. Redo step 5.                                                          |
