@@ -18,9 +18,10 @@ import {
   type GuildLeague,
   type LeagueMatch,
 } from '@ligo/db';
-import { and, asc, eq, isNotNull } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import type { PostRef } from './queue-posts.ts';
 import { hasExcludedTeam } from './exclusions.ts';
+import { matchPostChannel } from './match-channels.ts';
 import { actsFor, matchActorOf, requireStaff, sideOf, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { leagueMatch } from './reports.ts';
@@ -130,7 +131,7 @@ export function proposeTime(
       side,
       at: request.at,
       opponentIds: teamMentions(tx, found[other(side)].teamId, found.seasonId, found.id),
-      scheduleChannelId: league.guild.scheduleChannelId,
+      scheduleChannelId: matchPostChannel(tx, league.guild, found.id),
     };
   });
 }
@@ -235,7 +236,7 @@ export function answerProposal(
       status,
       at: proposal.at,
       side: proposal.side,
-      scheduleChannelId: league.guild.scheduleChannelId,
+      scheduleChannelId: matchPostChannel(tx, league.guild, found.id),
       post:
         proposal.channelId !== null && proposal.messageId !== null
           ? { channelId: proposal.channelId, messageId: proposal.messageId }
@@ -343,7 +344,7 @@ export function setMatchTime(
       ok: true,
       match: found,
       at: request.at,
-      scheduleChannelId: league.guild.scheduleChannelId,
+      scheduleChannelId: matchPostChannel(tx, league.guild, found.id),
       withdrawn,
     };
   });
@@ -395,17 +396,13 @@ export function runSchedulingTick(db: Db, now: number): SchedulingNotice[] {
           at: now,
         })
         .run();
+      // The match's own channel once it has one, else the league's schedule channel.
       const channelIds = tx
-        .select({ id: leagueGuild.scheduleChannelId })
+        .select({ guildId: leagueGuild.guildId, scheduleChannelId: leagueGuild.scheduleChannelId })
         .from(leagueGuild)
-        .where(
-          and(
-            eq(leagueGuild.competitionId, candidate.competitionId),
-            isNotNull(leagueGuild.scheduleChannelId),
-          ),
-        )
+        .where(eq(leagueGuild.competitionId, candidate.competitionId))
         .all()
-        .flatMap((row) => row.id ?? []);
+        .flatMap((guild) => matchPostChannel(tx, guild, found.id) ?? []);
       const mentionUserIds = matchMentions(tx, found);
       return { match: found, at, extensionEnd: period.extensionEnd, channelIds, mentionUserIds };
     });

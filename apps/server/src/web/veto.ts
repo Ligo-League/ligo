@@ -20,6 +20,7 @@ import {
 } from './pages/veto.ts';
 import type { RouteKit } from './route-kit.ts';
 import { webActor } from './roles.ts';
+import { matchPostChannel } from '../services/match-channels.ts';
 
 // The map veto on the website (phase 3e, design doc section 5): `/matches/:id/veto` for the two
 // sides and league staff, through the same service as `/match veto` and its buttons. A veto
@@ -147,9 +148,8 @@ export function vetoRoutes(
     const { found, actor } = target;
     const reply = startVeto(db, actor, { matchId: found.id }, deps.now(), coin);
     if (!reply.ok) return failed(c, found.id, reply.error);
-    const channelId = actor.guildId
-      ? (findGuildLeague(db, actor.guildId)?.guild.scheduleChannelId ?? null)
-      : null;
+    const guild = actor.guildId ? findGuildLeague(db, actor.guildId)?.guild : undefined;
+    const channelId = guild ? matchPostChannel(db, guild, found.id) : null;
     const posted = channelId !== null && (await postVeto(discord, channelId, reply));
     return done(c, found.id, posted ? 'started' : 'started_unposted');
   });

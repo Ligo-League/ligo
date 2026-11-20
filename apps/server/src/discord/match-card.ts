@@ -4,6 +4,7 @@ import { loadLogos } from '../services/logos.ts';
 import { matchCardFacts, type MatchCardFacts } from '../services/match-card.ts';
 import type { CommandContext, CommandFile, OutgoingMessage } from './commands/types.ts';
 import { notify } from './match-text.ts';
+import { matchChannelOf } from '../services/match-channels.ts';
 
 // The social image of one match (design doc section 11), attached to the announcement the bot
 // already posts, so that staff can save it and share it.
@@ -127,7 +128,15 @@ export async function announceWithCard(
   matchId: number,
   kind: MatchCardKind,
 ): Promise<boolean> {
-  if (!channelId) return false;
+  // A result is also posted in the match's own channel, for the two teams (design doc section 6).
+  const own = kind === 'result' ? matchChannelOf(context.db, matchId) : null;
+  const targets = [channelId, own].filter(
+    (id, index, all): id is string => id !== null && all.indexOf(id) === index,
+  );
+  if (targets.length === 0) return false;
   const file = await matchCardFile(context, matchId, kind);
-  return notify(context, channelId, file ? { ...message, files: [file] } : message);
+  const outgoing = file ? { ...message, files: [file] } : message;
+  const sent = await Promise.all(targets.map((id) => notify(context, id, outgoing)));
+  // The answer is about the league's channel, as before.
+  return channelId !== null && sent[0] === true;
 }

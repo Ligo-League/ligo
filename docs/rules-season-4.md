@@ -301,8 +301,12 @@ M-xx : mainteneur).
   encore mais n'y écrivent plus ; il est supprimé en fin de saison, après sauvegarde de son
   contenu. Les deux durées sont des réglages, tout comme le nom du salon (`w{week}-{tagA}-{tagB}`
   par défaut, par exemple `w3-grd-rck`).
-- **Statut** : Décidée (M-44, mainteneur, 19 novembre 2026) ; appliquée à partir de la création
-  des salons de match (phase 4).
+- Le staff peut ouvrir les salons d'une semaine plus tôt (`/league week`, ou la page du
+  calendrier).
+- **Statut** : Décidée (M-44, mainteneur, 19 novembre 2026).
+- **Appliquée par** : le bot, quand la ligue lui confie son serveur Discord (phase 4). Seuls les
+  deux équipes, le staff de la ligue, celui de la division et le bot voient le salon. Un match
+  dont le résultat comptait déjà avant que le bot gère le serveur n'a pas de salon.
 
 ## 4. Côtés, hôte et veto
 

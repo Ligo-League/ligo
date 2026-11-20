@@ -20,6 +20,7 @@ import {
 } from './pages/match-time.ts';
 import type { RouteKit } from './route-kit.ts';
 import { webActor } from './roles.ts';
+import { matchPostChannel } from '../services/match-channels.ts';
 
 // Match times on the website (phase 3e): each side's officials and captain propose a time on the
 // match page and answer the other side's, through the same services as `/match propose-time`
@@ -78,7 +79,7 @@ export function matchTimeRoutes(
       proposals: pendingProposals(db, found.id),
       days: proposalDays(db, actor, found.id, deps.now()),
       timeZone: league.competition.schedulingJson.time_zone,
-      posted: league.guild.scheduleChannelId !== null,
+      posted: matchPostChannel(db, league.guild, found.id) !== null,
       csrf: viewer.csrf,
       flash: flashOf(c),
     });

@@ -1102,6 +1102,27 @@ second account, and log in with it. `/staff` shows Ligue 1 only, a Ligue 1 match
 staff panel, a Ligue 2 match page and `/admin` do not. A role taken away in Discord stops counting
 within a minute.
 
+## 62. Phase 4-7: match channels
+
+With `ruleset.discord.manage` on, each match of a season not closed gets a private channel in
+the league's server (the two teams' roles, the league's staff role, the division's staff role and
+the bot):
+
+- **When:** `open_days_before_week` days (2) before its week, in the week's category
+  (`category_template`, `L1 · Semaine 3` by default; a full category gets a numbered one). Staff
+  open a week earlier with `/league week week:<n>` or the schedule page's **Ouvrir ses salons
+  maintenant**.
+- **Inside:** the bot pins a control message: the fixture, the week and its extension, the host
+  and side choice forecast from today's standings, the steps, and buttons to the match's time,
+  veto, result and stats pages. Time proposals, the veto, reports and the result card are posted
+  there instead of the schedule channel.
+- **Archive:** `archive_hours_after_result` hours (48) after the result counts (validated,
+  forfeit or annulled), the channel moves to `Archives · <division>` and the teams can only read.
+- A match whose result counted before Ligo ever opened its channel gets none: turning management
+  on does not fill the server with old matches.
+- **Permissions to check:** the bot's role needs Manage Channels, Manage Roles and Pin Messages.
+  Add Reactions is not granted in match channels (the bot is not invited with it).
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |

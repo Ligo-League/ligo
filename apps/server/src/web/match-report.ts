@@ -23,6 +23,7 @@ import {
 } from './pages/match-report.ts';
 import type { RouteKit } from './route-kit.ts';
 import { webActor } from './roles.ts';
+import { matchPostChannel } from '../services/match-channels.ts';
 
 // Results on the website (phase 3e): each side's officials and captain report the result with
 // the scoreboard screenshot, and the other side confirms or disputes it, through the same
@@ -101,7 +102,7 @@ export function matchReportRoutes(
             },
       reasons: rulesetJson.dispute_reasons,
       gameScore: rulesetJson.game_score ?? null,
-      posted: league.guild.scheduleChannelId !== null,
+      posted: matchPostChannel(db, league.guild, found.id) !== null,
       csrf: viewer.csrf,
       flash: flashOf(c),
     });

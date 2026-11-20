@@ -32,6 +32,7 @@ import {
   type Actor,
 } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
+import { matchPostChannel } from './match-channels.ts';
 import { settleDisputes, type DisputeResolution } from './disputes.ts';
 import { hasExcludedTeam } from './exclusions.ts';
 import { ensurePlayer } from './players.ts';
@@ -319,7 +320,7 @@ export async function reportResult(
       evidenceId,
       opponentIds,
       screenshot,
-      scheduleChannelId: league.guild.scheduleChannelId,
+      scheduleChannelId: matchPostChannel(tx, league.guild, found.id),
     };
   });
   if (!stored.ok) return stored;

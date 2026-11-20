@@ -1,4 +1,5 @@
 import {
+  matchChannelKey,
   matchChannelPlan,
   stageConfigSchema,
   type ChannelMatch,
@@ -115,3 +116,46 @@ export function desiredMatchChannels(db: Reader, target: MatchChannelTarget): Ma
 
 const keep = (key: string | null, keys: ReadonlySet<string>) =>
   key !== null && keys.has(key) ? key : null;
+
+/** The match's own channel in a server, when Ligo made one there; null otherwise. */
+export function matchChannelIn(db: Reader, guildId: string, matchId: number): string | null {
+  return (
+    db
+      .select({ id: discordObject.discordId })
+      .from(discordObject)
+      .where(
+        and(
+          eq(discordObject.guildId, guildId),
+          eq(discordObject.kind, 'match_channel'),
+          eq(discordObject.key, matchChannelKey(matchId)),
+        ),
+      )
+      .get()?.id ?? null
+  );
+}
+
+/** The match's own channel in its competition's server, when it has one. */
+export function matchChannelOf(db: Reader, matchId: number): string | null {
+  const row = db
+    .select({ guildId: schema.leagueGuild.guildId })
+    .from(match)
+    .innerJoin(stage, eq(match.stageId, stage.id))
+    .innerJoin(season, eq(stage.seasonId, season.id))
+    .innerJoin(schema.leagueGuild, eq(schema.leagueGuild.competitionId, season.competitionId))
+    .where(eq(match.id, matchId))
+    .get();
+  return row ? matchChannelIn(db, row.guildId, matchId) : null;
+}
+
+/**
+ * Where a match's notifications go (design doc section 6, maintainer, 13 November 2026): its own
+ * channel once it has one, so the two teams answer where only they and staff read; until then,
+ * the league's schedule channel.
+ */
+export function matchPostChannel(
+  db: Reader,
+  guild: { guildId: string; scheduleChannelId: string | null },
+  matchId: number,
+): string | null {
+  return matchChannelIn(db, guild.guildId, matchId) ?? guild.scheduleChannelId;
+}
