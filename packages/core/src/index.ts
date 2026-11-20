@@ -4,6 +4,7 @@ export * from './exclusion.ts';
 export * from './forfeits.ts';
 export * from './game-score.ts';
 export * from './discord-names.ts';
+export * from './match-channels.ts';
 export * from './match-lifecycle.ts';
 export * from './mercato.ts';
 export * from './registration.ts';
