@@ -1,0 +1,17 @@
+# Caddy gets and renews the HTTPS certificate on its own once the DNS points at the VPS.
+# SITE_ADDRESS is ligoleague.eu unless deploy/.env says otherwise.
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	# A year of HTTPS only, for this name alone: no includeSubDomains or preload, which are hard
+	# to undo.
+	header Strict-Transport-Security "max-age=31536000"
+	# Caddy sets X-Forwarded-Proto itself and replaces any a visitor sends, so the server can
+	# trust it (TRUST_PROXY).
+	reverse_proxy server:3000
+}
+
+# One address for the site (design doc section 7).
+www.{$SITE_ADDRESS} {
+	redir https://{$SITE_ADDRESS}{uri} permanent
+}

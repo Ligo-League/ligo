@@ -1,0 +1,17 @@
+# Litestream copies every change to the database to R2 within seconds (design doc section 13).
+# The ${...} values come from the container's environment (deploy/compose.yml).
+
+dbs:
+  - path: /data/ligo.db
+    replica:
+      type: s3
+      bucket: ${R2_BUCKET}
+      path: backups/db
+      endpoint: ${R2_ENDPOINT}
+      region: auto
+
+# A full copy every night; 30 days of them are kept, so any moment of the last month can be
+# restored.
+snapshot:
+  interval: 24h
+  retention: 720h

@@ -1,0 +1,81 @@
+# Ligo on the VPS (design doc section 13): Caddy in front, the server (bot and website in one
+# process), Litestream copying the database to R2. The worker joins in phase 5.
+#
+# Run from this folder: `docker compose up -d` (deploy/update.sh does it). Values come from
+# deploy/.env, which stays on the VPS (see .env.example). Every variable is written out below so
+# each container gets only what it needs: the server never sees the R2 keys.
+
+name: ligo
+
+# Docker keeps at most 5 × 10 MB of logs per container.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: ligo-server:latest
+    restart: unless-stopped
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN:?set DISCORD_TOKEN in deploy/.env}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:?set DISCORD_CLIENT_ID in deploy/.env}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?set DISCORD_GUILD_ID in deploy/.env}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:?set DISCORD_CLIENT_SECRET in deploy/.env}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in deploy/.env}
+      # Read by the seed only.
+      DISCORD_STAFF_ROLE_ID: ${DISCORD_STAFF_ROLE_ID:-}
+      PUBLIC_URL: https://${SITE_ADDRESS:-ligoleague.eu}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Only Caddy reaches the server (no published port), so its X-Forwarded-Proto is trusted.
+      TRUST_PROXY: 'true'
+    volumes:
+      - ${DATA_DIR:-/srv/ligo/data}:/data
+    # The server closes the Discord connection and the database on SIGTERM.
+    stop_grace_period: 30s
+    logging: *logging
+
+  caddy:
+    image: caddy:2.11.9-alpine
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-ligoleague.eu}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # The HTTPS certificates: kept across restarts, or Let's Encrypt's limits are hit.
+      - caddy_data:/data
+      - caddy_config:/config
+    logging: *logging
+
+  litestream:
+    image: litestream/litestream:0.5.18
+    restart: unless-stopped
+    depends_on:
+      - server
+    command: replicate
+    # The server's user: the files Litestream creates next to the database stay writable by it.
+    user: '1000:1000'
+    environment:
+      LITESTREAM_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?set R2_ACCESS_KEY_ID in deploy/.env}
+      LITESTREAM_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?set R2_SECRET_ACCESS_KEY in deploy/.env}
+      R2_BUCKET: ${R2_BUCKET:?set R2_BUCKET in deploy/.env}
+      R2_ENDPOINT: ${R2_ENDPOINT:-https://${R2_ACCOUNT_ID:?set R2_ACCOUNT_ID in deploy/.env}.r2.cloudflarestorage.com}
+    volumes:
+      - ${DATA_DIR:-/srv/ligo/data}:/data
+      - ./litestream.yml:/etc/litestream.yml:ro
+    stop_grace_period: 30s
+    logging: *logging
+
+volumes:
+  caddy_data:
+  caddy_config:
