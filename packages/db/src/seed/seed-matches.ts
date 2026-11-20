@@ -1,4 +1,4 @@
-import { weekWindow } from '@ligo/core';
+import { stageConfigSchema, weekWindow } from '@ligo/core';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../client.ts';
 import {
@@ -63,7 +63,7 @@ export function seedMatches(db: Db, rows: readonly MatchRow[], now: number): Mat
             ord: 1,
             kind: 'round_robin',
             // No shuffle seed: this schedule was made on score7, not generated here.
-            configJson: {},
+            configJson: stageConfigSchema.parse({}),
             status: 'published',
           })
           .returning()

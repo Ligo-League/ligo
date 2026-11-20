@@ -10,6 +10,7 @@ import {
   schedulingSchema,
   seasonSettingsSchema,
   stageConfigSchema,
+  discordSettingsSchema,
   tiebreakSchema,
   TIEBREAK_CRITERIA,
   UNRESOLVED_TIE_MODES,
@@ -57,9 +58,24 @@ const LFR_S3 = {
     },
     // M-39 (maintainer, 19 November 2026): no deadline for the stat grid.
     stats: { entry_days: null, kills_deaths_tolerance: 3 },
+    // M-44 (maintainer, 19 November 2026); Season 3's server was managed by hand.
+    discord: {
+      manage: false,
+      team_role_template: '{name}',
+      team_roles_mentionable: true,
+      open_days_before_week: 2,
+      archive_hours_after_result: 48,
+      channel_template: 'w{week}-{tagA}-{tagB}',
+      category_template: '{division} · Semaine {week}',
+      archive_category_template: 'Archives · {division}',
+      moss: false,
+      moss_channel_template: 'moss-{tag}',
+      moss_category_template: 'MOSS · {division}',
+    },
   },
   scheduling: {
     rounds_per_week: 1,
+    legs: 1,
     time_zone: 'Europe/Paris',
     extension_weeks: 1,
     auto_slot: { weekday: 7, time: '21:00' },
@@ -76,7 +92,7 @@ const LFR_S3 = {
     map_pool: [],
     forfeits: { warning_at: 2, exclusion_at: 3 },
   },
-  stage: { seed: 20261019 },
+  stage: { seed: 20261019, weeks_off: [], extra_round_weeks: [] },
 };
 
 const accepts = (schema: z.ZodType, value: unknown) => schema.safeParse(value).success;
@@ -287,6 +303,65 @@ describe('schedulingSchema', () => {
   it.each([0, -1, 1.5, '1'])('refuses rounds_per_week = %j', (rounds) => {
     expect(accepts(schedulingSchema, { rounds_per_week: rounds })).toBe(false);
   });
+
+  it('plays each pair once unless the league asks for home and away', () => {
+    expect(schedulingSchema.parse({ rounds_per_week: 1 }).legs).toBe(1);
+    expect(schedulingSchema.parse({ rounds_per_week: 1, legs: 2 }).legs).toBe(2);
+    expect(accepts(schedulingSchema, { rounds_per_week: 1, legs: 3 })).toBe(false);
+  });
+});
+
+describe('discordSettingsSchema', () => {
+  it('leaves the server alone by default, with M-44’s names and times ready', () => {
+    expect(discordSettingsSchema.parse({})).toEqual({
+      manage: false,
+      team_role_template: '{name}',
+      team_roles_mentionable: true,
+      open_days_before_week: 2,
+      archive_hours_after_result: 48,
+      channel_template: 'w{week}-{tagA}-{tagB}',
+      category_template: '{division} · Semaine {week}',
+      archive_category_template: 'Archives · {division}',
+      moss: false,
+      moss_channel_template: 'moss-{tag}',
+      moss_category_template: 'MOSS · {division}',
+    });
+  });
+
+  it('is part of the ruleset, so leagues stored before it still read', () => {
+    expect(rulesetSchema.parse({ result_validation: 'opponent' }).discord.manage).toBe(false);
+  });
+
+  it('accepts a channel name without the week, and LFR’s one category per division', () => {
+    const value = {
+      channel_template: '{tagA}-{tagB}',
+      category_template: 'Organisation {division}',
+    };
+    expect(discordSettingsSchema.parse(value)).toMatchObject(value);
+  });
+
+  it.each([
+    ['channel_template', 'w{week}-{team}'],
+    ['category_template', '{division} {tagA}'],
+    ['archive_category_template', 'Archives {week}'],
+    ['team_role_template', '{division}'],
+    ['moss_channel_template', 'moss-{tagA}'],
+    ['moss_category_template', 'MOSS {tag}'],
+    ['channel_template', '   '],
+    ['category_template', 'x'.repeat(101)],
+  ])('refuses %s = %j', (key, template) => {
+    expect(accepts(discordSettingsSchema, { [key]: template })).toBe(false);
+  });
+
+  it.each([
+    ['open_days_before_week', -1],
+    ['open_days_before_week', 15],
+    ['archive_hours_after_result', -1],
+    ['archive_hours_after_result', 721],
+    ['archive_hours_after_result', 1.5],
+  ])('refuses %s = %j', (key, value) => {
+    expect(accepts(discordSettingsSchema, { [key]: value })).toBe(false);
+  });
 });
 
 describe('seasonSettingsSchema', () => {
@@ -387,8 +462,18 @@ describe('seasonSettingsSchema', () => {
 });
 
 describe('stageConfigSchema', () => {
-  it('accepts a stage with no seed yet', () => {
-    expect(stageConfigSchema.parse({})).toEqual({});
+  it('accepts a stage with no seed yet, and no weeks off', () => {
+    expect(stageConfigSchema.parse({})).toEqual({ weeks_off: [], extra_round_weeks: [] });
+  });
+
+  it('keeps the weeks off and extra-round weeks staff mark on the draft (M-45)', () => {
+    const value = { seed: 42, weeks_off: ['2027-02-17'], extra_round_weeks: ['2027-01-11'] };
+    expect(stageConfigSchema.parse(value)).toEqual(value);
+  });
+
+  it.each([['17/02/2027'], ['2027-02-30'], ['2027-2-17']])('refuses the week day %j', (day) => {
+    expect(accepts(stageConfigSchema, { weeks_off: [day] })).toBe(false);
+    expect(accepts(stageConfigSchema, { extra_round_weeks: [day] })).toBe(false);
   });
 
   it.each([1.5, '7', Number.MAX_SAFE_INTEGER + 1, null])('refuses seed = %j', (seed) => {
@@ -401,6 +486,9 @@ describe('JSON round trip', () => {
   const int = fc.integer({ min: -1000, max: 1000 });
   const positive = fc.integer({ min: 1, max: 50 });
   const score = fc.integer({ min: 0, max: 50 });
+  const isoDay = fc
+    .integer({ min: 0, max: 3650 })
+    .map((offset) => new Date(Date.UTC(2026, 0, 1 + offset)).toISOString().slice(0, 10));
 
   const arbitraries = [
     [
@@ -490,6 +578,22 @@ describe('JSON round trip', () => {
           entry_days: fc.option(fc.integer({ min: 1, max: 365 }), { nil: null }),
           kills_deaths_tolerance: fc.integer({ min: 0, max: 50 }),
         }),
+        discord: fc.record({
+          manage: fc.boolean(),
+          team_role_template: fc.constantFrom('{name}', '⚔️ {name}', '{tag}'),
+          team_roles_mentionable: fc.boolean(),
+          open_days_before_week: fc.integer({ min: 0, max: 14 }),
+          archive_hours_after_result: fc.integer({ min: 0, max: 720 }),
+          channel_template: fc.constantFrom('w{week}-{tagA}-{tagB}', '{tagA}-{tagB}'),
+          category_template: fc.constantFrom(
+            '{division} · Semaine {week}',
+            'Organisation {division}',
+          ),
+          archive_category_template: fc.constantFrom('Archives · {division}', 'Archives'),
+          moss: fc.boolean(),
+          moss_channel_template: fc.constantFrom('moss-{tag}', 'moss-{name}'),
+          moss_category_template: fc.constantFrom('MOSS · {division}', 'MOSS'),
+        }),
       }),
     ],
     [
@@ -497,6 +601,7 @@ describe('JSON round trip', () => {
       schedulingSchema,
       fc.record({
         rounds_per_week: positive,
+        legs: fc.constantFrom(1 as const, 2 as const),
         time_zone: fc.constantFrom('Europe/Paris', 'UTC', 'America/New_York'),
         extension_weeks: fc.integer({ min: 1, max: 4 }),
         auto_slot: fc.option(
@@ -528,7 +633,18 @@ describe('JSON round trip', () => {
         }),
       }),
     ],
-    ['stage', stageConfigSchema, fc.record({ seed: fc.maxSafeInteger() }, { requiredKeys: [] })],
+    [
+      'stage',
+      stageConfigSchema,
+      fc.record(
+        {
+          seed: fc.maxSafeInteger(),
+          weeks_off: fc.array(isoDay, { maxLength: 6 }),
+          extra_round_weeks: fc.array(isoDay, { maxLength: 6 }),
+        },
+        { requiredKeys: ['weeks_off', 'extra_round_weeks'] },
+      ),
+    ],
   ] as const;
 
   it.each(arbitraries)('%s settings survive JSON storage', (_name, schema, arbitrary) => {

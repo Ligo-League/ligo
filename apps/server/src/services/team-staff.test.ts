@@ -4,6 +4,7 @@ import {
   registrationSchema,
   requestsSchema,
   statsSettingsSchema,
+  discordSettingsSchema,
   vetoSchema,
 } from '@ligo/core';
 import { orgSettingsSchema, schema } from '@ligo/db';
@@ -203,6 +204,7 @@ describe('addTeamMember and removeTeamMember', () => {
           registration: registrationSchema.parse({}),
           mercato: mercatoSchema.parse({}),
           stats: statsSettingsSchema.parse({}),
+          discord: discordSettingsSchema.parse({}),
         },
       })
       .run();

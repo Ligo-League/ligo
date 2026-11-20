@@ -4,6 +4,7 @@ import {
   mercatoSchema,
   registrationSchema,
   statsSettingsSchema,
+  discordSettingsSchema,
   requestsSchema,
   teamRolesSchema,
   vetoSchema,
@@ -84,6 +85,9 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
     mercato: mercatoSchema.parse({ mode: 'windows', max_moves_per_team: 3, lock_hours: 24 }),
     // No deadline for the stat grid; a tolerance of 3 kills (M-39, 19 November 2026).
     stats: statsSettingsSchema.parse({}),
+    // Ligo leaves the server alone until staff turn it on (phase 4); its names and times are
+    // M-44's. LFR's rulebook has a MOSS channel per team.
+    discord: discordSettingsSchema.parse({ moss: true }),
   },
   // What a new season copies (3 points per win, as score7's Season 3 tables are configured).
   pointsJson: LFR_POINTS,
@@ -91,6 +95,7 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
   // Rulebook: one extra week without an agreed time, then Sunday 21:00, French time.
   schedulingJson: {
     rounds_per_week: 1,
+    legs: 1,
     time_zone: LFR_TIME_ZONE_SETTING,
     extension_weeks: 1,
     auto_slot: { weekday: 7, time: '21:00' },

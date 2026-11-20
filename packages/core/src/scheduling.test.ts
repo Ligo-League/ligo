@@ -105,6 +105,7 @@ describe('schedulingSchema', () => {
   it("defaults to LFR's rulebook, so stored settings without these keys keep reading", () => {
     expect(schedulingSchema.parse({ rounds_per_week: 1 })).toEqual({
       rounds_per_week: 1,
+      legs: 1,
       time_zone: 'Europe/Paris',
       extension_weeks: 1,
       auto_slot: { weekday: 7, time: '21:00' },

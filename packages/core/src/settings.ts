@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import {
+  CATEGORY_PLACEHOLDERS,
+  CHANNEL_PLACEHOLDERS,
+  DISCORD_NAME_MAX,
+  DIVISION_PLACEHOLDERS,
+  TEAM_PLACEHOLDERS,
+  templateProblems,
+} from './discord-names.ts';
 
 // Rule settings a league may change, stored as JSON on the competition, season or stage
 // (design doc sections 4 and 5). Every schema is strict and holds only the keys the design doc
@@ -293,6 +301,40 @@ export const requestsSchema = z
   );
 export type RequestsSettings = z.infer<typeof requestsSchema>;
 
+/** A name template for something Ligo creates in Discord, using only `allowed` placeholders. */
+const nameTemplate = (allowed: readonly string[], fallback: string) =>
+  z
+    .string()
+    .max(DISCORD_NAME_MAX)
+    .refine((template) => template.trim() !== '', { error: 'A name cannot be empty.' })
+    .refine((template) => templateProblems(template, allowed).length === 0, {
+      error: `Only ${allowed.map((name) => `{${name}}`).join(', ')} can be used here.`,
+    })
+    .default(fallback);
+
+/**
+ * What Ligo manages in the league's Discord server (design doc section 6; M-44, M-46). Off by
+ * default: a league turns it on once its server is ready. `manage` covers the team roles and
+ * the match channels, `moss` the teams' MOSS channels. `{division}` is the division's category
+ * prefix.
+ */
+export const discordSettingsSchema = z.strictObject({
+  manage: z.boolean().default(false),
+  team_role_template: nameTemplate(TEAM_PLACEHOLDERS, '{name}'),
+  team_roles_mentionable: z.boolean().default(true),
+  /** A match channel opens this many days before its week starts. */
+  open_days_before_week: z.int().min(0).max(14).default(2),
+  /** …and is archived this many hours after its result counts, never by the calendar. */
+  archive_hours_after_result: z.int().min(0).max(720).default(48),
+  channel_template: nameTemplate(CHANNEL_PLACEHOLDERS, 'w{week}-{tagA}-{tagB}'),
+  category_template: nameTemplate(CATEGORY_PLACEHOLDERS, '{division} · Semaine {week}'),
+  archive_category_template: nameTemplate(DIVISION_PLACEHOLDERS, 'Archives · {division}'),
+  moss: z.boolean().default(false),
+  moss_channel_template: nameTemplate(TEAM_PLACEHOLDERS, 'moss-{tag}'),
+  moss_category_template: nameTemplate(DIVISION_PLACEHOLDERS, 'MOSS · {division}'),
+});
+export type DiscordSettings = z.infer<typeof discordSettingsSchema>;
+
 /** `competition.ruleset_json`. */
 export const rulesetSchema = z.strictObject({
   result_validation: z.enum(RESULT_VALIDATION_MODES),
@@ -313,6 +355,7 @@ export const rulesetSchema = z.strictObject({
   registration: registrationSchema.default(() => registrationSchema.parse({})),
   mercato: mercatoSchema.default(() => mercatoSchema.parse({})),
   stats: statsSettingsSchema.default(() => statsSettingsSchema.parse({})),
+  discord: discordSettingsSchema.default(() => discordSettingsSchema.parse({})),
 });
 export type RulesetSettings = z.infer<typeof rulesetSchema>;
 
@@ -328,6 +371,8 @@ const isTimeZone = (zone: string) => {
 
 export const schedulingSchema = z.strictObject({
   rounds_per_week: z.int().min(1),
+  /** 1: each pair meets once; 2: home and away, the second leg with the sides swapped. */
+  legs: z.union([z.literal(1), z.literal(2)]).default(1),
   /** Where weeks start at midnight and match times are typed; an IANA zone. */
   time_zone: z.string().refine(isTimeZone, { error: 'Unknown time zone.' }).default('Europe/Paris'),
   /** Weeks added when the teams agree no time during their week; LFR's rulebook gives one. */
@@ -399,8 +444,13 @@ export const seasonSettingsSchema = z.strictObject({
 });
 export type SeasonSettings = z.infer<typeof seasonSettingsSchema>;
 
-/** `stage.config_json`. `seed` is the stored shuffle seed of a round robin. */
+/**
+ * `stage.config_json`. A round robin's stored shuffle seed, and the days of the weeks staff mark
+ * on its draft: weeks without matches, and weeks that hold one round more (M-45).
+ */
 export const stageConfigSchema = z.strictObject({
   seed: z.int().optional(),
+  weeks_off: z.array(z.iso.date()).default([]),
+  extra_round_weeks: z.array(z.iso.date()).default([]),
 });
 export type StageConfig = z.infer<typeof stageConfigSchema>;
