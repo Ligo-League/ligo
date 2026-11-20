@@ -51,6 +51,8 @@ export interface FakeInteraction extends CommandInteraction {
   replies: ReplyMessage[];
   /** True once `defer` has been called. */
   deferred: boolean;
+  /** True when it was deferred to answer the member alone. */
+  deferredEphemeral: boolean;
 }
 
 /** An in-memory stand-in for a Discord slash-command interaction. */
@@ -91,15 +93,17 @@ export function fakeInteraction(commandName: string, input: FakeInput = {}): Fak
     },
     replies,
     deferred: false,
+    deferredEphemeral: false,
     get answered() {
       return replies.length > 0;
     },
-    defer() {
+    defer(options) {
       // Discord refuses to defer twice, or after a reply.
       if (this.deferred || replies.length > 0) {
         return Promise.reject(new Error('Interaction already acknowledged'));
       }
       this.deferred = true;
+      this.deferredEphemeral = options?.ephemeral === true;
       return Promise.resolve();
     },
     reply(message) {

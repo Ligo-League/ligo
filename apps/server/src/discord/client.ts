@@ -54,7 +54,7 @@ async function sendReply(
   { ephemeral, ...message }: ReplyMessage,
 ): Promise<void> {
   const payload = toDiscordMessage(message);
-  // A deferred reply was announced as public and can only be completed, not made private.
+  // A deferred reply keeps the visibility it was deferred with: it can only be completed.
   if (interaction.deferred) await interaction.editReply(payload);
   else if (ephemeral) await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
   else await interaction.reply(payload);
@@ -66,7 +66,7 @@ async function sendCommandReply(
   { ephemeral, ...message }: ReplyMessage,
 ): Promise<{ messageId: string } | null> {
   const payload = toDiscordMessage(message);
-  // A deferred reply was announced as public and can only be completed, not made private.
+  // A deferred reply keeps the visibility it was deferred with: it can only be completed.
   if (interaction.deferred) return { messageId: (await interaction.editReply(payload)).id };
   if (ephemeral) {
     await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
@@ -230,8 +230,8 @@ export function createDiscordClient(deps: {
       get answered() {
         return interaction.replied;
       },
-      async defer() {
-        await interaction.deferReply();
+      async defer(options) {
+        await interaction.deferReply(options?.ephemeral ? { flags: MessageFlags.Ephemeral } : {});
       },
       reply: (message) => sendCommandReply(interaction, message),
     };

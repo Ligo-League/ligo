@@ -268,3 +268,51 @@ describe('/league channels', () => {
     ]);
   });
 });
+
+describe('/league sync', () => {
+  const sync = (who: FakeInput = STAFF, dryRun?: boolean): FakeInput => ({
+    ...who,
+    subcommand: 'sync',
+    options: dryRun === undefined ? {} : { dry_run: dryRun },
+  });
+  function managed(manage: boolean) {
+    const setup = session();
+    const row = setup.db.select().from(schema.competition).get();
+    if (!row) throw new Error('set up');
+    setup.db
+      .update(schema.competition)
+      .set({ rulesetJson: { ...row.rulesetJson, discord: { ...row.rulesetJson.discord, manage } } })
+      .run();
+    setup.gateway.snapshots.set(TEST_GUILD, {
+      everyoneId: TEST_GUILD,
+      roles: [],
+      categories: [],
+      channels: [],
+      members: [],
+    });
+    return setup;
+  }
+
+  it('answers privately, after deferring, that the server is up to date', async () => {
+    const { context } = managed(true);
+    const interaction = fakeInteraction('league', sync(STAFF, true));
+    await leagueCommand.execute(interaction, context);
+    expect(interaction.deferredEphemeral).toBe(true);
+    expect(interaction.replies).toEqual([
+      { content: 'Le serveur est à jour : rien à changer.', ephemeral: true },
+    ]);
+  });
+
+  it('says when the league does not let Ligo manage its server', async () => {
+    const { run } = managed(false);
+    expect((await run(sync()))[0]?.content).toContain('Ligo ne gère pas encore le serveur');
+  });
+
+  it('is for league staff only, and touches nothing for anyone else', async () => {
+    const { run, gateway } = managed(true);
+    const replies = await run(sync({ ...STAFF, memberRoleIds: [] }));
+    expect(replies[0]).toMatchObject({ ephemeral: true });
+    expect(replies[0]?.content).not.toContain('Synchronisation');
+    expect(gateway.changes).toEqual([]);
+  });
+});

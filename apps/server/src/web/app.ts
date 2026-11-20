@@ -60,6 +60,7 @@ import { adminOrgRoutes } from './admin-orgs.ts';
 import { ownedOrgs } from '../services/orgs.ts';
 import { adminCompetitionRoutes } from './admin-competitions.ts';
 import { adminSeasonRoutes } from './admin-seasons.ts';
+import { adminSyncRoutes } from './admin-sync.ts';
 import { playerRoutes } from './players.ts';
 import { matchScoreboard } from '../services/scoreboard.ts';
 import { rosterRoutes } from './rosters.ts';
@@ -417,6 +418,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   adminOrgRoutes(app, { deps, render, notFound, forbidden, guard });
   adminCompetitionRoutes(app, { deps, render, notFound, forbidden, guard });
   adminSeasonRoutes(app, { deps, render, notFound, forbidden, guard });
+  adminSyncRoutes(app, { deps, render, notFound, forbidden, guard });
   playerRoutes(app, { deps, render, notFound });
 
   // A competition's pages live under its organisation, `/:org/:competition` (design doc section

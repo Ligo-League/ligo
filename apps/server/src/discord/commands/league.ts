@@ -1,4 +1,6 @@
+import { schema } from '@ligo/db';
 import { ApplicationCommandOptionType, ChannelType } from 'discord.js';
+import { eq } from 'drizzle-orm';
 import { catalogs, t, type Locale } from '../../i18n/index.ts';
 import {
   LEAGUE_CHANNEL_KINDS,
@@ -6,6 +8,9 @@ import {
   searchDivisions,
   setLeagueChannel,
 } from '../../services/league-channels.ts';
+import { requireStaff } from '../../services/permissions.ts';
+import { syncLeague } from '../../services/reconciler.ts';
+import { syncReplyLines } from '../sync-text.ts';
 import { described, english, MAX_CHOICE_LENGTH, MAX_CHOICES, STAFF_ONLY } from './describe.ts';
 import type { Command, CommandContext, CommandInteraction } from './types.ts';
 
@@ -43,6 +48,42 @@ async function listChannels(
     ),
   ];
   await interaction.reply({ content: lines.join('\n'), ephemeral: true });
+}
+
+/**
+ * Syncs the league's server now (phase 4, design doc section 6), or shows what a sync would
+ * change. Reading a whole server can take longer than Discord's 3 seconds: the reply is deferred,
+ * privately.
+ */
+async function syncServer(interaction: CommandInteraction, context: CommandContext): Promise<void> {
+  const { locale } = context;
+  const staff = requireStaff(context.db, interaction);
+  if (!staff.ok) {
+    await interaction.reply({ content: t(locale, `league.error.${staff.error}`), ephemeral: true });
+    return;
+  }
+  await interaction.defer({ ephemeral: true });
+  const dryRun = interaction.options.getBoolean('dry_run') === true;
+  const reply = await syncLeague(context.db, context.gateway, staff.league.competition.id, {
+    dryRun,
+    now: context.now(),
+    actorPlayerId: playerIdOf(context, interaction.user.id),
+  });
+  await interaction.reply({
+    content: syncReplyLines(locale, reply, dryRun).join('\n'),
+    ephemeral: true,
+  });
+}
+
+/** The Ligo account of a Discord user, for the audit log; null when they have none. */
+function playerIdOf(context: CommandContext, discordUserId: string): number | null {
+  return (
+    context.db
+      .select({ id: schema.player.id })
+      .from(schema.player)
+      .where(eq(schema.player.discordUserId, discordUserId))
+      .get()?.id ?? null
+  );
 }
 
 export const leagueCommand: Command = {
@@ -88,6 +129,19 @@ export const leagueCommand: Command = {
         name: 'channels',
         ...described('command.league.channels.description'),
       },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: 'sync',
+        ...described('command.league.sync.description'),
+        options: [
+          {
+            type: ApplicationCommandOptionType.Boolean,
+            name: 'dry_run',
+            ...described('command.league.sync.option.dry_run'),
+            required: false,
+          },
+        ],
+      },
     ],
   },
 
@@ -96,6 +150,10 @@ export const leagueCommand: Command = {
     const privately = (content: string) => interaction.reply({ content, ephemeral: true });
     if (interaction.options.getSubcommand() === 'channels') {
       await listChannels(interaction, context);
+      return;
+    }
+    if (interaction.options.getSubcommand() === 'sync') {
+      await syncServer(interaction, context);
       return;
     }
     const kind = interaction.options.getString('kind');

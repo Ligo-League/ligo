@@ -257,6 +257,11 @@ export function competitionPageView(locale: Locale, data: CompetitionPageData): 
         </li>
         <li><a href="${path}/discord">${t(locale, 'web.admin.comp.discord')}</a></li>
         <li><a href="${path}/discord/channels">${t(locale, 'web.admin.comp.channels')}</a></li>
+        <li>
+          <a href="/admin/${org.slug}/${competition.slug}/discord/sync"
+            >${t(locale, 'web.admin.sync.link')}</a
+          >
+        </li>
       </ul>
       <section class="card stack">
         <h2>${t(locale, 'web.admin.comp.seasons')}</h2>

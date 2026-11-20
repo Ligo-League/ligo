@@ -9,6 +9,7 @@ import { loadConfig } from './config.ts';
 import { Events } from 'discord.js';
 import { buttons } from './discord/buttons/index.ts';
 import { startClock } from './discord/clock.ts';
+import { startReconciler } from './discord/reconciler-clock.ts';
 import { createDiscordClient } from './discord/client.ts';
 import { commands } from './discord/commands/index.ts';
 import { forms } from './discord/forms.ts';
@@ -90,18 +91,22 @@ const server = serve(
 // Deadlines need the bot to post, so the clock starts once Discord is ready.
 const CLOCK_INTERVAL_MS = 60_000;
 let stopClock: (() => void) | null = null;
+// The league servers' sync (design doc section 6) also needs the bot connected.
+let stopReconciler: (() => void) | null = null;
 const startClockOnReady = () => {
   client.once(Events.ClientReady, () => {
     stopClock ??= startClock(
       { db, gateway, logger, locale: DEFAULT_LOCALE, publicUrl, now: () => Date.now() },
       CLOCK_INTERVAL_MS,
     );
+    stopReconciler ??= startReconciler({ db, gateway, logger, now: () => Date.now() });
   });
 };
 
 const shutdown = (signal: string) => {
   logger.info({ signal }, 'Shutting down');
   stopClock?.();
+  stopReconciler?.();
   server.close();
   void client.destroy().finally(() => {
     db.$client.close();

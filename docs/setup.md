@@ -1053,6 +1053,25 @@ it on a season of your own, or approve a few registrations into Season 4 first (
 5. **Publier le calendrier** creates the matches; the division then shows how many, over how
    many weeks, and the draft's buttons are gone. A published schedule cannot be drawn again.
 
+## 59. Phase 4-5: syncing the league's server
+
+Ligo can now compare the league's Discord server with what it should hold and put it right:
+the team roles (4-6), match channels (4-7) and MOSS channels (4-8) come next, so for now there
+is nothing to create. It acts only for a league whose Discord settings turn it on
+(`ruleset.discord.manage`; the switch comes on the competition's admin page in 4-10).
+
+- **The sync page:** the competition's admin page links **Synchroniser le serveur Discord**
+  (`/admin/mlb-group/lfr/discord/sync`). It shows what a sync would change, and **Synchroniser
+  maintenant** does it.
+- **In Discord:** `/league sync` (staff), `dry_run: True` to only see what would change. Run
+  `pnpm discord:register` once for the new subcommand to appear (on the VPS:
+  `docker compose run --rm --no-deps server node apps/server/src/discord/register.ts`).
+- **On its own:** once the bot is connected, then every 10 minutes.
+- **The bot's role** must sit above every team role it manages (Server Settings > Roles, drag
+  it up), with Manage Roles and Manage Channels; Discord refuses the rest, and the sync says so.
+
+Never let two Ligos manage one server (section 57): local development uses its own test server.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |

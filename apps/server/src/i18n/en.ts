@@ -192,6 +192,42 @@ export const en: Record<MessageKey, string> = {
   'command.league.channel.option.division':
     'For results: one division only. Without it, the whole league.',
   'command.league.channels.description': 'Shows the channels the bot uses.',
+  'sync.error.not_found': 'Competition not found.',
+  'sync.error.not_linked': 'No Discord server is linked to this league.',
+  'sync.error.not_managed':
+    'Ligo does not manage this league’s server yet: staff turn it on in the competition’s settings.',
+  'sync.error.not_in_server': 'The bot is not in the league’s server.',
+  'sync.error.discord_unavailable': 'Discord does not answer: try again in a few minutes.',
+  'sync.inSync': 'The server is up to date: nothing to change.',
+  'sync.preview': 'What a sync would change:',
+  'sync.line': '{label}: {count}',
+  'sync.applied': 'Sync done. Changes: {applied} of {total}.',
+  'sync.failed':
+    'Discord refused {count}; the next sync tries again. Check that the bot’s role is above the team roles and that it has Manage Roles and Manage Channels.',
+  'sync.failure': '{label}: {message}',
+  'sync.absent': 'Players or officials not on the server, who cannot get their role: {count}.',
+  'sync.op.create_role': 'Roles to create',
+  'sync.op.update_role': 'Roles to rename or recolour',
+  'sync.op.create_category': 'Categories to create',
+  'sync.op.rename_category': 'Categories to rename',
+  'sync.op.create_channel': 'Channels to create',
+  'sync.op.update_channel': 'Channels to rename or move',
+  'sync.op.set_overwrite': 'Channel permissions to set',
+  'sync.op.remove_overwrite': 'Channel permissions to remove',
+  'sync.op.add_member_role': 'Roles to give',
+  'sync.op.remove_member_role': 'Roles to take away',
+  'sync.op.delete_channel': 'Channels to delete',
+  'sync.op.delete_category': 'Categories to delete',
+  'sync.op.delete_role': 'Roles to delete',
+  'sync.op.forget': 'Objects deleted by hand, to forget',
+  'command.league.sync.description': 'Syncs the roles and channels Ligo manages on this server.',
+  'command.league.sync.option.dry_run': 'Only shows what would change.',
+  'web.admin.sync.title': 'Discord server: sync',
+  'web.admin.sync.intro':
+    'Ligo compares the league’s server with what should be there: the team roles, the match channels and the MOSS channels. It never touches what it did not create, and deletes a channel only after keeping its content. It syncs on its own every 10 minutes; the button does it now.',
+  'web.admin.sync.button': 'Sync now',
+  'web.admin.sync.done': 'Sync done. Changes: {applied}; refused by Discord: {failed}.',
+  'web.admin.sync.link': 'Sync the Discord server',
   'league.channel.notice.resultsDivision':
     'Validated results of {division} will be announced here.',
   'league.channel.setDivision': 'Channel saved: {kind} of {division} in <#{channel}>.',
@@ -312,7 +348,7 @@ export const en: Record<MessageKey, string> = {
   'help.page.register':
     '**`/register`** — register a team\nOpen to everyone, while registration is open.\n\nThe bot gives the link to the form on the website. First, your club and team exist on the website ("Create a club" on your page), and your players joined the team from its invitation link, each with their own account and their page filled in (R6 account, rank, nationality, date of birth, stats consent). The form registers the team and records that you accept the rulebook; you then pick among its players the starters, the substitutes and the captain, a starter.',
   'help.page.league':
-    "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Match schedule: extensions and agreed times, until each match has its own channel.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `kind` Mercato: the mercato's windows and approved moves, mentioning nobody.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.",
+    "**`/league channel`** — the bot's channels, for league staff only\n• `kind` Staff validation queue: results to validate with their screenshots, disputes and forfeit alerts. One for the whole league; keep it staff-only.\n• `kind` Match schedule: extensions and agreed times, until each match has its own channel.\n• `kind` Validated results: every result that counts is announced there, forfeits included.\n• `kind` Mercato: the mercato's windows and approved moves, mentioning nobody.\n• `channel`: the text channel. The bot posts a message there; if it cannot write there, nothing is stored.\n• `division` (optional, results only): gives one division its own results channel. Without `channel`, the division loses its own and falls back to the league's. Several divisions can share a channel.\n\n**`/league channels`** — shows the chosen channels, division by division.\n\nThe bot finds its channels by their ID: renaming them breaks nothing. Without a validation queue, teams cannot report results.\n\n**`/league sync`** — syncs the roles and channels Ligo manages on this server, once server management is turned on in the settings. `dry_run`: only shows what would change. Ligo also does it on its own every 10 minutes.",
   'veto.title': '**Veto — {fixture}** (BO{bestOf})',
   'veto.roles':
     '{chooser} picks the starting side and starts the veto; {other} picks the overtime side. Host: {host}.',

@@ -70,9 +70,10 @@ export interface CommandInteraction extends InteractionBase {
   readonly answered: boolean;
   /**
    * Tells Discord the reply is coming, for work that may take more than its 3 seconds, such as
-   * rendering an image. The reply that follows is then visible to everyone.
+   * rendering an image or syncing a server. The reply that follows is visible to everyone, or
+   * to the member alone when deferred `ephemeral`.
    */
-  defer(): Promise<void>;
+  defer(options?: { ephemeral?: boolean }): Promise<void>;
   /** Sends the reply; a public one gives back its message, which the bot may edit later. */
   reply(message: ReplyMessage): Promise<{ messageId: string } | null>;
 }

@@ -206,6 +206,45 @@ export const fr = {
   'command.league.channel.option.division':
     'Pour les résultats : une division seulement. Sans elle, toute la ligue.',
   'command.league.channels.description': 'Affiche les salons que le bot utilise.',
+  'sync.error.not_found': 'Compétition introuvable.',
+  'sync.error.not_linked': 'Aucun serveur Discord n’est relié à cette ligue.',
+  'sync.error.not_managed':
+    'Ligo ne gère pas encore le serveur de cette ligue : le staff l’active dans les réglages de la compétition.',
+  'sync.error.not_in_server': 'Le bot n’est pas dans le serveur de la ligue.',
+  'sync.error.discord_unavailable': 'Discord ne répond pas : réessayez dans quelques minutes.',
+  'sync.inSync': 'Le serveur est à jour : rien à changer.',
+  'sync.preview': 'Ce que la synchronisation changerait :',
+  'sync.line': '{label} : {count}',
+  'sync.applied': 'Synchronisation faite. Changements : {applied} sur {total}.',
+  'sync.failed':
+    'Discord en a refusé {count} ; la prochaine synchronisation réessaiera. Vérifiez que le rôle du bot est au-dessus des rôles d’équipe et qu’il a les permissions Gérer les rôles et Gérer les salons.',
+  'sync.failure': '{label} : {message}',
+  'sync.absent':
+    'Joueurs ou responsables absents du serveur, qui ne peuvent pas recevoir leur rôle : {count}.',
+  'sync.op.create_role': 'Rôles à créer',
+  'sync.op.update_role': 'Rôles à renommer ou recolorer',
+  'sync.op.create_category': 'Catégories à créer',
+  'sync.op.rename_category': 'Catégories à renommer',
+  'sync.op.create_channel': 'Salons à créer',
+  'sync.op.update_channel': 'Salons à renommer ou déplacer',
+  'sync.op.set_overwrite': 'Permissions de salon à régler',
+  'sync.op.remove_overwrite': 'Permissions de salon à retirer',
+  'sync.op.add_member_role': 'Rôles à donner',
+  'sync.op.remove_member_role': 'Rôles à retirer',
+  'sync.op.delete_channel': 'Salons à supprimer',
+  'sync.op.delete_category': 'Catégories à supprimer',
+  'sync.op.delete_role': 'Rôles à supprimer',
+  'sync.op.forget': 'Objets supprimés à la main, à oublier',
+  'command.league.sync.description':
+    'Synchronise les rôles et les salons que Ligo gère sur ce serveur.',
+  'command.league.sync.option.dry_run': 'Montre seulement ce qui changerait.',
+  'web.admin.sync.title': 'Serveur Discord : synchronisation',
+  'web.admin.sync.intro':
+    'Ligo compare le serveur de la ligue avec ce qui doit y être : les rôles des équipes, les salons des matchs et les salons MOSS. Il ne touche jamais à ce qu’il n’a pas créé, et ne supprime un salon qu’après en avoir gardé le contenu. Il synchronise tout seul toutes les 10 minutes ; le bouton le fait tout de suite.',
+  'web.admin.sync.button': 'Synchroniser maintenant',
+  'web.admin.sync.done':
+    'Synchronisation faite. Changements : {applied} ; refusés par Discord : {failed}.',
+  'web.admin.sync.link': 'Synchroniser le serveur Discord',
   'league.channel.notice.resultsDivision':
     'Les résultats validés de {division} seront annoncés ici.',
   'league.channel.setDivision': 'Salon enregistré : {kind} de {division} dans <#{channel}>.',
@@ -334,7 +373,7 @@ export const fr = {
   'help.page.register':
     "**`/register`** — inscrire une équipe\nOuvert à tous, pendant les inscriptions.\n\nLe bot donne le lien du formulaire sur le site. D'abord, ton club et ton équipe existent sur le site (« Créer un club » sur ta page), et tes joueurs l'ont rejointe par son lien d'invitation, chacun avec son propre compte et sa page remplie (compte R6, rang, nationalité, date de naissance, accord sur les statistiques). Le formulaire inscrit l'équipe et enregistre l'acceptation du règlement ; tu choisis ensuite parmi ses joueurs les titulaires, les remplaçants et le capitaine, un titulaire.",
   'help.page.league':
-    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `kind` Mercato : les fenêtres de mercato et les mouvements validés, sans mentionner personne.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.",
+    "**`/league channel`** — les salons du bot, réservé au staff de la ligue\n• `kind` File de validation du staff : les résultats à valider avec leurs captures, les contestations et les alertes de forfaits. Une seule pour toute la ligue ; garde-la réservée au staff.\n• `kind` Planning des matchs : les prolongations et les horaires fixés, en attendant un salon par match.\n• `kind` Résultats validés : chaque résultat qui compte y est annoncé, forfaits compris.\n• `kind` Mercato : les fenêtres de mercato et les mouvements validés, sans mentionner personne.\n• `channel` : le salon textuel. Le bot y poste un message ; s'il ne peut pas y écrire, rien n'est enregistré.\n• `division` (facultatif, résultats seulement) : donne à une division son propre salon de résultats. Sans `channel`, la division perd le sien et revient à celui de la ligue. Plusieurs divisions peuvent partager un salon.\n\n**`/league channels`** — affiche les salons choisis, division par division.\n\nLe bot retrouve ses salons par leur identifiant : les renommer ne casse rien. Sans file de validation, les équipes ne peuvent pas signaler de résultat.\n\n**`/league sync`** — synchronise les rôles et les salons que Ligo gère sur ce serveur, une fois la gestion du serveur activée dans les réglages. `dry_run` : montre seulement ce qui changerait. Ligo le fait aussi tout seul toutes les 10 minutes.",
   'veto.title': '**Veto — {fixture}** (BO{bestOf})',
   'veto.roles':
     '{chooser} choisit le côté de départ et commence le veto ; {other} choisit le côté en prolongation. Hôte : {host}.',
