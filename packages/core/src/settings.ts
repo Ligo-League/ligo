@@ -452,5 +452,7 @@ export const stageConfigSchema = z.strictObject({
   seed: z.int().optional(),
   weeks_off: z.array(z.iso.date()).default([]),
   extra_round_weeks: z.array(z.iso.date()).default([]),
+  /** Every match of the stage: BO1 in LFR's leagues, BO3 in a National league. */
+  best_of: z.union([z.literal(1), z.literal(3), z.literal(5)]).default(1),
 });
 export type StageConfig = z.infer<typeof stageConfigSchema>;

@@ -92,7 +92,7 @@ const LFR_S3 = {
     map_pool: [],
     forfeits: { warning_at: 2, exclusion_at: 3 },
   },
-  stage: { seed: 20261019, weeks_off: [], extra_round_weeks: [] },
+  stage: { seed: 20261019, weeks_off: [], extra_round_weeks: [], best_of: 1 },
 };
 
 const accepts = (schema: z.ZodType, value: unknown) => schema.safeParse(value).success;
@@ -463,11 +463,25 @@ describe('seasonSettingsSchema', () => {
 
 describe('stageConfigSchema', () => {
   it('accepts a stage with no seed yet, and no weeks off', () => {
-    expect(stageConfigSchema.parse({})).toEqual({ weeks_off: [], extra_round_weeks: [] });
+    expect(stageConfigSchema.parse({})).toEqual({
+      weeks_off: [],
+      extra_round_weeks: [],
+      best_of: 1,
+    });
+  });
+
+  it('plays its matches as a BO1 unless staff choose BO3 or BO5 (a National league)', () => {
+    expect(stageConfigSchema.parse({ best_of: 3 }).best_of).toBe(3);
+    expect(accepts(stageConfigSchema, { best_of: 2 })).toBe(false);
   });
 
   it('keeps the weeks off and extra-round weeks staff mark on the draft (M-45)', () => {
-    const value = { seed: 42, weeks_off: ['2027-02-17'], extra_round_weeks: ['2027-01-11'] };
+    const value = {
+      seed: 42,
+      weeks_off: ['2027-02-17'],
+      extra_round_weeks: ['2027-01-11'],
+      best_of: 1,
+    };
     expect(stageConfigSchema.parse(value)).toEqual(value);
   });
 
@@ -641,8 +655,9 @@ describe('JSON round trip', () => {
           seed: fc.maxSafeInteger(),
           weeks_off: fc.array(isoDay, { maxLength: 6 }),
           extra_round_weeks: fc.array(isoDay, { maxLength: 6 }),
+          best_of: fc.constantFrom(1 as const, 3 as const, 5 as const),
         },
-        { requiredKeys: ['weeks_off', 'extra_round_weeks'] },
+        { requiredKeys: ['weeks_off', 'extra_round_weeks', 'best_of'] },
       ),
     ],
   ] as const;
