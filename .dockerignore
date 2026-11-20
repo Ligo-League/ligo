@@ -1,0 +1,18 @@
+# Only what the server image needs goes to Docker: never .env, data/, node_modules or the
+# mockups. Everything is excluded, then the needed files are let back in.
+*
+
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!apps/*/package.json
+!apps/server/src
+!packages/*/package.json
+!packages/*/src
+!packages/db/migrations
+!packages/render/fonts
+!fixtures/*.csv
+
+# Tests and their helpers stay out, wherever they are.
+**/*.test.ts
+**/node_modules
