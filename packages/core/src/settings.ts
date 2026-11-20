@@ -316,8 +316,8 @@ const nameTemplate = (allowed: readonly string[], fallback: string) =>
 /**
  * What Ligo manages in the league's Discord server (design doc section 6; M-44, M-46). Off by
  * default: a league turns it on once its server is ready. `manage` covers the team roles and
- * the match channels, `moss` the teams' MOSS channels. `{division}` is the division's category
- * prefix.
+ * the match channels. `{division}` is the division's category prefix. MOSS files are uploaded on
+ * the website, never in Discord (maintainer, 20 November 2026; M-47).
  */
 export const discordSettingsSchema = z.strictObject({
   manage: z.boolean().default(false),
@@ -330,9 +330,6 @@ export const discordSettingsSchema = z.strictObject({
   channel_template: nameTemplate(CHANNEL_PLACEHOLDERS, 'w{week}-{tagA}-{tagB}'),
   category_template: nameTemplate(CATEGORY_PLACEHOLDERS, '{division} · Semaine {week}'),
   archive_category_template: nameTemplate(DIVISION_PLACEHOLDERS, 'Archives · {division}'),
-  moss: z.boolean().default(false),
-  moss_channel_template: nameTemplate(TEAM_PLACEHOLDERS, 'moss-{tag}'),
-  moss_category_template: nameTemplate(DIVISION_PLACEHOLDERS, 'MOSS · {division}'),
 });
 export type DiscordSettings = z.infer<typeof discordSettingsSchema>;
 

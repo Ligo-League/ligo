@@ -258,7 +258,7 @@ export type LeagueTarget =
 
 /**
  * What Ligo wants in a competition's own server, when the league lets Ligo manage it
- * (`ruleset.discord`): its team roles and its match channels; MOSS channels come with 4-8. What
+ * (`ruleset.discord`): its team roles and its match channels (MOSS files go on the website). What
  * Ligo made and no longer wants goes, except channels, which stay until released (4-9).
  * `botUserId` lets the bot into the private channels it posts in.
  */

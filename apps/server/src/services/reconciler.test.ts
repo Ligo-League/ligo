@@ -32,13 +32,13 @@ const desired = (): DesiredState => ({
   roles: [
     { key: 'team:1', name: 'Greed Esport', color: 0xff0000, mentionable: true, members: [ALICE] },
   ],
-  categories: [{ kind: 'moss_category', key: 'division:1', name: 'MOSS · L1' }],
+  categories: [{ kind: 'week_category', key: 'division:1:week:3:1', name: 'L1 · Semaine 3' }],
   channels: [
     {
-      kind: 'moss_channel',
-      key: 'team:1',
-      name: 'moss-grd',
-      parent: { kind: 'moss_category', key: 'division:1' },
+      kind: 'match_channel',
+      key: 'match:7',
+      name: 'w3-grd-rck',
+      parent: { kind: 'week_category', key: 'division:1:week:3:1' },
       overwrites: [
         { target: { role: { id: GUILD } }, allow: [], deny: ['view_channel'] },
         { target: { role: { key: 'team:1' } }, allow: [...TEAM], deny: [] },
@@ -78,16 +78,16 @@ describe('syncGuild', () => {
     ]);
     const server = gateway.snapshots.get(GUILD);
     const role = server?.roles.find((candidate) => candidate.name === 'Greed Esport');
-    const channel = server?.channels.find((candidate) => candidate.name === 'moss-grd');
+    const channel = server?.channels.find((candidate) => candidate.name === 'w3-grd-rck');
     expect(objects()).toEqual([
       { kind: 'team_role', key: 'team:1', discordId: role?.id, createdByLigo: true },
       {
-        kind: 'moss_category',
-        key: 'division:1',
+        kind: 'week_category',
+        key: 'division:1:week:3:1',
         discordId: server?.categories[0]?.id,
         createdByLigo: true,
       },
-      { kind: 'moss_channel', key: 'team:1', discordId: channel?.id, createdByLigo: true },
+      { kind: 'match_channel', key: 'match:7', discordId: channel?.id, createdByLigo: true },
     ]);
     // The channel was created with the new role's ID in its overwrites.
     expect(channel?.overwrites.map((overwrite) => overwrite.id)).toContain(role?.id);
@@ -148,7 +148,7 @@ describe('syncGuild', () => {
     ]);
     expect(reply.failures[0]?.message).toBe('Missing Permissions');
     expect(reply.applied).toBe(1);
-    expect(objects().map((object) => object.kind)).toEqual(['moss_category']);
+    expect(objects().map((object) => object.kind)).toEqual(['week_category']);
     expect(audits()[0]?.afterJson).toMatchObject({ applied: 1, failed: 3 });
     // Once Discord allows it, the next run finishes the job.
     gateway.refused.clear();
@@ -179,7 +179,7 @@ describe('syncGuild', () => {
       roles: [],
       categories: [],
       channels: [],
-      release: [{ kind: 'moss_channel', key: 'team:1' }],
+      release: [{ kind: 'match_channel', key: 'match:7' }],
     };
     expect(await sync(none)).toMatchObject({ ok: true, failures: [] });
     expect(objects()).toEqual([]);

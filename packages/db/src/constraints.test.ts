@@ -163,7 +163,7 @@ describe('database constraints', () => {
       expect(
         insert('team_role', 'team:1', '800000000000000002', '900000000000000009'),
       ).not.toThrow();
-      expect(insert('moss_channel', 'team:1', '800000000000000002')).not.toThrow();
+      expect(insert('match_channel', 'team:1', '800000000000000002')).not.toThrow();
     });
 
     it('refuses one Discord object for two keys, such as one role linked to two teams', () => {
@@ -172,6 +172,8 @@ describe('database constraints', () => {
 
     it('refuses an unknown kind', () => {
       expect(insert('voice_channel', 'match:1', '800000000000000002')).toThrow(/CHECK/);
+      // MOSS channels are gone (M-47): MOSS files go on the website.
+      expect(insert('moss_channel', 'team:1', '800000000000000002')).toThrow(/CHECK/);
     });
   });
 

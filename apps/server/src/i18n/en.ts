@@ -245,7 +245,7 @@ export const en: Record<MessageKey, string> = {
   'league.week.error.no_matches': 'No published match that week.',
   'web.admin.sync.title': 'Discord server: sync',
   'web.admin.sync.intro':
-    'Ligo compares the league’s server with what should be there: the team roles, the match channels and the MOSS channels. It never touches what it did not create, and deletes a channel only after keeping its content. It syncs on its own within a minute of a change in Ligo, and every 10 minutes to put right what was changed by hand; the button does it now.',
+    'Ligo compares the league’s server with what should be there: the team roles and the match channels. It never touches what it did not create, and deletes a channel only after keeping its content. It syncs on its own within a minute of a change in Ligo, and every 10 minutes to put right what was changed by hand; the button does it now.',
   'web.admin.sync.button': 'Sync now',
   'web.admin.sync.done': 'Sync done. Changes: {applied}; refused by Discord: {failed}.',
   'web.admin.sync.link': 'Sync the Discord server',

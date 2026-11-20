@@ -14,9 +14,9 @@ export const CHANNEL_PERMISSIONS = [
 ] as const;
 export type ChannelPermission = (typeof CHANNEL_PERMISSIONS)[number];
 
-export const CATEGORY_KINDS = ['week_category', 'archive_category', 'moss_category'] as const;
+export const CATEGORY_KINDS = ['week_category', 'archive_category'] as const;
 export type CategoryKind = (typeof CATEGORY_KINDS)[number];
-export const CHANNEL_KINDS = ['match_channel', 'moss_channel'] as const;
+export const CHANNEL_KINDS = ['match_channel'] as const;
 export type ChannelKind = (typeof CHANNEL_KINDS)[number];
 /** `discord_object.kind`. */
 export const OBJECT_KINDS = ['team_role', ...CATEGORY_KINDS, ...CHANNEL_KINDS] as const;

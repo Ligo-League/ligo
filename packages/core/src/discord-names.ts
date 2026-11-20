@@ -9,11 +9,11 @@ export const CATEGORY_CAPACITY = 50;
 
 /** What a match channel's and a week category's templates may use. */
 export const CHANNEL_PLACEHOLDERS = ['week', 'tagA', 'tagB', 'division'] as const;
-/** What a team's MOSS channel and its role may use. */
+/** What a team's role name may use. */
 export const TEAM_PLACEHOLDERS = ['tag', 'name'] as const;
 /** What a week category may use. */
 export const CATEGORY_PLACEHOLDERS = ['week', 'division'] as const;
-/** What an archive or MOSS category may use. */
+/** What an archive category may use. */
 export const DIVISION_PLACEHOLDERS = ['division'] as const;
 
 const PLACEHOLDER = /\{([^{}]*)\}/g;

@@ -68,9 +68,6 @@ const LFR_S3 = {
       channel_template: 'w{week}-{tagA}-{tagB}',
       category_template: '{division} · Semaine {week}',
       archive_category_template: 'Archives · {division}',
-      moss: false,
-      moss_channel_template: 'moss-{tag}',
-      moss_category_template: 'MOSS · {division}',
     },
   },
   scheduling: {
@@ -322,9 +319,6 @@ describe('discordSettingsSchema', () => {
       channel_template: 'w{week}-{tagA}-{tagB}',
       category_template: '{division} · Semaine {week}',
       archive_category_template: 'Archives · {division}',
-      moss: false,
-      moss_channel_template: 'moss-{tag}',
-      moss_category_template: 'MOSS · {division}',
     });
   });
 
@@ -345,8 +339,6 @@ describe('discordSettingsSchema', () => {
     ['category_template', '{division} {tagA}'],
     ['archive_category_template', 'Archives {week}'],
     ['team_role_template', '{division}'],
-    ['moss_channel_template', 'moss-{tagA}'],
-    ['moss_category_template', 'MOSS {tag}'],
     ['channel_template', '   '],
     ['category_template', 'x'.repeat(101)],
   ])('refuses %s = %j', (key, template) => {
@@ -612,9 +604,6 @@ describe('JSON round trip', () => {
             'Organisation {division}',
           ),
           archive_category_template: fc.constantFrom('Archives · {division}', 'Archives'),
-          moss: fc.boolean(),
-          moss_channel_template: fc.constantFrom('moss-{tag}', 'moss-{name}'),
-          moss_category_template: fc.constantFrom('MOSS · {division}', 'MOSS'),
         }),
       }),
     ],

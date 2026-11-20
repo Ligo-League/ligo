@@ -86,8 +86,8 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
     // No deadline for the stat grid; a tolerance of 3 kills (M-39, 19 November 2026).
     stats: statsSettingsSchema.parse({}),
     // Ligo leaves the server alone until staff turn it on (phase 4); its names and times are
-    // M-44's. LFR's rulebook has a MOSS channel per team.
-    discord: discordSettingsSchema.parse({ moss: true }),
+    // M-44's. MOSS files go on the website, not in Discord (M-47).
+    discord: discordSettingsSchema.parse({}),
   },
   // What a new season copies (3 points per win, as score7's Season 3 tables are configured).
   pointsJson: LFR_POINTS,

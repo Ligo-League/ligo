@@ -261,7 +261,7 @@ export const fr = {
   'league.week.error.no_matches': 'Aucun match publié pour cette semaine.',
   'web.admin.sync.title': 'Serveur Discord : synchronisation',
   'web.admin.sync.intro':
-    'Ligo compare le serveur de la ligue avec ce qui doit y être : les rôles des équipes, les salons des matchs et les salons MOSS. Il ne touche jamais à ce qu’il n’a pas créé, et ne supprime un salon qu’après en avoir gardé le contenu. Il synchronise tout seul dans la minute qui suit un changement dans Ligo, et toutes les 10 minutes pour remettre en ordre ce qui a été changé à la main ; le bouton le fait tout de suite.',
+    'Ligo compare le serveur de la ligue avec ce qui doit y être : les rôles des équipes et les salons des matchs. Il ne touche jamais à ce qu’il n’a pas créé, et ne supprime un salon qu’après en avoir gardé le contenu. Il synchronise tout seul dans la minute qui suit un changement dans Ligo, et toutes les 10 minutes pour remettre en ordre ce qui a été changé à la main ; le bouton le fait tout de suite.',
   'web.admin.sync.button': 'Synchroniser maintenant',
   'web.admin.sync.done':
     'Synchronisation faite. Changements : {applied} ; refusés par Discord : {failed}.',

@@ -11,7 +11,7 @@ import {
 // The reconciler's diff (design doc section 6, "Reconciler"; M-46): the database says what the
 // league's server should hold, the guild says what it holds, and the stored IDs link the two.
 // The cases are those of section 14: fresh server, renamed channel, deleted role, missing
-// permission, archived week, MOSS channels; plus what Ligo did not create, which it never
+// permission, archived week; plus what Ligo did not create, which it never
 // touches.
 
 const GUILD = '900000000000000000';
@@ -24,7 +24,7 @@ const CAROL = '700000000000000003';
 
 const TEAM = ['view_channel', 'send_messages', 'read_message_history'] as const;
 
-/** Ligue 1 week 3: one match channel GRD against RCK, and GRD's MOSS channel. */
+/** Ligue 1: the week 3 match channel GRD against RCK, and an archived one of week 1. */
 function desired(): DesiredState {
   return {
     roles: [
@@ -33,7 +33,7 @@ function desired(): DesiredState {
     ],
     categories: [
       { kind: 'week_category', key: 'division:1:week:3', name: 'L1 · Semaine 3' },
-      { kind: 'moss_category', key: 'division:1', name: 'MOSS L1' },
+      { kind: 'archive_category', key: 'division:1:1', name: 'Archives · L1' },
     ],
     channels: [
       {
@@ -50,10 +50,10 @@ function desired(): DesiredState {
         ],
       },
       {
-        kind: 'moss_channel',
-        key: 'team:1',
-        name: 'moss-grd',
-        parent: { kind: 'moss_category', key: 'division:1' },
+        kind: 'match_channel',
+        key: 'match:5',
+        name: 'w1-grd-xyz',
+        parent: { kind: 'archive_category', key: 'division:1:1' },
         overwrites: [
           { target: { role: { id: GUILD } }, allow: [], deny: ['view_channel'] },
           { target: { role: { key: 'team:1' } }, allow: [...TEAM], deny: [] },
@@ -467,7 +467,7 @@ describe('reconcile', () => {
   it('keeps a channel of its own that is no longer wanted until it is released', () => {
     const { guild, known } = inSync();
     const state = desired();
-    state.channels = state.channels.filter((channel) => channel.kind !== 'match_channel');
+    state.channels = state.channels.filter((channel) => channel.key !== 'match:7');
     state.categories = state.categories.filter((category) => category.kind !== 'week_category');
     // The match channel stays, and so does the category that holds it.
     expect(reconcile(state, guild, known).operations).toEqual([]);
@@ -481,7 +481,7 @@ describe('reconcile', () => {
       channels: [],
       release: [
         { kind: 'match_channel', key: 'match:7' },
-        { kind: 'moss_channel', key: 'team:1' },
+        { kind: 'match_channel', key: 'match:5' },
       ],
     };
     const { operations } = reconcile(none, guild, known);
@@ -509,7 +509,7 @@ describe('reconcile', () => {
       overwrites: [],
     });
     const state = desired();
-    state.channels = state.channels.filter((channel) => channel.kind !== 'match_channel');
+    state.channels = state.channels.filter((channel) => channel.key !== 'match:7');
     state.categories = state.categories.filter((candidate) => candidate.kind !== 'week_category');
     state.release = [{ kind: 'match_channel', key: 'match:7' }];
     const { operations } = reconcile(state, guild, known);
@@ -518,11 +518,11 @@ describe('reconcile', () => {
 
   it('forgets what was deleted by hand and is no longer needed', () => {
     const { guild, known } = inSync();
-    guild.channels = guild.channels.filter((channel) => channel.name !== 'moss-grd');
+    guild.channels = guild.channels.filter((channel) => channel.name !== 'w1-grd-xyz');
     const state = desired();
-    state.channels = state.channels.filter((channel) => channel.kind !== 'moss_channel');
+    state.channels = state.channels.filter((channel) => channel.key !== 'match:5');
     expect(reconcile(state, guild, known).operations).toEqual([
-      { op: 'forget', kind: 'moss_channel', key: 'team:1' },
+      { op: 'forget', kind: 'match_channel', key: 'match:5' },
     ]);
   });
 
@@ -552,7 +552,7 @@ describe('reconcile', () => {
   it('puts any damage right in one pass', () => {
     const damage = fc.record({
       deleteRoles: fc.subarray(['team:1', 'team:2']),
-      deleteChannels: fc.subarray(['match:7', 'team:1']),
+      deleteChannels: fc.subarray(['match:7', 'match:5']),
       renameChannels: fc.boolean(),
       stripPermissions: fc.boolean(),
       dropMembers: fc.boolean(),
@@ -568,10 +568,7 @@ describe('reconcile', () => {
           member.roleIds = member.roleIds.filter((id) => !roleIds.includes(id));
           if (hurt.dropMembers) member.roleIds = [];
         }
-        const channelIds = [
-          idOf('match_channel', hurt.deleteChannels[0] ?? ''),
-          hurt.deleteChannels.includes('team:1') ? idOf('moss_channel', 'team:1') : undefined,
-        ];
+        const channelIds = hurt.deleteChannels.map((key) => idOf('match_channel', key));
         guild.channels = guild.channels.filter((channel) => !channelIds.includes(channel.id));
         for (const channel of guild.channels) {
           if (hurt.renameChannels) channel.name = 'oops';
