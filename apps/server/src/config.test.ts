@@ -24,9 +24,27 @@ describe('loadConfig', () => {
           host: '127.0.0.1',
           port: 3000,
           publicUrl: 'http://localhost:3000',
+          trustProxy: false,
           login: null,
         },
       },
+    });
+  });
+
+  it('trusts a reverse proxy’s forwarded scheme only when told to', () => {
+    expect(loadConfig({ ...valid, TRUST_PROXY: 'true' })).toMatchObject({
+      ok: true,
+      config: { web: { trustProxy: true } },
+    });
+    for (const off of ['false', '']) {
+      expect(loadConfig({ ...valid, TRUST_PROXY: off })).toMatchObject({
+        ok: true,
+        config: { web: { trustProxy: false } },
+      });
+    }
+    expect(loadConfig({ ...valid, TRUST_PROXY: 'yes' })).toEqual({
+      ok: false,
+      errors: ['TRUST_PROXY is not valid'],
     });
   });
 

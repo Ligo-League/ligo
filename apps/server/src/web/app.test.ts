@@ -33,6 +33,7 @@ function site(overrides: Partial<WebDeps> = {}) {
     roles: () => Promise.resolve([]),
     gateway: fakeGateway(),
     botInstallUrl: null,
+    discordReady: () => true,
     now: () => 1_800_000_000_000,
     ...overrides,
   });

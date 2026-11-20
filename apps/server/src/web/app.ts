@@ -133,7 +133,21 @@ export interface WebDeps {
   gateway: DiscordGateway;
   /** The address that adds the bot to a server; null when the application is unknown. */
   botInstallUrl: string | null;
+  /** Whether the bot is connected to Discord, for `/healthz`. */
+  discordReady: () => boolean;
+  /**
+   * A reverse proxy (Caddy on the VPS) forwards the original scheme in X-Forwarded-Proto: the
+   * request's own URL says `http`. Off by default; only for a server reachable through the proxy.
+   */
+  trustProxy?: boolean;
   now: () => number;
+}
+
+/** The scheme the visitor used: Caddy's forwarded one when trusted, else the request's own. */
+function requestOrigin(url: URL, forwarded: string | undefined, trustProxy: boolean): string {
+  // Several proxies append theirs: the first is the visitor's.
+  const scheme = trustProxy ? forwarded?.split(',')[0]?.trim().toLowerCase() : undefined;
+  return scheme === 'http' || scheme === 'https' ? `${scheme}://${url.host}` : url.origin;
 }
 
 /** The stylesheet next to this file, and htmx at the version pinned in package.json. */
@@ -268,12 +282,28 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     c.header('Content-Security-Policy', CONTENT_SECURITY_POLICY);
   });
 
+  // Docker's health check, from inside the container: before the one-address rule, which would
+  // send `127.0.0.1:3000` elsewhere. Says only whether the database and Discord answer.
+  app.get('/healthz', (c) => {
+    let database: boolean;
+    try {
+      database = db.$client.prepare('SELECT 1').get() !== undefined;
+    } catch {
+      database = false;
+    }
+    const discord = deps.discordReady();
+    const up = database && discord;
+    c.header('Cache-Control', 'no-store');
+    return c.json({ status: up ? 'ok' : 'unavailable', database, discord }, up ? 200 : 503);
+  });
+
   // With login on, one address only: cookies and the origin check belong to PUBLIC_URL, so
   // `127.0.0.1:3000` goes to `localhost:3000`.
   app.use(async (c, next) => {
     if (!login) return next();
     const url = new URL(c.req.url);
-    if (url.origin === login.publicUrl.origin) return next();
+    const origin = requestOrigin(url, c.req.header('x-forwarded-proto'), deps.trustProxy ?? false);
+    if (origin === login.publicUrl.origin) return next();
     if (c.req.method !== 'GET' && c.req.method !== 'HEAD') return forbidden(c);
     return c.redirect(new URL(url.pathname + url.search, login.publicUrl).href, 308);
   });

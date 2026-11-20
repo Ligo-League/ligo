@@ -30,7 +30,16 @@ export function openLineups(db: Db): Db {
  * `users` maps an OAuth code to the Discord user Discord would answer for it; `code-ana` logs
  * in as Ana. Roles are each user's roles in every server, set with `setRoles`.
  */
-export function testSite(options: { db?: Db; users?: Record<string, DiscordUser> } = {}) {
+export function testSite(
+  options: {
+    db?: Db;
+    users?: Record<string, DiscordUser>;
+    /** The site's address; the tests' localhost by default. */
+    publicUrl?: string;
+    trustProxy?: boolean;
+    discordReady?: () => boolean;
+  } = {},
+) {
   const db = options.db ?? leagueDatabase();
   const oauth = fakeDiscordOAuth({ 'code-ana': ANA, ...options.users });
   const gateway = fakeGateway();
@@ -45,10 +54,12 @@ export function testSite(options: { db?: Db; users?: Record<string, DiscordUser>
     locale: 'fr',
     files: { css: '', htmx: '', colors: '', statPaste: '' },
     logger,
-    login: { oauth, secret: 'x'.repeat(40), publicUrl: new URL(TEST_ORIGIN) },
+    login: { oauth, secret: 'x'.repeat(40), publicUrl: new URL(options.publicUrl ?? TEST_ORIGIN) },
     roles: (_guildId, userId) => Promise.resolve(roles.get(userId) ?? []),
     gateway,
     botInstallUrl: 'https://discord.com/oauth2/authorize?client_id=1',
+    discordReady: options.discordReady ?? (() => true),
+    trustProxy: options.trustProxy ?? false,
     now: () => now,
   });
   // A browser: keeps the cookies the site sets, sends them back.

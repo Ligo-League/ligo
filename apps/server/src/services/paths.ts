@@ -16,6 +16,8 @@ export const RESERVED_ORG_SLUGS: readonly string[] = [
   'c',
   'clubs',
   'evidence',
+  // Docker's health check on the VPS (design doc section 13).
+  'healthz',
   'invite',
   'join',
   'logos',

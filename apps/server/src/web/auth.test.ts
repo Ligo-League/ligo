@@ -251,6 +251,7 @@ describe('without login settings', () => {
       roles: () => Promise.resolve([]),
       gateway: fakeGateway(),
       botInstallUrl: null,
+      discordReady: () => true,
       now: () => NOW,
     });
     expect(await (await app.request('/')).text()).not.toContain('/auth/login');

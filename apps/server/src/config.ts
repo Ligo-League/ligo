@@ -25,6 +25,9 @@ const envSchema = z
     SESSION_SECRET: optional(z.string().min(32)),
     // The address people type; Discord sends them back to its /auth/callback.
     PUBLIC_URL: httpUrl.default('http://localhost:3000'),
+    // Behind Caddy on the VPS: read the original scheme from X-Forwarded-Proto. Never set it when
+    // the server is reachable without the proxy, since anyone could then send the header.
+    TRUST_PROXY: optional(z.enum(['true', 'false'])),
   })
   .superRefine((env, context) => {
     if ((env.DISCORD_CLIENT_SECRET === undefined) === (env.SESSION_SECRET === undefined)) return;
@@ -50,6 +53,8 @@ export interface Config {
     host: string;
     port: number;
     publicUrl: string;
+    /** A reverse proxy forwards the original scheme (`TRUST_PROXY`). */
+    trustProxy: boolean;
     login: { clientSecret: string; sessionSecret: string } | null;
   };
 }
@@ -83,6 +88,7 @@ export function loadConfig(env: Record<string, string | undefined>): ConfigResul
         host: parsed.data.HOST,
         port: parsed.data.PORT,
         publicUrl: parsed.data.PUBLIC_URL,
+        trustProxy: parsed.data.TRUST_PROXY === 'true',
         login:
           parsed.data.DISCORD_CLIENT_SECRET && parsed.data.SESSION_SECRET
             ? {

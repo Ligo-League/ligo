@@ -76,6 +76,8 @@ const web = createWebApp({
   roles: createRoleReader(gateway),
   gateway,
   botInstallUrl: botInstallUrl(config.discordClientId),
+  discordReady: () => client.isReady(),
+  trustProxy: config.web.trustProxy,
   now: () => Date.now(),
 });
 const server = serve(
