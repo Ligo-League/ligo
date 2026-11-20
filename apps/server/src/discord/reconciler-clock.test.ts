@@ -9,6 +9,7 @@ import { fakeGateway } from './testing.ts';
 // minutes, for every league that lets Ligo manage its server. A failure is logged, never thrown.
 
 const NOW = 1_800_000_000_000;
+const SITE = new URL('https://ligoleague.eu');
 
 function setUp(manage: boolean) {
   const db = leagueDatabase();
@@ -44,14 +45,28 @@ function setUp(manage: boolean) {
 describe('syncManagedLeagues', () => {
   it('leaves a league that does not let Ligo manage its server alone', async () => {
     const { db, gateway, logger, logged, snapshots } = setUp(false);
-    await syncManagedLeagues({ db, gateway, logger, now: () => NOW });
+    await syncManagedLeagues({
+      db,
+      gateway,
+      logger,
+      locale: 'fr' as const,
+      publicUrl: SITE,
+      now: () => NOW,
+    });
     expect(snapshots()).toBe(0);
     expect(logged).toEqual([]);
   });
 
   it('syncs a managed league’s server', async () => {
     const { db, gateway, logger, logged, snapshots } = setUp(true);
-    await syncManagedLeagues({ db, gateway, logger, now: () => NOW });
+    await syncManagedLeagues({
+      db,
+      gateway,
+      logger,
+      locale: 'fr' as const,
+      publicUrl: SITE,
+      now: () => NOW,
+    });
     expect(snapshots()).toBe(1);
     expect(logged.filter((line) => line.level !== 'info')).toEqual([]);
   });
@@ -60,7 +75,14 @@ describe('syncManagedLeagues', () => {
     const { db, gateway, logger, logged } = setUp(true);
     gateway.failing = true;
     await expect(
-      syncManagedLeagues({ db, gateway, logger, now: () => NOW }),
+      syncManagedLeagues({
+        db,
+        gateway,
+        logger,
+        locale: 'fr' as const,
+        publicUrl: SITE,
+        now: () => NOW,
+      }),
     ).resolves.toBeUndefined();
     expect(logged).toEqual([
       {
@@ -75,7 +97,7 @@ describe('syncManagedLeagues', () => {
 describe('the quick check between full runs', () => {
   it('syncs a league only once its wanted state changed', async () => {
     const { db, gateway, logger, snapshots } = setUp(true);
-    const deps = { db, gateway, logger, now: () => NOW };
+    const deps = { db, gateway, logger, locale: 'fr' as const, publicUrl: SITE, now: () => NOW };
     const last = new Map<number, string>();
     await syncManagedLeagues(deps, last, true);
     expect(snapshots()).toBe(1);
@@ -88,5 +110,23 @@ describe('the quick check between full runs', () => {
     // A full run syncs anyway, to put right what was changed by hand in Discord.
     await syncManagedLeagues(deps, last);
     expect(snapshots()).toBe(3);
+  });
+});
+
+describe('control messages from the clock', () => {
+  it('posts and pins the control message in a match channel the sync just made', async () => {
+    const { db, gateway, logger } = setUp(true);
+    await syncManagedLeagues({
+      db,
+      gateway,
+      logger,
+      locale: 'fr',
+      publicUrl: SITE,
+      now: () => NOW,
+    });
+    const channel = gateway.snapshots.get(TEST_GUILD)?.channels[0];
+    expect(channel?.name).toBe('w3-brv-cha');
+    expect(gateway.posted.map((post) => post.channelId)).toEqual([channel?.id]);
+    expect(gateway.pinned).toHaveLength(1);
   });
 });

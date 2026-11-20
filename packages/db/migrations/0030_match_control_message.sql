@@ -1,0 +1,1 @@
+ALTER TABLE `match` ADD `control_message_id` text;

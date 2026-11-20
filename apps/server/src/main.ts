@@ -99,7 +99,14 @@ const startClockOnReady = () => {
       { db, gateway, logger, locale: DEFAULT_LOCALE, publicUrl, now: () => Date.now() },
       CLOCK_INTERVAL_MS,
     );
-    stopReconciler ??= startReconciler({ db, gateway, logger, now: () => Date.now() });
+    stopReconciler ??= startReconciler({
+      db,
+      gateway,
+      logger,
+      locale: DEFAULT_LOCALE,
+      publicUrl,
+      now: () => Date.now(),
+    });
   });
 };
 

@@ -53,7 +53,10 @@ export const match = sqliteTable(
     windowEnd: integer('window_end').notNull(),
     scheduledAt: integer('scheduled_at'),
     autoScheduled: integer('auto_scheduled', { mode: 'boolean' }).notNull().default(false),
+    // The match's Discord channel where its control message is posted (phase 4), and that
+    // message, pinned: posted again when the channel was made anew.
     channelId: text('channel_id'),
+    controlMessageId: text('control_message_id'),
     reportedBy: integer('reported_by').references(() => player.id),
     confirmedBy: integer('confirmed_by').references(() => player.id),
     validatedBy: integer('validated_by').references(() => player.id),

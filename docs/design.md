@@ -250,7 +250,11 @@ match          id, stage_id, week NULL, bracket_node NULL, best_of, host_side NU
                status ('scheduled'|'reported'|'confirmed'|'disputed'|'validated'|'forfeit'|'void'),
                window_start, window_end, scheduled_at NULL, auto_scheduled, channel_id NULL,
                reported_by NULL, confirmed_by NULL, validated_by NULL, validated_at NULL,
-               veto_json NULL, veto_started_at NULL, veto_channel_id NULL, veto_message_id NULL
+               veto_json NULL, veto_started_at NULL, veto_channel_id NULL, veto_message_id NULL,
+               control_message_id NULL
+               -- channel_id and control_message_id: the match channel's pinned control message
+               -- (phase 4, migration 0030); posted again when the channel is made anew.
+               -- validated_at: when the result counted, an annulment included (the archive's clock)
 match_slot     match_id, side ('a'|'b'), source_kind ('entry'|'seed'|'winner_of'|'loser_of'), source_ref
 lineup         id, match_id, side ('a'|'b'), team_id NULL
 lineup_member  lineup_id, player_id, role ('starter'|'sub')
@@ -590,7 +594,8 @@ What Ligo manages in a league's server is `ruleset_json.discord`, off by default
     - fixture, play window and deadline;
     - host team and side chooser, from live standings;
     - what the teams must do, step by step: agree a time, run the veto, report the result;
-    - link buttons to the match's pages: propose a time, map veto, report the result, upload replays and MOSS, enter stats (maintainer, 16 November 2026: these are website actions, section 3).
+    - link buttons to the match's pages: propose a time, map veto, report the result, upload replays and MOSS, enter stats (maintainer, 16 November 2026: these are website actions, section 3). Replays and MOSS join with phase 5.
+    - It mentions the two team roles, and is posted by the reconciler's clock within 30 seconds of the channel's creation; the host and side chooser it shows are a forecast from that day's standings, fixed when the veto starts. It is not edited afterwards.
     - Once match channels exist, the notifications of a match (time proposals, the veto opening and its outcome, reports) are posted in the match's own channel, so the two teams answer where only they and staff can read, and have a place to discuss the match (maintainer, 13 November 2026). Until then they go to the league's schedule channel.
 4. **Deadlines.** At the end of the planned week with no agreed time, the bot posts the one-week extension. At the end of the extension it posts the automatic Sunday 21:00 slot.
 5. **Result.** Once validated (by the opponent's confirmation in LFR, or by staff), the bot posts the result card in the channel and in the results channel.

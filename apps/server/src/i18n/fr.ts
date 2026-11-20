@@ -39,6 +39,20 @@ export const fr = {
   'match.labelWithResult': '{division} · S{week} · {teamA} {scoreA}–{scoreB} {teamB}',
   'match.line': '{division}, semaine {week} : {teamA} {scoreA}–{scoreB} {teamB}',
   'match.fixture': '{division}, semaine {week} : {teamA} – {teamB}',
+  'control.week': 'Semaine de jeu : du {start} au {end}.',
+  'control.extension':
+    'Sans horaire convenu, la prolongation court jusqu’au {end}, puis l’horaire automatique s’applique.',
+  'control.sides.ranked':
+    'D’après le classement actuel : hôte {host}, choix des côtés {chooser}. Ils sont fixés au lancement du veto.',
+  'control.sides.coin':
+    'Classement égal : un tirage au sort décidera au lancement du veto, et les équipes conviendront de l’hôte.',
+  'control.sides.unknown': 'L’hôte et le choix des côtés seront fixés au lancement du veto.',
+  'control.steps':
+    'À faire :\n1. Convenir d’un horaire sur la page du match.\n2. Lancer le veto des cartes à l’heure du match.\n3. Signaler le résultat avec sa capture ; l’adversaire le confirme.\n4. Remplir les statistiques.\nCe salon est réservé aux deux équipes et au staff.',
+  'control.link.match': 'Horaire',
+  'control.link.veto': 'Veto',
+  'control.link.result': 'Résultat',
+  'control.link.stats': 'Statistiques',
   'report.posted':
     '{reporter} signale pour {team} : **{line}**. {opponents}, confirmez ou contestez ce résultat.',
   'report.postedNoOpponent':

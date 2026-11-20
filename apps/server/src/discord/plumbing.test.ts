@@ -248,6 +248,18 @@ describe('toDiscordMessage', () => {
     expect(rows.map((row) => row.toJSON().components.length)).toEqual([5, 4]);
   });
 
+  it('adds link buttons after the others, opening the page they name', () => {
+    const [row] = toDiscordMessage({
+      content: 'x',
+      buttons: [{ customId: 'a:1:n', label: 'Confirmer', style: 'success' }],
+      links: [{ label: 'Page du match', url: 'https://ligoleague.eu/matches/3' }],
+    }).components;
+    expect(row?.toJSON().components).toMatchObject([
+      { custom_id: 'a:1:n', style: 3 },
+      { label: 'Page du match', url: 'https://ligoleague.eu/matches/3', style: 5 },
+    ]);
+  });
+
   it('attaches files under their name', () => {
     const { files } = toDiscordMessage({
       content: '',

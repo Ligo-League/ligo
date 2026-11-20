@@ -1,6 +1,8 @@
 import { rulesetSchema } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
 import { leagueTarget, syncGuild } from '../services/reconciler.ts';
+import type { Locale } from '../i18n/index.ts';
+import { postControlMessages } from './control-message.ts';
 import type { DiscordGateway } from './gateway.ts';
 
 // The reconciler's own runs (design doc section 6, "Reconciler"): once the bot is connected,
@@ -17,6 +19,9 @@ export const CHANGE_CHECK_MS = 30_000;
 export interface ReconcilerDeps {
   db: Db;
   gateway: DiscordGateway;
+  /** The language and site of the match channels' control messages. */
+  locale: Locale;
+  publicUrl: URL;
   logger: {
     info(details: object, message: string): void;
     warn(details: object, message: string): void;
@@ -57,7 +62,11 @@ export async function syncManagedLeagues(
         continue;
       }
       const wanted = JSON.stringify(target.desired);
-      if (onlyChanged && last.get(row.id) === wanted) continue;
+      if (onlyChanged && last.get(row.id) === wanted) {
+        // Nothing to change, but a control message Discord refused before is tried again.
+        await postControlMessages(deps, target.guildId);
+        continue;
+      }
       const reply = await syncGuild(deps.db, deps.gateway, target.guildId, target.desired, {
         dryRun: false,
         now,
@@ -72,6 +81,7 @@ export async function syncManagedLeagues(
       }
       // Kept even when Discord refused a part: the next full run tries again, not every check.
       last.set(row.id, wanted);
+      await postControlMessages(deps, target.guildId);
       if (reply.failures.length > 0) {
         deps.logger.warn(
           {

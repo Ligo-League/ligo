@@ -219,7 +219,10 @@ export type StartVetoReply =
   | { ok: false; error: StartVetoError };
 
 /** A team's rank in the match's stage, by live standings. */
-function ranksOf(db: Pick<Db, 'select'>, found: LeagueMatch): { a: number; b: number } | null {
+export function ranksOf(
+  db: Pick<Db, 'select'>,
+  found: LeagueMatch,
+): { a: number; b: number } | null {
   const data = loadStandingsInput(db, found.stageId);
   if (!data) return null;
   const standings = computeStandings(data.input);

@@ -22,21 +22,32 @@ const ROW_SIZE = 5;
 
 /** An outgoing message in the shape discord.js sends, for a reply, a post or an edit. */
 export function toDiscordMessage(message: OutgoingMessage) {
-  const { content, files = [], buttons = [], mentionUserIds = [], mentionRoleIds = [] } = message;
+  const {
+    content,
+    files = [],
+    buttons = [],
+    links = [],
+    mentionUserIds = [],
+    mentionRoleIds = [],
+  } = message;
+  const all = [
+    ...buttons.map((button) =>
+      new ButtonBuilder()
+        .setCustomId(button.customId)
+        .setLabel(button.label)
+        .setStyle(STYLES[button.style]),
+    ),
+    ...links.map((link) =>
+      new ButtonBuilder().setURL(link.url).setLabel(link.label).setStyle(ButtonStyle.Link),
+    ),
+  ];
   return {
     content,
     files: files.map((file) => new AttachmentBuilder(Buffer.from(file.data), { name: file.name })),
     // Discord holds five buttons per row and five rows per message.
-    components: Array.from({ length: Math.ceil(buttons.length / ROW_SIZE) }, (_row, index) =>
+    components: Array.from({ length: Math.ceil(all.length / ROW_SIZE) }, (_row, index) =>
       new ActionRowBuilder<ButtonBuilder>().addComponents(
-        buttons
-          .slice(index * ROW_SIZE, (index + 1) * ROW_SIZE)
-          .map((button) =>
-            new ButtonBuilder()
-              .setCustomId(button.customId)
-              .setLabel(button.label)
-              .setStyle(STYLES[button.style]),
-          ),
+        all.slice(index * ROW_SIZE, (index + 1) * ROW_SIZE),
       ),
     ),
     // Text coming from team names or notes must never ping @everyone or a role: only the users

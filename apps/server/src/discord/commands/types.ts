@@ -25,6 +25,8 @@ export interface OutgoingMessage {
   content: string;
   files?: readonly CommandFile[];
   buttons?: readonly MessageButton[];
+  /** Buttons that open a page of the website, after the others (a match's control message). */
+  links?: readonly { label: string; url: string }[];
   /** The only users the message may notify; a mention of anyone else shows without pinging. */
   mentionUserIds?: readonly string[];
   /** The only roles the message may notify, such as the staff role in a reminder. */

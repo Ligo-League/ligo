@@ -38,6 +38,20 @@ export const en: Record<MessageKey, string> = {
   'match.labelWithResult': '{division} · W{week} · {teamA} {scoreA}–{scoreB} {teamB}',
   'match.line': '{division}, week {week}: {teamA} {scoreA}–{scoreB} {teamB}',
   'match.fixture': '{division}, week {week}: {teamA} – {teamB}',
+  'control.week': 'Play week: from {start} to {end}.',
+  'control.extension':
+    'Without an agreed time, the extension runs until {end}, then the automatic time applies.',
+  'control.sides.ranked':
+    'From today’s standings: {host} hosts, {chooser} chooses sides. They are fixed when the veto starts.',
+  'control.sides.coin':
+    'Equal ranks: a coin toss decides when the veto starts, and the teams agree on the host.',
+  'control.sides.unknown': 'The host and side choice are fixed when the veto starts.',
+  'control.steps':
+    'To do:\n1. Agree on a time on the match page.\n2. Start the map veto at match time.\n3. Report the result with its screenshot; the opponent confirms it.\n4. Fill in the stats.\nThis channel is for the two teams and staff only.',
+  'control.link.match': 'Time',
+  'control.link.veto': 'Veto',
+  'control.link.result': 'Result',
+  'control.link.stats': 'Stats',
   'report.posted':
     '{reporter} reports for {team}: **{line}**. {opponents}, please confirm or dispute this result.',
   'report.postedNoOpponent':
