@@ -67,7 +67,7 @@ export function recordForfeit(
   },
   now: number,
 ): ForfeitReply {
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, { matchId: request.matchId });
   if (!staff.ok) return staff;
   const { league } = staff;
   if (!league.season) return { ok: false, error: 'match_not_found' };

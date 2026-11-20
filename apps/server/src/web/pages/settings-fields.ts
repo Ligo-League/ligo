@@ -53,6 +53,8 @@ const ERROR_KEYS = {
   required: 'web.admin.settings.error.required',
   not_in_server: 'league.error.channel_not_in_server',
   cannot_post: 'league.error.cannot_post',
+  role_not_in_server: 'web.admin.division.error.roleNotInServer',
+  role_reserved: 'web.admin.division.error.roleReserved',
 } as const satisfies Record<string, MessageKey>;
 
 /** What a field's problem says. */

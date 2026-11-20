@@ -633,7 +633,7 @@ function staffStep(
   apply: (tx: Tx, found: LeagueMatch, staffPlayerId: number) => void,
   now: number,
 ): StaffStepReply {
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, { matchId: request.matchId });
   if (!staff.ok) return staff;
   const { league } = staff;
 
@@ -746,7 +746,7 @@ export function voidMatch(
 ): StaffStepReply {
   const reason = request.reason.trim().slice(0, REASON_MAX_LENGTH);
   if (reason === '') {
-    const staff = requireStaff(db, actor);
+    const staff = requireStaff(db, actor, { matchId: request.matchId });
     return staff.ok ? { ok: false, error: 'reason_required' } : staff;
   }
   return staffStep(

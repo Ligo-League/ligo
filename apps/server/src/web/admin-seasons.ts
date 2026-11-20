@@ -217,17 +217,23 @@ export function adminSeasonRoutes(app: Hono<Env>, kit: RouteKit): void {
     const view = divisionAdmin(db, userOf(viewer), key);
     if (!view.ok) return view.error === 'not_found' ? notFound(c) : forbidden(c);
     let channels: DivisionPageData['channels'] = null;
+    let roles: DivisionPageData['roles'] = null;
     if (view.guildId !== null) {
       try {
         channels = await deps.gateway.guildTextChannels(view.guildId);
       } catch {
         channels = null;
       }
+      try {
+        roles = await deps.gateway.guildRoles(view.guildId);
+      } catch {
+        roles = null;
+      }
     }
     c.header('Cache-Control', 'private, no-store');
     return render(
       c,
-      divisionPageView(locale, { view, channels, csrf: viewer.csrf, ...extra }),
+      divisionPageView(locale, { view, channels, roles, csrf: viewer.csrf, ...extra }),
       extra.typed ? 400 : 200,
     );
   };

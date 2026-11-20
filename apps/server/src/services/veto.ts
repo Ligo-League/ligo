@@ -21,7 +21,7 @@ import {
 } from '@ligo/db';
 import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { hasExcludedTeam } from './exclusions.ts';
-import { actsFor, matchActorOf, type Actor } from './permissions.ts';
+import { actsFor, matchActorOf, requireStaff, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 import { leagueMatch } from './reports.ts';
 import { matchMentions } from './team-staff.ts';
@@ -249,8 +249,9 @@ export function startVeto(
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
   if (!league) return { ok: false, error: 'not_linked' };
 
-  // League staff may start any veto, for teams that wait; only the teams choose.
-  const isStaff = actor.memberRoleIds.includes(league.guild.staffRoleId);
+  // League staff, and the match's division staff, may start any veto, for teams that wait;
+  // only the teams choose.
+  const isStaff = requireStaff(db, actor, { matchId: request.matchId }).ok;
   return db.transaction((tx): StartVetoReply => {
     if (!isStaff && matchActorOf(tx, actor, league.season?.id ?? null).teams.length === 0) {
       return { ok: false, error: 'no_team' };
@@ -490,11 +491,8 @@ export function vetoAudience(
   actor: Actor,
   found: LeagueMatch,
 ): { sides: Side[]; staff: boolean; follows: boolean } {
-  const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
-  const staff =
-    league !== undefined &&
-    league.competition.id === found.competitionId &&
-    actor.memberRoleIds.includes(league.guild.staffRoleId);
+  const check = requireStaff(db, actor, { matchId: found.id });
+  const staff = check.ok && check.league.competition.id === found.competitionId;
   const acting = matchActorOf(db, actor, found.seasonId);
   const sides = (['a', 'b'] as const).filter((side) => actsFor(acting.teams, found, side));
   const plays =

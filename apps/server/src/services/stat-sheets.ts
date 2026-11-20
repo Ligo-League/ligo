@@ -63,7 +63,7 @@ function contextOf(
   if (!comp || !matchRow) return { error: 'not_found' };
   const stats = statsOf(comp.title);
   if (!stats) return { error: 'no_stats' };
-  const staffCheck = requireStaff(db, actor);
+  const staffCheck = requireStaff(db, actor, { matchId });
   const staff = staffCheck.ok && staffCheck.league.competition.id === found.competitionId;
   const acting = matchActorOf(db, actor, found.seasonId);
   const sides = SIDES.filter((side) => actsFor(acting.teams, found, side));

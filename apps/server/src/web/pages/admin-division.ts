@@ -7,7 +7,7 @@ import { csrfField, pageOf, type Page } from '../layout.ts';
 import { settingErrorKey, settingsSections, type SectionView } from './settings-fields.ts';
 
 // A division in the admin panel (phase 3h; design doc section 7): adding one to a season, or
-// changing its name, kind, level, region, category prefix and results channel.
+// changing its name, kind, level, region, category prefix, results channel and staff role.
 
 type View = Extract<DivisionAdminView, { ok: true }>;
 
@@ -52,6 +52,8 @@ export interface DivisionPageData {
   typed: { values: Record<string, string>; errors: SettingErrors } | null;
   /** The league server's text channels; null when Discord did not answer or none is linked. */
   channels: readonly GuildTextChannel[] | null;
+  /** The league server's roles, for the division's staff role; null when Discord did not answer. */
+  roles: readonly { id: string; name: string }[] | null;
   saved: boolean;
   csrf: string;
 }
@@ -91,6 +93,40 @@ function channelField(
     ${problem}`;
 }
 
+/** The division's staff role (M-05), among the league server's roles, by their names. */
+function staffRoleField(
+  locale: Locale,
+  data: DivisionPageData,
+  value: string,
+  errors: SettingErrors,
+) {
+  const error = errors.staff_role_id;
+  const problem = error
+    ? html`<p class="field-error">${t(locale, settingErrorKey(error))}</p>`
+    : '';
+  if (!data.roles) {
+    return html`<input type="hidden" name="staff_role_id" value="${value}" />
+      <p class="muted">${t(locale, 'web.admin.division.roleUnavailable')}</p>
+      ${problem}`;
+  }
+  return html`<label
+      >${t(locale, 'web.admin.division.staffRole')}
+      <select name="staff_role_id">
+        <option value="" ${value === '' ? 'selected' : ''}>
+          ${t(locale, 'web.admin.division.noStaffRole')}
+        </option>
+        ${data.roles.map(
+          (role) =>
+            html`<option value="${role.id}" ${role.id === value ? 'selected' : ''}>
+              ${role.name}
+            </option>`,
+        )}
+      </select></label
+    >
+    <p class="muted">${t(locale, 'web.admin.division.staffRoleHelp')}</p>
+    ${problem}`;
+}
+
 export function divisionPageView(locale: Locale, data: DivisionPageData): Page {
   const { view } = data;
   const seasonPath = `/admin/${view.org.slug}/${view.competition.slug}/seasons/${String(view.season.id)}`;
@@ -115,6 +151,7 @@ export function divisionPageView(locale: Locale, data: DivisionPageData): Page {
       <form class="card stack" method="post" action="${action}">
         ${csrfField(data.csrf)} ${settingsSections(locale, [SECTION], values, errors)}
         ${channelField(locale, data, values.results_channel_id ?? '', errors)}
+        ${staffRoleField(locale, data, values.staff_role_id ?? '', errors)}
         <button type="submit">
           ${t(locale, view.division ? 'web.admin.org.save' : 'web.admin.division.createButton')}
         </button>

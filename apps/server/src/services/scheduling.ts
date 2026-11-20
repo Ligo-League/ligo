@@ -296,7 +296,7 @@ export function setMatchTime(
   request: { matchId: number; at: number },
   now: number,
 ): SetTimeReply {
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, { matchId: request.matchId });
   if (!staff.ok) return staff;
   const { league } = staff;
 

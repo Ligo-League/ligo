@@ -127,7 +127,7 @@ export async function enterResult(
 ): Promise<RecordResultReply> {
   const { screenshot, ...entry } = request;
   if (!screenshot) return recordResult(db, actor, entry, now);
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, { matchId: entry.matchId });
   if (!staff.ok) return staff;
   const refusal =
     checkScore(staff.league, entry.scoreA, entry.scoreB) ??
@@ -158,7 +158,7 @@ export function recordResult(
   request: RecordResultRequest,
   now: number,
 ): RecordResultReply {
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, { matchId: request.matchId });
   if (!staff.ok) return staff;
   const { league } = staff;
   const { scoreA, scoreB } = request;

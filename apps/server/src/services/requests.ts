@@ -259,7 +259,7 @@ export function teamOfficials(
   actor: Actor,
   teamId: number | null,
 ): TeamStaffReply | { ok: false; error: TeamOfError } {
-  if (requireStaff(db, actor).ok) {
+  if (requireStaff(db, actor, teamId === null ? undefined : { teamId }).ok) {
     return teamId === null
       ? { ok: false, error: 'team_required' }
       : showTeamStaff(db, actor, teamId);
@@ -420,7 +420,10 @@ export function submitTeamChange(
 ):
   | { mode: 'direct'; reply: TeamStaffReply | { ok: false; error: 'team_required' } }
   | { mode: 'request'; reply: FileReply } {
-  if (input.member === null || !requireStaff(db, actor).ok) {
+  if (
+    input.member === null ||
+    !requireStaff(db, actor, input.teamId === null ? undefined : { teamId: input.teamId }).ok
+  ) {
     return { mode: 'request', reply: fileRequest(db, actor, input, now) };
   }
   if (input.teamId === null)
@@ -473,7 +476,7 @@ export function checkAnswer(
   actor: Actor,
   requestId: number,
 ): { ok: true } | { ok: false; error: 'not_linked' | 'not_staff' | 'not_found' | 'not_pending' } {
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, { requestId });
   if (!staff.ok) return staff;
   const row = db.select().from(request).where(eq(request.id, requestId)).get();
   if (row?.competitionId !== staff.league.competition.id || row.teamId === null) {
@@ -489,7 +492,7 @@ export function answerRequest(
   input: { requestId: number; decision: 'approve' | 'reject'; reason: string | null },
   now: number,
 ): AnswerReply {
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, { requestId: input.requestId });
   if (!staff.ok) return staff;
   const { league } = staff;
   const reason = input.reason?.trim().slice(0, REQUEST_REASON_MAX_LENGTH) || null;

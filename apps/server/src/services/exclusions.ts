@@ -152,7 +152,7 @@ function open(
   actor: Actor,
   request: { teamId: number; reason: string },
 ): { ok: true; opened: Opened } | { ok: false; error: ExclusionError } {
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, { teamId: request.teamId });
   if (!staff.ok) return staff;
   const { league } = staff;
   if (!league.season) return { ok: false, error: 'no_season' };

@@ -1590,6 +1590,15 @@ export const fr = {
     'Un salon textuel du serveur de la ligue. Le bot y poste un message avant d’enregistrer.',
   'web.admin.division.channelUnavailable':
     'Discord ne répond pas, ou la compétition n’a pas de serveur relié : le salon des résultats reste tel quel.',
+  'web.admin.division.staffRole': 'Rôle du staff de la division',
+  'web.admin.division.noStaffRole': 'Aucun : le staff de la ligue seulement',
+  'web.admin.division.staffRoleHelp':
+    'Un rôle du serveur de la ligue. Ceux qui l’ont gèrent les matchs, les résultats, les forfaits, les horaires, les sanctions et les demandes des équipes de cette division seulement ; le staff de la ligue garde les réglages, les saisons, les inscriptions et le mercato.',
+  'web.admin.division.roleUnavailable':
+    'Discord ne répond pas : le rôle du staff de la division ne peut pas être changé pour le moment.',
+  'web.admin.division.error.roleNotInServer': 'Ce rôle n’est pas sur le serveur de la ligue.',
+  'web.admin.division.error.roleReserved':
+    'Ce rôle est @everyone, le rôle du staff de la ligue ou celui d’une équipe.',
   'web.admin.settings.none': '—',
   'web.admin.settings.group.requests':
     'Le rappel au staff doit venir avant la fin du délai de réponse.',

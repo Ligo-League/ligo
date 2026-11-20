@@ -2,7 +2,7 @@ import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { fakeGateway } from '../discord/testing.ts';
-import { registrationDatabase, TEST_GUILD } from '../testing.ts';
+import { registrationDatabase, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
 import { divisionAdmin, saveDivision } from './admin-divisions.ts';
 import { ensurePlayer } from './players.ts';
 
@@ -16,13 +16,19 @@ const OWNER_ID = '994597181476569170';
 const SEASON_4 = 2;
 const RESULTS_L1 = '800000000000000003';
 const ELSEWHERE = '800000000000000009';
+const STAFF_L1 = '800000000000000020';
+const TEAM_ROLE = '800000000000000021';
 
 function league() {
   const db = registrationDatabase();
   const gateway = fakeGateway();
   gateway.guilds.set(TEST_GUILD, {
     name: 'LFR Staging',
-    roles: [],
+    roles: [
+      { id: STAFF_L1, name: 'Staff L1' },
+      { id: TEST_STAFF_ROLE, name: 'Staff' },
+      { id: TEAM_ROLE, name: 'Alpha Esport' },
+    ],
     managers: [],
     channels: [{ id: RESULTS_L1, name: 'résultats-l1', category: 'Ligue 1' }],
   });
@@ -129,6 +135,7 @@ describe('changing a division', () => {
       region: '',
       category_prefix: 'L1',
       results_channel_id: '',
+      staff_role_id: '',
     });
     expect(await save(id, { ...values, name: 'Ligue 1 Elite' })).toEqual({ ok: true, id });
     expect(ligue1()).toBeUndefined();
@@ -168,6 +175,37 @@ describe('changing a division', () => {
     expect(gateway.posted).toHaveLength(posts);
     expect(await save(id, { ...formOf(id), results_channel_id: '' })).toMatchObject({ ok: true });
     expect(ligue1()?.resultsChannelId).toBeNull();
+  });
+
+  it('takes a staff role of the league’s server, never @everyone, the league’s or a team’s', async () => {
+    const { db, gateway, ligue1, save, formOf } = league();
+    const id = ligue1()?.id ?? 0;
+    db.insert(schema.discordObject)
+      .values({
+        guildId: TEST_GUILD,
+        kind: 'team_role',
+        key: 'team:1',
+        discordId: TEAM_ROLE,
+        createdByLigo: true,
+        createdAt: 1,
+      })
+      .run();
+    const role = (staff_role_id: string) => save(id, { ...formOf(id), staff_role_id });
+    expect(await role(ELSEWHERE)).toMatchObject({
+      errors: { staff_role_id: 'role_not_in_server' },
+    });
+    for (const reserved of [TEST_GUILD, TEST_STAFF_ROLE, TEAM_ROLE])
+      expect(await role(reserved)).toMatchObject({ errors: { staff_role_id: 'role_reserved' } });
+    gateway.failing = true;
+    expect(await role(STAFF_L1)).toMatchObject({ errors: { staff_role_id: 'role_not_in_server' } });
+    gateway.failing = false;
+    expect(await role(STAFF_L1)).toMatchObject({ ok: true });
+    expect(ligue1()?.staffRoleId).toBe(STAFF_L1);
+    // Unchanged, it is not asked of Discord again; emptied, the division has none.
+    gateway.failing = true;
+    expect(await save(id, { ...formOf(id), level: '1' })).toMatchObject({ ok: true });
+    expect(await role('')).toMatchObject({ ok: true });
+    expect(ligue1()?.staffRoleId).toBeNull();
   });
 
   it('is not found in another season', async () => {

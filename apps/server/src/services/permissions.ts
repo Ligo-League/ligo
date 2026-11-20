@@ -24,22 +24,95 @@ export interface Actor {
 }
 
 export type StaffCheck =
-  { ok: true; league: GuildLeague } | { ok: false; error: 'not_linked' | 'not_staff' };
+  | {
+      ok: true;
+      league: GuildLeague;
+      /** True for a division's staff (M-05), who act for their division only, never the league. */
+      divisionOnly: boolean;
+    }
+  | { ok: false; error: 'not_linked' | 'not_staff' };
 
 /**
- * Staff are the members holding the staff role stored for the server. It is read from the
- * database on every call: hiding a command in Discord is cosmetic and proves nothing.
+ * What a staff action is about, for a division's staff to be let in: a match, a team of the
+ * league's current season, or a team's request. Without one, only league staff pass.
+ */
+export type StaffScope = { matchId: number } | { teamId: number } | { requestId: number };
+
+/** The divisions an action is about, inside the league; none for a cup match or a stranger. */
+function scopeDivisions(db: Pick<Db, 'select'>, league: GuildLeague, scope: StaffScope): number[] {
+  if ('matchId' in scope) {
+    const [found] = listLeagueMatches(db, { matchId: scope.matchId });
+    return found?.competitionId === league.competition.id && found.division
+      ? [found.division.id]
+      : [];
+  }
+  let teamId: number;
+  if ('requestId' in scope) {
+    const row = db
+      .select({ teamId: schema.request.teamId, competitionId: schema.request.competitionId })
+      .from(schema.request)
+      .where(eq(schema.request.id, scope.requestId))
+      .get();
+    if (row?.competitionId !== league.competition.id || row.teamId === null) return [];
+    teamId = row.teamId;
+  } else {
+    teamId = scope.teamId;
+  }
+  if (!league.season) return [];
+  return db
+    .select({ divisionId: schema.slot.divisionId })
+    .from(schema.slot)
+    .innerJoin(schema.division, eq(schema.slot.divisionId, schema.division.id))
+    .where(and(eq(schema.slot.teamId, teamId), eq(schema.division.seasonId, league.season.id)))
+    .all()
+    .map((row) => row.divisionId);
+}
+
+/**
+ * Staff are the members holding the staff role stored for the server, or, for an action about
+ * one division (`scope`), that division's staff role (M-05). Read from the database on every
+ * call: hiding a command in Discord is cosmetic and proves nothing.
  */
 export function requireStaff(
   db: Pick<Db, 'select'>,
   actor: Pick<Actor, 'guildId' | 'memberRoleIds'>,
+  scope?: StaffScope,
 ): StaffCheck {
   const league = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
   if (!league) return { ok: false, error: 'not_linked' };
-  if (!actor.memberRoleIds.includes(league.guild.staffRoleId)) {
-    return { ok: false, error: 'not_staff' };
+  if (actor.memberRoleIds.includes(league.guild.staffRoleId)) {
+    return { ok: true, league, divisionOnly: false };
   }
-  return { ok: true, league };
+  if (scope) {
+    const divisions = scopeDivisions(db, league, scope);
+    const held = divisionStaffOf(db, league.competition.id, actor.memberRoleIds);
+    if (divisions.some((id) => held.includes(id))) return { ok: true, league, divisionOnly: true };
+  }
+  return { ok: false, error: 'not_staff' };
+}
+
+/**
+ * The divisions of the league whose staff role the member holds (M-05), in every season: a
+ * division's role is picked on its admin page and may differ from one season to the next.
+ */
+export function divisionStaffOf(
+  db: Pick<Db, 'select'>,
+  competitionId: number,
+  memberRoleIds: readonly string[],
+): number[] {
+  if (memberRoleIds.length === 0) return [];
+  return db
+    .select({ id: schema.division.id })
+    .from(schema.division)
+    .innerJoin(schema.season, eq(schema.division.seasonId, schema.season.id))
+    .where(
+      and(
+        eq(schema.season.competitionId, competitionId),
+        inArray(schema.division.staffRoleId, [...memberRoleIds]),
+      ),
+    )
+    .all()
+    .map((row) => row.id);
 }
 
 /** A role someone holds for a roster; a club role counts for each roster of the club. */

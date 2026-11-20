@@ -1,5 +1,6 @@
 import { countForfeits } from '@ligo/core';
 import {
+  findGuildLeague,
   listSeasonTeams,
   loadStandingsInput,
   schema,
@@ -8,7 +9,7 @@ import {
   type SeasonTeam,
 } from '@ligo/db';
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import { requireStaff, type Actor } from './permissions.ts';
+import { divisionStaffOf, requireStaff, type Actor } from './permissions.ts';
 import { ensurePlayer } from './players.ts';
 
 const { auditLog, sanction, slot, stage } = schema;
@@ -50,7 +51,7 @@ export type ListSanctionsReply =
 
 /** League staff acting on a team of the current season. */
 function open(db: Pick<Db, 'select'>, actor: Actor, teamId: number) {
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, { teamId });
   if (!staff.ok) return staff;
   const { league } = staff;
   if (!league.season) return { ok: false as const, error: 'no_season' as const };
@@ -192,15 +193,26 @@ export type SanctionsOverviewReply =
 
 /**
  * The staff's view of the season's discipline (phase 3f-4): each team with its status, its
- * forfeits and its automatic exclusion, and every sanction given. For league staff only.
+ * forfeits and its automatic exclusion, and every sanction given. For league staff, or a
+ * division's staff, who see their divisions' teams only (M-05).
  */
 export function sanctionsOverview(
   db: Pick<Db, 'select'>,
   actor: Pick<Actor, 'guildId' | 'memberRoleIds'>,
 ): SanctionsOverviewReply {
   const staff = requireStaff(db, actor);
-  if (!staff.ok) return staff;
-  const { league } = staff;
+  let league: GuildLeague;
+  // A division's staff see their divisions' teams (M-05); null: the whole league.
+  let divisions: number[] | null = null;
+  if (staff.ok) {
+    league = staff.league;
+  } else {
+    const found = actor.guildId === null ? undefined : findGuildLeague(db, actor.guildId);
+    const held = found ? divisionStaffOf(db, found.competition.id, actor.memberRoleIds) : [];
+    if (!found || held.length === 0) return staff;
+    league = found;
+    divisions = held;
+  }
   const { season } = league;
   if (!season) return { ok: false, error: 'no_season' };
 
@@ -213,13 +225,17 @@ export function sanctionsOverview(
       forfeits.set(entry.teamId, (forfeits.get(entry.teamId) ?? 0) + count);
     }
   }
-  const teams = listSeasonTeams(db, season.id);
-  const slotIds = teams.map((entry) => entry.slotId);
+  const everyTeam = listSeasonTeams(db, season.id);
+  const slotIds = everyTeam.map((entry) => entry.slotId);
   const slots = new Map(
     (slotIds.length === 0 ? [] : db.select().from(slot).where(inArray(slot.id, slotIds)).all()).map(
       (row) => [row.id, row],
     ),
   );
+  const teams = everyTeam.filter((entry) => {
+    const divisionId = slots.get(entry.slotId)?.divisionId;
+    return divisions === null || (divisionId !== undefined && divisions.includes(divisionId));
+  });
   const bySlot = new Map(teams.map((entry) => [entry.slotId, entry]));
   return {
     ok: true,

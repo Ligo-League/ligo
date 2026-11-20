@@ -1533,6 +1533,15 @@ export const en: Record<MessageKey, string> = {
     'A text channel of the league’s server. The bot posts a message there before saving.',
   'web.admin.division.channelUnavailable':
     'Discord is not answering, or the competition has no linked server: the results channel stays as it is.',
+  'web.admin.division.staffRole': 'Division staff role',
+  'web.admin.division.noStaffRole': 'None: league staff only',
+  'web.admin.division.staffRoleHelp':
+    'A role of the league’s server. Its holders handle the matches, results, forfeits, times, sanctions and team requests of this division only; league staff keep the settings, seasons, registrations and mercato.',
+  'web.admin.division.roleUnavailable':
+    'Discord is not answering: the division staff role cannot be changed right now.',
+  'web.admin.division.error.roleNotInServer': 'That role is not on the league’s server.',
+  'web.admin.division.error.roleReserved':
+    'That role is @everyone, the league’s staff role or a team’s role.',
   'web.admin.settings.none': '—',
   'web.admin.settings.group.requests':
     'The reminder to staff must come before the answer deadline ends.',

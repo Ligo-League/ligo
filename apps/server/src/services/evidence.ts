@@ -89,7 +89,7 @@ export async function openEvidence(
 ): Promise<EvidenceReply> {
   const row = db.select().from(evidence).where(eq(evidence.id, evidenceId)).get();
   const [found] = row ? listLeagueMatches(db, { matchId: row.matchId }) : [];
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, row ? { matchId: row.matchId } : undefined);
   if (!staff.ok) {
     const team =
       row?.visibility !== 'staff' &&

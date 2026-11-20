@@ -6,14 +6,15 @@ import {
   type League,
   type LeagueMatch,
 } from '@ligo/db';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { reportingSide, type DisputeDetails } from './reports.ts';
 import { pendingRequests, type RequestView } from './requests.ts';
 
 // What waits for league staff (design doc section 7, `/staff`): results to validate, disputes and
-// team requests. Read only: decisions go through the same services as the bot's buttons.
+// team requests; for a division's staff (M-05), those of their divisions only. Read only:
+// decisions go through the same services as the bot's buttons, which check again.
 
-const { dispute, player } = schema;
+const { dispute, player, slot } = schema;
 
 export interface QueuedDispute extends DisputeDetails {
   id: number;
@@ -83,17 +84,40 @@ function queuedReport(
   };
 }
 
-/** Everything of the league's current season waiting for its staff, oldest first. */
-export function staffQueue(db: Pick<Db, 'select'>, league: League): StaffQueue {
+/**
+ * Everything of the league's current season waiting for its staff, oldest first; with
+ * `divisions`, only their matches and their teams' requests.
+ */
+export function staffQueue(
+  db: Pick<Db, 'select'>,
+  league: League,
+  divisions: readonly number[] | null = null,
+): StaffQueue {
   const matches = league.season ? listLeagueMatches(db, { seasonId: league.season.id }) : [];
+  const inScope = (found: LeagueMatch) =>
+    divisions === null || (found.division !== null && divisions.includes(found.division.id));
+  // A division's staff see the requests of its teams this season (M-05).
+  const teams =
+    divisions === null || !league.season || divisions.length === 0
+      ? null
+      : new Set(
+          db
+            .select({ teamId: slot.teamId })
+            .from(slot)
+            .where(inArray(slot.divisionId, [...divisions]))
+            .all()
+            .map((row) => row.teamId),
+        );
   const waiting = (statuses: readonly string[]) =>
     matches
-      .filter((found) => statuses.includes(found.status))
+      .filter((found) => statuses.includes(found.status) && inScope(found))
       .map((found) => queuedReport(db, league, found))
       .sort((x, y) => (x.evidence?.at ?? 0) - (y.evidence?.at ?? 0));
   return {
     reports: waiting(['reported', 'confirmed']),
     disputed: waiting(['disputed']),
-    requests: pendingRequests(db, league),
+    requests: pendingRequests(db, league).filter(
+      (entry) => divisions === null || (teams?.has(entry.team.teamId) ?? false),
+    ),
   };
 }

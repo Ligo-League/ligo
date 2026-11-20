@@ -274,7 +274,7 @@ export function applyStaffChange(
 
 /** League staff acting on a team of the current season: the checks every change starts with. */
 function open(db: Pick<Db, 'select'>, actor: Actor, teamId: number) {
-  const staff = requireStaff(db, actor);
+  const staff = requireStaff(db, actor, { teamId });
   if (!staff.ok) return staff;
   const { league } = staff;
   if (!league.season) return { ok: false as const, error: 'no_season' as const };

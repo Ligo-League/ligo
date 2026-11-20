@@ -13,11 +13,13 @@ import {
 
 // Divisions in the admin panel (phase 3h; design doc section 7). The organisation's owner and the
 // competition's staff add divisions to a season and change them: name, kind, level, region, the
-// Discord category prefix (`L1`, also what `/standings` accepts) and the results channel. Their
-// schedules come with phase 4. The results channel is a text channel of the league's server where
-// the bot posts a notice first, as on the channels page: one it cannot write to is refused now.
+// Discord category prefix (`L1`, also what `/standings` accepts), the results channel and, from
+// phase 4, the division's staff role (M-05). The results channel is a text channel of the
+// league's server where the bot posts a notice first, as on the channels page: one it cannot
+// write to is refused now. The staff role is a role of that server, neither @everyone, nor the
+// league's staff role, nor a team's role.
 
-const { auditLog, division, leagueGuild } = schema;
+const { auditLog, discordObject, division, leagueGuild } = schema;
 type Reader = Pick<Db, 'select'>;
 type DivisionRow = typeof division.$inferSelect;
 
@@ -32,6 +34,11 @@ const divisionSchema = z.strictObject({
     .string()
     .regex(/^\d{17,20}$/)
     .nullable(),
+  /** A role of the league's server whose holders act for this division only (M-05). */
+  staff_role_id: z
+    .string()
+    .regex(/^\d{17,20}$/)
+    .nullable(),
 });
 type DivisionForm = z.infer<typeof divisionSchema>;
 
@@ -42,12 +49,17 @@ export const DIVISION_FIELDS: readonly SettingField[] = [
   { path: 'region', kind: { type: 'text' } },
   { path: 'category_prefix', kind: { type: 'text' } },
   { path: 'results_channel_id', kind: { type: 'text' } },
+  { path: 'staff_role_id', kind: { type: 'text' } },
 ];
 
-/** An empty region or channel means none: the league's results channel then applies. */
+/**
+ * An empty region, channel or role means none: the league's results channel then applies, and
+ * only the competition's staff act for the division.
+ */
 function shapeEmpty(draft: Record<string, unknown>): void {
   if (draft.region === '') draft.region = null;
   if (draft.results_channel_id === '') draft.results_channel_id = null;
+  if (draft.staff_role_id === '') draft.staff_role_id = null;
 }
 
 const EMPTY: DivisionForm = {
@@ -57,6 +69,7 @@ const EMPTY: DivisionForm = {
   region: null,
   category_prefix: '',
   results_channel_id: null,
+  staff_role_id: null,
 };
 
 const formOf = (row: DivisionRow): DivisionForm => ({
@@ -66,6 +79,7 @@ const formOf = (row: DivisionRow): DivisionForm => ({
   region: row.region,
   category_prefix: row.categoryPrefix,
   results_channel_id: row.resultsChannelId,
+  staff_role_id: row.staffRoleId,
 });
 
 type Key = {
@@ -160,7 +174,7 @@ export type SaveDivisionReply =
  */
 export async function saveDivision(
   db: Db,
-  gateway: Pick<DiscordGateway, 'postMessage' | 'guildTextChannels'>,
+  gateway: Pick<DiscordGateway, 'postMessage' | 'guildTextChannels' | 'guildRoles'>,
   user: OrgUser,
   key: Key,
   form: Readonly<Record<string, string>>,
@@ -195,6 +209,35 @@ export async function saveDivision(
     }
   }
 
+  const roleId = next.staff_role_id;
+  if (roleId !== null && roleId !== current.staff_role_id) {
+    const refused = (error: 'role_not_in_server' | 'role_reserved'): SaveDivisionReply => ({
+      ok: false,
+      error: 'invalid',
+      errors: { staff_role_id: error },
+    });
+    const guild = db
+      .select()
+      .from(leagueGuild)
+      .where(eq(leagueGuild.competitionId, competition.id))
+      .get();
+    if (!guild) return refused('role_not_in_server');
+    const teamRole = db
+      .select({ id: discordObject.id })
+      .from(discordObject)
+      .where(and(eq(discordObject.guildId, guild.guildId), eq(discordObject.discordId, roleId)))
+      .get();
+    if (roleId === guild.guildId || roleId === guild.staffRoleId || teamRole)
+      return refused('role_reserved');
+    let roles;
+    try {
+      roles = await gateway.guildRoles(guild.guildId);
+    } catch {
+      roles = null;
+    }
+    if (!roles?.some((role) => role.id === roleId)) return refused('role_not_in_server');
+  }
+
   const values = {
     name: next.name,
     kind: next.kind,
@@ -202,6 +245,7 @@ export async function saveDivision(
     region: next.region,
     categoryPrefix: next.category_prefix,
     resultsChannelId: next.results_channel_id,
+    staffRoleId: next.staff_role_id,
   };
   const id = db.transaction((tx) => {
     const saved = divisionRow
