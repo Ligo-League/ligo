@@ -1058,7 +1058,7 @@ it on a season of your own, or approve a few registrations into Season 4 first (
 Ligo can now compare the league's Discord server with what it should hold and put it right:
 the team roles (4-6) and match channels (4-7) come next, so for now there
 is nothing to create. It acts only for a league whose Discord settings turn it on
-(`ruleset.discord.manage`; the switch comes on the competition's admin page in 4-10).
+(`ruleset.discord.manage`, on the competition's admin page since 4-10, section 64).
 
 - **The sync page:** the competition's admin page links **Synchroniser le serveur Discord**
   (`/admin/mlb-group/lfr/discord/sync`). It shows what a sync would change, and **Synchroniser
@@ -1125,7 +1125,8 @@ the bot):
 
 ## 63. Phase 4-9: season end
 
-When staff close a season (**Clôturée** on its admin page), within 30 seconds the reconciler:
+When staff close a season (on its admin page, **Passer à** `Terminée`), within 30 seconds the
+reconciler:
 
 1. saves each of its match channels to `STORAGE_DIR/transcripts/<season id>/<match id>.json`
    (the nightly `backup-storage.sh` copies it to R2): every message with its author, text,
@@ -1138,6 +1139,111 @@ again every 10 minutes; the server log says `Some match channel transcripts coul
 Give the bot back its access, or delete the channel by hand once you have copied what matters:
 Ligo then forgets it. To read a transcript, open the JSON file on the VPS
 (`docker compose exec server ls /data/storage/transcripts`); no page shows it.
+
+## 64. Phase 4-10: the Discord server settings
+
+The competition's admin page (`/admin/mlb-group/lfr`) has a **Serveur Discord** section:
+
+- **Ligo gère le serveur de la ligue:** the switch for team roles and match channels. Off by
+  default. Before ticking it, open **Synchroniser le serveur Discord**: with management off,
+  the page shows what turning it on would create, and has no sync button.
+- **Nom du rôle d'une équipe** (`{name}` or `{tag}`) and whether anyone may mention team roles.
+- **Ouverture des salons de match:** days before the week (0 to 14, 2 by default).
+- **Archivage:** hours after the result counts (0 to 720, 48 by default).
+- **Names:** the match channel (`w{week}-{tagA}-{tagB}`), the week category
+  (`{division} · Semaine {week}`; without `{week}`, one category per division) and the archive
+  category (`Archives · {division}`). A placeholder a name may not use is refused on its field.
+
+Renaming a template renames what Ligo already made on its next sync. Every save is audited.
+
+## 65. Testing phase 4 in production
+
+Production serves the staging Discord server, with LFR seeded: Season 3 active (about 23
+matches still to play, 17 teams with a place) and Season 4 open for registration. Each step
+says what to expect.
+
+**A. Deploy**
+
+1. Push `main`, then on the VPS: `/opt/ligo/deploy/update.sh`. Migrations 0029 to 0032 run at
+   start, after a copy of the database in `backups/` (section 55). The log says
+   `Copied the database before migrating`.
+2. Register the new `/league week` and `/league sync` subcommands, in `/opt/ligo/deploy`:
+   `docker compose run --rm --no-deps server node apps/server/src/discord/register.ts`. Reload
+   Discord (Ctrl+R).
+
+**B. Prepare the staging server (Discord)**
+
+3. Developer Portal > the production application > **Bot**: **Server Members Intent** on. It
+   should already be, since the bot starts only with it.
+4. Server Settings > Roles: drag the bot's role **above** every role it will manage (all team
+   roles, so near the top). Check that it holds **Manage Roles**, **Manage Channels**, **View
+   Channels**, **Send Messages**, **Embed Links**, **Attach Files**, **Read Message History**
+   and **Pin Messages**. If the bot was invited before Pin Messages existed, tick it on the role
+   by hand.
+5. Create one role for a division's staff (for example `Staff L1`) and give it to a second
+   Discord account that does not hold the league's staff role.
+
+**C. Preview, then turn it on**
+
+6. `/admin/mlb-group/lfr/discord/sync`: the page says Ligo does not manage the server yet and
+   lists what it would do. Expect about 17 roles to create, 23 channels to create and their
+   categories, and members to add to roles. Members with no Discord account in Ligo are left
+   out.
+7. `/admin/mlb-group/lfr`, **Serveur Discord**: tick **Ligo gère le serveur de la ligue**, and
+   set **Archivage** to `0` so you can see archiving at once. Then **Enregistrer**.
+8. Within 30 seconds: one role per team, coloured from its team or club; Season 3's unplayed
+   matches each get a channel `w<week>-<tag>-<tag>` in a category `L1 · Semaine <n>`. Each
+   channel's first message is pinned and mentions both teams. Its buttons open the match's
+   time, veto, result and stats pages.
+9. Open a match channel as @everyone (or a member with no role): it is hidden. As the league's
+   staff: visible. Holders of a team role see only their team's channels.
+
+**D. Team roles**
+
+10. On the sync page, **Rôles des équipes**: link an existing role to a team. The role Ligo made
+    for it is deleted, and the linked role gets the team's members. Then **Délier**: the next
+    sync makes a new Ligo role and leaves yours alone.
+11. Change a team's lineup or an official on the website: within 30 seconds the role's holders
+    follow.
+
+**E. Division staff**
+
+12. `/admin/mlb-group/lfr/seasons/<Saison 3>/divisions/<Ligue 1>`: pick `Staff L1` as **Rôle du
+    staff de la division**. On the next sync, the Ligue 1 match channels let that role in.
+13. Log in as the second account: `/staff` shows "LFR (Ligue 1)" with only Ligue 1's queue. A
+    Ligue 1 match page has the staff panel; a Ligue 2 match page does not. Registrations and the
+    mercato stay with league staff.
+
+**F. Notifications in the match channel**
+
+14. In one unplayed match: propose a time on the match page, start the veto, and report a
+    result. Each notice goes to that match's channel, not the schedule channel.
+15. Once the result counts (the opponent confirms, or staff enter it), the result card appears
+    in the match channel and the results channel. With **Archivage** at `0`, the next check
+    moves the channel to `Archives · L1`: the teams still read it but can no longer write.
+    Then set **Archivage** back to `48`.
+
+**G. Opening a week early**
+
+16. `/league week week:3` (or **Ouvrir ses salons maintenant** on the schedule page): the bot
+    says week 3 is open, in Ligue 1 and Ligue 2; run it again and it says it already was. Nothing
+    changes in Discord: Season 3's weeks are past, so their channels are open already. A week
+    opening early for real needs a published schedule with weeks still ahead (Season 4).
+
+**H. `/league sync`**
+
+17. In Discord, `/league sync dry_run: True`: the same counts as the page. Rename a match channel
+    or a team role by hand, then `/league sync`: the name comes back.
+
+**I. Season end (do it last: a season never goes back to an earlier status)**
+
+18. `/admin/mlb-group/lfr/seasons/<Saison 3>`: **Passer à** `Terminée`, then **Changer le
+    statut**. Within 30 seconds every Season 3 match channel is deleted, with its emptied
+    categories, and the team roles go (Season 4 has no team with a place yet).
+19. On the VPS: `docker compose exec server ls /data/storage/transcripts/<season id>` lists one
+    JSON file per channel. The next night's copy puts them in R2 (`backups/files`).
+20. If a channel stays, the log says `Some match channel transcripts could not be saved`
+    (section 63).
 
 ## If something goes wrong
 
