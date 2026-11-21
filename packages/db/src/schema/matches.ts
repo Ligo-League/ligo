@@ -392,3 +392,22 @@ export const vetoStep = sqliteTable(
     check('veto_step_start_side_check', oneOf(t.startSide, START_SIDES)),
   ],
 );
+
+// A match channel's messages, saved when its season closes, before Ligo deletes the channel
+// (phase 4; design doc section 6, "Season end"). The JSON file sits in the storage folder under
+// `storage_key` (copied to R2 each night); the row is what lets the reconciler delete the channel.
+export const matchTranscript = sqliteTable(
+  'match_transcript',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    guildId: text('guild_id').notNull(),
+    matchId: integer('match_id')
+      .notNull()
+      .references(() => match.id),
+    channelId: text('channel_id').notNull(),
+    storageKey: text('storage_key').notNull(),
+    messageCount: integer('message_count').notNull(),
+    savedAt: integer('saved_at').notNull(),
+  },
+  (t) => [unique('match_transcript_guild_match_unique').on(t.guildId, t.matchId)],
+);
