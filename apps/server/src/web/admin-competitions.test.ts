@@ -72,13 +72,20 @@ describe('a competition’s general settings', () => {
     setRoles([TEST_STAFF_ROLE]);
     const response = await request('/admin/mlb-group/lfr');
     expect(response.status).toBe(200);
-    const fields = await formOf(await response.text());
+    const body = await response.text();
+    // The name templates' help shows their placeholders as they are typed.
+    expect(body).toContain('Serveur Discord');
+    expect(body).toContain('{tagA}, {tagB} : les tags des équipes');
+    const fields = await formOf(body);
     expect(fields).toMatchObject({
       name: 'LFR',
       'ruleset.result_validation': 'opponent',
       'scheduling.time_zone': 'Europe/Paris',
       'scheduling.auto_slot.weekday': '7',
+      'ruleset.discord.channel_template': 'w{week}-{tagA}-{tagB}',
     });
+    // Off by default: the box is not ticked.
+    expect(fields['ruleset.discord.manage']).toBeUndefined();
     expect(
       where(
         await post('/admin/mlb-group/lfr', {

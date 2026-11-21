@@ -262,6 +262,16 @@ describe('syncLeague', () => {
     expect(gateway.changes).toEqual([]);
   });
 
+  it('shows in a dry run what turning management on would change', async () => {
+    const db = leagueDatabase();
+    const gateway = fakeGateway();
+    gateway.snapshots.set(TEST_GUILD, guild(TEST_GUILD));
+    const reply = await syncLeague(db, gateway, 1, { dryRun: true, now: NOW, actorPlayerId: null });
+    expect(reply).toMatchObject({ ok: true, managed: false, applied: 0 });
+    expect(reply.ok && reply.operations.length).toBeGreaterThan(0);
+    expect(gateway.changes).toEqual([]);
+  });
+
   it('syncs the league’s own server once it does, and refuses a league with no server', async () => {
     const db = leagueDatabase();
     const gateway = fakeGateway();

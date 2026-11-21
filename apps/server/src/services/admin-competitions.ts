@@ -133,7 +133,10 @@ export function createCompetition(
   return { ok: true, slug };
 }
 
-/** The general settings: the competition's name, result validation, scheduling, requests, roles. */
+/**
+ * The general settings: the competition's name, result validation, scheduling, requests, roles,
+ * and what Ligo manages in its Discord server.
+ */
 const generalSchema = z.strictObject({
   name: z.string().min(2).max(60),
   ruleset: rulesetSchema,
@@ -160,6 +163,15 @@ export const GENERAL_FIELDS: readonly SettingField[] = [
   { path: 'ruleset.requests.remind_before_hours', kind: { type: 'optionalInt' } },
   { path: 'ruleset.team_roles.managers_max', kind: { type: 'int' } },
   { path: 'ruleset.team_roles.coaches_max', kind: { type: 'int' } },
+  // What Ligo manages in the league's Discord server (phase 4; design doc section 6).
+  { path: 'ruleset.discord.manage', kind: { type: 'bool' } },
+  { path: 'ruleset.discord.team_role_template', kind: { type: 'text' } },
+  { path: 'ruleset.discord.team_roles_mentionable', kind: { type: 'bool' } },
+  { path: 'ruleset.discord.open_days_before_week', kind: { type: 'int' } },
+  { path: 'ruleset.discord.archive_hours_after_result', kind: { type: 'int' } },
+  { path: 'ruleset.discord.channel_template', kind: { type: 'text' } },
+  { path: 'ruleset.discord.category_template', kind: { type: 'text' } },
+  { path: 'ruleset.discord.archive_category_template', kind: { type: 'text' } },
 ];
 
 /** No weekday: no automatic slot at all. */

@@ -38,16 +38,18 @@ const FAILURES_SHOWN = 5;
 /** The whole answer as lines of text. */
 export function syncReplyLines(locale: Locale, reply: LeagueSyncReply, dryRun: boolean): string[] {
   if (!reply.ok) return [t(locale, `sync.error.${reply.error}`)];
+  // A dry run with management off: what turning it on would do.
+  const off = reply.managed ? [] : [t(locale, 'sync.offPreview')];
   const absent =
     reply.absentMembers.length === 0
       ? []
       : [t(locale, 'sync.absent', { count: String(reply.absentMembers.length) })];
-  if (reply.operations.length === 0) return [t(locale, 'sync.inSync'), ...absent];
+  if (reply.operations.length === 0) return [...off, t(locale, 'sync.inSync'), ...absent];
   const counts = syncCounts(reply.operations).map(
     ({ label, count }) =>
       `• ${t(locale, 'sync.line', { label: t(locale, label), count: String(count) })}`,
   );
-  if (dryRun) return [t(locale, 'sync.preview'), ...counts, ...absent];
+  if (dryRun) return [...off, t(locale, 'sync.preview'), ...counts, ...absent];
   const failures = reply.failures
     .slice(0, FAILURES_SHOWN)
     .map(

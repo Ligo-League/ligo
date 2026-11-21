@@ -113,7 +113,7 @@ export function syncPageView(locale: Locale, data: SyncPageData): Page {
   const { org, competition } = data;
   const base = `/admin/${org.slug}/${competition.slug}`;
   const title = t(locale, 'web.admin.sync.title');
-  const canSync = data.preview.ok && data.preview.operations.length > 0;
+  const canSync = data.preview.ok && data.preview.managed && data.preview.operations.length > 0;
   return pageOf(
     title,
     html`<p><a href="${base}">${competition.name}</a></p>

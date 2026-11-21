@@ -212,6 +212,8 @@ export const en: Record<MessageKey, string> = {
     'Ligo does not manage this league’s server yet: staff turn it on in the competition’s settings.',
   'sync.error.not_in_server': 'The bot is not in the league’s server.',
   'sync.error.discord_unavailable': 'Discord does not answer: try again in a few minutes.',
+  'sync.offPreview':
+    'Ligo does not manage this server yet: here is what it would do once management is turned on in the competition’s settings.',
   'sync.inSync': 'The server is up to date: nothing to change.',
   'sync.preview': 'What a sync would change:',
   'sync.line': '{label}: {count}',
@@ -1411,6 +1413,27 @@ export const en: Record<MessageKey, string> = {
   'web.admin.settings.remindBeforeHelp': 'Empty: no reminder.',
   'web.admin.settings.managersMax': 'Managers per team, besides the owner',
   'web.admin.settings.coachesMax': 'Coaches per team',
+  'web.admin.settings.section.discord': 'Discord server',
+  'web.admin.settings.discord.manage': 'Ligo manages the league’s server',
+  'web.admin.settings.discord.manageHelp':
+    'Team roles and match channels. Turn it on once the server is ready: the bot’s role must sit above the team roles, with Manage Channels, Manage Roles and Pin Messages. The sync page shows what would change, even before it is on.',
+  'web.admin.settings.discord.teamRole': 'Team role name',
+  'web.admin.settings.discord.teamRoleHelp': '{name}: the team’s name; {tag}: its tag.',
+  'web.admin.settings.discord.mentionable': 'Anyone can mention team roles',
+  'web.admin.settings.discord.openDays': 'Match channels open (days before the week)',
+  'web.admin.settings.discord.openDaysHelp':
+    '0 to 14. Staff can also open a week early from the schedule.',
+  'web.admin.settings.discord.archiveHours': 'Archive (hours after the result counts)',
+  'web.admin.settings.discord.archiveHoursHelp':
+    '0 to 720. Teams still read an archived channel but cannot write; it is deleted when the season closes, once saved.',
+  'web.admin.settings.discord.channel': 'Match channel name',
+  'web.admin.settings.discord.channelHelp':
+    '{week}: the week; {tagA}, {tagB}: the teams’ tags; {division}: the division’s prefix.',
+  'web.admin.settings.discord.category': 'Week category name',
+  'web.admin.settings.discord.categoryHelp':
+    '{week} and {division}. Without {week}, one category per division.',
+  'web.admin.settings.discord.archiveCategory': 'Archive category name',
+  'web.admin.settings.discord.archiveCategoryHelp': '{division} only.',
   'web.admin.comp.rules': 'The competition’s rules',
   'web.me.publicPage': 'My public page',
   'web.player.nationality': 'Nationality',

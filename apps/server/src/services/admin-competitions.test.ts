@@ -55,6 +55,13 @@ function league() {
     'ruleset.requests.remind_before_hours': '6',
     'ruleset.team_roles.managers_max': '3',
     'ruleset.team_roles.coaches_max': '1',
+    'ruleset.discord.team_role_template': '{name}',
+    'ruleset.discord.team_roles_mentionable': 'on',
+    'ruleset.discord.open_days_before_week': '2',
+    'ruleset.discord.archive_hours_after_result': '48',
+    'ruleset.discord.channel_template': 'w{week}-{tagA}-{tagB}',
+    'ruleset.discord.category_template': '{division} · Semaine {week}',
+    'ruleset.discord.archive_category_template': 'Archives · {division}',
     ...changes,
   });
   const reload = () =>
@@ -227,5 +234,54 @@ describe('a competition’s general settings', () => {
       },
     });
     expect(reload()).toEqual(before);
+  });
+
+  it('turns server management on, with the league’s own names and delays', () => {
+    const { db, owner, form, reload } = league();
+    const key = { orgSlug: 'mlb-group', compSlug: 'lfr', staffIds: [] };
+    expect(
+      updateCompetitionGeneral(
+        db,
+        owner,
+        key,
+        form({
+          'ruleset.discord.manage': 'on',
+          'ruleset.discord.channel_template': '{tagA}-{tagB}',
+          'ruleset.discord.category_template': 'Organisation {division}',
+          'ruleset.discord.open_days_before_week': '3',
+        }),
+        NOW,
+      ),
+    ).toEqual({ ok: true });
+    expect(reload()?.rulesetJson.discord).toEqual({
+      manage: true,
+      team_role_template: '{name}',
+      team_roles_mentionable: true,
+      open_days_before_week: 3,
+      archive_hours_after_result: 48,
+      channel_template: '{tagA}-{tagB}',
+      category_template: 'Organisation {division}',
+      archive_category_template: 'Archives · {division}',
+    });
+    // A placeholder a name may not use, and a delay out of range, are refused on their field.
+    expect(
+      updateCompetitionGeneral(
+        db,
+        owner,
+        key,
+        form({
+          'ruleset.discord.archive_category_template': 'Archives {week}',
+          'ruleset.discord.archive_hours_after_result': '1000',
+        }),
+        NOW,
+      ),
+    ).toEqual({
+      ok: false,
+      error: 'invalid',
+      errors: {
+        'ruleset.discord.archive_category_template': 'invalid',
+        'ruleset.discord.archive_hours_after_result': 'invalid',
+      },
+    });
   });
 });

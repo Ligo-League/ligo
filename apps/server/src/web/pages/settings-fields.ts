@@ -31,6 +31,8 @@ export interface FieldView {
   path: string;
   label: MessageKey;
   help?: MessageKey;
+  /** The help's parameters: a name template's placeholders, shown as typed. */
+  helpParams?: Record<string, string>;
   input: FieldInput;
 }
 
@@ -168,8 +170,11 @@ export function settingsSections(
         })}
         ${section.fields.map((field) => {
           const error = errors[field.path];
-          return html`<label>${t(locale, field.label)} ${input(locale, field, values)}</label>
-            ${field.help ? html`<p class="muted">${t(locale, field.help)}</p>` : ''}
+          return html`<label>${t(locale, field.label)} ${input(locale, field, values)}</label> ${
+              field.help
+                ? html`<p class="muted">${t(locale, field.help, field.helpParams)}</p>`
+                : ''
+            }
             ${error ? html`<p class="field-error">${t(locale, ERROR_KEYS[error])}</p>` : ''}`;
         })}
       </fieldset>`,

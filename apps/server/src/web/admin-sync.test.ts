@@ -60,12 +60,15 @@ describe('the sync page', () => {
     expect(await (await request(SYNC)).text()).toContain('Rôles à créer : 5');
   });
 
-  it('says when the league does not let Ligo manage its server, with no button', async () => {
-    const { request, asStaff } = site(false);
+  it('shows what turning management on would do, with no button, and refuses a sync', async () => {
+    const { request, post, asStaff, gateway } = site(false);
     await asStaff();
     const page = await (await request(SYNC)).text();
-    expect(page).toContain('Ligo ne gère pas encore le serveur');
+    expect(page).toContain('Ligo ne gère pas encore ce serveur');
+    expect(page).toContain('Rôles à créer : 5');
     expect(page).not.toContain('Synchroniser maintenant');
+    await post(SYNC, {});
+    expect(gateway.changes).toEqual([]);
   });
 
   it('shows the dry run, and syncs when staff click', async () => {

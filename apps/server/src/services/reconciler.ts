@@ -251,10 +251,13 @@ async function runSync(
 }
 
 export type LeagueSyncReply =
-  SyncReply | { ok: false; error: 'not_found' | 'not_linked' | 'not_managed' };
+  /** `managed` false: a dry run of what turning management on would change. */
+  | (Extract<SyncReply, { ok: true }> & { managed: boolean })
+  | Extract<SyncReply, { ok: false }>
+  | { ok: false; error: 'not_found' | 'not_linked' | 'not_managed' };
 
 export type LeagueTarget =
-  | { ok: true; guildId: string; desired: DesiredState }
+  | { ok: true; guildId: string; managed: boolean; desired: DesiredState }
   | { ok: false; error: 'not_found' | 'not_linked' | 'not_managed' };
 
 /**
@@ -269,11 +272,13 @@ export function leagueTarget(
   competitionId: number,
   now: number,
   botUserId: string | null,
+  /** What Ligo would want once management is on: for a dry run before turning it on. */
+  evenIfOff = false,
 ): LeagueTarget {
   const row = db.select().from(competition).where(eq(competition.id, competitionId)).get();
   if (!row) return { ok: false, error: 'not_found' };
   const settings = rulesetSchema.parse(row.rulesetJson).discord;
-  if (!settings.manage) return { ok: false, error: 'not_managed' };
+  if (!settings.manage && !evenIfOff) return { ok: false, error: 'not_managed' };
   const linked = db
     .select({ guildId: leagueGuild.guildId, staffRoleId: leagueGuild.staffRoleId })
     .from(leagueGuild)
@@ -293,6 +298,7 @@ export function leagueTarget(
   return {
     ok: true,
     guildId: linked.guildId,
+    managed: settings.manage,
     desired: {
       roles,
       categories: channels.categories,
@@ -302,14 +308,18 @@ export function leagueTarget(
   };
 }
 
-/** Syncs a competition's own server to `leagueTarget`. */
-export function syncLeague(
+/**
+ * Syncs a competition's own server to `leagueTarget`. A dry run works with management off too,
+ * so staff see what turning it on would change; a real sync then refuses.
+ */
+export async function syncLeague(
   db: Db,
   gateway: DiscordGateway,
   competitionId: number,
   options: SyncOptions,
 ): Promise<LeagueSyncReply> {
-  const target = leagueTarget(db, competitionId, options.now, gateway.botUserId());
-  if (!target.ok) return Promise.resolve(target);
-  return syncGuild(db, gateway, target.guildId, target.desired, options);
+  const target = leagueTarget(db, competitionId, options.now, gateway.botUserId(), options.dryRun);
+  if (!target.ok) return target;
+  const reply = await syncGuild(db, gateway, target.guildId, target.desired, options);
+  return reply.ok ? { ...reply, managed: target.managed } : reply;
 }

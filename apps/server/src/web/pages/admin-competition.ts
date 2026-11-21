@@ -1,4 +1,10 @@
 import { TITLES } from '@ligo/titles';
+import {
+  CATEGORY_PLACEHOLDERS,
+  CHANNEL_PLACEHOLDERS,
+  DIVISION_PLACEHOLDERS,
+  TEAM_PLACEHOLDERS,
+} from '@ligo/core';
 import { html } from 'hono/html';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
 import type {
@@ -108,6 +114,10 @@ const WEEKDAYS = [
   })),
 ] as const;
 
+/** A name template's placeholders, which its help shows as they are typed. */
+const placeholders = (names: readonly string[]) =>
+  Object.fromEntries(names.map((name) => [name, `{${name}}`]));
+
 /** The general form, in the order of `GENERAL_FIELDS`. */
 export const GENERAL_SECTIONS: readonly SectionView[] = [
   {
@@ -209,6 +219,62 @@ export const GENERAL_SECTIONS: readonly SectionView[] = [
         path: 'ruleset.team_roles.coaches_max',
         label: 'web.admin.settings.coachesMax',
         input: { type: 'number', min: 0 },
+      },
+    ],
+  },
+  {
+    title: 'web.admin.settings.section.discord',
+    fields: [
+      {
+        path: 'ruleset.discord.manage',
+        label: 'web.admin.settings.discord.manage',
+        help: 'web.admin.settings.discord.manageHelp',
+        input: { type: 'checkbox' },
+      },
+      {
+        path: 'ruleset.discord.team_role_template',
+        label: 'web.admin.settings.discord.teamRole',
+        help: 'web.admin.settings.discord.teamRoleHelp',
+        helpParams: placeholders(TEAM_PLACEHOLDERS),
+        input: { type: 'text', maxlength: 100 },
+      },
+      {
+        path: 'ruleset.discord.team_roles_mentionable',
+        label: 'web.admin.settings.discord.mentionable',
+        input: { type: 'checkbox' },
+      },
+      {
+        path: 'ruleset.discord.open_days_before_week',
+        label: 'web.admin.settings.discord.openDays',
+        help: 'web.admin.settings.discord.openDaysHelp',
+        input: { type: 'number', min: 0, max: 14 },
+      },
+      {
+        path: 'ruleset.discord.archive_hours_after_result',
+        label: 'web.admin.settings.discord.archiveHours',
+        help: 'web.admin.settings.discord.archiveHoursHelp',
+        input: { type: 'number', min: 0, max: 720 },
+      },
+      {
+        path: 'ruleset.discord.channel_template',
+        label: 'web.admin.settings.discord.channel',
+        help: 'web.admin.settings.discord.channelHelp',
+        helpParams: placeholders(CHANNEL_PLACEHOLDERS),
+        input: { type: 'text', maxlength: 100 },
+      },
+      {
+        path: 'ruleset.discord.category_template',
+        label: 'web.admin.settings.discord.category',
+        help: 'web.admin.settings.discord.categoryHelp',
+        helpParams: placeholders(CATEGORY_PLACEHOLDERS),
+        input: { type: 'text', maxlength: 100 },
+      },
+      {
+        path: 'ruleset.discord.archive_category_template',
+        label: 'web.admin.settings.discord.archiveCategory',
+        help: 'web.admin.settings.discord.archiveCategoryHelp',
+        helpParams: placeholders(DIVISION_PLACEHOLDERS),
+        input: { type: 'text', maxlength: 100 },
       },
     ],
   },

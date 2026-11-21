@@ -226,6 +226,8 @@ export const fr = {
     'Ligo ne gère pas encore le serveur de cette ligue : le staff l’active dans les réglages de la compétition.',
   'sync.error.not_in_server': 'Le bot n’est pas dans le serveur de la ligue.',
   'sync.error.discord_unavailable': 'Discord ne répond pas : réessayez dans quelques minutes.',
+  'sync.offPreview':
+    'Ligo ne gère pas encore ce serveur : voici ce qu’il ferait une fois la gestion activée dans les réglages de la compétition.',
   'sync.inSync': 'Le serveur est à jour : rien à changer.',
   'sync.preview': 'Ce que la synchronisation changerait :',
   'sync.line': '{label} : {count}',
@@ -1466,6 +1468,27 @@ export const fr = {
   'web.admin.settings.remindBeforeHelp': 'Vide : pas de rappel.',
   'web.admin.settings.managersMax': 'Managers par équipe, en plus du propriétaire',
   'web.admin.settings.coachesMax': 'Coachs par équipe',
+  'web.admin.settings.section.discord': 'Serveur Discord',
+  'web.admin.settings.discord.manage': 'Ligo gère le serveur de la ligue',
+  'web.admin.settings.discord.manageHelp':
+    'Rôles des équipes et salons des matchs. À activer une fois le serveur prêt : le rôle du bot doit être au-dessus des rôles des équipes, avec Gérer les salons, Gérer les rôles et Épingler des messages. La page « Synchroniser le serveur Discord » montre ce qui changerait, avant même de l’activer.',
+  'web.admin.settings.discord.teamRole': 'Nom du rôle d’une équipe',
+  'web.admin.settings.discord.teamRoleHelp': '{name} : le nom de l’équipe ; {tag} : son tag.',
+  'web.admin.settings.discord.mentionable': 'Rôles des équipes mentionnables par tous',
+  'web.admin.settings.discord.openDays': 'Ouverture des salons de match (jours avant la semaine)',
+  'web.admin.settings.discord.openDaysHelp':
+    'De 0 à 14. Le staff peut aussi ouvrir une semaine plus tôt depuis le calendrier.',
+  'web.admin.settings.discord.archiveHours': 'Archivage (heures après que le résultat compte)',
+  'web.admin.settings.discord.archiveHoursHelp':
+    'De 0 à 720. Les équipes lisent encore le salon archivé, sans y écrire ; il est supprimé à la clôture de la saison, après sauvegarde.',
+  'web.admin.settings.discord.channel': 'Nom d’un salon de match',
+  'web.admin.settings.discord.channelHelp':
+    '{week} : la semaine ; {tagA}, {tagB} : les tags des équipes ; {division} : le préfixe de la division.',
+  'web.admin.settings.discord.category': 'Nom d’une catégorie de semaine',
+  'web.admin.settings.discord.categoryHelp':
+    '{week} et {division}. Sans {week}, une seule catégorie par division.',
+  'web.admin.settings.discord.archiveCategory': 'Nom d’une catégorie d’archives',
+  'web.admin.settings.discord.archiveCategoryHelp': '{division} seulement.',
   'web.admin.comp.rules': 'Règles de la compétition',
   'web.me.publicPage': 'Ma page publique',
   'web.player.nationality': 'Nationalité',
