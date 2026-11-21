@@ -1,6 +1,7 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+import { fakeTranscriptStore } from '../assets/transcript-store.ts';
 import { leagueDatabase, TEST_GUILD } from '../testing.ts';
 import { syncManagedLeagues } from './reconciler-clock.ts';
 import { fakeGateway } from './testing.ts';
@@ -51,6 +52,7 @@ describe('syncManagedLeagues', () => {
       logger,
       locale: 'fr' as const,
       publicUrl: SITE,
+      transcripts: fakeTranscriptStore(),
       now: () => NOW,
     });
     expect(snapshots()).toBe(0);
@@ -65,6 +67,7 @@ describe('syncManagedLeagues', () => {
       logger,
       locale: 'fr' as const,
       publicUrl: SITE,
+      transcripts: fakeTranscriptStore(),
       now: () => NOW,
     });
     expect(snapshots()).toBe(1);
@@ -81,6 +84,7 @@ describe('syncManagedLeagues', () => {
         logger,
         locale: 'fr' as const,
         publicUrl: SITE,
+        transcripts: fakeTranscriptStore(),
         now: () => NOW,
       }),
     ).resolves.toBeUndefined();
@@ -97,7 +101,15 @@ describe('syncManagedLeagues', () => {
 describe('the quick check between full runs', () => {
   it('syncs a league only once its wanted state changed', async () => {
     const { db, gateway, logger, snapshots } = setUp(true);
-    const deps = { db, gateway, logger, locale: 'fr' as const, publicUrl: SITE, now: () => NOW };
+    const deps = {
+      db,
+      gateway,
+      logger,
+      locale: 'fr' as const,
+      publicUrl: SITE,
+      transcripts: fakeTranscriptStore(),
+      now: () => NOW,
+    };
     const last = new Map<number, string>();
     await syncManagedLeagues(deps, last, true);
     expect(snapshots()).toBe(1);
@@ -122,6 +134,7 @@ describe('control messages from the clock', () => {
       logger,
       locale: 'fr',
       publicUrl: SITE,
+      transcripts: fakeTranscriptStore(),
       now: () => NOW,
     });
     const channel = gateway.snapshots.get(TEST_GUILD)?.channels[0];

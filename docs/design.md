@@ -310,6 +310,10 @@ discord_object guild_id, kind ('team_role'|'week_category'|'archive_category'|'m
                -- created_by_ligo is false for a role staff linked (M-46): Ligo never deletes those;
                -- MOSS kinds were dropped (M-47, migration 0031)
                -- (phase 4)
+match_transcript id, guild_id, match_id, channel_id, storage_key, message_count, saved_at,
+               UNIQUE(guild_id, match_id)
+               -- a match channel saved at season end; the reconciler deletes a channel only once
+               -- its row exists (phase 4)
 image_cache    key PK, object_key, created_at
 ```
 
@@ -602,7 +606,7 @@ What Ligo manages in a league's server is `ruleset_json.discord`, off by default
 4. **Deadlines.** At the end of the planned week with no agreed time, the bot posts the one-week extension. At the end of the extension it posts the automatic Sunday 21:00 slot.
 5. **Result.** Once validated (by the opponent's confirmation in LFR, or by staff), the bot posts the result card in the channel and in the results channel.
 6. **Archive.** `archive_hours_after_result` hours after the result counts (validated, forfeit or annulled, from `match.validated_at`, which an annulment sets too; default 48), the team roles lose Send Messages, keep reading, and the channel moves to an archive category. A channel never closes by the calendar: extra time granted by staff, the extension week, a new time or a disputed result keep it open until the result counts (M-44). A match whose result counted before Ligo ever opened its channel (history, or a server managed late) gets none. Overwrites: teams, the league's staff role, the division's staff role and the bot (by its user ID) get View Channel, Send Messages, Read Message History, Attach Files and Embed Links; the bot also Pin Messages; Add Reactions is left out, since the bot is not invited with it and Discord refuses an overwrite granting what the bot does not hold. Archived, the teams keep View Channel and Read Message History and are denied Send Messages. A category holds 50 channels at most, so archive categories are added as they fill.
-7. **Season end.** The transcript is exported as JSON to R2, then the channel is deleted.
+7. **Season end.** Once staff close the season, the reconciler's next run (within 30 seconds) saves each of its match channels as JSON, then deletes the channel, and the archive category once empty; the team roles go at the same time. The file, `transcripts/<season_id>/<match_id>.json` in the storage folder (copied to R2 each night; written to R2 directly from phase 5), holds every message, oldest first: author (ID, username, bot or not), text, times, pins, embeds' titles and text, and each attachment's name, size and type. Attachments themselves are not kept: Discord's links to them are signed and expire, and score screenshots are already evidence. A channel is deleted only once its transcript is recorded (`match_transcript`); one Discord refuses to read stays and is tried again on the next run. Nothing serves transcripts: staff ask the maintainer for one if a dispute needs it.
 
 **Other managed channels**
 

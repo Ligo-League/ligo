@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server';
 import { dirname, resolve } from 'node:path';
 import { applyMigrations, backupFolder, openDatabase } from '@ligo/db';
 import { createLocalEvidenceStore } from './assets/evidence-store.ts';
+import { createLocalTranscriptStore } from './assets/transcript-store.ts';
 import { createLocalAssetStore } from './assets/store.ts';
 import { SCREENSHOT_MAX_BYTES } from './services/results.ts';
 import { loadConfig } from './config.ts';
@@ -46,6 +47,7 @@ logger.info({ path: databasePath }, 'Database ready');
 
 const assets = createLocalAssetStore(resolve(config.assetsDir));
 const evidence = createLocalEvidenceStore(resolve(config.storageDir), SCREENSHOT_MAX_BYTES, logger);
+const transcripts = createLocalTranscriptStore(resolve(config.storageDir));
 const publicUrl = new URL(config.web.publicUrl);
 const newClient = () =>
   createDiscordClient({ commands, buttons, forms, logger, db, assets, evidence, publicUrl });
@@ -105,6 +107,7 @@ const startClockOnReady = () => {
       logger,
       locale: DEFAULT_LOCALE,
       publicUrl,
+      transcripts,
       now: () => Date.now(),
     });
   });

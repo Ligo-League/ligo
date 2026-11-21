@@ -1123,6 +1123,22 @@ the bot):
 - **Permissions to check:** the bot's role needs Manage Channels, Manage Roles and Pin Messages.
   Add Reactions is not granted in match channels (the bot is not invited with it).
 
+## 63. Phase 4-9: season end
+
+When staff close a season (**Clôturée** on its admin page), within 30 seconds the reconciler:
+
+1. saves each of its match channels to `STORAGE_DIR/transcripts/<season id>/<match id>.json`
+   (the nightly `backup-storage.sh` copies it to R2): every message with its author, text,
+   times and attachment names, not the attachments themselves;
+2. then deletes the channel, and each archive category left empty;
+3. removes the season's team roles, as no roster holds a slot in a season under way.
+
+A channel the bot cannot read (it lost View Channel or Read Message History) is kept and tried
+again every 10 minutes; the server log says `Some match channel transcripts could not be saved`.
+Give the bot back its access, or delete the channel by hand once you have copied what matters:
+Ligo then forgets it. To read a transcript, open the JSON file on the VPS
+(`docker compose exec server ls /data/storage/transcripts`); no page shows it.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |

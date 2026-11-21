@@ -1,6 +1,8 @@
 import { rulesetSchema } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
+import type { TranscriptStore } from '../assets/transcript-store.ts';
 import { leagueTarget, syncGuild } from '../services/reconciler.ts';
+import { saveTranscripts } from '../services/transcripts.ts';
 import type { Locale } from '../i18n/index.ts';
 import { postControlMessages } from './control-message.ts';
 import type { DiscordGateway } from './gateway.ts';
@@ -9,7 +11,8 @@ import type { DiscordGateway } from './gateway.ts';
 // then every few minutes, for every league that lets Ligo manage its server, so changes made by
 // hand in Discord are put right within that time. In between, a quick check reads only the
 // database: a league whose wanted state changed (a lineup, an official, a role linked) is synced
-// within seconds, whichever page or command made the change.
+// within seconds, whichever page or command made the change. Each run first saves the transcript
+// of every match channel whose season closed, so the sync that follows deletes it.
 
 /** Often enough to repair a hand-made change soon, rarely enough to stay far from Discord's limits. */
 export const SYNC_INTERVAL_MS = 10 * 60_000;
@@ -22,6 +25,8 @@ export interface ReconcilerDeps {
   /** The language and site of the match channels' control messages. */
   locale: Locale;
   publicUrl: URL;
+  /** Where match channel transcripts are saved before their channel goes. */
+  transcripts: TranscriptStore;
   logger: {
     info(details: object, message: string): void;
     warn(details: object, message: string): void;
@@ -53,7 +58,23 @@ export async function syncManagedLeagues(
     try {
       if (!rulesetSchema.parse(row.rulesetJson).discord.manage) continue;
       const now = deps.now();
-      const target = leagueTarget(deps.db, row.id, now, deps.gateway.botUserId());
+      let target = leagueTarget(deps.db, row.id, now, deps.gateway.botUserId());
+      if (target.ok) {
+        const transcripts = await saveTranscripts(deps, target.guildId);
+        if (transcripts.failures.length > 0)
+          deps.logger.warn(
+            {
+              competitionId: row.id,
+              saved: transcripts.saved,
+              failed: transcripts.failures.length,
+              first: transcripts.failures[0],
+            },
+            'Some match channel transcripts could not be saved',
+          );
+        // The saved channels may go now.
+        if (transcripts.saved > 0)
+          target = leagueTarget(deps.db, row.id, now, deps.gateway.botUserId());
+      }
       if (!target.ok) {
         deps.logger.warn(
           { competitionId: row.id, error: target.error },

@@ -14,6 +14,7 @@ import type { DiscordGateway, GuildChange, ResolvedOverwrite } from '../discord/
 import { withGuildLock } from './guild-lock.ts';
 import { desiredMatchChannels } from './match-channels.ts';
 import { desiredTeamRoles } from './team-roles.ts';
+import { releasedChannels } from './transcripts.ts';
 
 // The reconciler (phase 4; design doc section 6, "Reconciler"). It reads the league's server,
 // compares it with what the database wants (`@ligo/core` reconcile), and makes the changes one
@@ -259,7 +260,8 @@ export type LeagueTarget =
 /**
  * What Ligo wants in a competition's own server, when the league lets Ligo manage it
  * (`ruleset.discord`): its team roles and its match channels (MOSS files go on the website). What
- * Ligo made and no longer wants goes, except channels, which stay until released (4-9).
+ * Ligo made and no longer wants goes, except channels, which stay until their transcript is saved
+ * (`saveTranscripts`, at season end).
  * `botUserId` lets the bot into the private channels it posts in.
  */
 export function leagueTarget(
@@ -291,7 +293,12 @@ export function leagueTarget(
   return {
     ok: true,
     guildId: linked.guildId,
-    desired: { roles, categories: channels.categories, channels: channels.channels },
+    desired: {
+      roles,
+      categories: channels.categories,
+      channels: channels.channels,
+      release: releasedChannels(db, linked.guildId),
+    },
   };
 }
 

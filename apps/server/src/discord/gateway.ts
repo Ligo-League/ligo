@@ -78,6 +78,34 @@ export interface DiscordGateway {
    * permission, a role above the bot's) or is unreachable.
    */
   changeGuild(guildId: string, change: GuildChange, reason: string): Promise<string | null>;
+  /**
+   * Every message of a text channel, oldest first, for its transcript (design doc section 6,
+   * "Season end"); at most `limit`, the oldest kept. Null when the channel no longer exists.
+   * Rejects when the bot may not read it or Discord is unreachable.
+   */
+  channelMessages(channelId: string, limit: number): Promise<ChannelHistory | null>;
+}
+
+export interface ChannelHistory {
+  name: string;
+  messages: ChannelMessage[];
+  /** True when the channel held more than the limit. */
+  truncated: boolean;
+}
+
+/**
+ * One message as a transcript keeps it. Attachments keep their name, size and type only:
+ * Discord's links to them are signed and expire, so they would not outlive the channel.
+ */
+export interface ChannelMessage {
+  id: string;
+  author: { id: string; username: string; bot: boolean };
+  content: string;
+  createdAt: number;
+  editedAt: number | null;
+  pinned: boolean;
+  attachments: { name: string; size: number; contentType: string | null }[];
+  embeds: { title: string | null; description: string | null }[];
 }
 
 /** One change to a server, every object named by its Discord ID. */
@@ -129,6 +157,9 @@ const MEMBER_SEARCH_LIMIT = 25;
 const UNKNOWN_MEMBER = 10007;
 const UNKNOWN_GUILD = 10004;
 const UNKNOWN_INVITE = 10006;
+const UNKNOWN_CHANNEL = 10003;
+/** The most messages Discord gives in one read. */
+const MESSAGE_PAGE = 100;
 const isDiscordError = (error: unknown, ...codes: number[]) =>
   error instanceof DiscordAPIError && typeof error.code === 'number' && codes.includes(error.code);
 
@@ -375,6 +406,53 @@ export function createDiscordGateway(current: () => Client): DiscordGateway {
           roleIds: [...member.roles.cache.keys()].filter((id) => id !== guild.id),
         })),
       };
+    },
+
+    async channelMessages(channelId, limit) {
+      let channel;
+      try {
+        channel = await current().channels.fetch(channelId);
+      } catch (error) {
+        if (isDiscordError(error, UNKNOWN_CHANNEL)) return null;
+        throw error;
+      }
+      if (channel?.type !== ChannelType.GuildText) return null;
+      // Read from the first message on, one page after the other.
+      const messages: ChannelMessage[] = [];
+      let after = '0';
+      for (;;) {
+        const page = await channel.messages.fetch({ after, limit: MESSAGE_PAGE, cache: false });
+        // IDs grow with time, more finely than the creation time in milliseconds.
+        const ordered = [...page.values()].sort((x, y) => (BigInt(x.id) < BigInt(y.id) ? -1 : 1));
+        for (const message of ordered) {
+          if (messages.length === limit) return { name: channel.name, messages, truncated: true };
+          messages.push({
+            id: message.id,
+            author: {
+              id: message.author.id,
+              username: message.author.username,
+              bot: message.author.bot,
+            },
+            content: message.content,
+            createdAt: message.createdTimestamp,
+            editedAt: message.editedTimestamp,
+            pinned: message.pinned,
+            attachments: [...message.attachments.values()].map((attachment) => ({
+              name: attachment.name,
+              size: attachment.size,
+              contentType: attachment.contentType,
+            })),
+            embeds: message.embeds.map((embed) => ({
+              title: embed.title,
+              description: embed.description,
+            })),
+          });
+        }
+        const last = ordered.at(-1);
+        if (page.size < MESSAGE_PAGE || !last) break;
+        after = last.id;
+      }
+      return { name: channel.name, messages, truncated: false };
     },
 
     async changeGuild(guildId, change, reason) {

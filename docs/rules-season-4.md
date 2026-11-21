@@ -298,8 +298,9 @@ M-xx : mainteneur).
 - Le salon du match ouvre **2 jours avant le début de la semaine** de jeu et ferme **48 heures
   après que le résultat compte** (validé, forfait ou annulé) : un délai accordé par le staff, la
   prolongation ou une contestation le laissent ouvert. Une fois fermé, les équipes le lisent
-  encore mais n'y écrivent plus ; il est supprimé en fin de saison, après sauvegarde de son
-  contenu. Les deux durées sont des réglages, tout comme le nom du salon (`w{week}-{tagA}-{tagB}`
+  encore mais n'y écrivent plus ; il est supprimé à la clôture de la saison, après sauvegarde
+  de ses messages (le texte et le nom des pièces jointes, pas les fichiers eux-mêmes), que le
+  staff peut consulter en cas de litige. Les deux durées sont des réglages, tout comme le nom du salon (`w{week}-{tagA}-{tagB}`
   par défaut, par exemple `w3-grd-rck`).
 - Le staff peut ouvrir les salons d'une semaine plus tôt (`/league week`, ou la page du
   calendrier).

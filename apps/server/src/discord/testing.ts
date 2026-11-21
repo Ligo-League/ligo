@@ -14,7 +14,7 @@ import type {
 } from './commands/types.ts';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeAssetStore, PNG_HEADER_FOR_TESTS } from '../assets/store.ts';
-import type { DiscordGateway, GuildChange, GuildTextChannel } from './gateway.ts';
+import type { ChannelHistory, DiscordGateway, GuildChange, GuildTextChannel } from './gateway.ts';
 
 type OptionValue =
   | string
@@ -286,6 +286,8 @@ export interface FakeGateway extends DiscordGateway {
   pinned: string[];
   /** The bot's user ID; null as before it connects. */
   botId: string | null;
+  /** What each channel holds, by channel ID; a channel not here no longer exists. */
+  histories: Map<string, ChannelHistory>;
 }
 
 /** The fake bot's own user ID. */
@@ -409,6 +411,17 @@ export function fakeGateway(): FakeGateway {
     refused: new Set(),
     pinned: [],
     botId: FAKE_BOT_ID,
+    histories: new Map(),
+    channelMessages(channelId, limit) {
+      if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
+      const history = gateway.histories.get(channelId);
+      if (!history) return Promise.resolve(null);
+      return Promise.resolve({
+        name: history.name,
+        messages: history.messages.slice(0, limit),
+        truncated: history.messages.length > limit,
+      });
+    },
     pinMessage(channelId, messageId) {
       if (gateway.failing) return Promise.reject(new Error('Discord is unreachable'));
       if (
