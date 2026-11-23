@@ -92,6 +92,9 @@ pnpm seed           # load fixture data (LFR teams, Season 3 fixtures/results)
 pnpm fixtures:score7    # history only: rewrites the *.score7.csv snapshots (score7 is no longer kept up to date)
 pnpm assets:logos       # turn data/assets/logos into 128 px PNGs for the images (needs ImageMagick)
 pnpm discord:register   # register slash commands to the staging guild only
+pnpm parsers:build      # build the R6 parser (parsers/r6) to WebAssembly in parsers/dist (Go, or its Docker image)
+pnpm parsers:compare    # every replay through the WebAssembly build and the native CLI: must be identical
+pnpm fixtures:replays   # download the real replays of the golden tests into fixtures/replays (about 1 GB)
 ```
 
 Keep this list in sync with `package.json` when scripts change.

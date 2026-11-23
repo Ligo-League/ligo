@@ -13,3 +13,8 @@ design-proposals/
 
 # Claude Code worktrees: other checkouts of this repository.
 .claude/
+
+# The r6-dissect fork (a submodule), its build, and the real replays of the golden tests.
+parsers/r6/
+parsers/dist/
+fixtures/replays/

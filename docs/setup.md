@@ -1248,6 +1248,22 @@ says what to expect.
 20. If a channel stays, the log says `Some match channel transcripts could not be saved`
     (section 63).
 
+## 66. Phase 5-1: the R6 parser
+
+The replay parser is your r6-dissect fork, now a git submodule in `parsers/r6`.
+
+1. After pulling: `git submodule update --init`. A plain `git pull` does not update the fork's
+   folder; `git pull --recurse-submodules` does.
+2. `pnpm parsers:build` builds `parsers/dist/r6-<hash>.wasm`. Without Go installed, it runs the
+   pinned Go Docker image (the first build downloads it, about 300 MB). It takes about 20 seconds.
+3. `pnpm fixtures:replays` downloads the test replays (the Salt Lake City Major 2026 playoffs,
+   about 1 GB) into `fixtures/replays/`, which git ignores.
+4. `pnpm parsers:compare` parses every round with the WebAssembly build and the native CLI and
+   reports any difference. It takes about 6 minutes for the 136 rounds.
+
+A change to the fork is committed and pushed in the fork first (`cd parsers/r6`, then `git
+commit` and `git push` to your fork), then the new submodule commit is committed in Ligo.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |

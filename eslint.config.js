@@ -73,6 +73,9 @@ export default defineConfig(
       '.claude/',
       // Static design mockups with their own tooling (design-proposals/README.md), not app code.
       'design-proposals/',
+      // The r6-dissect fork (a submodule, Go) and the real replays the golden tests read.
+      'parsers/r6/',
+      'fixtures/replays/',
     ],
   },
 

@@ -1,0 +1,3 @@
+[submodule "parsers/r6"]
+	path = parsers/r6
+	url = https://github.com/Gipson62/r6-dissect

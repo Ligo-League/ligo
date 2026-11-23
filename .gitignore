@@ -153,3 +153,6 @@ data/
 *.db
 *.db-shm
 *.db-wal
+
+# Real replays for the golden tests: downloaded by scripts/fixtures-replays.sh, never committed
+fixtures/replays/
