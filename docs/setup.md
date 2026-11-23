@@ -1270,6 +1270,10 @@ the fork's `before-prestonwillis10` branch. To take its next fixes: `cd parsers/
 prestonwillis10`, `git merge prestonwillis10/main`, then `pnpm parsers:build` and
 `pnpm parsers:compare`.
 
+On the VPS, `deploy/update.sh` fetches the submodule (`git submodule update --init`) and the
+image builds the parser in a Go stage of the Dockerfile; the first build after this change takes
+a minute more.
+
 A change to the fork is committed and pushed in the fork first (`cd parsers/r6`, then `git
 commit` and `git push` to your fork), then the new submodule commit is committed in Ligo.
 

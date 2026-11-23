@@ -18,6 +18,8 @@ fi
 
 before=$(git rev-parse --short HEAD)
 git pull --ff-only origin main
+# The R6 parser is a submodule (parsers/r6): the image builds it to WebAssembly.
+git submodule update --init
 after=$(git rev-parse --short HEAD)
 echo "main: $before -> $after"
 

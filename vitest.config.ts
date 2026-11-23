@@ -11,6 +11,7 @@ export default defineConfig({
       project('tooling', 'tooling'),
       project('core', 'packages/core/src'),
       project('titles', 'packages/titles/src'),
+      project('parsers', 'packages/parsers/src'),
       project('db', 'packages/db/src'),
       project('render', 'packages/render/src'),
       project('server', 'apps/server/src'),

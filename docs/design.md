@@ -903,7 +903,7 @@ Every stored metric is additive. Values shown as averages in game (Valorant ACS)
 | `opening_kills`, `opening_deaths` | no       | yes    | First kill and first death of a round            |
 | `trade_kills`, `traded_deaths`    | no       | yes    | Trades given and received                        |
 | `clutch_attempts`, `clutch_wins`  | no       | yes    | Last-alive situations and wins                   |
-| `plants`, `defuses`               | no       | yes    | Defuser plant and disable completed              |
+| `plants`, `defuses`               | no       | yes    | Defuser plant and disable completed; left out until the parser finds every plant (M-50) |
 
 **R6 derived metrics:** K/D = kills / deaths (kills when deaths = 0) · KPR = kills / rounds · HS% = headshots / kills · SRV = rounds_survived / rounds · KOST = rounds_kost / rounds · entry = opening_kills − opening_deaths · trade diff = trade_kills − traded_deaths · clutch % = clutch_wins / clutch_attempts.
 
@@ -1053,7 +1053,7 @@ The C# Rocket League parser you found (jjbott) is MIT-licensed and current, but 
 
 - Add `cmd/wasm/main.go` to the fork. It exports `parseRound(bytes)` through `syscall/js`: it wraps the bytes in `bytes.NewReader`, calls `dissect.NewReader` and `Read()`, and returns the round JSON as a string. Import only the `dissect` package, so the Excel export dependency stays out of the binary.
 - Build with `GOOS=js GOARCH=wasm go build -o r6-<sha>.wasm ./cmd/wasm`, and ship Go's `wasm_exec.js` with it. Serve it Brotli-compressed with immutable caching.
-- The same `.wasm` runs in Node for verification. The native CLI build stays as the reference in CI: both builds must produce identical JSON on every stored replay.
+- The same `.wasm` runs in Node for verification, in a worker thread (`@ligo/parsers/node`); browsers run it in a Web Worker (`@ligo/parsers/browser`). One file at a time: a parse past 60 s, a worker that dies and a worker whose WebAssembly memory grew past 1 GB (a parse peaks near 350 MB) are replaced for the next file. The server image builds it in a Go stage of the Dockerfile, so the server and the browsers it serves run the same build. The native CLI build stays as the reference in CI: both builds must produce identical JSON on every stored replay.
 
 **Pitfalls the R6 normaliser must handle** (found in the old Atlas77 code)
 

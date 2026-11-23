@@ -12,6 +12,11 @@
 !packages/db/migrations
 !packages/render/fonts
 !fixtures/*.csv
+!parsers/build-r6.sh
+!parsers/r6
+# The fork's own history and its 100 MB of test replays are not needed to build it.
+parsers/r6/.git
+parsers/r6/dissect/test/data
 
 # Tests and their helpers stay out, wherever they are.
 **/*.test.ts

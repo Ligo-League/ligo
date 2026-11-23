@@ -6,6 +6,15 @@
 # Exact versions: an update is a change made on purpose.
 ARG NODE_IMAGE=node:26.13.1-bookworm-slim
 
+# The R6 replay parser, the r6-dissect fork in parsers/r6, built to WebAssembly by
+# parsers/build-r6.sh (design doc section 10). Built in the image, so the server and the browsers
+# it serves always run the same build. The pinned Go release is the one build-r6.sh names.
+FROM golang:1.27.3-bookworm AS parsers
+WORKDIR /work
+COPY parsers/build-r6.sh parsers/
+COPY parsers/r6 parsers/r6
+RUN parsers/build-r6.sh && rm parsers/dist/r6-dissect
+
 FROM ${NODE_IMAGE} AS install
 WORKDIR /app
 # Node 25 and later no longer ship corepack: install the pnpm package.json names.
@@ -34,6 +43,8 @@ ENV NODE_ENV=production \
     STORAGE_DIR=/data/storage
 WORKDIR /app
 COPY --from=install /app /app
+# The parser build: r6.json, r6-<hash>.wasm and Go's wasm_exec.js.
+COPY --from=parsers /work/parsers/dist /app/parsers/dist
 # The database, its backups, the prepared logos and the stored screenshots live in /data, a
 # volume the unprivileged `node` user owns.
 RUN mkdir -p /data && chown node:node /data
