@@ -1,0 +1,339 @@
+{
+  "schema": 1,
+  "title": "r6",
+  "parser": "r6-golden",
+  "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "lobby_id": "81b1e640-8ca6-4b35-9bd5-60e401aa7826",
+  "unit": {
+    "kind": "round",
+    "number": 8
+  },
+  "started_at": "2026-08-15T14:25:10Z",
+  "game_version": "Y11S2_Alpha04",
+  "match_type": "CustomGameLocal",
+  "map": "NighthavenLabsY10",
+  "site": "2F Command Center, 2F Servers",
+  "mode": "Bomb",
+  "complete": false,
+  "planted": false,
+  "recorded_by": "a3d2ade3-ee4f-4410-8092-cb3e2738f5b7",
+  "sides": [
+    {
+      "idx": 0,
+      "role": "Attack",
+      "won": false,
+      "win_condition": null,
+      "score_before": 3
+    },
+    {
+      "idx": 1,
+      "role": "Defense",
+      "won": false,
+      "win_condition": null,
+      "score_before": 5
+    }
+  ],
+  "players": [
+    {
+      "account": null,
+      "name": "AsK",
+      "side": 1,
+      "operator": "Thorn",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Sarks",
+      "side": 1,
+      "operator": "Mira",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 1,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Gruby",
+      "side": 1,
+      "operator": "Azami",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Eupor",
+      "side": 1,
+      "operator": "Warden",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Yoggah",
+      "side": 1,
+      "operator": "Ela",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "J9O",
+      "side": 0,
+      "operator": "Zofia",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 1,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Nuers",
+      "side": 0,
+      "operator": "Flores",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "njr",
+      "side": 0,
+      "operator": "Nomad",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "kyno",
+      "side": 0,
+      "operator": "Blackbeard",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Fultz",
+      "side": 0,
+      "operator": "Thermite",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    }
+  ],
+  "events": [
+    {
+      "seq": 0,
+      "type": "swap",
+      "elapsed_s": -32,
+      "actor": 5,
+      "operator": "Zofia"
+    },
+    {
+      "seq": 1,
+      "type": "swap",
+      "elapsed_s": -21,
+      "actor": 8,
+      "operator": "Ace"
+    },
+    {
+      "seq": 2,
+      "type": "swap",
+      "elapsed_s": -19,
+      "actor": 6,
+      "operator": "Striker"
+    },
+    {
+      "seq": 3,
+      "type": "swap",
+      "elapsed_s": -13,
+      "actor": 8,
+      "operator": "Blackbeard"
+    },
+    {
+      "seq": 4,
+      "type": "swap",
+      "elapsed_s": -13,
+      "actor": 6,
+      "operator": "Flores"
+    },
+    {
+      "seq": 5,
+      "type": "kill",
+      "elapsed_s": 93,
+      "actor": 5,
+      "target": 1,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    }
+  ],
+  "params": {
+    "trade_window_s": 10
+  },
+  "warnings": []
+}

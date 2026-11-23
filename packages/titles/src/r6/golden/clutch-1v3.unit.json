@@ -1,0 +1,391 @@
+{
+  "schema": 1,
+  "title": "r6",
+  "parser": "r6-golden",
+  "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "lobby_id": "d5ab2b48-0349-4370-887f-0bd5051860f1",
+  "unit": {
+    "kind": "round",
+    "number": 3
+  },
+  "started_at": "2026-08-13T17:23:49Z",
+  "game_version": "Y11S2_Alpha04",
+  "match_type": "CustomGameLocal",
+  "map": "NighthavenLabsY10",
+  "site": "2F Command Center, 2F Servers",
+  "mode": "Bomb",
+  "complete": true,
+  "planted": false,
+  "recorded_by": "a3d2ade3-ee4f-4410-8092-cb3e2738f5b7",
+  "sides": [
+    {
+      "idx": 0,
+      "role": "Defense",
+      "won": true,
+      "win_condition": "KilledOpponents",
+      "score_before": 2
+    },
+    {
+      "idx": 1,
+      "role": "Attack",
+      "won": false,
+      "win_condition": null,
+      "score_before": 1
+    }
+  ],
+  "players": [
+    {
+      "account": null,
+      "name": "AsK",
+      "side": 0,
+      "operator": "Smoke",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 1,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Sarks",
+      "side": 0,
+      "operator": "Aruni",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 1,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Gruby",
+      "side": 0,
+      "operator": "Azami",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 4,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 2,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 1,
+        "traded_deaths": 0,
+        "clutch_attempts": 1,
+        "clutch_wins": 1
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 3
+      }
+    },
+    {
+      "account": null,
+      "name": "Eupor",
+      "side": 0,
+      "operator": "Warden",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 1,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 1,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Yoggah",
+      "side": 0,
+      "operator": "Ela",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "vDrillz",
+      "side": 1,
+      "operator": "Dokkaebi",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 2,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Mowwwgli",
+      "side": 1,
+      "operator": "Nomad",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 1,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 1,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 1,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 1
+      }
+    },
+    {
+      "account": null,
+      "name": "noa",
+      "side": 1,
+      "operator": "Ying",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 1,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Flexy",
+      "side": 1,
+      "operator": "Blackbeard",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "oscr",
+      "side": 1,
+      "operator": "Thermite",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 1,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    }
+  ],
+  "events": [
+    {
+      "seq": 0,
+      "type": "swap",
+      "elapsed_s": -25,
+      "actor": 7,
+      "operator": "Ying"
+    },
+    {
+      "seq": 1,
+      "type": "kill",
+      "elapsed_s": 79,
+      "actor": 6,
+      "target": 1,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 2,
+      "type": "kill",
+      "elapsed_s": 94,
+      "actor": 5,
+      "target": 0,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 3,
+      "type": "kill",
+      "elapsed_s": 94,
+      "actor": 2,
+      "target": 8,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 4,
+      "type": "kill",
+      "elapsed_s": 95,
+      "actor": 4,
+      "target": 7,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 5,
+      "type": "kill",
+      "elapsed_s": 100,
+      "actor": 9,
+      "target": 4,
+      "headshot": false,
+      "team_kill": false,
+      "trade": true
+    },
+    {
+      "seq": 6,
+      "type": "kill",
+      "elapsed_s": 108,
+      "actor": 5,
+      "target": 3,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 7,
+      "type": "kill",
+      "elapsed_s": 108,
+      "actor": 2,
+      "target": 5,
+      "headshot": false,
+      "team_kill": false,
+      "trade": true
+    },
+    {
+      "seq": 8,
+      "type": "kill",
+      "elapsed_s": 116,
+      "actor": 2,
+      "target": 9,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 9,
+      "type": "kill",
+      "elapsed_s": 130,
+      "actor": 2,
+      "target": 6,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    }
+  ],
+  "params": {
+    "trade_window_s": 10
+  },
+  "warnings": []
+}

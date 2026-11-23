@@ -4,12 +4,16 @@
 //
 //   pnpm parsers:compare [folder]     (default: fixtures/replays)
 //
+// Each round is also normalised (packages/titles): any refusal or warning is reported, since the
+// normaliser must read every round a release can parse.
+//
 // Needs parsers/build-r6.sh to have run, and replays (parsers/fetch-replays.sh).
 import { execFile } from 'node:child_process';
 import { readdir, readFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual, promisify } from 'node:util';
+import { normalizeR6 } from '../packages/titles/src/r6/normalize.ts';
 
 const run = promisify(execFile);
 const ROOT = resolve(import.meta.dirname, '..');
@@ -64,6 +68,7 @@ async function main(): Promise<void> {
   console.log(`${version}: ${String(files.length)} rounds under ${relative(ROOT, folder)}`);
 
   let different = 0;
+  let unread = 0;
   let wasmMs = 0;
   let largest = 0;
   for (const file of files) {
@@ -79,6 +84,12 @@ async function main(): Promise<void> {
     }
     largest = Math.max(largest, parsed.json.length);
     const wasm = JSON.parse(parsed.json) as Record<string, unknown>;
+    const normalized = normalizeR6(wasm, { parser: version, fileSha256: '', tradeWindowS: 10 });
+    if (!normalized.ok || normalized.unit.warnings.length > 0) {
+      const why = normalized.ok ? JSON.stringify(normalized.unit.warnings) : normalized.message;
+      console.log(`✗ ${name}: the normaliser ${normalized.ok ? 'warns' : 'refuses'}: ${why}`);
+      unread += 1;
+    }
     const { stdout } = await run(join(DIST, 'r6-dissect'), [file, '-f', 'json'], {
       maxBuffer: 256 * 1024 * 1024,
     });
@@ -92,9 +103,10 @@ async function main(): Promise<void> {
   console.log(
     `${String(files.length - different)}/${String(files.length)} rounds identical; ` +
       `WebAssembly ${(wasmMs / files.length).toFixed(0)} ms a round on average, ` +
-      `largest JSON ${(largest / 1024).toFixed(0)} KB`,
+      `largest JSON ${(largest / 1024).toFixed(0)} KB; ` +
+      `${String(files.length - unread)}/${String(files.length)} normalised without a warning`,
   );
-  if (different > 0) process.exitCode = 1;
+  if (different > 0 || unread > 0) process.exitCode = 1;
 }
 
 await main();

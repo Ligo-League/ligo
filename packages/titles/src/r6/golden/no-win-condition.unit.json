@@ -1,0 +1,381 @@
+{
+  "schema": 1,
+  "title": "r6",
+  "parser": "r6-golden",
+  "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "lobby_id": "c0d95cf9-da9e-4fcf-95ad-49144c77d443",
+  "unit": {
+    "kind": "round",
+    "number": 7
+  },
+  "started_at": "2026-08-14T21:05:52Z",
+  "game_version": "Y11S2_Alpha04",
+  "match_type": "CustomGameLocal",
+  "map": "ConsulateY10",
+  "site": "B Cafeteria, B Garage",
+  "mode": "Bomb",
+  "complete": true,
+  "planted": false,
+  "recorded_by": "a3d2ade3-ee4f-4410-8092-cb3e2738f5b7",
+  "sides": [
+    {
+      "idx": 0,
+      "role": "Defense",
+      "won": false,
+      "win_condition": null,
+      "score_before": 6
+    },
+    {
+      "idx": 1,
+      "role": "Attack",
+      "won": true,
+      "win_condition": null,
+      "score_before": 1
+    }
+  ],
+  "players": [
+    {
+      "account": null,
+      "name": "kds",
+      "side": 0,
+      "operator": "Skopos",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 1,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 1,
+        "trade_kills": 0,
+        "traded_deaths": 1,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "cyber",
+      "side": 0,
+      "operator": "Mute",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 2,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 2,
+        "traded_deaths": 0,
+        "clutch_attempts": 1,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 1
+      }
+    },
+    {
+      "account": null,
+      "name": "vitaking",
+      "side": 0,
+      "operator": "Mira",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 1,
+        "traded_deaths": 1,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "handyy",
+      "side": 0,
+      "operator": "Ela",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 1,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "soulz1",
+      "side": 0,
+      "operator": "Azami",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 1,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "AsK",
+      "side": 1,
+      "operator": "Ace",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 1,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Sarks",
+      "side": 1,
+      "operator": "Deimos",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 1,
+        "clutch_wins": 1
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 2
+      }
+    },
+    {
+      "account": null,
+      "name": "Gruby",
+      "side": 1,
+      "operator": "Hibana",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 1,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Eupor",
+      "side": 1,
+      "operator": "Dokkaebi",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 1,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Yoggah",
+      "side": 1,
+      "operator": "Zofia",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 1,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    }
+  ],
+  "events": [
+    {
+      "seq": 0,
+      "type": "swap",
+      "elapsed_s": -8,
+      "actor": 9,
+      "operator": "Zofia"
+    },
+    {
+      "seq": 1,
+      "type": "kill",
+      "elapsed_s": 126,
+      "actor": 9,
+      "target": 0,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 2,
+      "type": "kill",
+      "elapsed_s": 127,
+      "actor": 2,
+      "target": 9,
+      "headshot": false,
+      "team_kill": false,
+      "trade": true
+    },
+    {
+      "seq": 3,
+      "type": "kill",
+      "elapsed_s": 138,
+      "actor": 3,
+      "target": 5,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 4,
+      "type": "kill",
+      "elapsed_s": 139,
+      "actor": 8,
+      "target": 3,
+      "headshot": true,
+      "team_kill": false,
+      "trade": true
+    },
+    {
+      "seq": 5,
+      "type": "kill",
+      "elapsed_s": 140,
+      "actor": 1,
+      "target": 8,
+      "headshot": false,
+      "team_kill": false,
+      "trade": true
+    },
+    {
+      "seq": 6,
+      "type": "kill",
+      "elapsed_s": 162,
+      "actor": 7,
+      "target": 2,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 7,
+      "type": "kill",
+      "elapsed_s": 164,
+      "actor": 1,
+      "target": 7,
+      "headshot": false,
+      "team_kill": false,
+      "trade": true
+    },
+    {
+      "seq": 8,
+      "type": "kill",
+      "elapsed_s": 164,
+      "actor": 6,
+      "target": 4,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    }
+  ],
+  "params": {
+    "trade_window_s": 10
+  },
+  "warnings": []
+}

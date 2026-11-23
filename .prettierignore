@@ -18,3 +18,6 @@ design-proposals/
 parsers/r6/
 parsers/dist/
 fixtures/replays/
+
+# Real rounds of the R6 parser and what the normaliser makes of them, compared byte for byte.
+packages/titles/src/r6/golden/

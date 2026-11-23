@@ -1,0 +1,381 @@
+{
+  "schema": 1,
+  "title": "r6",
+  "parser": "r6-golden",
+  "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "lobby_id": "ea226c20-3b40-4113-b308-32dba36a7f41",
+  "unit": {
+    "kind": "round",
+    "number": 0
+  },
+  "started_at": "2026-10-13T17:07:39Z",
+  "game_version": "Y11S3_Alpha04",
+  "match_type": "CustomGameOnline",
+  "map": "VillaY10",
+  "site": "2F Aviator Room, 2F Games Room",
+  "mode": "Bomb",
+  "complete": true,
+  "planted": true,
+  "recorded_by": "4c7fc196-3dd3-466e-9c5a-5a1e6bb0fa8e",
+  "sides": [
+    {
+      "idx": 0,
+      "role": "Attack",
+      "won": false,
+      "win_condition": null,
+      "score_before": 0
+    },
+    {
+      "idx": 1,
+      "role": "Defense",
+      "won": true,
+      "win_condition": "DisabledDefuser",
+      "score_before": 0
+    }
+  ],
+  "players": [
+    {
+      "account": "65a42a38-547e-4525-8472-aa0c69e2074f",
+      "name": "GRUBY.Geekay",
+      "side": 1,
+      "operator": "Sentry",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "cb74df5e-5515-4095-b1dc-2f1d48fa4b7d",
+      "name": "Eupor.Geekay",
+      "side": 1,
+      "operator": "Jager",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 0,
+        "assists": 1,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "9588a3d2-2cce-41dd-b405-85c951b71bed",
+      "name": "Yoggah.Geekay",
+      "side": 1,
+      "operator": "Ela",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 1,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "b984ca3f-f979-4fb1-9c7c-8d12228c31d8",
+      "name": "Sarks.Geekay",
+      "side": 1,
+      "operator": "Mute",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 1,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "5d57e4ec-8242-42b8-bd09-5c25b2e78dd8",
+      "name": "AsK.Geekay",
+      "side": 1,
+      "operator": "Smoke",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 3,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "4a5115f8-6307-40b9-9c77-8d218eaa864c",
+      "name": "Doki.G2",
+      "side": 0,
+      "operator": "Deimos",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 1,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "5850d324-09d7-4eb1-8197-dd5d8597506f",
+      "name": "Shaiiko.G2",
+      "side": 0,
+      "operator": "Flores",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "4d2c747f-4adc-4e57-a3b2-aa037b007d26",
+      "name": "Alem4o.G2",
+      "side": 0,
+      "operator": "Blitz",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 1,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 2
+      }
+    },
+    {
+      "account": "6ac2a9cf-88ad-43d1-89f4-aa99fe9f15a4",
+      "name": "Benjamaster.G2",
+      "side": 0,
+      "operator": "Hibana",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "b598e9a9-f817-42fe-b381-45f918e5efa4",
+      "name": "Stompn.G2",
+      "side": 0,
+      "operator": "Zofia",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    }
+  ],
+  "events": [
+    {
+      "seq": 0,
+      "type": "swap",
+      "elapsed_s": -13,
+      "actor": 7,
+      "operator": "Blitz"
+    },
+    {
+      "seq": 1,
+      "type": "kill",
+      "elapsed_s": 12,
+      "actor": 5,
+      "target": 2,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 2,
+      "type": "kill",
+      "elapsed_s": 35,
+      "actor": 0,
+      "target": 5,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 3,
+      "type": "kill",
+      "elapsed_s": 46,
+      "actor": 7,
+      "target": 3,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 4,
+      "type": "kill",
+      "elapsed_s": 53,
+      "actor": 8,
+      "target": 0,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 5,
+      "type": "kill",
+      "elapsed_s": 79,
+      "actor": 4,
+      "target": 6,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 6,
+      "type": "kill",
+      "elapsed_s": 101,
+      "actor": 1,
+      "target": 8,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 7,
+      "type": "kill",
+      "elapsed_s": 104,
+      "actor": 4,
+      "target": 9,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 8,
+      "type": "kill",
+      "elapsed_s": 140,
+      "actor": 4,
+      "target": 7,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    }
+  ],
+  "params": {
+    "trade_window_s": 10
+  },
+  "warnings": []
+}

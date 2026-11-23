@@ -1,0 +1,396 @@
+{
+  "schema": 1,
+  "title": "r6",
+  "parser": "r6-golden",
+  "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "lobby_id": "399d562a-8a27-4d3b-ba5d-cbeffdcf0d9b",
+  "unit": {
+    "kind": "round",
+    "number": 8
+  },
+  "started_at": "2026-10-13T21:42:15Z",
+  "game_version": "Y11S3_Alpha04",
+  "match_type": "CustomGameOnline",
+  "map": "ChaletY10",
+  "site": "1F Kitchen, 1F Dining Room",
+  "mode": "Bomb",
+  "complete": true,
+  "planted": false,
+  "recorded_by": "4c7fc196-3dd3-466e-9c5a-5a1e6bb0fa8e",
+  "sides": [
+    {
+      "idx": 0,
+      "role": "Attack",
+      "won": false,
+      "win_condition": null,
+      "score_before": 5
+    },
+    {
+      "idx": 1,
+      "role": "Defense",
+      "won": true,
+      "win_condition": "KilledOpponents",
+      "score_before": 3
+    }
+  ],
+  "players": [
+    {
+      "account": "65a42a38-547e-4525-8472-aa0c69e2074f",
+      "name": "GRUBY.Geekay",
+      "side": 1,
+      "operator": "Jager",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 2,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "cb74df5e-5515-4095-b1dc-2f1d48fa4b7d",
+      "name": "Eupor.Geekay",
+      "side": 1,
+      "operator": "Kaid",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 1,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "9588a3d2-2cce-41dd-b405-85c951b71bed",
+      "name": "Yoggah.Geekay",
+      "side": 1,
+      "operator": "Sentry",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "b984ca3f-f979-4fb1-9c7c-8d12228c31d8",
+      "name": "Sarks.Geekay",
+      "side": 1,
+      "operator": "Lesion",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "5d57e4ec-8242-42b8-bd09-5c25b2e78dd8",
+      "name": "AsK.Geekay",
+      "side": 1,
+      "operator": "Solis",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "c12cc905-3402-4a0f-a511-65e4452d234c",
+      "name": "BriD.Falcon",
+      "side": 0,
+      "operator": "Blackbeard",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 1,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 5
+      }
+    },
+    {
+      "account": "f6805c21-3171-430e-a0f0-0d7ec478e8ae",
+      "name": "JumeDOOM.Falcon",
+      "side": 0,
+      "operator": "Striker",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "8df44fa6-49df-42d5-b6f1-e8c82809c37a",
+      "name": "Yuzus.Falcon",
+      "side": 0,
+      "operator": "Thatcher",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "ff0dd6e6-a323-45af-a338-2d2b007ebe2c",
+      "name": "Solotov.Falcon",
+      "side": 0,
+      "operator": "SolidSnake",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 1,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "16476cc9-59e0-40b8-9745-042db0be1cb7",
+      "name": "LikEfac.Falcon",
+      "side": 0,
+      "operator": "Ace",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    }
+  ],
+  "events": [
+    {
+      "seq": 0,
+      "type": "swap",
+      "elapsed_s": -29,
+      "actor": 6,
+      "operator": "Glaz"
+    },
+    {
+      "seq": 1,
+      "type": "swap",
+      "elapsed_s": -27,
+      "actor": 7,
+      "operator": "Thatcher"
+    },
+    {
+      "seq": 2,
+      "type": "swap",
+      "elapsed_s": -27,
+      "actor": 5,
+      "operator": "Ace"
+    },
+    {
+      "seq": 3,
+      "type": "swap",
+      "elapsed_s": -19,
+      "actor": 5,
+      "operator": "Grim"
+    },
+    {
+      "seq": 4,
+      "type": "swap",
+      "elapsed_s": -18,
+      "actor": 5,
+      "operator": "Blackbeard"
+    },
+    {
+      "seq": 5,
+      "type": "swap",
+      "elapsed_s": -17,
+      "actor": 9,
+      "operator": "Ace"
+    },
+    {
+      "seq": 6,
+      "type": "swap",
+      "elapsed_s": -17,
+      "actor": 8,
+      "operator": "SolidSnake"
+    },
+    {
+      "seq": 7,
+      "type": "swap",
+      "elapsed_s": -13,
+      "actor": 6,
+      "operator": "Striker"
+    },
+    {
+      "seq": 8,
+      "type": "death",
+      "elapsed_s": 67,
+      "target": 8
+    },
+    {
+      "seq": 9,
+      "type": "kill",
+      "elapsed_s": 70,
+      "actor": 4,
+      "target": 9,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 10,
+      "type": "kill",
+      "elapsed_s": 77,
+      "actor": 0,
+      "target": 6,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 11,
+      "type": "kill",
+      "elapsed_s": 80,
+      "actor": 0,
+      "target": 7,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 12,
+      "type": "kill",
+      "elapsed_s": 85,
+      "actor": 3,
+      "target": 5,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    }
+  ],
+  "params": {
+    "trade_window_s": 10
+  },
+  "warnings": []
+}

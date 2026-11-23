@@ -1,0 +1,268 @@
+{
+  "schema": 1,
+  "title": "r6",
+  "parser": "r6-golden",
+  "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "lobby_id": "048a5c9d-0c4e-472a-a422-55dd564045f7",
+  "unit": {
+    "kind": "round",
+    "number": 1
+  },
+  "started_at": "2026-05-17T17:22:30Z",
+  "game_version": "Y11S1_Alpha03",
+  "match_type": "CustomGameLocal",
+  "map": "ChaletY10",
+  "site": "1F Kitchen, 1F Dining Room",
+  "mode": "Bomb",
+  "complete": false,
+  "planted": false,
+  "recorded_by": "ff3ea859-3718-41e3-8f91-ecf7809c12f2",
+  "sides": [
+    {
+      "idx": 0,
+      "role": "Defense",
+      "won": false,
+      "win_condition": null,
+      "score_before": 1
+    },
+    {
+      "idx": 1,
+      "role": "Attack",
+      "won": false,
+      "win_condition": null,
+      "score_before": 0
+    }
+  ],
+  "players": [
+    {
+      "account": null,
+      "name": "J9O",
+      "side": 0,
+      "operator": "Wamai",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Fultz",
+      "side": 0,
+      "operator": "Mute",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "kyno",
+      "side": 0,
+      "operator": "Smoke",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Nuers",
+      "side": 0,
+      "operator": "Solis",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Rexen",
+      "side": 1,
+      "operator": "Ace",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Spoit",
+      "side": 1,
+      "operator": "Lion",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Canadian",
+      "side": 1,
+      "operator": "Montagne",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Ambi",
+      "side": 1,
+      "operator": "Ash",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": null,
+      "name": "Surf",
+      "side": 1,
+      "operator": "Dokkaebi",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    }
+  ],
+  "events": [],
+  "params": {
+    "trade_window_s": 10
+  },
+  "warnings": []
+}

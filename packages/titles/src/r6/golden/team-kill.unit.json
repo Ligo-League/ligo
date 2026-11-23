@@ -1,0 +1,402 @@
+{
+  "schema": 1,
+  "title": "r6",
+  "parser": "r6-golden",
+  "file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "lobby_id": "27d5cb2d-81b1-43a4-9ec7-b0cc946b3e6b",
+  "unit": {
+    "kind": "round",
+    "number": 3
+  },
+  "started_at": "2026-10-15T17:27:40Z",
+  "game_version": "Y11S3_Alpha04",
+  "match_type": "CustomGameOnline",
+  "map": "LairY10",
+  "site": "2F Master Office, 2F R6 Room",
+  "mode": "Bomb",
+  "complete": true,
+  "planted": true,
+  "recorded_by": "6ba306b8-eeae-49b0-8c32-4919580af66a",
+  "sides": [
+    {
+      "idx": 0,
+      "role": "Attack",
+      "won": false,
+      "win_condition": null,
+      "score_before": 1
+    },
+    {
+      "idx": 1,
+      "role": "Defense",
+      "won": true,
+      "win_condition": "DisabledDefuser",
+      "score_before": 2
+    }
+  ],
+  "players": [
+    {
+      "account": "61faa6d5-e947-4e6f-bc4c-5000d59b8320",
+      "name": "Mowwwgli.Twis",
+      "side": 1,
+      "operator": "Mute",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 2,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 1,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "531e4ec9-c89b-49c7-8f06-9c73db6612dc",
+      "name": "jlaD.Twis",
+      "side": 1,
+      "operator": "Goyo",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "3dbd0ce1-8723-4aa8-a4e6-ab008813c74f",
+      "name": "Tr1ixd.Twis",
+      "side": 1,
+      "operator": "Tachanka",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 0,
+        "assists": 2,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "e99d27b9-3f40-412a-86e4-202f5d484099",
+      "name": "BlaZ.Twis",
+      "side": 1,
+      "operator": "Mira",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 3,
+        "deaths": 0,
+        "assists": 0,
+        "headshots": 2,
+        "rounds_kost": 1,
+        "rounds_survived": 1,
+        "opening_kills": 1,
+        "opening_deaths": 0,
+        "trade_kills": 1,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "d3c24e43-07e4-40be-91b4-2ad6093e601f",
+      "name": "Hashom.Twis",
+      "side": 1,
+      "operator": "Smoke",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "7a97c274-481e-43b8-b2a8-bf5ed99a7ae3",
+      "name": "Robby.SHFT",
+      "side": 0,
+      "operator": "Thatcher",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 1,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 1,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "66cab057-9e1d-427e-b4f6-2f740de61d3b",
+      "name": "DEADSHT.SHFT",
+      "side": 0,
+      "operator": "Ace",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 1,
+        "traded_deaths": 0,
+        "clutch_attempts": 1,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 3
+      }
+    },
+    {
+      "account": "9bafbbc0-d25e-4fbe-ac43-67ae188ebffe",
+      "name": "Freq.SHFT",
+      "side": 0,
+      "operator": "Glaz",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 1,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 1,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 1,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "c5a97dec-865f-4211-8cb7-b6d107d2e8d3",
+      "name": "CTZN.SHFT",
+      "side": 0,
+      "operator": "Twitch",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 0,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 1,
+        "trade_kills": 0,
+        "traded_deaths": 0,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    },
+    {
+      "account": "cf98a30b-48fe-45f0-97db-d5aedb327b7c",
+      "name": "Nafe.SHFT",
+      "side": 0,
+      "operator": "Blitz",
+      "stats": {
+        "rounds_played": 1,
+        "kills": 0,
+        "deaths": 1,
+        "assists": 0,
+        "headshots": 0,
+        "rounds_kost": 1,
+        "rounds_survived": 0,
+        "opening_kills": 0,
+        "opening_deaths": 0,
+        "trade_kills": 0,
+        "traded_deaths": 1,
+        "clutch_attempts": 0,
+        "clutch_wins": 0
+      },
+      "detail": {
+        "left": false,
+        "clutch_vs": 0
+      }
+    }
+  ],
+  "events": [
+    {
+      "seq": 0,
+      "type": "swap",
+      "elapsed_s": -33,
+      "actor": 7,
+      "operator": "Thatcher"
+    },
+    {
+      "seq": 1,
+      "type": "swap",
+      "elapsed_s": -12,
+      "actor": 6,
+      "operator": "Ace"
+    },
+    {
+      "seq": 2,
+      "type": "swap",
+      "elapsed_s": -7,
+      "actor": 7,
+      "operator": "Glaz"
+    },
+    {
+      "seq": 3,
+      "type": "swap",
+      "elapsed_s": -5,
+      "actor": 5,
+      "operator": "Thatcher"
+    },
+    {
+      "seq": 4,
+      "type": "kill",
+      "elapsed_s": 52,
+      "actor": 3,
+      "target": 8,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 5,
+      "type": "kill",
+      "elapsed_s": 76,
+      "actor": 0,
+      "target": 5,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 6,
+      "type": "kill",
+      "elapsed_s": 80,
+      "actor": 0,
+      "target": 4,
+      "headshot": false,
+      "team_kill": true,
+      "trade": false
+    },
+    {
+      "seq": 7,
+      "type": "kill",
+      "elapsed_s": 84,
+      "actor": 7,
+      "target": 0,
+      "headshot": true,
+      "team_kill": false,
+      "trade": true
+    },
+    {
+      "seq": 8,
+      "type": "kill",
+      "elapsed_s": 92,
+      "actor": 1,
+      "target": 9,
+      "headshot": false,
+      "team_kill": false,
+      "trade": false
+    },
+    {
+      "seq": 9,
+      "type": "kill",
+      "elapsed_s": 93,
+      "actor": 3,
+      "target": 7,
+      "headshot": false,
+      "team_kill": false,
+      "trade": true
+    },
+    {
+      "seq": 10,
+      "type": "kill",
+      "elapsed_s": 94,
+      "actor": 6,
+      "target": 1,
+      "headshot": false,
+      "team_kill": false,
+      "trade": true
+    },
+    {
+      "seq": 11,
+      "type": "kill",
+      "elapsed_s": 121,
+      "actor": 3,
+      "target": 6,
+      "headshot": true,
+      "team_kill": false,
+      "trade": false
+    }
+  ],
+  "params": {
+    "trade_window_s": 10
+  },
+  "warnings": []
+}
