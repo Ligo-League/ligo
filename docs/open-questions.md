@@ -230,21 +230,6 @@ section 16.
 
 ## For the maintainer
 
-#### M-50 · Plants and defuses the parser misses
-
-- **Found (23 November 2026, phase 5-1):** on 411 official pro rounds, the r6-dissect fork
-  reports far fewer completed plants than the rounds show. Every round won by a defuse had a
-  plant first, yet the Esports World Cup set (Y11S2) has 5 rounds won by a defuse and 2 plants
-  reported; the Salt Lake City (Y11S1) and Europe MENA (Y11S3) sets are alike. Once, a plant is
-  credited to a defender and a defuse to nobody. Kills, deaths, assists, headshots, team kills
-  and round winners agree with the rounds.
-- **Question:** how do plants and defuses count in Ligo's stats until the parser finds them all?
-- **Options:** (a) one step on the fork's plant detection before the normaliser (5-3),
-  time-boxed, checked against the win conditions; (b) leave `plants` and `defuses` out of the
-  stats until the parser is reliable, and only mark a round as planted from its win condition;
-  (c) both: (b) now, (a) when time allows.
-- **Proposed:** (c), so phase 5 does not wait on reverse-engineering.
-
 #### M-43 · Widgets for other websites (`/embed/...`)
 
 - **Decided (maintainer, 19 November 2026):** Ligo offers widgets other websites put in an
@@ -534,6 +519,24 @@ section 16.
 - **Answer:**
 
 ## Answered
+
+#### M-50 · Plants and defuses the parser misses
+
+- **Found (23 November 2026, phase 5-1):** on 411 official pro rounds, the r6-dissect fork
+  reports far fewer completed plants than the rounds show. Every round won by a defuse had a
+  plant first, yet the Esports World Cup set (Y11S2) has 5 rounds won by a defuse and 2 plants
+  reported; the Salt Lake City (Y11S1) and Europe MENA (Y11S3) sets are alike. Once, a plant is
+  credited to a defender and a defuse to nobody. Kills, deaths, assists, headshots, team kills
+  and round winners agree with the rounds.
+- **Question:** how do plants and defuses count in Ligo's stats until the parser finds them all?
+- **Options:** (a) one step on the fork's plant detection before the normaliser (5-3),
+  time-boxed, checked against the win conditions; (b) leave `plants` and `defuses` out of the
+  stats until the parser is reliable, and only mark a round as planted from its win condition;
+  (c) both: (b) now, (a) when time allows.
+- **Answer (maintainer, 24 November 2026):** (c). `plants` and `defuses` stay out of the stats
+  until the parser finds them all, and a round counts as planted from its win condition only. A
+  time-boxed step on the fork's plant detection comes later, checked against the win conditions
+  of the 411 test rounds.
 
 #### M-49 · What "replays are mandatory" requires
 
