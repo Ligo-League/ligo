@@ -520,6 +520,22 @@ section 16.
 
 ## Answered
 
+#### M-48 · Points for overtime
+
+- **Question:** should a team that takes a match to overtime earn something for it, and what
+  counts as overtime when a match is a series?
+- **Answer (maintainer, 23 November 2026):**
+  - Two settings next to the points of a win and a loss: the points of an overtime win and of an
+    overtime loss. Left empty, they are the usual points, so a league changes nothing until it
+    sets them. Example: 3 points for a win, 1 for a team that lost 6-8. LFR plans to use it later.
+  - A one-map match counts as overtime when its map went to overtime (8-6, 8-7 in R6). A series
+    counts as overtime when every map was played (2-1 in a BO3, 3-2 in a BO5). A forfeit never
+    does.
+  - They are scoring settings: under the scoring lock (M-40) once a result counts.
+- **Where:** design doc section 5, "Standings"; built in `packages/core` (`isOvertimeMatch`,
+  standings) and on the rules and season pages. League standings take one-map matches only
+  today; the series rule applies when a league phase plays series.
+
 #### M-45 · How the rounds of a round robin become weeks
 
 - **Question:** a division's round robin has n − 1 rounds (n with an odd count), which may not

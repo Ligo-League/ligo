@@ -1672,6 +1672,10 @@ export const fr = {
   'web.admin.rules.section.scoring': 'Points et départage des nouvelles saisons',
   'web.admin.rules.pointsWin': 'Points pour une victoire',
   'web.admin.rules.pointsLoss': 'Points pour une défaite',
+  'web.admin.rules.pointsOvertimeWin': 'Points pour une victoire en prolongation',
+  'web.admin.rules.pointsOvertimeLoss': 'Points pour une défaite en prolongation',
+  'web.admin.rules.pointsOvertimeHelp':
+    'Prolongation : une carte gagnée au-delà du score de victoire (8-6, 8-7), ou une série jouée jusqu’à sa dernière carte (2-1, 3-2). Vide : les points d’une victoire ou d’une défaite.',
   'web.admin.rules.pointsForfeitWinner': 'Points pour l’équipe qui reçoit un forfait',
   'web.admin.rules.pointsForfeitLoser': 'Points pour l’équipe forfait',
   'web.admin.rules.forfeitPlayed': 'Un forfait compte comme un match joué',

@@ -233,3 +233,15 @@ export function readSettingsForm<T>(
   }
   return { ok: false, errors };
 }
+
+/**
+ * Leaves out the optional overtime points left empty at `points` (M-48), so a points setting
+ * saved untouched is stored as it was, without keys set to null.
+ */
+export function dropEmptyOvertime(points: unknown): void {
+  const outcomes = valueAt(points, 'outcomes');
+  if (typeof outcomes !== 'object' || outcomes === null) return;
+  const record = outcomes as Record<string, unknown>;
+  if (record.overtime_win === null) delete record.overtime_win;
+  if (record.overtime_loss === null) delete record.overtime_loss;
+}

@@ -53,6 +53,17 @@ export function scoringFields(prefix = ''): FieldView[] {
     { path: `${prefix}points.outcomes.win`, label: 'web.admin.rules.pointsWin', input: int() },
     { path: `${prefix}points.outcomes.loss`, label: 'web.admin.rules.pointsLoss', input: int() },
     {
+      path: `${prefix}points.outcomes.overtime_win`,
+      label: 'web.admin.rules.pointsOvertimeWin',
+      input: { type: 'number', optional: true },
+    },
+    {
+      path: `${prefix}points.outcomes.overtime_loss`,
+      label: 'web.admin.rules.pointsOvertimeLoss',
+      help: 'web.admin.rules.pointsOvertimeHelp',
+      input: { type: 'number', optional: true },
+    },
+    {
       path: `${prefix}points.forfeit.winner`,
       label: 'web.admin.rules.pointsForfeitWinner',
       input: int(),

@@ -400,6 +400,12 @@ M-xx : mainteneur).
   côté du forfait a ses propres manches gagnées et perdues.
 - Un forfait créé par la règle des 50 % (voir 7.3) a son propre réglage ; en attendant O-27, il
   compte comme une absence : 7–3 et 0–7.
+- **Prolongation** (réglage, pas encore utilisé par la LFR) : une ligue peut donner d'autres
+  points à une victoire et à une défaite en prolongation, par exemple 1 point à l'équipe qui perd
+  6–8. Un match en une carte compte comme une prolongation quand sa carte y est allée (8–6, 8–7) ;
+  une série, quand toutes ses cartes ont été jouées (2–1 en BO3, 3–2 en BO5). Un forfait jamais.
+  Laissés vides, ces réglages donnent les points habituels. Ils sont figés comme les autres dès
+  qu'un résultat compte (6.5).
 - **Statut** : Décidée (O-36, 19 novembre 2026), sauf le score d'un forfait créé par la règle
   des 50 % (O-27). La Saison 3 comptait 7–0 ; Ligo, pas encore officiel, lui applique déjà la
   règle de la Saison 4 pour la montrer.

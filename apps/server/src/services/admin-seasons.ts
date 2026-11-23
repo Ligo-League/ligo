@@ -15,6 +15,7 @@ import { COMPUTED_TIEBREAKS, computedTiebreakSchema } from './admin-rules.ts';
 import type { OrgUser } from './orgs.ts';
 import { seasonSlug } from './paths.ts';
 import {
+  dropEmptyOvertime,
   readSettingsForm,
   settingsFormValues,
   type SettingErrors,
@@ -80,6 +81,8 @@ export const SEASON_FIELDS: readonly SettingField[] = [
   ...CREATE_FIELDS,
   { path: 'settings.points.outcomes.win', kind: int },
   { path: 'settings.points.outcomes.loss', kind: int },
+  { path: 'settings.points.outcomes.overtime_win', kind: optionalInt },
+  { path: 'settings.points.outcomes.overtime_loss', kind: optionalInt },
   { path: 'settings.points.forfeit.winner', kind: int },
   { path: 'settings.points.forfeit.loser', kind: int },
   { path: 'settings.points.forfeit.counts_as_played', kind: { type: 'bool' } },
@@ -98,9 +101,13 @@ export const SEASON_FIELDS: readonly SettingField[] = [
   { path: 'settings.map_pool', kind: { type: 'lines' } },
 ];
 
-/** Four empty places for the 50% rule's forfeit score: the usual forfeit score applies. */
+/**
+ * Four empty places for the 50% rule's forfeit score: the usual forfeit score applies. Empty
+ * overtime points: the usual points apply.
+ */
 function shapeExclusionScore(draft: Record<string, unknown>): void {
   const settings = draft.settings as Record<string, unknown> | undefined;
+  dropEmptyOvertime(settings?.points);
   const score = settings?.exclusion_forfeit_score as
     { winner?: unknown[]; loser?: unknown[] } | null | undefined;
   if (!settings || !score) return;

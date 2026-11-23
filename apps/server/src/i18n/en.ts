@@ -1615,6 +1615,10 @@ export const en: Record<MessageKey, string> = {
   'web.admin.rules.section.scoring': 'Points and tie-breakers of new seasons',
   'web.admin.rules.pointsWin': 'Points for a win',
   'web.admin.rules.pointsLoss': 'Points for a loss',
+  'web.admin.rules.pointsOvertimeWin': 'Points for an overtime win',
+  'web.admin.rules.pointsOvertimeLoss': 'Points for an overtime loss',
+  'web.admin.rules.pointsOvertimeHelp':
+    'Overtime: a map won past the winning score (8-6, 8-7), or a series played to its last map (2-1, 3-2). Empty: the points of a win or a loss.',
   'web.admin.rules.pointsForfeitWinner': 'Points for the team that receives a forfeit',
   'web.admin.rules.pointsForfeitLoser': 'Points for the team that forfeits',
   'web.admin.rules.forfeitPlayed': 'A forfeit counts as a match played',

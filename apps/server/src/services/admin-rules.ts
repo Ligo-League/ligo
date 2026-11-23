@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { openCompetition } from './admin-competitions.ts';
 import type { OrgUser } from './orgs.ts';
 import {
+  dropEmptyOvertime,
   readSettingsForm,
   settingsFormValues,
   type SettingErrors,
@@ -63,6 +64,8 @@ export function rulesFields(rules: Rules): SettingField[] {
   return [
     { path: 'points.outcomes.win', kind: int },
     { path: 'points.outcomes.loss', kind: int },
+    { path: 'points.outcomes.overtime_win', kind: optionalInt },
+    { path: 'points.outcomes.overtime_loss', kind: optionalInt },
     { path: 'points.forfeit.winner', kind: int },
     { path: 'points.forfeit.loser', kind: int },
     { path: 'points.forfeit.counts_as_played', kind: { type: 'bool' } },
@@ -108,8 +111,9 @@ export function rulesFields(rules: Rules): SettingField[] {
 const reasonRows = (rules: Rules) =>
   Math.min(REASONS_MAX, rules.ruleset.dispute_reasons.length + BLANK_REASONS);
 
-/** No rounds to win a map: any score with a winner is accepted. */
+/** No rounds to win a map: any score with a winner is accepted. Empty overtime points: none. */
 function shapeGameScore(draft: Record<string, unknown>): void {
+  dropEmptyOvertime(draft.points);
   const ruleset = draft.ruleset as { game_score?: { win_at?: unknown } | null } | undefined;
   if (ruleset?.game_score?.win_at === null) ruleset.game_score = null;
 }

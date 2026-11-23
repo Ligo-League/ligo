@@ -1,10 +1,11 @@
 import { schema } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { registrationDatabase } from '../testing.ts';
+import { registrationDatabase, TEST_GUILD } from '../testing.ts';
 import { createCompetition } from './admin-competitions.ts';
 import { advanceSeason, createSeason, seasonAdmin, updateSeason } from './admin-seasons.ts';
 import { ensurePlayer } from './players.ts';
+import { getStandings } from './standings.ts';
 
 // Seasons in the admin panel (phase 3h; design doc section 7, M-40): the organisation's owner and
 // the competition's staff create a season and change its dates, settings and status, which only
@@ -338,6 +339,29 @@ describe('saving a season', () => {
       action: 'season.settings',
       afterJson: { reason: 'Vote des équipes', scoringChanges: ['points'] },
     });
+  });
+
+  it('gives overtime its own points once set, and stores nothing for them while empty', () => {
+    const { db, owner, key, form, seasonRow } = league();
+    const pointsOf = () => {
+      const reply = getStandings(db, { guildId: TEST_GUILD, division: 'Ligue 1' });
+      if (!reply.ok) throw new Error(reply.error);
+      return Object.fromEntries(
+        (reply.tables[0]?.rows ?? []).map((row) => [row.team.tag, row.points]),
+      );
+    };
+    // Alpha beat Bravo 7-4 in week 1; make it 8-6, an overtime win.
+    db.update(schema.game).set({ scoreA: 8, scoreB: 6 }).where(eq(schema.game.matchId, 1)).run();
+    expect(pointsOf()).toMatchObject({ ALP: 6, BRV: 0 });
+    // Saved untouched, the points stay exactly as stored.
+    const before = seasonRow(SEASON_3)?.settingsJson.points;
+    expect(updateSeason(db, owner, key(SEASON_3), form(SEASON_3), NOW)).toEqual({ ok: true });
+    expect(seasonRow(SEASON_3)?.settingsJson.points).toEqual(before);
+    const change = { 'settings.points.outcomes.overtime_loss': '1', reason: 'Prolongation' };
+    expect(updateSeason(db, owner, key(SEASON_3), form(SEASON_3, change), NOW)).toEqual({
+      ok: true,
+    });
+    expect(pointsOf()).toMatchObject({ ALP: 6, BRV: 1 });
   });
 });
 
