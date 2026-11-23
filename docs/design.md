@@ -909,12 +909,13 @@ Every stored metric is additive. Values shown as averages in game (Valorant ACS)
 
 **Round fact definitions (R6)**
 
-- **Event order** is the kill-feed array order. `elapsed_s` is the round length minus the clock before the plant, and the plant's elapsed time plus the defuser length minus the clock after it. Round and defuser lengths come from the ruleset.
-- **Opening kill / death:** the first `Kill` event of the round. A first `Death` event without a killer counts as an opening death only.
-- **Died:** the player is the target of a `Kill` or the subject of a `Death` event. **Left:** a `PlayerLeave` event. Both remove the player from the alive count.
+- **Event order** is the kill-feed array order. `elapsed_s` is the fork's `elapsedSeconds`: seconds since the action phase began, negative in the preparation phase, increasing across the plant (the fork tracks the countdown's restarts itself, so no round or defuser length is needed). It is null when the round's clock never started.
+- **Opening kill / death:** the first `Kill` event of the round. A first `Death` event without a killer, or a first team kill, counts as an opening death only.
+- **Died:** the player is the target of a `Kill` or the subject of a `Death` event. **Left:** a `PlayerLeave` event (only builds before Y9S1 record one). Both remove the player from the alive count.
+- **Team kill:** the victim's death, and no kill for its author, as on the in-game scoreboard. It trades nothing, and its victim is never traded.
 - **Survived:** neither died nor left.
 - **Traded:** the player's killer is killed by one of the player's teammates within W seconds of elapsed time. W is a parameter (default 10) recorded in the facts output.
-- **KOST round:** kill ∨ plant ∨ defuse ∨ survived ∨ traded.
+- **KOST round:** kill ∨ plant ∨ defuse ∨ survived ∨ traded. Until the parser finds every plant (M-50), KOST counts kill ∨ survived ∨ traded, and every page showing it carries a footnote saying objectives are coming (maintainer, 24 November 2026).
 - **Clutch attempt:** the moment a team drops to exactly one player alive while the opponents have at least one, the survivor gets an attempt against that count. The attempt is won if the team wins the round.
 
 **Other titles' metrics** are in section 12.
@@ -968,7 +969,7 @@ interface ParserModule {
     version: string; // build hash of the .wasm file
     accepts(name: string, head: Uint8Array): boolean; // extension + magic bytes
     parse(bytes: Uint8Array): Promise<unknown>; // WASM call, the parser's own JSON
-    normalize(raw: unknown, ctx: { tradeWindowS: number }): ParsedUnit; // TS, same in browser and server
+    normalize(raw: unknown, ctx: { parser: string; fileSha256: string; tradeWindowS: number }): ParsedUnit; // TS, same in browser and server
 }
 ```
 
@@ -978,65 +979,72 @@ interface ParserModule {
 {
     "schema": 1,
     "title": "r6",
-    "parser": "r6-dissect-fork@<sha>",
+    "parser": "r6-d9b08239c222f3f9",
     "file_sha256": "…",
     "lobby_id": "…",
     "unit": { "kind": "round", "number": 0 },
     "started_at": "2026-11-10T20:31:05Z",
-    "map": "Chalet",
+    "game_version": "Y11S3_Alpha04",
+    "match_type": "CustomGameOnline",
+    "map": "ChaletY10",
+    "site": "2F Master Bedroom, 2F Office",
     "mode": "Bomb",
     "complete": true,
+    "planted": false,
+    "recorded_by": "<profileID>",
     "sides": [
-        { "idx": 0, "role": "Attack", "won": false },
-        {
-            "idx": 1,
-            "role": "Defense",
-            "won": true,
-            "win_condition": "KilledOpponents"
-        }
+        { "idx": 0, "role": "Attack", "won": false, "win_condition": null, "score_before": 0 },
+        { "idx": 1, "role": "Defense", "won": true, "win_condition": "KilledOpponents", "score_before": 0 }
     ],
     "players": [
         {
             "account": "ee63564b-…",
             "name": "GohlyBVG.a5",
             "side": 1,
+            "operator": "Frost",
             "stats": {
+                "rounds_played": 1,
                 "kills": 1,
                 "deaths": 0,
                 "assists": 0,
                 "headshots": 0,
+                "rounds_kost": 1,
                 "rounds_survived": 1,
-                "rounds_kost": 1
-            },
-            "detail": {
-                "operator": "Frost",
-                "opening_kill": false,
-                "opening_death": false,
+                "opening_kills": 0,
+                "opening_deaths": 0,
                 "trade_kills": 1,
-                "traded": false,
-                "left": false,
-                "plant": false,
-                "defuse": false,
-                "clutch_vs": 0,
-                "clutch_won": false
-            }
+                "traded_deaths": 0,
+                "clutch_attempts": 0,
+                "clutch_wins": 0
+            },
+            "detail": { "left": false, "clutch_vs": 0 }
         }
     ],
     "events": [
+        { "seq": 0, "type": "swap", "elapsed_s": -12, "actor": 0, "operator": "Frost" },
         {
-            "seq": 0,
+            "seq": 1,
             "type": "kill",
             "elapsed_s": 26.0,
-            "actor": "<account>",
-            "target": "<account>",
-            "headshot": false
+            "actor": 0,
+            "target": 7,
+            "headshot": false,
+            "team_kill": false,
+            "trade": true
         }
     ],
-    "params": { "trade_window_s": 10 }
+    "params": { "trade_window_s": 10 },
+    "warnings": []
 }
 ```
 
 `stats` keys are the title's metric keys (section 9), so level-1 rows come straight from them; `detail` and `events` feed level 2 where a title has it. `lobby_id` is r6-dissect's `matchID` for R6 and the replay ID for Rocket League.
+
+For R6 (`packages/titles/src/r6/normalize.ts`, built in 5-3):
+
+- `stats` has every R6 metric but `plants` and `defuses` (M-50); `planted` comes from the win condition only (`DefusedBomb` or `DisabledDefuser`).
+- Events name players by their index in `players`, not by account: LAN builds write every profileID as zeros (`account` is then null), while online custom games, LFR's, carry them. They are kills (with `team_kill` and `trade`), deaths, departures and operator swaps, in feed order; downs, revives and the defuser's events stay out.
+- `score_before` is the lobby's score before the round, for stitching (section 8). `warnings` lists what the normaliser could still read: a name the round does not list, or a scoreboard that disagrees with the feed. All 411 rounds of the test replays normalise without one, and `pnpm parsers:compare` checks it again on every parser build.
 
 **Parsers per title**
 

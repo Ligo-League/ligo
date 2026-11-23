@@ -537,6 +537,10 @@ section 16.
   until the parser finds them all, and a round counts as planted from its win condition only. A
   time-boxed step on the fork's plant detection comes later, checked against the win conditions
   of the 411 test rounds.
+- **KOST meanwhile (maintainer, 24 November 2026):** KOST counts a kill, a survival or a trade,
+  without the objective, the same for every player. Every page that shows it carries a footnote
+  saying objective detection is not reliable yet and is planned. A re-parse after the fork's fix
+  restores the objective.
 
 #### M-49 · What "replays are mandatory" requires
 
