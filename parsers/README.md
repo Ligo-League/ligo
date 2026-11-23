@@ -10,7 +10,7 @@ Replay parsers compiled to WebAssembly, one folder per title (design doc section
   native CLI, with the pinned Go release, from its Docker image when Go is not installed. The
   build is reproducible: the same source gives the same file, so the hash names the version.
 - `fetch-replays.sh` (`pnpm fixtures:replays`): downloads the real replays of the golden tests
-  into `fixtures/replays/` (not in git).
+  into `fixtures/replays/` (not in git): official pro replays of Y11S1, Y11S2 and Y11S3.
 - `pnpm parsers:compare` (`tooling/compare-r6.ts`): parses every replay with both builds; any
   difference blocks a parser release.
 

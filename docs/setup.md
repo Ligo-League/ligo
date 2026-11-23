@@ -1256,10 +1256,19 @@ The replay parser is your r6-dissect fork, now a git submodule in `parsers/r6`.
    folder; `git pull --recurse-submodules` does.
 2. `pnpm parsers:build` builds `parsers/dist/r6-<hash>.wasm`. Without Go installed, it runs the
    pinned Go Docker image (the first build downloads it, about 300 MB). It takes about 20 seconds.
-3. `pnpm fixtures:replays` downloads the test replays (the Salt Lake City Major 2026 playoffs,
-   about 1 GB) into `fixtures/replays/`, which git ignores.
+3. `pnpm fixtures:replays` downloads the test replays into `fixtures/replays/`, which git ignores:
+   about 3 GB of official pro replays, one folder per game season. `slc/` holds the Salt Lake City
+   Major 2026 (Y11S1), `ewc/` the Esports World Cup 2026 (Y11S2, with many re-hosts) and `eml/`
+   the Europe MENA League 2026 stage 2 (Y11S3): 411 rounds.
 4. `pnpm parsers:compare` parses every round with the WebAssembly build and the native CLI and
-   reports any difference. It takes about 6 minutes for the 136 rounds.
+   reports any difference. It takes about 15 minutes.
+
+Since 23 November 2026 the fork's `main` merges prestonwillis10/r6-dissect, the most complete
+fork (Y11S2 and Y11S3 fixes, team kills, a time per event that never goes back at a new phase).
+The features it removed as unreliable (cheat detection, positions, rooms, gadget events) are on
+the fork's `before-prestonwillis10` branch. To take its next fixes: `cd parsers/r6`, `git fetch
+prestonwillis10`, `git merge prestonwillis10/main`, then `pnpm parsers:build` and
+`pnpm parsers:compare`.
 
 A change to the fork is committed and pushed in the fork first (`cd parsers/r6`, then `git
 commit` and `git push` to your fork), then the new submodule commit is committed in Ligo.
