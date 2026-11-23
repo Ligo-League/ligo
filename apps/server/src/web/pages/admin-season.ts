@@ -1,6 +1,6 @@
 import { html } from 'hono/html';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
-import type { SeasonAdminView } from '../../services/admin-seasons.ts';
+import type { ClosingNotice, SeasonAdminView } from '../../services/admin-seasons.ts';
 import type { SettingErrors } from '../../services/settings-form.ts';
 import { csrfField, pageOf, type Html, type Page } from '../layout.ts';
 import { scoringFields } from './admin-rules.ts';
@@ -140,7 +140,51 @@ export interface SeasonPageData {
   view: View;
   typed: Typed | null;
   done: SeasonDone | null;
+  /** Staff asked to close the season: what they confirm before it happens. */
+  closing: ClosingNotice | null;
   csrf: string;
+}
+
+/** A season's last day in full: "dimanche 14 mars 2027". */
+const fullDay = (locale: Locale, date: string) => {
+  const [year = 0, month = 1, day = 1] = date.split('-').map(Number);
+  return new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {
+    dateStyle: 'full',
+    timeZone: 'UTC',
+  }).format(Date.UTC(year, month - 1, day));
+};
+
+/** The question asked before a season closes, which cannot be undone. */
+function closingForm(locale: Locale, base: string, data: SeasonPageData, closing: ClosingNotice) {
+  const name = data.view.season.name;
+  const day = fullDay(locale, closing.endsOn);
+  return html`<div class="card flash error stack" id="close">
+    <h3>${t(locale, 'web.admin.season.close.title', { name })}</h3>
+    <p>
+      ${
+        closing.early
+          ? t(locale, 'web.admin.season.close.early', { day })
+          : t(locale, 'web.admin.season.close.ended', { day })
+      }
+    </p>
+    ${
+      closing.unfinished > 0
+        ? html`<p>
+            ${t(locale, 'web.admin.season.close.unfinished', {
+              count: String(closing.unfinished),
+            })}
+          </p>`
+        : ''
+    }
+    <p>${t(locale, 'web.admin.season.close.discord')}</p>
+    <form method="post" action="${base}/status">
+      ${csrfField(data.csrf)}
+      <input type="hidden" name="status" value="closed" />
+      <input type="hidden" name="confirm" value="yes" />
+      <button type="submit">${t(locale, 'web.admin.season.close.confirm')}</button>
+      <a href="${base}">${t(locale, 'web.admin.season.close.cancel')}</a>
+    </form>
+  </div>`;
 }
 
 /** Whether the scoring settings may change, and who may change them now (M-40). */
@@ -185,22 +229,26 @@ export function seasonPageView(locale: Locale, data: SeasonPageData): Page {
           ${t(locale, 'web.admin.season.statusNow', { status: t(locale, STATUS_KEYS[season.status]) })}
         </p>
         ${
-          view.nextStatuses.length === 0
-            ? ''
-            : html`<form class="stack" method="post" action="${base}/status">
-                ${csrfField(data.csrf)}
-                <label
-                  >${t(locale, 'web.admin.season.moveTo')}
-                  <select name="status">
-                    ${view.nextStatuses.map(
-                      (status) =>
-                        html`<option value="${status}">${t(locale, STATUS_KEYS[status])}</option>`,
-                    )}
-                  </select></label
-                >
-                <p class="muted">${t(locale, 'web.admin.season.statusHelp')}</p>
-                <button type="submit">${t(locale, 'web.admin.season.moveButton')}</button>
-              </form>`
+          data.closing
+            ? closingForm(locale, base, data, data.closing)
+            : view.nextStatuses.length === 0
+              ? ''
+              : html`<form class="stack" method="post" action="${base}/status">
+                  ${csrfField(data.csrf)}
+                  <label
+                    >${t(locale, 'web.admin.season.moveTo')}
+                    <select name="status">
+                      ${view.nextStatuses.map(
+                        (status) =>
+                          html`<option value="${status}">
+                            ${t(locale, STATUS_KEYS[status])}
+                          </option>`,
+                      )}
+                    </select></label
+                  >
+                  <p class="muted">${t(locale, 'web.admin.season.statusHelp')}</p>
+                  <button type="submit">${t(locale, 'web.admin.season.moveButton')}</button>
+                </form>`
         }
       </section>
       <section class="card stack">

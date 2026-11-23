@@ -1125,7 +1125,8 @@ the bot):
 
 ## 63. Phase 4-9: season end
 
-When staff close a season (on its admin page, **Passer à** `Terminée`), within 30 seconds the
+When staff close a season (on its admin page, **Passer à** `Terminée`, then **Oui, terminer la
+saison** on the question that follows; only the website closes a season), within 30 seconds the
 reconciler:
 
 1. saves each of its match channels to `STORAGE_DIR/transcripts/<season id>/<match id>.json`
@@ -1238,7 +1239,9 @@ says what to expect.
 **I. Season end (do it last: a season never goes back to an earlier status)**
 
 18. `/admin/mlb-group/lfr/seasons/<Saison 3>`: **Passer à** `Terminée`, then **Changer le
-    statut**. Within 30 seconds every Season 3 match channel is deleted, with its emptied
+    statut**. The page asks first: it gives the season's last day (and says when that is still
+    ahead) and how many matches have no result. **Oui, terminer la saison** closes it; **Annuler**
+    leaves it as it is. Within 30 seconds every Season 3 match channel is deleted, with its emptied
     categories, and the team roles go (Season 4 has no team with a place yet).
 19. On the VPS: `docker compose exec server ls /data/storage/transcripts/<season id>` lists one
     JSON file per channel. The next night's copy puts them in R2 (`backups/files`).

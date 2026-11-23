@@ -145,4 +145,22 @@ describe('a season’s status', () => {
     expect(where(await post(`${SEASON_3}/status`, { status: 'active' }))).toBe(SEASON_3);
     expect(seasonRow(1)?.status).toBe('cup');
   });
+
+  it('asks before closing, with the last day, and closes only once confirmed', async () => {
+    const { request, logIn, post, setRoles, seasonRow } = site();
+    setRoles([TEST_STAFF_ROLE], ANA.id);
+    await logIn(SEASON_3);
+    const asked = await post(`${SEASON_3}/status`, { status: 'closed' });
+    expect(asked.status).toBe(200);
+    const page = await asked.text();
+    expect(page).toContain('Terminer la saison Saison 3 ?');
+    expect(page).toContain('dimanche 20 décembre 2026');
+    expect(page).toContain('name="confirm" value="yes"');
+    expect(seasonRow(1)?.status).toBe('active');
+    expect(where(await post(`${SEASON_3}/status`, { status: 'closed', confirm: 'yes' }))).toBe(
+      `${SEASON_3}?done=status`,
+    );
+    expect(seasonRow(1)?.status).toBe('closed');
+    expect(await (await request(SEASON_3)).text()).not.toContain('name="status"');
+  });
 });

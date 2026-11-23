@@ -130,7 +130,7 @@ export function adminSeasonRoutes(app: Hono<Env>, kit: RouteKit): void {
   const show = async (
     c: Context<Env>,
     viewer: Viewer,
-    extra: Pick<SeasonPageData, 'typed' | 'done'>,
+    extra: Pick<SeasonPageData, 'typed' | 'done'> & Partial<Pick<SeasonPageData, 'closing'>>,
   ) => {
     const seasonId = seasonIdOf(c);
     if (seasonId === null) return notFound(c);
@@ -146,7 +146,7 @@ export function adminSeasonRoutes(app: Hono<Env>, kit: RouteKit): void {
     c.header('Cache-Control', 'private, no-store');
     return render(
       c,
-      seasonPageView(locale, { view, csrf: viewer.csrf, ...extra }),
+      seasonPageView(locale, { view, csrf: viewer.csrf, closing: null, ...extra }),
       extra.typed ? 400 : 200,
     );
   };
@@ -193,10 +193,15 @@ export function adminSeasonRoutes(app: Hono<Env>, kit: RouteKit): void {
     const key = await keyOf(c, viewer);
     if (!key) return notFound(c);
     const status = typeof form.status === 'string' ? form.status : '';
-    const reply = advanceSeason(db, userOf(viewer), key, status, deps.now());
+    // Closing is final: the page asks first, and only its second form confirms.
+    const reply = advanceSeason(db, userOf(viewer), key, status, deps.now(), {
+      confirmed: form.confirm === 'yes',
+    });
     if (reply.ok) return c.redirect(`${pageOf(key)}?done=status`, 303);
     if (reply.error === 'not_found') return notFound(c);
     if (reply.error === 'not_allowed') return forbidden(c);
+    if (reply.error === 'needs_confirmation')
+      return show(c, viewer, { typed: null, done: null, closing: reply.closing });
     // A status already passed (two tabs, say): the page shows where the season is.
     return c.redirect(pageOf(key), 303);
   });

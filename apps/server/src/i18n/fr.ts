@@ -1546,6 +1546,17 @@ export const fr = {
   'web.admin.season.statusHelp':
     'Le statut ne revient jamais en arrière. Les inscriptions ne sont ouvertes qu’au statut « Inscriptions ». Changer de statut ne publie rien et ne crée aucun calendrier.',
   'web.admin.season.moveButton': 'Changer le statut',
+  'web.admin.season.close.title': 'Terminer la saison {name} ?',
+  'web.admin.season.close.early':
+    'Es-tu vraiment sûr de vouloir terminer cette saison ? Elle doit se terminer plus tard, le {day}. C’est définitif : une saison terminée ne revient jamais en arrière.',
+  'web.admin.season.close.ended':
+    'Elle s’est terminée le {day}. C’est définitif : une saison terminée ne revient jamais en arrière.',
+  'web.admin.season.close.unfinished':
+    'Matchs sans résultat qui compte : {count}. Ils resteront sans résultat.',
+  'web.admin.season.close.discord':
+    'Si Ligo gère le serveur Discord de la ligue, il sauvegarde puis supprime les salons des matchs de la saison dans la minute, et retire les rôles des équipes qui ne jouent plus.',
+  'web.admin.season.close.confirm': 'Oui, terminer la saison',
+  'web.admin.season.close.cancel': 'Annuler',
   'web.admin.season.section.forfeitScore': 'Score d’un forfait',
   'web.admin.season.section.exclusionScore': 'Score d’un forfait de la règle des 50 %',
   'web.admin.season.section.forfeits': 'Seuils de forfaits',

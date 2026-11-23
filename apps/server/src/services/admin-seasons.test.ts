@@ -359,8 +359,33 @@ describe('a season’s status', () => {
       ok: false,
       error: 'backward',
     });
-    // A league without a cup goes straight to the end.
-    expect(advanceSeason(db, owner, key(SEASON_4), 'closed', NOW)).toEqual({ ok: true });
+    // A league without a cup goes straight to the end, once staff confirm it.
+    expect(advanceSeason(db, owner, key(SEASON_4), 'closed', NOW, { confirmed: true })).toEqual({
+      ok: true,
+    });
+  });
+
+  it('closes a season only once confirmed, saying when it should end and what is unplayed', () => {
+    const { db, owner, key, seasonRow, lastAudit } = league();
+    const before = lastAudit();
+    // Season 4 runs until 14 March 2027: closing it on 15 January is early.
+    expect(advanceSeason(db, owner, key(SEASON_4), 'closed', NOW)).toEqual({
+      ok: false,
+      error: 'needs_confirmation',
+      closing: { endsOn: '2027-03-14', early: true, unfinished: 0 },
+    });
+    expect(seasonRow(SEASON_4)?.status).toBe('registration');
+    expect(lastAudit()).toEqual(before);
+    // Season 3 ended on 20 December 2026, with Bravo v Charlie never played.
+    expect(advanceSeason(db, owner, key(SEASON_3), 'closed', NOW)).toEqual({
+      ok: false,
+      error: 'needs_confirmation',
+      closing: { endsOn: '2026-12-20', early: false, unfinished: 1 },
+    });
+    expect(advanceSeason(db, owner, key(SEASON_3), 'closed', NOW, { confirmed: true })).toEqual({
+      ok: true,
+    });
+    expect(seasonRow(SEASON_3)?.status).toBe('closed');
   });
 
   it('is for the organisation’s owner and the competition’s staff', () => {

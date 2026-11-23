@@ -1491,6 +1491,17 @@ export const en: Record<MessageKey, string> = {
   'web.admin.season.statusHelp':
     'The status never goes back. Registration is open only in the “Registration” status. Changing the status posts nothing and creates no schedule.',
   'web.admin.season.moveButton': 'Change the status',
+  'web.admin.season.close.title': 'Finish {name}?',
+  'web.admin.season.close.early':
+    'Are you really sure you want to finish this season? It is supposed to end later, on {day}. This is final: a finished season never goes back.',
+  'web.admin.season.close.ended':
+    'It ended on {day}. This is final: a finished season never goes back.',
+  'web.admin.season.close.unfinished':
+    'Matches without a result that counts: {count}. They will stay without one.',
+  'web.admin.season.close.discord':
+    'If Ligo manages the league’s Discord server, within a minute it saves and then deletes the season’s match channels, and removes the roles of teams that no longer play.',
+  'web.admin.season.close.confirm': 'Yes, finish the season',
+  'web.admin.season.close.cancel': 'Cancel',
   'web.admin.season.section.forfeitScore': 'Forfeit score',
   'web.admin.season.section.exclusionScore': 'Forfeit score under the 50% rule',
   'web.admin.season.section.forfeits': 'Forfeit thresholds',

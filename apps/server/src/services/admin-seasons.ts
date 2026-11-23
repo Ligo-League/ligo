@@ -5,9 +5,10 @@ import {
   slugify,
   UNRESOLVED_TIE_MODES,
   type SeasonSettings,
+  zonedMidnight,
 } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
-import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne, notInArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { openCompetition } from './admin-competitions.ts';
 import { COMPUTED_TIEBREAKS, computedTiebreakSchema } from './admin-rules.ts';
@@ -386,12 +387,47 @@ export function updateSeason(
   return { ok: true };
 }
 
+/** What staff read before closing a season, which can never be undone. */
+export interface ClosingNotice {
+  /** The season's last day, `YYYY-MM-DD`. */
+  endsOn: string;
+  /** Closed before the end of its last day, in the competition's time zone. */
+  early: boolean;
+  /** Its matches whose result does not count yet: they stay unplayed for good. */
+  unfinished: number;
+}
+
 export type AdvanceSeasonReply =
-  { ok: true } | { ok: false; error: 'not_found' | 'not_allowed' | 'backward' };
+  | { ok: true }
+  | { ok: false; error: 'not_found' | 'not_allowed' | 'backward' }
+  | { ok: false; error: 'needs_confirmation'; closing: ClosingNotice };
+
+const COUNTED_STATUSES = ['validated', 'forfeit', 'void'] as const;
+
+function closingNotice(
+  db: Reader,
+  seasonRow: typeof season.$inferSelect,
+  timeZone: string,
+  now: number,
+): ClosingNotice {
+  const unfinished = db
+    .select({ id: match.id })
+    .from(match)
+    .innerJoin(stage, eq(match.stageId, stage.id))
+    .where(and(eq(stage.seasonId, seasonRow.id), notInArray(match.status, [...COUNTED_STATUSES])))
+    .all().length;
+  return {
+    endsOn: seasonRow.endsOn,
+    early: now < zonedMidnight(seasonRow.endsOn, timeZone, 1),
+    unfinished,
+  };
+}
 
 /**
  * Moves the season to a later status (registration, active, cup, closed), skipping any it does
- * not use; it never goes back. Nothing else happens with it yet: no announcement, no schedule.
+ * not use; it never goes back. Closing deletes the season's match channels and team roles in
+ * Discord and cannot be undone, so it needs `confirmed` (maintainer, 23 November 2026): without
+ * it, the reply says what staff confirm. Only the website closes a season, never Discord.
  */
 export function advanceSeason(
   db: Db,
@@ -399,12 +435,19 @@ export function advanceSeason(
   key: Key & { seasonId: number },
   status: string,
   now: number,
+  options: { confirmed?: boolean } = {},
 ): AdvanceSeasonReply {
   const access = openSeason(db, user, key);
   if (!access.ok) return access;
-  const { seasonRow } = access;
+  const { seasonRow, row } = access;
   const next = statusesAfter(seasonRow.status).find((entry) => entry === status);
   if (!next) return { ok: false, error: 'backward' };
+  if (next === 'closed' && options.confirmed !== true)
+    return {
+      ok: false,
+      error: 'needs_confirmation',
+      closing: closingNotice(db, seasonRow, row.schedulingJson.time_zone, now),
+    };
   db.transaction((tx) => {
     tx.update(season).set({ status: next }).where(eq(season.id, seasonRow.id)).run();
     tx.insert(auditLog)
