@@ -547,8 +547,11 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
   fois l'enquête close.
 - Un membre du staff de la ligue ne joue pas dans le championnat.
 - Un joueur banni pour triche l'est sur toutes les ligues du groupe (LFR, LFV, LFRL).
-- **Replays obligatoires** : pour chaque match, au moins une équipe envoie les replays de
-  chaque carte sur le site.
+- **Replays obligatoires** : chaque équipe envoie sur le site son propre enregistrement de
+  chaque carte jouée, dans les **24 heures** après le match (réglage). **Un match ne peut pas être
+  validé tant qu'il manque un replay** : les équipes ne peuvent pas passer outre ; le staff de la
+  ligue peut valider malgré tout, avec un motif écrit, ce qui dispense aussi d'un replay qui ne
+  peut pas exister (plantage du jeu, fichiers perdus). Un forfait n'en demande pas.
 - **Statistiques saisies à la main**, tant qu'une carte n'a pas ses replays : les responsables
   ou le capitaine d'une équipe saisissent celles de leurs joueurs, qui comptent tout de suite.
   Une équipe peut saisir celles de l'adversaire, qui doit alors les confirmer. Le staff peut
@@ -557,8 +560,9 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
   l'autre est signalé au staff. Les replays remplacent toujours la saisie manuelle.
 - **Statut** : Règlement S3 ; replays obligatoires décidés ; saisie manuelle des statistiques
   décidée (M-39, mainteneur, 19 novembre 2026) ; MOSS sur le site, avant la validation, et leur
-  conservation décidés (M-47, mainteneur, 20 novembre 2026). MOSS et replays sur le site en
-  phase 5 (réglage `moss.required`, activé pour la LFR), statistiques manuelles en phase 3.
+  conservation décidés (M-47, mainteneur, 20 novembre 2026) ; replays de chaque équipe, avant
+  la validation, décidés (M-49, mainteneur, 23 novembre 2026). MOSS et replays sur le site en
+  phase 5 (réglages `moss.required` et `replays.required`, activés pour la LFR), statistiques manuelles en phase 3.
 
 ---
 

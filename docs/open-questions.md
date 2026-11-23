@@ -520,6 +520,21 @@ section 16.
 
 ## Answered
 
+#### M-49 · What "replays are mandatory" requires
+
+- **Question:** replays are mandatory in Season 4 (O-20). What does a team owe, and what happens
+  when one is missing?
+- **Answer (maintainer, 23 November 2026):**
+  - Each team uploads its own recording of every map it played, on the website.
+  - Within 24 hours of the match (a setting, `replays.deadline_hours`).
+  - A missing replay blocks validation, as MOSS files do (M-47): the teams cannot validate
+    without them; league staff may validate anyway with a written reason, audited.
+  - A replay that cannot exist (a game crash, files lost) is waived by staff the same way, with a
+    reason.
+  - A setting, `replays.required`: on for LFR, off by default for a new league. A forfeit needs
+    none.
+- **Where:** design doc sections 4 and 8; built in phase 5.
+
 #### M-48 · Points for overtime
 
 - **Question:** should a team that takes a match to overtime earn something for it, and what
