@@ -36,6 +36,23 @@ describe('which scoring settings an edit changes', () => {
     ).toEqual(['tiebreak', 'exclusion_forfeit_score']);
   });
 
+  it('reads an unset setting and one left empty (null) as the same', () => {
+    const empty = {
+      ...LFR,
+      points: {
+        ...LFR.points,
+        outcomes: { win: 3, loss: 0, overtime_win: null, overtime_loss: null },
+      },
+    };
+    expect(scoringChanges(LFR, empty)).toEqual([]);
+    expect(
+      scoringChanges(LFR, {
+        ...LFR,
+        points: { ...LFR.points, outcomes: { win: 3, loss: 0, overtime_loss: 1 } },
+      }),
+    ).toEqual(['points']);
+  });
+
   it('finds no change between equal settings, whatever their key order', () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 5 }), fc.integer({ min: 0, max: 7 }), (win, rounds) => {

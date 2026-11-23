@@ -28,7 +28,16 @@ export const SCORING_KEYS = [
 ] as const satisfies readonly (keyof ScoringSettings)[];
 export type ScoringKey = (typeof SCORING_KEYS)[number];
 
-/** Equal as data: same values, whatever the order of object keys; array order counts. */
+/** An object's keys that hold a value: a key set to null is the same as one left out. */
+const setKeys = (value: object) =>
+  Object.entries(value).flatMap(([key, entry]) =>
+    entry === null || entry === undefined ? [] : [key],
+  );
+
+/**
+ * Equal as data: same values, whatever the order of object keys; array order counts. A key set to
+ * null equals one left out, as an optional setting saved empty (`overtime_win`) means its default.
+ */
 function sameData(x: unknown, y: unknown): boolean {
   if (x === y) return true;
   if (Array.isArray(x) || Array.isArray(y)) {
@@ -40,13 +49,11 @@ function sameData(x: unknown, y: unknown): boolean {
     );
   }
   if (typeof x !== 'object' || typeof y !== 'object' || x === null || y === null) return false;
-  const xKeys = Object.keys(x);
+  const xKeys = setKeys(x);
   const yRecord = y as Record<string, unknown>;
   return (
-    xKeys.length === Object.keys(y).length &&
-    xKeys.every(
-      (key) => Object.hasOwn(y, key) && sameData((x as Record<string, unknown>)[key], yRecord[key]),
-    )
+    xKeys.length === setKeys(y).length &&
+    xKeys.every((key) => sameData((x as Record<string, unknown>)[key], yRecord[key]))
   );
 }
 

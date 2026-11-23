@@ -1,6 +1,11 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { describeGameScores, isPossibleGameScore } from './game-score.ts';
+import {
+  describeGameScores,
+  isOvertimeGame,
+  isOvertimeMatch,
+  isPossibleGameScore,
+} from './game-score.ts';
 import type { GameScoreSettings } from './settings.ts';
 
 const R6: GameScoreSettings = { win_at: 7, overtime_rounds: 3 };
@@ -251,5 +256,54 @@ describe('describeGameScores', () => {
         expect(possible(rule, score), score.join('-')).toBe(true);
       }
     }
+  });
+});
+
+// Overtime points (M-48, maintainer, 23 November 2026): a one-map match counts as overtime when
+// its map went to overtime; a series when every map was played.
+describe('isOvertimeGame', () => {
+  it.each([
+    [R6, [8, 6], true],
+    [R6, [7, 8], true],
+    [R6, [7, 5], false],
+    [R6, [0, 7], false],
+    [VALORANT, [14, 12], true],
+    [VALORANT, [13, 11], false],
+    [CS2, [16, 14], true],
+    [CS2, [13, 0], false],
+  ] as const)('%o: %o is overtime: %s', (rule, [a, b], expected) => {
+    expect(isOvertimeGame(rule, a, b)).toBe(expected);
+  });
+
+  it('never tells overtime without a round rule (Rocket League goals)', () => {
+    expect(isOvertimeGame(null, 8, 6)).toBe(false);
+  });
+
+  it('holds for exactly the possible scores past the regulation win', () => {
+    fc.assert(
+      fc.property(fc.nat(30), fc.nat(30), (a, b) => {
+        fc.pre(isPossibleGameScore(R6, a, b));
+        expect(isOvertimeGame(R6, a, b)).toBe(Math.min(a, b) >= R6.win_at - 1);
+      }),
+    );
+  });
+});
+
+describe('isOvertimeMatch', () => {
+  const game = (a: number, b: number) => ({ a, b });
+
+  it('follows the map in a one-map match', () => {
+    expect(isOvertimeMatch(R6, 1, [game(8, 6)])).toBe(true);
+    expect(isOvertimeMatch(R6, 1, [game(7, 3)])).toBe(false);
+    expect(isOvertimeMatch(null, 1, [game(8, 6)])).toBe(false);
+  });
+
+  it('counts a series that went the distance, whatever its maps', () => {
+    expect(isOvertimeMatch(R6, 3, [game(7, 3), game(2, 7), game(7, 5)])).toBe(true);
+    expect(isOvertimeMatch(R6, 3, [game(8, 6), game(8, 7)])).toBe(false);
+    expect(
+      isOvertimeMatch(null, 5, [game(3, 1), game(1, 3), game(3, 2), game(0, 3), game(3, 0)]),
+    ).toBe(true);
+    expect(isOvertimeMatch(R6, 5, [game(7, 1), game(7, 2), game(7, 3)])).toBe(false);
   });
 });

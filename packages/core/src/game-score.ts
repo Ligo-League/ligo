@@ -86,3 +86,30 @@ export function describeGameScores(rule: GameScoreSettings): GameScoreDescriptio
     endless: levelStep !== null,
   };
 }
+
+/**
+ * True when a game went to overtime: its winner took more rounds than regulation gives (R6 8-6
+ * or 8-7, Valorant 14-12). Never without a round rule, since goals say nothing of overtime.
+ */
+export function isOvertimeGame(
+  rule: GameScoreSettings | null,
+  scoreA: number,
+  scoreB: number,
+): boolean {
+  return rule !== null && Math.max(scoreA, scoreB) > rule.win_at;
+}
+
+/**
+ * Whether a played match was won and lost in overtime, for its points (M-48, maintainer,
+ * 23 November 2026): a one-map match when its map went to overtime; a series when every map
+ * was played (2-1 in a BO3, 3-2 in a BO5), whatever happened in each map.
+ */
+export function isOvertimeMatch(
+  rule: GameScoreSettings | null,
+  bestOf: number,
+  games: readonly { a: number; b: number }[],
+): boolean {
+  if (bestOf > 1) return games.length === bestOf;
+  const [game, ...others] = games;
+  return game !== undefined && others.length === 0 && isOvertimeGame(rule, game.a, game.b);
+}

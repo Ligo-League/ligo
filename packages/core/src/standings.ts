@@ -1,6 +1,8 @@
 import { applyExclusions, type PendingMatch } from './exclusion.ts';
+import { isOvertimeMatch } from './game-score.ts';
 import type {
   ForfeitScore,
+  GameScoreSettings,
   PointsSettings,
   TiebreakCriterion,
   TiebreakSettings,
@@ -36,6 +38,8 @@ export interface StandingsInput {
   matches: readonly StandingsMatch[];
   points: PointsSettings;
   tiebreak: TiebreakSettings;
+  /** How a map is won (`ruleset.game_score`), to tell an overtime result; none: never overtime. */
+  gameScore?: GameScoreSettings | null;
   /** The rounds each side of a forfeit gets. */
   forfeitScore: ForfeitScore;
   /** The same for a forfeit the 50% rule makes; `forfeitScore` when absent. */
@@ -158,8 +162,11 @@ export function computeStandings(input: StandingsInput): StandingsResult {
       const [winner, loser] = aWon ? [a, b] : [b, a];
       const score: [number, number] = aWon ? [game.a, game.b] : [game.b, game.a];
       const { outcomes } = input.points;
-      creditRounds(winner, score, outcomes.win);
-      creditRounds(loser, [score[1], score[0]], outcomes.loss);
+      const overtime = isOvertimeMatch(input.gameScore ?? null, 1, [game]);
+      const won = overtime ? (outcomes.overtime_win ?? outcomes.win) : outcomes.win;
+      const lost = overtime ? (outcomes.overtime_loss ?? outcomes.loss) : outcomes.loss;
+      creditRounds(winner, score, won);
+      creditRounds(loser, [score[1], score[0]], lost);
       countMatch(winner, loser);
     }
   }

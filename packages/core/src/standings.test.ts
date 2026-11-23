@@ -254,6 +254,42 @@ describe('computeStandings: forfeits', () => {
   });
 });
 
+// Overtime points (M-48, maintainer, 23 November 2026): LFR could give 1 point to a team that lost
+// 6-8, and 3 or fewer to the winner. Left unset, overtime scores as any other result.
+describe('computeStandings: overtime', () => {
+  const R6 = { win_at: 7, overtime_rounds: 3 };
+  const OVERTIME: PointsSettings = {
+    ...POINTS,
+    outcomes: { win: 3, loss: 0, overtime_win: 2, overtime_loss: 1 },
+  };
+
+  it('gives the overtime points to a map won 8-6, and the usual ones to a 7-5', () => {
+    const rows = rowsOf({
+      points: OVERTIME,
+      gameScore: R6,
+      matches: [played(1, 2, 6, 8), played(3, 4, 7, 5)],
+    });
+    expect([1, 2, 3, 4].map((entry) => rowOf(rows, entry).points)).toEqual([1, 2, 3, 0]);
+    // Rounds and wins count as they always do.
+    expect(rowOf(rows, 2)).toMatchObject({ wins: 1, scoreFor: 8, scoreAgainst: 6 });
+  });
+
+  it('scores overtime as any result while the settings leave it unset', () => {
+    const rows = rowsOf({ gameScore: R6, matches: [played(1, 2, 6, 8)] });
+    expect([rowOf(rows, 1).points, rowOf(rows, 2).points]).toEqual([0, 3]);
+  });
+
+  it('cannot tell overtime without the league’s round rule', () => {
+    const rows = rowsOf({ points: OVERTIME, matches: [played(1, 2, 6, 8)] });
+    expect([rowOf(rows, 1).points, rowOf(rows, 2).points]).toEqual([0, 3]);
+  });
+
+  it('never applies to a forfeit', () => {
+    const rows = rowsOf({ points: OVERTIME, gameScore: R6, matches: [forfeit(1, 2, 'a')] });
+    expect([rowOf(rows, 1).points, rowOf(rows, 2).points]).toEqual([0, 3]);
+  });
+});
+
 describe('computeStandings: refusals', () => {
   it.each(['h2h_points', 'h2h_diff', 'staff_decision'] as const)(
     'refuses the %s criterion instead of ignoring it',

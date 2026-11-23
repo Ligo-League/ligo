@@ -17,7 +17,16 @@ import {
  * `points_json` is what a new season copies (maintainer, 19 November 2026).
  */
 export const pointsSchema = z.strictObject({
-  outcomes: z.strictObject({ win: z.int(), loss: z.int() }),
+  outcomes: z.strictObject({
+    win: z.int(),
+    loss: z.int(),
+    /**
+     * Points for a match won or lost in overtime (M-48, maintainer, 23 November 2026): a map that
+     * went past regulation, or a series that went the distance. Null or absent: `win` and `loss`.
+     */
+    overtime_win: z.int().nullable().optional(),
+    overtime_loss: z.int().nullable().optional(),
+  }),
   forfeit: z.strictObject({
     winner: z.int(),
     loser: z.int(),

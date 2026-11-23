@@ -188,6 +188,8 @@ export function loadStandingsInput(
       // The season's own: changing the competition's leaves past seasons as they were (M-40).
       points: context.season.settingsJson.points,
       tiebreak: context.season.settingsJson.tiebreak,
+      // Tells an overtime result, for its own points (M-48).
+      gameScore: context.competition.rulesetJson.game_score,
       forfeitScore: context.season.settingsJson.forfeit_score,
       exclusionForfeitScore:
         context.season.settingsJson.exclusion_forfeit_score ??
