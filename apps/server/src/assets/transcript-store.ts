@@ -1,4 +1,4 @@
-import { createDiskObjectStore, type ObjectStore } from './object-store.ts';
+import { createDiskObjectStore, type ObjectStore } from '@ligo/storage';
 
 // Match channel transcripts, saved when a season closes (design doc section 6, "Season end"),
 // under keys like "transcripts/4/123.json" (season, match; section 13, R2 layout): in R2, or in

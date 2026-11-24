@@ -54,6 +54,7 @@ packages/core      pure league logic: round robin, standings, tie-breakers, forf
 packages/titles    one folder per title: metric schema, ruleset defaults, consistency checks,
                    replay normaliser
 packages/parsers   ParserModule interface + WASM loaders (browser and Node)
+packages/storage   where files live: R2, a folder on disk without R2, memory in tests
 packages/db        Drizzle schema, migrations, query helpers
 packages/render    Satori templates, fonts, resvg wrapper
 apps/server        discord.js client + Hono site/API + reconciler (one process)

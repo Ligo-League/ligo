@@ -27,6 +27,7 @@ COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
 COPY packages/parsers/package.json packages/parsers/
 COPY packages/render/package.json packages/render/
+COPY packages/storage/package.json packages/storage/
 COPY packages/titles/package.json packages/titles/
 RUN pnpm install --frozen-lockfile --prod --filter @ligo/server...
 # The sources, the migrations, the fonts and the seed's fixtures (.dockerignore keeps the rest out).

@@ -1,4 +1,4 @@
-import { createDiskObjectStore, type ObjectStore } from './object-store.ts';
+import { createDiskObjectStore, type ObjectStore } from '@ligo/storage';
 
 // The server's own copy of match evidence, such as score screenshots, found by a storage key
 // like "evidence/12/<sha256>.png" (design doc section 13, R2 layout): in R2, or on disk on a

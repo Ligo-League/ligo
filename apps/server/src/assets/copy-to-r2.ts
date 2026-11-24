@@ -3,8 +3,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, relative, resolve, sep } from 'node:path';
 import { loadConfig } from '../config.ts';
 import { EVIDENCE_KEY } from './evidence-store.ts';
-import type { ObjectStore } from './object-store.ts';
-import { createR2ObjectStore } from './r2-store.ts';
+import { type ObjectStore, createR2ObjectStore } from '@ligo/storage';
 import { TRANSCRIPT_KEY } from './transcript-store.ts';
 
 // The one-off copy of the files the server kept on disk to R2 (design doc section 13; maintainer,

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fakeObjectStore } from '../assets/object-store.ts';
-import { readUploadToken, signUploadToken } from '../assets/upload-token.ts';
+import { fakeObjectStore, readUploadToken, signUploadToken } from '@ligo/storage';
 import { uploadRoute } from './upload-route.ts';
 
 // Without R2 (local development), the browser uploads to the server's own route with a token the

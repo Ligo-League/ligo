@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
-import type { ObjectStore } from '../assets/object-store.ts';
-import { readUploadToken } from '../assets/upload-token.ts';
+import { type ObjectStore, readUploadToken } from '@ligo/storage';
 
 // `PUT /storage/upload/:token`: the server's own presigned upload, for a machine without R2
 // (design doc section 8, upload flow 5). The token is the whole permission: the server signs one

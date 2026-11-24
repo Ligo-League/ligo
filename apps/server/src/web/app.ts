@@ -5,7 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
 import { R6_RANKS } from '@ligo/titles';
 import type { EvidenceStore } from '../assets/evidence-store.ts';
-import type { ObjectStore } from '../assets/object-store.ts';
+import type { ObjectStore } from '@ligo/storage';
 import type { AssetStore } from '../assets/store.ts';
 import type { DiscordGateway } from '../discord/gateway.ts';
 import { announceReportDecision, announceRequestDecision } from '../discord/staff-decisions.ts';

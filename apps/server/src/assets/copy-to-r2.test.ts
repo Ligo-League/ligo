@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { copyStorage } from './copy-to-r2.ts';
-import { fakeObjectStore } from './object-store.ts';
+import { fakeObjectStore } from '@ligo/storage';
 
 // The one-off copy of what the server kept on disk to R2 (design doc section 13, maintainer
 // 23 November 2026): evidence, uploaded logos and transcripts, under the same keys. It never

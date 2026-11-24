@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { R2Settings } from './assets/r2-store.ts';
+import type { R2Settings } from '@ligo/storage';
 
 const snowflake = z.string().regex(/^\d{17,20}$/);
 // A variable left empty in .env is not set.
