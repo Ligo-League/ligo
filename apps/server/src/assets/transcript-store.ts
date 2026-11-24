@@ -1,9 +1,8 @@
-import { mkdir, rename, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { createDiskObjectStore, type ObjectStore } from './object-store.ts';
 
 // Match channel transcripts, saved when a season closes (design doc section 6, "Season end"),
-// under keys like "transcripts/4/123.json" (season, match; section 13, R2 layout). Until R2
-// (phase 5) they live in the storage folder, which is copied to R2 every night. Nothing serves
+// under keys like "transcripts/4/123.json" (season, match; section 13, R2 layout): in R2, or in
+// the storage folder on a machine without R2 settings. Nothing serves
 // them: they hold the teams' private conversations, for staff to look at by hand if needed.
 
 /** The only keys the store writes: one file per match, under its season. */
@@ -17,19 +16,19 @@ export interface TranscriptStore {
   put(key: string, json: string): Promise<void>;
 }
 
-/** Files under a folder on disk, `data/storage` by default. */
-export function createLocalTranscriptStore(root: string): TranscriptStore {
+/** Transcripts in an object store: R2 in production, a folder on disk without R2 settings. */
+export function createTranscriptStore(objects: ObjectStore): TranscriptStore {
   return {
     async put(key, json) {
       if (!TRANSCRIPT_KEY.test(key)) throw new Error('Not a transcript key');
-      const path = join(root, key);
-      await mkdir(dirname(path), { recursive: true });
-      // Written aside then renamed, so the nightly copy never takes half a file.
-      const partial = `${path}.partial`;
-      await writeFile(partial, json, 'utf8');
-      await rename(partial, path);
+      await objects.put(key, new TextEncoder().encode(json), 'application/json');
     },
   };
+}
+
+/** Files under a folder on disk, `data/storage` by default. */
+export function createLocalTranscriptStore(root: string): TranscriptStore {
+  return createTranscriptStore(createDiskObjectStore(root, { upload: null, now: Date.now }));
 }
 
 /** An in-memory store for tests; `failing` makes the next writes fail, as a full disk would. */

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { R2Settings } from './assets/r2-store.ts';
 
 const snowflake = z.string().regex(/^\d{17,20}$/);
 // A variable left empty in .env is not set.
@@ -28,6 +29,20 @@ const envSchema = z
     // Behind Caddy on the VPS: read the original scheme from X-Forwarded-Proto. Never set it when
     // the server is reachable without the proxy, since anyone could then send the header.
     TRUST_PROXY: optional(z.enum(['true', 'false'])),
+    // Cloudflare R2 (phase 5): all four, or none, and files stay in STORAGE_DIR.
+    R2_ACCOUNT_ID: optional(z.string().regex(/^[0-9a-zA-Z]+$/)),
+    R2_ACCESS_KEY_ID: optional(z.string().min(1)),
+    R2_SECRET_ACCESS_KEY: optional(z.string().min(1)),
+    R2_BUCKET: optional(z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/)),
+    R2_ENDPOINT: optional(z.url({ protocol: /^https$/ })),
+  })
+  .superRefine((env, context) => {
+    const r2 = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET'] as const;
+    const set = r2.filter((name) => env[name] !== undefined);
+    if (set.length === 0 || set.length === r2.length) return;
+    for (const name of r2.filter((name) => env[name] === undefined)) {
+      context.addIssue({ code: 'custom', path: [name], message: 'needed for R2' });
+    }
   })
   .superRefine((env, context) => {
     if ((env.DISCORD_CLIENT_SECRET === undefined) === (env.SESSION_SECRET === undefined)) return;
@@ -45,8 +60,10 @@ export interface Config {
   databasePath: string;
   /** Prepared images such as team logos (`pnpm assets:logos`), until they move to R2. */
   assetsDir: string;
-  /** Files the server keeps, such as score screenshots, until they move to R2. */
+  /** Files the server keeps on disk without R2, and read until they are copied there. */
   storageDir: string;
+  /** Where the server keeps files in production; null keeps them in `storageDir`. */
+  r2: R2Settings | null;
   logLevel: z.infer<typeof envSchema>['LOG_LEVEL'];
   /** Where the website listens, and its login when both secrets are set. */
   web: {
@@ -83,6 +100,19 @@ export function loadConfig(env: Record<string, string | undefined>): ConfigResul
       databasePath: parsed.data.DATABASE_PATH,
       assetsDir: parsed.data.ASSETS_DIR,
       storageDir: parsed.data.STORAGE_DIR,
+      r2:
+        parsed.data.R2_ACCOUNT_ID &&
+        parsed.data.R2_ACCESS_KEY_ID &&
+        parsed.data.R2_SECRET_ACCESS_KEY &&
+        parsed.data.R2_BUCKET
+          ? {
+              accountId: parsed.data.R2_ACCOUNT_ID,
+              accessKeyId: parsed.data.R2_ACCESS_KEY_ID,
+              secretAccessKey: parsed.data.R2_SECRET_ACCESS_KEY,
+              bucket: parsed.data.R2_BUCKET,
+              endpoint: parsed.data.R2_ENDPOINT ?? null,
+            }
+          : null,
       logLevel: parsed.data.LOG_LEVEL,
       web: {
         host: parsed.data.HOST,

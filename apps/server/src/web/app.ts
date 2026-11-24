@@ -5,11 +5,13 @@ import { and, eq } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
 import { R6_RANKS } from '@ligo/titles';
 import type { EvidenceStore } from '../assets/evidence-store.ts';
+import type { ObjectStore } from '../assets/object-store.ts';
 import type { AssetStore } from '../assets/store.ts';
 import type { DiscordGateway } from '../discord/gateway.ts';
 import { announceReportDecision, announceRequestDecision } from '../discord/staff-decisions.ts';
 import { t, type Locale, type MessageKey } from '../i18n/index.ts';
 import { evidenceCompetition, openEvidence } from '../services/evidence.ts';
+import { uploadRoute } from './upload-route.ts';
 import { gameProfileOf, saveGameProfile, type SaveProfileError } from '../services/game-profile.ts';
 import {
   fileRegistration,
@@ -141,6 +143,11 @@ export interface WebDeps {
    * request's own URL says `http`. Off by default; only for a server reachable through the proxy.
    */
   trustProxy?: boolean;
+  /**
+   * The server's own upload route (`PUT /storage/upload/:token`), for a machine without R2: the
+   * secret that signs its tokens and the store it writes to. Null or absent: no route.
+   */
+  uploads?: { secret: string; store: ObjectStore } | null;
   now: () => number;
 }
 
@@ -245,6 +252,10 @@ const CONTENT_SECURITY_POLICY = [
 export function createWebApp(deps: WebDeps): Hono<Env> {
   const { db, locale, login } = deps;
   const app = new Hono<Env>();
+  // Before the session middleware: the signed token is the upload's whole permission.
+  if (deps.uploads) {
+    app.route('/', uploadRoute({ ...deps.uploads, now: deps.now, logger: deps.logger }));
+  }
 
   const render = (
     c: Context<Env>,

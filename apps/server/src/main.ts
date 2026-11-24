@@ -2,8 +2,10 @@ import { mkdirSync } from 'node:fs';
 import { serve } from '@hono/node-server';
 import { dirname, resolve } from 'node:path';
 import { applyMigrations, backupFolder, openDatabase } from '@ligo/db';
-import { createLocalEvidenceStore } from './assets/evidence-store.ts';
-import { createLocalTranscriptStore } from './assets/transcript-store.ts';
+import { createEvidenceStore } from './assets/evidence-store.ts';
+import { createDiskObjectStore, withReadFallback } from './assets/object-store.ts';
+import { createR2ObjectStore } from './assets/r2-store.ts';
+import { createTranscriptStore } from './assets/transcript-store.ts';
 import { createLocalAssetStore } from './assets/store.ts';
 import { SCREENSHOT_MAX_BYTES } from './services/results.ts';
 import { loadConfig } from './config.ts';
@@ -46,9 +48,21 @@ if (backup) logger.info({ backup }, 'Copied the database before migrating');
 logger.info({ path: databasePath }, 'Database ready');
 
 const assets = createLocalAssetStore(resolve(config.assetsDir));
-const evidence = createLocalEvidenceStore(resolve(config.storageDir), SCREENSHOT_MAX_BYTES, logger);
-const transcripts = createLocalTranscriptStore(resolve(config.storageDir));
 const publicUrl = new URL(config.web.publicUrl);
+// Files go to R2 when it is set (phase 5); what was kept on disk before is read from there until
+// `copy-to-r2.ts` has copied it. Without R2, the disk keeps everything and signs its own uploads.
+const disk = createDiskObjectStore(resolve(config.storageDir), {
+  upload: config.web.login
+    ? { secret: config.web.login.sessionSecret, publicUrl: publicUrl.href }
+    : null,
+  now: Date.now,
+});
+const objects = config.r2
+  ? withReadFallback(createR2ObjectStore(config.r2, { now: Date.now }), disk)
+  : disk;
+logger.info({ storage: config.r2 ? 'r2' : 'disk' }, 'Storage ready');
+const evidence = createEvidenceStore(objects, SCREENSHOT_MAX_BYTES, logger);
+const transcripts = createTranscriptStore(objects);
 const newClient = () =>
   createDiscordClient({ commands, buttons, forms, logger, db, assets, evidence, publicUrl });
 // Replaced by a new one when a login fails and is tried again (see keepConnecting below).
@@ -80,6 +94,8 @@ const web = createWebApp({
   botInstallUrl: botInstallUrl(config.discordClientId),
   discordReady: () => client.isReady(),
   trustProxy: config.web.trustProxy,
+  uploads:
+    !config.r2 && config.web.login ? { secret: config.web.login.sessionSecret, store: disk } : null,
   now: () => Date.now(),
 });
 const server = serve(

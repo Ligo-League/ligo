@@ -20,6 +20,7 @@ describe('loadConfig', () => {
         assetsDir: './data/assets/render',
         storageDir: './data/storage',
         logLevel: 'info',
+        r2: null,
         web: {
           host: '127.0.0.1',
           port: 3000,
@@ -140,6 +141,41 @@ describe('loadConfig', () => {
       ok: false,
       errors: ['PUBLIC_URL is not valid'],
     });
+  });
+
+  it('stores files in R2 with all four settings, and on disk with none', () => {
+    const R2 = {
+      R2_ACCOUNT_ID: 'acc0unt',
+      R2_ACCESS_KEY_ID: 'AKIDEXAMPLE',
+      R2_SECRET_ACCESS_KEY: 'r2-secret-never-in-an-error',
+      R2_BUCKET: 'ligo',
+    };
+    expect(loadConfig({ ...valid, ...R2 })).toMatchObject({
+      ok: true,
+      config: {
+        r2: {
+          accountId: 'acc0unt',
+          accessKeyId: 'AKIDEXAMPLE',
+          secretAccessKey: R2.R2_SECRET_ACCESS_KEY,
+          bucket: 'ligo',
+          endpoint: null,
+        },
+      },
+    });
+    expect(
+      loadConfig({ ...valid, ...R2, R2_ENDPOINT: 'https://example.r2.cloudflarestorage.com' }),
+    ).toMatchObject({
+      ok: true,
+      config: { r2: { endpoint: 'https://example.r2.cloudflarestorage.com' } },
+    });
+    // Left empty in .env: not set.
+    expect(loadConfig({ ...valid, R2_BUCKET: '', R2_ACCOUNT_ID: '' })).toMatchObject({
+      ok: true,
+      config: { r2: null },
+    });
+    const partial = loadConfig({ ...valid, ...R2, R2_BUCKET: '' });
+    expect(partial).toEqual({ ok: false, errors: ['R2_BUCKET is missing'] });
+    expect(JSON.stringify(partial)).not.toContain(R2.R2_SECRET_ACCESS_KEY);
   });
 
   it('never repeats a value in an error, so a secret pasted in the wrong variable stays out of logs', () => {

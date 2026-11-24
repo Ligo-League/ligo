@@ -1,9 +1,8 @@
-import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { createDiskObjectStore, type ObjectStore } from './object-store.ts';
 
 // The server's own copy of match evidence, such as score screenshots, found by a storage key
-// like "evidence/12/<sha256>.png" (design doc section 13, R2 layout). Until R2 (phase 5) the
-// files live on disk; the keys stay the same. Evidence is never served publicly: the website
+// like "evidence/12/<sha256>.png" (design doc section 13, R2 layout): in R2, or on disk on a
+// machine without R2 settings, under the same keys. Evidence is never served publicly: the website
 // reads it through a route that checks who asks.
 
 /**
@@ -20,38 +19,41 @@ export interface EvidenceStore {
   read(key: string): Promise<Uint8Array | null>;
 }
 
-/** Files under a folder on disk, `data/storage` by default. */
-export function createLocalEvidenceStore(
-  root: string,
+const TYPES: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
+
+/** Evidence in an object store: R2 in production, a folder on disk without R2 settings. */
+export function createEvidenceStore(
+  objects: ObjectStore,
   maxBytes: number,
   logger: { error: (details: object, message: string) => void },
 ): EvidenceStore {
   return {
     async put(key, data) {
       if (!EVIDENCE_KEY.test(key)) throw new Error('Not an evidence key');
-      const path = join(root, key);
       try {
-        await mkdir(dirname(path), { recursive: true });
-        // Written aside then renamed, so a reader never sees half a file.
-        const partial = `${path}.partial`;
-        await writeFile(partial, data);
-        await rename(partial, path);
+        await objects.put(key, data, TYPES[key.split('.').at(-1) ?? ''] ?? 'image/png');
       } catch (error) {
         logger.error({ err: error, key }, 'Evidence could not be stored');
         throw error;
       }
     },
     async read(key) {
-      if (!EVIDENCE_KEY.test(key)) return null;
-      const path = join(root, key);
-      try {
-        if ((await stat(path)).size > maxBytes) return null;
-        return new Uint8Array(await readFile(path));
-      } catch {
-        return null;
-      }
+      return EVIDENCE_KEY.test(key) ? objects.get(key, maxBytes) : null;
     },
   };
+}
+
+/** Files under a folder on disk, `data/storage` by default. */
+export function createLocalEvidenceStore(
+  root: string,
+  maxBytes: number,
+  logger: { error: (details: object, message: string) => void },
+): EvidenceStore {
+  return createEvidenceStore(
+    createDiskObjectStore(root, { upload: null, now: Date.now }),
+    maxBytes,
+    logger,
+  );
 }
 
 /** An in-memory store for tests; `failing` makes the next writes fail, as a full disk would. */
