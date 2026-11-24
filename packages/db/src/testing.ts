@@ -14,3 +14,4 @@ export type { MatchRow } from './seed/matches-csv.ts';
 export type { TeamRow } from './seed/parse-teams-csv.ts';
 export { openLfrRegistration, seedLfr } from './seed/seed-lfr.ts';
 export { seedMatches } from './seed/seed-matches.ts';
+export { addRosterPlayers } from './seed/roster-players.ts';

@@ -1,8 +1,10 @@
 import { listLeagueMatches, schema, type Db } from '@ligo/db';
+import { addRosterPlayers } from '@ligo/db/testing';
 import { normalizeR6 } from '@ligo/titles';
+import { rawRound } from '@ligo/titles/testing';
 import { asc, eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { addRosterPlayers, rawRound, workerDatabase } from '../testing.ts';
+import { workerDatabase } from '../testing.ts';
 import { stitchMatch } from './stitch-game.ts';
 
 // `stitch_game` (design doc section 8, "From files to a game" and "Stitching re-hosted games"):
