@@ -1,8 +1,8 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadNodeParser } from './index.ts';
+import { loadNodeParser, readParserBuild } from './index.ts';
 
 // The real parser in a Node worker thread, on a real round. It needs `pnpm parsers:build` and
 // `pnpm fixtures:replays`; without them these tests are skipped, never failed.
@@ -20,6 +20,18 @@ function firstRound(): Uint8Array | null {
     .sort()[0];
   return file ? new Uint8Array(readFileSync(join(SLC, file))) : null;
 }
+
+describe('readParserBuild', () => {
+  it('reads the version from the manifest, and says when there is none or it is not one', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ligo-'));
+    expect(await readParserBuild(dir)).toEqual({ ok: false, error: 'no_build' });
+    writeFileSync(join(dir, 'r6.json'), '{"version":"r6-0123456789abcdef"}');
+    expect(await readParserBuild(dir)).toEqual({ ok: false, error: 'bad_manifest' });
+    const manifest = { version: 'r6-0123456789abcdef', wasm: 'r6-0123456789abcdef.wasm' };
+    writeFileSync(join(dir, 'r6.json'), JSON.stringify(manifest));
+    expect(await readParserBuild(dir)).toEqual({ ok: true, build: { title: 'r6', ...manifest } });
+  });
+});
 
 describe('loadNodeParser', () => {
   it('says when the folder holds no build', async () => {
