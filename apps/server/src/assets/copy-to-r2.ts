@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, relative, resolve, sep } from 'node:path';
 import { loadConfig } from '../config.ts';
@@ -36,6 +37,8 @@ export async function copyStorage(
   options: { dryRun: boolean; onCopy?: (key: string) => void },
 ): Promise<CopyReport> {
   const report: CopyReport = { copied: 0, present: 0, ignored: 0 };
+  // A server that never stored a file has no folder: nothing to copy.
+  if (!existsSync(root)) return report;
   const entries = await readdir(root, { recursive: true, withFileTypes: true });
   const files = entries
     .filter((entry) => entry.isFile())

@@ -51,6 +51,16 @@ describe('copyStorage', () => {
     });
   });
 
+  it('has nothing to copy when the server never kept a file on disk', async () => {
+    const target = fakeObjectStore();
+    const never = join(mkdtempSync(join(tmpdir(), 'ligo-storage-')), 'storage');
+    expect(await copyStorage(never, target, { dryRun: false })).toEqual({
+      copied: 0,
+      present: 0,
+      ignored: 0,
+    });
+  });
+
   it('only counts on a dry run', async () => {
     const target = fakeObjectStore();
     expect(await copyStorage(storageDir(), target, { dryRun: true })).toEqual({
