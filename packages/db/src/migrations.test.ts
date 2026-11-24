@@ -22,7 +22,8 @@ import { openTestDatabase } from './testing.ts';
 // today"), plus each table a later migration adds: 0002 adds `dispute`, 0003 `match_proposal`,
 // 0004 `veto_step`, 0007 `request` and `queue_post`, 0009 `club`, 0010 `club_staff`, 0013
 // `rules_version`, 0014 `registration_invite` and `registration_player`, 0021 `match_captain`, 0023
-// `mercato_window`, 0024 `stat` and `stat_sheet`, 0029 `discord_object`, 0032 `match_transcript`.
+// `mercato_window`, 0024 `stat` and `stat_sheet`, 0029 `discord_object`, 0032 `match_transcript`,
+// 0033 `job` and the replay tables.
 const SCHEMA_TABLES = [
   'audit_log',
   'club',
@@ -34,6 +35,9 @@ const SCHEMA_TABLES = [
   'evidence',
   'game',
   'game_account',
+  'game_round',
+  'job',
+  'kill_event',
   'league_guild',
   'lineup',
   'lineup_member',
@@ -48,13 +52,17 @@ const SCHEMA_TABLES = [
   'queue_post',
   'registration_invite',
   'registration_player',
+  'replay_file',
+  'replay_segment',
   'request',
   'roster_entry',
   'roster_invite',
   'roster_player',
+  'round_player',
   'rules_version',
   'sanction',
   'season',
+  'segment_round',
   'slot',
   'stage',
   'stage_entry',

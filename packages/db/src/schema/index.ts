@@ -5,3 +5,4 @@ export * from './matches.ts';
 export * from './operations.ts';
 export * from './requests.ts';
 export * from './rules.ts';
+export * from './replays.ts';

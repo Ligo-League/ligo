@@ -86,3 +86,22 @@ export const AUDIT_ACTOR_KINDS = ['user', 'bot', 'system'] as const;
 export { APPROVAL_MODES, REQUEST_KINDS, REQUEST_STATUSES } from '@ligo/core';
 /** What a post in the staff queue is about, so it can be updated once handled. */
 export const QUEUE_POST_ENTITIES = ['request', 'match', 'dispute'] as const;
+
+// Replays (phase 5; design doc section 8).
+/** How a game's replays were stitched: by Ligo when every check passed, or by staff. */
+export const STITCH_STATUSES = ['none', 'auto', 'needs_review', 'staff'] as const;
+export const RAW_STATUSES = ['none', 'uploading', 'stored', 'deleted'] as const;
+export const REPLAY_VERIFICATIONS = ['unverified', 'verified', 'mismatch'] as const;
+/** A lobby in a game; or left out (`unassigned`, with the reason) for staff; or ignored by them. */
+export const SEGMENT_STATUSES = ['ok', 'unassigned', 'ignored'] as const;
+export const SEGMENT_ISSUES = [
+  'unknown_map',
+  'ambiguous_map',
+  'teams_unresolved',
+  'teams_differ',
+] as const;
+export const ROUND_EVENT_KINDS = ['kill', 'death', 'leave'] as const;
+/** A round of the official map: from a replay, awarded by staff (score only), or void. */
+export const GAME_ROUND_KINDS = ['replay', 'awarded', 'void'] as const;
+export const JOB_KINDS = ['verify_replay', 'stitch_game', 'render_images', 'reparse_game'] as const;
+export const JOB_STATUSES = ['queued', 'running', 'done', 'failed'] as const;

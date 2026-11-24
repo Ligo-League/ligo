@@ -255,6 +255,8 @@ match          id, stage_id, week NULL, bracket_node NULL, best_of, host_side NU
                -- channel_id and control_message_id: the match channel's pinned control message
                -- (phase 4, migration 0030); posted again when the channel is made anew.
                -- validated_at: when the result counted, an annulment included (the archive's clock)
+               -- moss_held_at, moss_held_by, moss_hold_reason NULL: staff hold the match's MOSS files
+               -- during an investigation (M-47; migration 0033)
 match_slot     match_id, side ('a'|'b'), source_kind ('entry'|'seed'|'winner_of'|'loser_of'), source_ref
 lineup         id, match_id, side ('a'|'b'), team_id NULL
 lineup_member  lineup_id, player_id, role ('starter'|'sub')
@@ -262,10 +264,14 @@ match_captain  match_id, side ('a'|'b'), player_id, named_by, named_at   -- the 
 veto_step      match_id, seq, side NULL ('a'|'b'; NULL for the decider), action ('ban'|'pick'|'decider'|'side'|'ot_side'),
                map NULL, start_side NULL, game_n NULL, at, by_player_id NULL, timed_out
 game           id, match_id, n, map NULL, bans_json, score_a, score_b, overtime, forfeit_side NULL ('a'|'b'|'both'),
-               rehosts_a, rehosts_b, status ('pending'|'final'|'void'),
-               stats_source ('none'|'manual'|'replay'|'api')
+               status ('pending'|'final'|'void'), stats_source ('none'|'manual'|'replay'|'api'),
+               stitch_status ('none'|'auto'|'needs_review'|'staff'), stitch_checks_json NULL
+               -- which team called each re-host is on its lobby (replay_segment.rehost_called_by, O-14);
+               -- rehosts_a and rehosts_b were dropped (migration 0033)
 evidence       id, match_id, game_id NULL, kind ('score_screenshot'|'moss'|'vod_link'|'other'),
-               object_key NULL, url NULL, uploaded_by, visibility ('staff'|'teams'|'public'), at
+               object_key NULL, url NULL, uploaded_by, player_id NULL (a MOSS file's player, required
+               for kind moss), deleted_at NULL (stored file deleted, row kept), visibility
+               ('staff'|'teams'|'public'), at
 dispute        id, match_id, evidence_id, reason, details NULL, raised_by, at, resolution NULL
                ('validated'|'rejected'|'voided'|'result_entered'|'forfeit'), resolved_by NULL,
                resolved_at NULL
@@ -279,27 +285,36 @@ stat           game_id, player_id, metric, value REAL, source ('manual'|'replay'
                entered_by NULL, verified, PRIMARY KEY (game_id, player_id, metric)
 
 -- replays (title-agnostic envelope) and R6 detail (level 2)
+-- (migration 0033, 5-5)
 replay_file    id, match_id, uploader_player_id, title, file_name, size, sha256 UNIQUE,
-               lobby_id, unit_number, parser_version, parsed_json BLOB,
-               raw_status ('none'|'uploading'|'stored'|'deleted'), raw_key NULL,
+               lobby_id, unit_number, recorded_side NULL ('a'|'b'), parser_version, parsed_json,
+               raw_status ('none'|'uploading'|'stored'|'deleted'), raw_key NULL (set once stored),
                verified ('unverified'|'verified'|'mismatch'), created_at
-replay_segment id, game_id, lobby_id, started_at, team_map_json, status ('ok'|'needs_review'|'ignored')
+replay_segment id, match_id, game_id NULL, lobby_id, started_at, team_map_json NULL,
+               rehost_called_by NULL ('a'|'b'), status ('ok'|'unassigned'|'ignored'),
+               issue NULL ('unknown_map'|'ambiguous_map'|'teams_unresolved'|'teams_differ'),
+               UNIQUE(match_id, lobby_id); 'ok' exactly when in a game with its team map
 segment_round  segment_id, local_n, canonical_file_id, complete, winner_idx NULL, win_condition NULL,
-               site, roles_json, pov_count, PRIMARY KEY (segment_id, local_n)
-round_player   segment_id, local_n, account_id, side_idx, operator, kills, died, left, assists, headshots,
-               opening_kill, opening_death, trade_kills, traded, plant, defuse, survived, clutch_vs, clutch_won
-               -- operator is the one played at round end; operator_swaps_json NULL lists the swaps
-               -- r6-dissect reports during the round (maintainer, 16 November 2026; added with phase 5)
-kill_event     segment_id, local_n, seq, elapsed_s, killer_account NULL, victim_account, headshot
-game_round     game_id, n NULL, kind ('replay'|'awarded'|'void'), segment_id NULL, local_n NULL,
-               winner_side NULL, reason NULL, decided_by NULL
+               attacker_idx, site NULL, planted (from the win condition, M-50), pov_count,
+               PRIMARY KEY (segment_id, local_n)
+round_player   segment_id, local_n, idx (the player's place in the canonical unit), account NULL,
+               player_id NULL, name, side_idx, operator, operator_swaps_json NULL, kills, died, assists,
+               headshots, opening_kill, opening_death, trade_kills, traded, survived, left, kost,
+               clutch_vs, clutch_won, PRIMARY KEY (segment_id, local_n, idx)
+               -- operator is the one played at round end; operator_swaps_json lists the swaps
+               -- (maintainer, 16 November 2026); plant and defuse wait for M-50
+kill_event     segment_id, local_n, seq, kind ('kill'|'death'|'leave'), elapsed_s NULL, actor_idx NULL,
+               target_idx NULL, headshot, team_kill, trade, PRIMARY KEY (segment_id, local_n, seq)
+game_round     id, game_id, n NULL (1, 2, … when counted), kind ('replay'|'awarded'|'void'),
+               segment_id NULL, local_n NULL, winner_side NULL, reason NULL, decided_by NULL
 
 -- mixed-team mode (FRFL)
 player_rating  competition_id, player_id, mu, sigma, games
 
 -- operations
-job            id, kind, payload_json, status ('queued'|'running'|'done'|'failed'),
-               attempts, run_after, locked_until NULL, last_error NULL
+job            id, kind ('verify_replay'|'stitch_game'|'render_images'|'reparse_game'), payload_json,
+               status ('queued'|'running'|'done'|'failed'), attempts, run_after, locked_until NULL,
+               last_error NULL, created_at, finished_at NULL (migration 0033)
 audit_log      id, actor_player_id NULL, actor_kind ('user'|'bot'|'system'), action, entity, entity_id,
                before_json NULL, after_json NULL, at
 queue_post     id, entity ('request'|'match'|'dispute'), entity_id, channel_id, message_id, posted_at

@@ -10,7 +10,7 @@ import {
   unique,
 } from 'drizzle-orm/sqlite-core';
 import { jsonText, oneOf } from '../columns.ts';
-import { gameBansSchema, matchVetoSchema } from '../json.ts';
+import { gameBansSchema, matchVetoSchema, stitchChecksSchema } from '../json.ts';
 import {
   DISPUTE_RESOLUTIONS,
   PROPOSAL_STATUSES,
@@ -28,6 +28,7 @@ import {
   STATS_SOURCES,
   STAT_SHEET_ENTRIES,
   STAT_SOURCES,
+  STITCH_STATUSES,
   VETO_ACTIONS,
 } from './enums.ts';
 import { player, team } from './people.ts';
@@ -66,6 +67,11 @@ export const match = sqliteTable(
     vetoStartedAt: integer('veto_started_at'),
     vetoChannelId: text('veto_channel_id'),
     vetoMessageId: text('veto_message_id'),
+    // MOSS files held by staff during an investigation (M-47): kept past the season's close and
+    // `moss.retention_days` until staff release them.
+    mossHeldAt: integer('moss_held_at'),
+    mossHeldBy: integer('moss_held_by').references(() => player.id),
+    mossHoldReason: text('moss_hold_reason'),
   },
   (t) => [
     index('match_stage_week_idx').on(t.stageId, t.week),
@@ -145,16 +151,19 @@ export const game = sqliteTable(
     scoreB: integer('score_b').notNull().default(0),
     overtime: integer('overtime', { mode: 'boolean' }).notNull().default(false),
     forfeitSide: text('forfeit_side', { enum: FORFEIT_SIDES }),
-    rehostsA: integer('rehosts_a').notNull().default(0),
-    rehostsB: integer('rehosts_b').notNull().default(0),
     status: text('status', { enum: GAME_STATUSES }).notNull().default('pending'),
     statsSource: text('stats_source', { enum: STATS_SOURCES }).notNull().default('none'),
+    // Replays (phase 5): how the lobbies were stitched, and the plan's checks for staff. Which
+    // team called each re-host is on its lobby (`replay_segment.rehost_called_by`, O-14).
+    stitchStatus: text('stitch_status', { enum: STITCH_STATUSES }).notNull().default('none'),
+    stitchChecksJson: jsonText(stitchChecksSchema)('stitch_checks_json'),
   },
   (t) => [
     unique('game_match_n_unique').on(t.matchId, t.n),
     check('game_forfeit_side_check', oneOf(t.forfeitSide, FORFEIT_SIDES)),
     check('game_status_check', oneOf(t.status, GAME_STATUSES)),
     check('game_stats_source_check', oneOf(t.statsSource, STATS_SOURCES)),
+    check('game_stitch_status_check', oneOf(t.stitchStatus, STITCH_STATUSES)),
   ],
 );
 
@@ -232,6 +241,10 @@ export const evidence = sqliteTable(
     uploadedBy: integer('uploaded_by')
       .notNull()
       .references(() => player.id),
+    // A MOSS file's player: one per player who played (M-47), uploaded by them or an official.
+    playerId: integer('player_id').references(() => player.id),
+    // When the stored file was deleted (MOSS at season close or after retention); the row stays.
+    deletedAt: integer('deleted_at'),
     // Defaults to the most private level: MOSS files and staff evidence are never public.
     visibility: text('visibility', { enum: EVIDENCE_VISIBILITIES }).notNull().default('staff'),
     at: integer('at').notNull(),
@@ -241,6 +254,7 @@ export const evidence = sqliteTable(
     check('evidence_kind_check', oneOf(t.kind, EVIDENCE_KINDS)),
     check('evidence_visibility_check', oneOf(t.visibility, EVIDENCE_VISIBILITIES)),
     check('evidence_location_check', sql`${t.objectKey} is not null or ${t.url} is not null`),
+    check('evidence_moss_player_check', sql`${t.kind} <> 'moss' or ${t.playerId} is not null`),
   ],
 );
 

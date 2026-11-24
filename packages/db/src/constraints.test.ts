@@ -284,3 +284,68 @@ describe('database constraints', () => {
     expect(() => db.$client.exec(statement)).toThrow(/CHECK/);
   });
 });
+
+describe('replay constraints (phase 5)', () => {
+  // Only the CHECK constraints are under test: parents are left out on purpose.
+  function run(sql: string) {
+    const { db } = seededDatabase();
+    db.$client.pragma('foreign_keys = OFF');
+    return () => db.$client.prepare(sql).run();
+  }
+
+  it.each([
+    ['a counted round from a replay', `'replay', 1, 1, 3, 'a'`, true],
+    ['a round awarded by staff', `'awarded', null, null, 4, 'b'`, true],
+    ['a void round', `'void', 1, 2, null, null`, true],
+    ['a replay round without its lobby', `'replay', null, null, 3, 'a'`, false],
+    ['an awarded round without a winner', `'awarded', null, null, 4, null`, false],
+    ['a void round with a number', `'void', 1, 2, 5, null`, false],
+  ])('game_round: %s', (_label, values, ok) => {
+    const insert = run(
+      `insert into game_round (game_id, kind, segment_id, local_n, n, winner_side)
+       values (1, ${values})`,
+    );
+    if (ok) expect(insert).not.toThrow();
+    else expect(insert).toThrow(/CHECK/);
+  });
+
+  it.each([
+    ['a lobby in a game', `1, '["a","b"]', 'ok', null`, true],
+    ['a lobby left to staff', `null, null, 'unassigned', 'unknown_map'`, true],
+    ['a lobby said to be in a game without one', `null, null, 'ok', null`, false],
+    ['a lobby in a game without its teams', `1, null, 'ok', null`, false],
+  ])('replay_segment: %s', (_label, values, ok) => {
+    const insert = run(
+      `insert into replay_segment (match_id, lobby_id, started_at, game_id, team_map_json, status, issue)
+       values (1, 'L1', 1, ${values})`,
+    );
+    if (ok) expect(insert).not.toThrow();
+    else expect(insert).toThrow(/CHECK/);
+  });
+
+  it('evidence: a MOSS file names its player', () => {
+    const insert = (player: string) =>
+      run(
+        `insert into evidence (match_id, kind, object_key, uploaded_by, player_id, at)
+         values (1, 'moss', 'evidence/1.moss', 1, ${player}, 1)`,
+      );
+    expect(insert('null')).toThrow(/CHECK/);
+    expect(insert('2')).not.toThrow();
+  });
+
+  it('replay_file: a stored raw file has its key, and a file is stored once', () => {
+    const { db } = seededDatabase();
+    db.$client.pragma('foreign_keys = OFF');
+    const insert = (sha: string, status: string, key: string) =>
+      db.$client
+        .prepare(
+          `insert into replay_file (match_id, uploader_player_id, title, file_name, size, sha256,
+             lobby_id, unit_number, parser_version, parsed_json, raw_status, raw_key, created_at)
+           values (1, 1, 'r6', 'R01.rec', 10, ?, 'L1', 0, 'r6-x', '{}', ?, ${key}, 1)`,
+        )
+        .run(sha, status);
+    expect(() => insert('aa', 'stored', 'null')).toThrow(/CHECK/);
+    insert('aa', 'stored', `'replays/1/aa'`);
+    expect(() => insert('aa', 'none', 'null')).toThrow(/UNIQUE/);
+  });
+});

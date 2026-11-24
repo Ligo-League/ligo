@@ -152,7 +152,7 @@ describe('latestScoreEvidence', () => {
       .values([
         { ...base, kind: 'score_screenshot', url: 'https://example.invalid/first' },
         { ...base, kind: 'score_screenshot', url: 'https://example.invalid/second' },
-        { ...base, kind: 'moss', url: 'https://example.invalid/moss' },
+        { ...base, kind: 'moss', playerId: uploader.id, url: 'https://example.invalid/moss' },
         { ...base, matchId: 3, kind: 'score_screenshot', url: 'https://example.invalid/other' },
       ])
       .run();

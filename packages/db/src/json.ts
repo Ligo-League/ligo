@@ -147,6 +147,23 @@ export type RosterMovePayload = z.infer<typeof rosterMovePayloadSchema>;
 
 /** `audit_log.before_json` / `after_json`: a snapshot of the changed entity. */
 export const auditSnapshotSchema = z.record(z.string(), z.unknown());
+
+/** `replay_file.parsed_json`: the title's ParsedUnit, checked by its normaliser before storing. */
+export const parsedUnitJsonSchema = z.record(z.string(), z.unknown());
+
+/** `replay_segment.team_map_json`: the match side of each file side of the lobby. */
+export const teamMapSchema = z.tuple([z.enum(['a', 'b']), z.enum(['a', 'b'])]);
+
+/** `game.stitch_checks_json`: the last stitch plan's checks, for the staff review page. */
+export const stitchChecksSchema = z.array(
+  z.strictObject({ code: z.string(), ok: z.boolean().nullable() }),
+);
+
+/** `round_player.operator_swaps_json`: operators in swap order, during preparation. */
+export const operatorSwapsSchema = z.array(z.string());
+
+/** `job.payload_json`: each kind's payload is checked by its handler. */
+export const jobPayloadSchema = z.record(z.string(), z.unknown());
 export type AuditSnapshot = z.infer<typeof auditSnapshotSchema>;
 
 /**
