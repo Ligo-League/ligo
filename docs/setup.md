@@ -1366,6 +1366,22 @@ In production, the browser sends the raw files straight to R2: the CORS rule of 
 on the bucket. If uploads stop at 0 %, open the browser's console: a CORS error means that rule is
 missing or names another address than `https://ligoleague.eu`.
 
+## 71. Phase 5-10: MOSS files
+
+Where the league asks for MOSS files (**Replays et MOSS** on the rules page, on for LFR), the replay
+page has a **Fichiers MOSS** section once Ligo has read the match's replays (reload it a minute
+after sending them). Each player who played sends their file, or an official of their team for
+them; nobody else can.
+
+- A result whose files are missing does not count. When the other team confirms it, the match stays
+  "confirmed", and Ligo validates it by itself, within a minute, once the last file arrives.
+- On the match page, staff see who owes a file and download each one. To validate anyway (a file
+  lost in a crash), write the reason in the validate form; it is kept in the log. The Discord
+  **Valider** button sends staff to the match page while files are missing.
+- **Conserver les fichiers MOSS** keeps a match's files during an investigation, with a reason.
+  Otherwise Ligo deletes every file of a season once staff close it, or earlier when the league
+  sets a number of days.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |
