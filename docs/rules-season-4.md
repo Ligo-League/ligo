@@ -550,6 +550,11 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
   fichier à leur place. Tant que les replays d'une équipe ne montrent pas ses joueurs, ses MOSS
   ne peuvent pas être vérifiés et le résultat attend. Un joueur que les replays montrent mais
   que Ligo ne connaît pas (pas de compte) ne peut pas en envoyer : le staff décide.
+- Le fichier MOSS est le fichier **.zip** que MOSS crée ; Ligo refuse tout autre fichier.
+- Ligo (pour une ligue qui n'impose pas les replays, et par défaut) : les joueurs annoncés pour
+  le match envoient leur MOSS, c'est-à-dire les titulaires de l'équipe, sauf si ses
+  responsables ou son capitaine en désignent d'autres de l'effectif sur la page du match (un
+  remplaçant qui joue ce match), jusqu'au signalement du résultat.
 - Si l'adversaire confirme le score alors qu'il manque des MOSS, le match reste confirmé et Ligo
   le valide tout seul à l'arrivée du dernier fichier.
 - **Un match ne peut pas être validé tant qu'il manque un fichier MOSS.** Les équipes ne peuvent

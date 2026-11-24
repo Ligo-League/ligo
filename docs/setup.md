@@ -1369,9 +1369,17 @@ missing or names another address than `https://ligoleague.eu`.
 ## 71. Phase 5-10: MOSS files
 
 Where the league asks for MOSS files (**Replays et MOSS** on the rules page, on for LFR), the replay
-page has a **Fichiers MOSS** section once Ligo has read the match's replays (reload it a minute
-after sending them). Each player who played sends their file, or an official of their team for
-them; nobody else can.
+page has a **Fichiers MOSS** section. **Qui envoie un MOSS** says who owes one:
+
+- the players announced for the match (the default): each team's starters, unless its
+  officials or captain tick others under **Joueurs de ce match** on the match page, until the
+  result is reported;
+- the players the replays show, only where replays are required (LFR's choice): the section
+  fills once Ligo has read the replays (reload the page a minute after sending them).
+
+Each of them sends their file, the `.zip` MOSS made, or an official of their team for them;
+nobody else can. LFR's existing settings take the default until staff pick "replays" on the
+rules page.
 
 - A result whose files are missing does not count. When the other team confirms it, the match stays
   "confirmed", and Ligo validates it by itself, within a minute, once the last file arrives.

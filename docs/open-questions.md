@@ -635,11 +635,20 @@ section 16.
     sets one (off by default).
   - Staff may hold a match's MOSS files during an investigation (with a reason, audited): held
     files are not deleted until staff release them.
-- **Who sends one (maintainer, 24 November 2026):** the players the match's replays show on each
-  side, by their Ubisoft profile ID: normally 5 per team, plus a substitute who came in. Only
-  they have a MOSS file to send, so nobody else of the team can upload a stand-in file. Until a
-  side's replays show its players, its MOSS files cannot be checked, and the result waits. A
-  player the replays show but Ligo does not know (no account) cannot send one: staff decide.
+- **Who sends one (maintainer, 24 November 2026):** a league setting, `moss.players_from`.
+  - `lineup`, the default: the players each team announced for the match. Until it announces
+    any, its season roster's starters; before playing, its officials or captain may name others
+    of the roster on the match page (a substitute in a starter's place), until the result is
+    reported; staff at any time. Every one of them has a Ligo account.
+  - `replays`, only where replays are required (LFR): the players the match's replays show on
+    each side, by their Ubisoft profile ID, normally 5 per team plus a substitute who came in.
+    Until a side's replays show its players, its MOSS files cannot be checked, and the result
+    waits. A player the replays show but Ligo does not know (no account) cannot send one: staff
+    decide.
+  - Either way only those players have a file to send, so nobody else of the team can upload a
+    stand-in.
+- **The file (maintainer, 24 November 2026):** MOSS keeps everything in one zip file; Ligo takes
+  a `.zip` only, and checks its first bytes once stored.
 - **Confirmation (maintainer, 24 November 2026):** where the opponent's confirmation validates,
   a confirmation made while files are missing leaves the match `confirmed`; Ligo validates it by
   itself when the last file arrives. Staff may validate earlier with a written reason.
