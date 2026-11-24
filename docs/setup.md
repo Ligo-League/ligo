@@ -1277,6 +1277,52 @@ a minute more.
 A change to the fork is committed and pushed in the fork first (`cd parsers/r6`, then `git
 commit` and `git push` to your fork), then the new submodule commit is committed in Ligo.
 
+## 67. Phase 5-6: files in R2
+
+From this step the server keeps score screenshots, uploaded logos, channel transcripts and, later,
+replays in R2, in the same bucket and with the same token as Litestream (`deploy/.env` already has
+them). Locally nothing changes: without the four `R2_*` variables, every file stays in
+`data/storage`, and replay uploads go to the server's own route instead of R2.
+
+1. **Let browsers upload to the bucket.** Cloudflare dashboard → R2 → your bucket → Settings →
+   CORS policy → Add, and paste:
+
+   ```json
+   [
+     {
+       "AllowedOrigins": ["https://ligoleague.eu"],
+       "AllowedMethods": ["PUT"],
+       "AllowedHeaders": ["content-type"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+   ```
+
+   Only `PUT` from the website: nothing can be read from the bucket by a browser.
+
+2. **Deploy:** `deploy/update.sh`. The server's log then says `Storage ready` with `storage: r2`.
+   Screenshots stored before still open: the server reads from `/data/storage` what R2 does not
+   have yet.
+3. **Copy what was kept on disk**, first as a dry run, from `/srv/ligo/deploy` (or wherever the
+   repository is):
+
+   ```bash
+   docker compose exec server node apps/server/src/assets/copy-to-r2.ts --dry-run
+   docker compose exec server node apps/server/src/assets/copy-to-r2.ts
+   ```
+
+   It prints each key it copies and the counts, never a secret. It deletes nothing, skips files R2
+   already has, and can run again. `data/storage` stays as it is; the nightly copy goes on saving
+   it under `backups/files/`.
+
+4. **Check:** open a match with a score screenshot as staff; it still shows.
+
+The server can now read and delete anything in the bucket, the database backups under
+`backups/` included: R2 tokens cover a whole bucket, not a folder. If you would rather keep the
+backups out of the server's reach, create a second bucket for them and a token for each bucket
+(Litestream and the nightly copy get the backup one), and tell me: only `deploy/compose.yml`
+changes.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |
