@@ -40,6 +40,11 @@ export interface ObjectStore {
   delete(key: string): Promise<void>;
   /** A short-lived upload of exactly one file to `key`. */
   signPut(key: string, options: SignOptions): Promise<SignedPut>;
+  /**
+   * A short-lived download of `key`, saved under `fileName`; null when this store has no such
+   * links (the disk), and the server sends the file itself.
+   */
+  signGet(key: string, options: { expiresInS: number; fileName: string }): Promise<string | null>;
 }
 
 export interface DiskOptions {
@@ -94,6 +99,7 @@ export function createDiskObjectStore(root: string, options: DiskOptions): Objec
         expiresAt,
       });
     },
+    signGet: () => Promise.resolve(null),
   };
 }
 
@@ -115,6 +121,12 @@ export function withReadFallback(primary: ObjectStore, fallback: ObjectStore): O
       await fallback.delete(key);
     },
     signPut: (key, options) => primary.signPut(key, options),
+    // A file not copied yet is only where it was.
+    async signGet(key, options) {
+      return (await primary.size(key)) === null && (await fallback.size(key)) !== null
+        ? fallback.signGet(key, options)
+        : primary.signGet(key, options);
+    },
   };
 }
 
@@ -152,6 +164,9 @@ export function fakeObjectStore(): ObjectStore & {
       store.objects.delete(key);
       store.types.delete(key);
       return Promise.resolve();
+    },
+    signGet(key: string) {
+      return Promise.resolve(store.objects.has(key) ? `https://storage.invalid/get/${key}` : null);
     },
     signPut(key: string, options: SignOptions): Promise<SignedPut> {
       if (!isStorageKey(key)) return refuse();

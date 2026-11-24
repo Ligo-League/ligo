@@ -99,6 +99,20 @@ export function createR2ObjectStore(
       if (!isStorageKey(key)) return refuse();
       await client.send(new DeleteObjectCommand({ Bucket, Key: key }));
     },
+    async signGet(key, { expiresInS, fileName }) {
+      if (!isStorageKey(key)) return refuse();
+      // Saved under a plain name: the key's own characters only, quoted.
+      const safe = fileName.replace(/[^A-Za-z0-9._-]/g, '_');
+      return getSignedUrl(
+        real,
+        new GetObjectCommand({
+          Bucket,
+          Key: key,
+          ResponseContentDisposition: `attachment; filename="${safe}"`,
+        }),
+        { expiresIn: expiresInS, signingDate: new Date(options.now()) },
+      );
+    },
     async signPut(key, { size, contentType, expiresInS }) {
       if (!isStorageKey(key)) return refuse();
       const expiresAt = options.now() + expiresInS * 1000;

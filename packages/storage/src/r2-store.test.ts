@@ -125,4 +125,21 @@ describe('createR2ObjectStore', () => {
       headers: { 'content-type': 'application/octet-stream' },
     });
   });
+
+  it('signs a short download saved under a plain name; the secret never appears', async () => {
+    const store = createR2ObjectStore(SETTINGS, { now: () => 1_000 });
+    const signed = await store.signGet('evidence/4/moss/7-abc.zip', {
+      expiresInS: 120,
+      fileName: 'moss "b1".zip',
+    });
+    if (signed === null) throw new Error('R2 always signs');
+    const url = new URL(signed);
+    expect(url.pathname).toBe('/ligo/evidence/4/moss/7-abc.zip');
+    expect(url.searchParams.get('X-Amz-Expires')).toBe('120');
+    expect(url.searchParams.get('response-content-disposition')).toBe(
+      'attachment; filename="moss__b1_.zip"',
+    );
+    expect(signed).not.toContain(SETTINGS.secretAccessKey);
+    await expect(store.signGet('../x', { expiresInS: 1, fileName: 'x' })).rejects.toThrow();
+  });
 });
