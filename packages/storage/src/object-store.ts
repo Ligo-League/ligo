@@ -118,16 +118,21 @@ export function withReadFallback(primary: ObjectStore, fallback: ObjectStore): O
   };
 }
 
-/** An in-memory store for tests; `failing` makes the next writes fail. */
+/**
+ * An in-memory store for tests; `failing` makes the next writes and signatures fail, `signed`
+ * lists the uploads signed.
+ */
 export function fakeObjectStore(): ObjectStore & {
   objects: Map<string, Uint8Array>;
   types: Map<string, string>;
   failing: boolean;
+  signed: ({ key: string } & SignOptions)[];
 } {
   const store = {
     objects: new Map<string, Uint8Array>(),
     types: new Map<string, string>(),
     failing: false,
+    signed: [] as ({ key: string } & SignOptions)[],
     put(key: string, data: Uint8Array, contentType: string) {
       if (!isStorageKey(key)) return refuse();
       if (store.failing) return Promise.reject(new Error('Not stored'));
@@ -148,8 +153,11 @@ export function fakeObjectStore(): ObjectStore & {
       store.types.delete(key);
       return Promise.resolve();
     },
-    signPut(key: string, { contentType, expiresInS }: SignOptions): Promise<SignedPut> {
+    signPut(key: string, options: SignOptions): Promise<SignedPut> {
       if (!isStorageKey(key)) return refuse();
+      if (store.failing) return Promise.reject(new Error('Not signed'));
+      store.signed.push({ key, ...options });
+      const { contentType, expiresInS } = options;
       return Promise.resolve({
         url: `https://storage.invalid/${key}`,
         method: 'PUT',

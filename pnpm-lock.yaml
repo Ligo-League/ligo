@@ -208,6 +208,9 @@ importers:
       '@ligo/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@ligo/parsers':
+        specifier: workspace:*
+        version: link:../../packages/parsers
       '@ligo/render':
         specifier: workspace:*
         version: link:../../packages/render
