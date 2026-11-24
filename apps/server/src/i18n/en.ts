@@ -1696,7 +1696,7 @@ export const en: Record<MessageKey, string> = {
   'web.admin.rules.reasonKey': 'Key',
   'web.admin.rules.reasonFr': 'Label (French)',
   'web.admin.rules.reasonEn': 'Label (English, optional)',
-  'web.replays.link': 'Upload replays',
+  'web.replays.link': 'Upload replays and MOSS files',
   'web.replays.title': 'Replays · {a} – {b}',
   'web.replays.intro':
     "Pick your MatchReplay folder (in Documents\\My Games\\Rainbow Six - Siege\\<your ID>\\). Files are read in your browser; only this match's rounds are sent. Each team uploads its own recording of every map.",
@@ -1777,4 +1777,24 @@ export const en: Record<MessageKey, string> = {
   'web.staffMatch.moss.holdHint':
     "Held files are deleted neither at the season's close nor after the retention period, until released.",
   'web.staffMatch.moss.hold': 'Hold the MOSS files',
+  'web.admin.rules.mossPlayersFrom': 'Who sends a MOSS file',
+  'web.admin.rules.mossPlayersFromHelp': '"Replays" only when replays are required.',
+  'web.admin.rules.mossFrom.lineup':
+    "The players announced for the match (by default, the team's starters)",
+  'web.admin.rules.mossFrom.replays': "The players the match's replays show",
+  'web.replays.ui.moss.notZip': 'not a MOSS file: send the .zip file MOSS made',
+  'web.replays.ui.moss.noPlayers':
+    'No player is announced for this match: the team picks its players on the match page.',
+  'web.lineup.title': 'Players of this match',
+  'web.lineup.help':
+    "By default, the team's starters. Change them before playing if a substitute plays this match: each player ticked sends their MOSS file. Can be changed until the result is reported.",
+  'web.lineup.team': '{team}',
+  'web.lineup.role.player': 'starter',
+  'web.lineup.role.sub': 'substitute',
+  'web.lineup.save': 'Save the players',
+  'web.lineup.done': "The match's players are saved.",
+  'web.lineup.error.not_allowed': "Only the team's officials and captain pick its players.",
+  'web.lineup.error.locked': 'The result is reported: only staff can still change the players.',
+  'web.lineup.error.too_few': 'Tick at least 5 players.',
+  'web.lineup.error.not_on_roster': "One of the players is not on the team's roster.",
 };

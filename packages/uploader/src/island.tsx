@@ -396,7 +396,18 @@ function Uploader({ config }: { config: UploaderConfig }) {
   );
 }
 
-type MossState = 'sent' | 'missing' | 'sending' | 'failed' | 'tooLarge';
+type MossState = 'sent' | 'missing' | 'sending' | 'failed' | 'tooLarge' | 'notZip';
+
+/** MOSS keeps everything in one zip: its first bytes say so. */
+async function isZip(file: File): Promise<boolean> {
+  const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  return (
+    /\.zip$/i.test(file.name) &&
+    head[0] === 0x50 &&
+    head[1] === 0x4b &&
+    ((head[2] === 3 && head[3] === 4) || (head[2] === 5 && head[3] === 6))
+  );
+}
 
 /** MOSS files (M-47): one per player the replays show, each sent on its own, staff-only. */
 function MossPanel({ config }: { config: UploaderConfig }) {
@@ -419,6 +430,10 @@ function MossPanel({ config }: { config: UploaderConfig }) {
       set(playerId, 'tooLarge');
       return;
     }
+    if (!(await isZip(file))) {
+      set(playerId, 'notZip');
+      return;
+    }
     set(playerId, 'sending');
     try {
       const link = await api.mossSign(playerId, file.name, file.size);
@@ -438,7 +453,7 @@ function MossPanel({ config }: { config: UploaderConfig }) {
       <h2>{m('moss.title')}</h2>
       <p class="muted">{m('moss.help')}</p>
       {moss.players.length === 0 ? (
-        <p>{m('moss.none')}</p>
+        <p>{m(moss.from === 'replays' ? 'moss.none' : 'moss.noPlayers')}</p>
       ) : (
         <ul class="moss-players">
           {moss.players.map((player) => {
@@ -452,6 +467,7 @@ function MossPanel({ config }: { config: UploaderConfig }) {
                 ) : (
                   <input
                     type="file"
+                    accept=".zip,application/zip"
                     onChange={(event) => {
                       const file = event.currentTarget.files?.[0];
                       if (file) void send(player.playerId, file);

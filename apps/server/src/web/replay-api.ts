@@ -225,8 +225,9 @@ export function replayApiRoutes(app: Hono<Env>, kit: RouteKit): void {
     too_large: 413,
     empty: 400,
     bad_key: 400,
+    not_zip: 400,
     missing: 409,
-  } as const;
+  } as const satisfies Record<MossUploadError | 'missing', number>;
 
   app.post('/api/moss/sign', limit(IDS_MAX_BYTES), async (c) => {
     const opened = await open(c, mossSignSchema);

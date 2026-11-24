@@ -294,12 +294,21 @@ export const replaysSettingsSchema = z.strictObject({
 export type ReplaysSettings = z.infer<typeof replaysSettingsSchema>;
 
 /**
- * MOSS files on the website (M-47; phase 5): one per player who played, before validation when
- * `required`. They are deleted when the season closes, or `retention_days` after their upload
- * when set; files staff hold during an investigation stay.
+ * Who owes a MOSS file (M-47, maintainer 24 November 2026): `lineup`, the players each team
+ * announced for the match, its roster's starters until it announces any (the default); `replays`,
+ * the players the match's replays show, for a league that requires replays.
+ */
+export const MOSS_PLAYERS_FROM = ['lineup', 'replays'] as const;
+export type MossPlayersFrom = (typeof MOSS_PLAYERS_FROM)[number];
+
+/**
+ * MOSS files on the website (M-47; phase 5): one zip per player who played, before validation
+ * when `required`. They are deleted when the season closes, or `retention_days` after their
+ * upload when set; files staff hold during an investigation stay.
  */
 export const mossSettingsSchema = z.strictObject({
   required: z.boolean().default(false),
+  players_from: z.enum(MOSS_PLAYERS_FROM).default('lineup'),
   retention_days: z.int().min(1).max(3650).nullable().default(null),
 });
 export type MossSettings = z.infer<typeof mossSettingsSchema>;

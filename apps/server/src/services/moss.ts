@@ -1,5 +1,13 @@
 import { randomBytes } from 'node:crypto';
-import { actsForSide, mossGaps, mossSideOf, type MossGap, type MossSides } from '@ligo/core';
+import {
+  actsForSide,
+  mossGaps,
+  mossSideOf,
+  type MossGap,
+  type MossPlayersFrom,
+  type MossSides,
+} from '@ligo/core';
+import { announcedPlayers } from './match-lineup.ts';
 import { listLeagueMatches, schema, teamMapSchema, type Db, type LeagueMatch } from '@ligo/db';
 import type { ObjectStore, SignedPut } from '@ligo/storage';
 import { R6_PLAYERS_PER_SIDE } from '@ligo/titles';
@@ -37,9 +45,17 @@ type Side = 'a' | 'b';
 /** A MOSS capture is a few screens an hour: a long series stays far below this. */
 export const MOSS_MAX_BYTES = 500 * 1024 * 1024;
 export const MOSS_UPLOAD_EXPIRY_S = 1800;
-const MOSS_TYPE = 'application/octet-stream';
-/** `evidence/<match>/moss/<player>-<random>.<extension>`: one key per upload, never guessed. */
-const MOSS_KEY = /^evidence\/([1-9]\d{0,9})\/moss\/([1-9]\d{0,9})-[0-9a-f]{32}\.[a-z0-9]{1,8}$/;
+/** MOSS keeps everything in one zip file (maintainer, 24 November 2026). */
+const MOSS_TYPE = 'application/zip';
+/** `evidence/<match>/moss/<player>-<random>.zip`: one key per upload, never guessed. */
+const MOSS_KEY = /^evidence\/([1-9]\d{0,9})\/moss\/([1-9]\d{0,9})-[0-9a-f]{32}\.zip$/;
+/** A zip starts with a local file header, or with its end record when empty. */
+const isZip = (head: Uint8Array | null) =>
+  head !== null &&
+  head.length >= 4 &&
+  head[0] === 0x50 &&
+  head[1] === 0x4b &&
+  ((head[2] === 3 && head[3] === 4) || (head[2] === 5 && head[3] === 6));
 
 const unitPlayers = z.object({
   players: z.array(
@@ -51,11 +67,50 @@ const unitPlayers = z.object({
   ),
 });
 
+/** The league's MOSS settings, for the match's competition. */
+function mossSettings(db: Pick<Db, 'select'>, found: LeagueMatch) {
+  return db
+    .select({ ruleset: competition.rulesetJson })
+    .from(season)
+    .innerJoin(competition, eq(season.competitionId, competition.id))
+    .where(eq(season.id, found.seasonId))
+    .get()?.ruleset.moss;
+}
+
+/**
+ * Who owes a MOSS file on each side, as the league says (`moss.players_from`, M-47): the
+ * players each team announced for the match (its roster's starters until it announces any), or
+ * the players the match's replays show.
+ */
+export function mossSides(db: Pick<Db, 'select'>, found: LeagueMatch): MossSides {
+  return mossSettings(db, found)?.players_from === 'replays'
+    ? replayPlayers(db, found)
+    : lineupPlayers(db, found);
+}
+
+/**
+ * Each side's players for the match: the lineup its team announced (or stats later recorded),
+ * else its season roster's starters when the match was played.
+ */
+function lineupPlayers(db: Pick<Db, 'select'>, found: LeagueMatch): MossSides {
+  const withFile = new Set(mossFiles(db, found.id).map((row) => row.playerId));
+  const sideOf = (side: Side) =>
+    announcedPlayers(db, found, side)
+      .map((p) => ({
+        account: null,
+        name: p.name,
+        playerId: p.playerId,
+        hasFile: withFile.has(p.playerId),
+      }))
+      .sort((x, y) => x.name.localeCompare(y.name));
+  return { a: sideOf('a'), b: sideOf('b') };
+}
+
 /**
  * The players each side's replays show: the lobbies stitching placed in a game with their teams
  * (an ignored or unplaced lobby says nothing), every recording of them.
  */
-export function mossSides(db: Pick<Db, 'select'>, found: LeagueMatch): MossSides {
+function replayPlayers(db: Pick<Db, 'select'>, found: LeagueMatch): MossSides {
   const segments = db
     .select({ lobbyId: replaySegment.lobbyId, teamMap: replaySegment.teamMapJson })
     .from(replaySegment)
@@ -137,20 +192,18 @@ export function mossFiles(db: Pick<Db, 'select'>, matchId: number) {
 export interface MossCheck {
   /** `moss.required`: off, the files are welcome but block nothing. */
   required: boolean;
+  /** Where the players owing a file come from (`moss.players_from`). */
+  from: MossPlayersFrom;
   sides: MossSides;
   gaps: MossGap[];
 }
 
 export function mossCheck(db: Pick<Db, 'select'>, found: LeagueMatch): MossCheck {
-  const rules = db
-    .select({ ruleset: competition.rulesetJson })
-    .from(season)
-    .innerJoin(competition, eq(season.competitionId, competition.id))
-    .where(eq(season.id, found.seasonId))
-    .get();
+  const settings = mossSettings(db, found);
   const sides = mossSides(db, found);
   return {
-    required: rules?.ruleset.moss.required ?? false,
+    required: settings?.required ?? false,
+    from: settings?.players_from ?? 'lineup',
     sides,
     gaps: mossGaps({ sides, teamSize: R6_PLAYERS_PER_SIDE }),
   };
@@ -177,12 +230,8 @@ export function mossTargets(
   );
 }
 
-export type MossUploadError = 'not_played' | 'not_allowed' | 'too_large' | 'empty' | 'bad_key';
-
-const extensionOf = (name: string) => {
-  const found = /\.([A-Za-z0-9]{1,8})$/.exec(name)?.[1]?.toLowerCase();
-  return found ?? 'bin';
-};
+export type MossUploadError =
+  'not_played' | 'not_allowed' | 'too_large' | 'empty' | 'bad_key' | 'not_zip';
 
 /** Who may send this player's file, and the side the replays show them on. */
 function checkTarget(
@@ -207,10 +256,11 @@ export async function signMossUpload(
   input: { uploaderId: number; staff: boolean; playerId: number; name: string; size: number },
 ): Promise<({ ok: true; key: string } & SignedPut) | { ok: false; error: MossUploadError }> {
   if (input.size <= 0) return { ok: false, error: 'empty' };
+  if (!/\.zip$/i.test(input.name)) return { ok: false, error: 'not_zip' };
   if (input.size > MOSS_MAX_BYTES) return { ok: false, error: 'too_large' };
   const target = checkTarget(db, found, input);
   if (!target.ok) return target;
-  const key = `evidence/${String(found.id)}/moss/${String(input.playerId)}-${randomBytes(16).toString('hex')}.${extensionOf(input.name)}`;
+  const key = `evidence/${String(found.id)}/moss/${String(input.playerId)}-${randomBytes(16).toString('hex')}.zip`;
   const signed = await objects.signPut(key, {
     size: input.size,
     contentType: MOSS_TYPE,
@@ -238,6 +288,11 @@ export async function storeMoss(
   if (!target.ok) return target;
   const size = await objects.size(input.key);
   if (size === null || size === 0 || size > MOSS_MAX_BYTES) return { ok: false, error: 'missing' };
+  // Read the first bytes only: anything but a zip is no MOSS file, and is not kept.
+  if (!isZip(await objects.head(input.key, 4))) {
+    await objects.delete(input.key).catch(() => undefined);
+    return { ok: false, error: 'not_zip' };
+  }
   const held = isHeld(db, found.id);
   const replaced = mossFiles(db, found.id).filter((row) => row.playerId === input.playerId);
   const evidenceId = db.transaction((tx) => {

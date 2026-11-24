@@ -1756,7 +1756,7 @@ export const fr = {
   'web.admin.rules.reasonKey': 'Clé',
   'web.admin.rules.reasonFr': 'Libellé (français)',
   'web.admin.rules.reasonEn': 'Libellé (anglais, facultatif)',
-  'web.replays.link': 'Envoyer les replays',
+  'web.replays.link': 'Envoyer les replays et les MOSS',
   'web.replays.title': 'Replays · {a} – {b}',
   'web.replays.intro':
     'Choisis ton dossier MatchReplay (dans Documents\\My Games\\Rainbow Six - Siege\\<ton ID>\\). Les fichiers sont lus dans ton navigateur ; seules les manches de ce match sont envoyées. Chaque équipe envoie son propre enregistrement de chaque carte.',
@@ -1841,6 +1841,28 @@ export const fr = {
   'web.staffMatch.moss.holdHint':
     "Les fichiers conservés ne sont supprimés ni à la clôture de la saison ni après le délai de conservation, jusqu'à la levée.",
   'web.staffMatch.moss.hold': 'Conserver les fichiers MOSS',
+  'web.admin.rules.mossPlayersFrom': 'Qui envoie un MOSS',
+  'web.admin.rules.mossPlayersFromHelp': '« Replays » seulement si les replays sont obligatoires.',
+  'web.admin.rules.mossFrom.lineup':
+    "Les joueurs annoncés pour le match (par défaut, les titulaires de l'équipe)",
+  'web.admin.rules.mossFrom.replays': 'Les joueurs que montrent les replays du match',
+  'web.replays.ui.moss.notZip': 'pas un fichier MOSS : envoie le fichier .zip que MOSS a créé',
+  'web.replays.ui.moss.noPlayers':
+    "Aucun joueur n'est annoncé pour ce match : l'équipe choisit ses joueurs sur la page du match.",
+  'web.lineup.title': 'Joueurs de ce match',
+  'web.lineup.help':
+    "Par défaut, les titulaires de l'équipe. Change-les avant de jouer si un remplaçant joue ce match : chacun des joueurs cochés envoie son fichier MOSS. Modifiable jusqu'au signalement du résultat.",
+  'web.lineup.team': '{team}',
+  'web.lineup.role.player': 'titulaire',
+  'web.lineup.role.sub': 'remplaçant',
+  'web.lineup.save': 'Enregistrer les joueurs',
+  'web.lineup.done': 'Joueurs du match enregistrés.',
+  'web.lineup.error.not_allowed':
+    "Seuls les responsables et le capitaine de l'équipe choisissent ses joueurs.",
+  'web.lineup.error.locked':
+    'Le résultat est signalé : seul le staff peut encore changer les joueurs.',
+  'web.lineup.error.too_few': 'Coche au moins 5 joueurs.',
+  'web.lineup.error.not_on_roster': "Un des joueurs n'est pas dans l'effectif de l'équipe.",
 } as const;
 
 export type MessageKey = keyof typeof fr;

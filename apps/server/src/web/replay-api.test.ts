@@ -11,6 +11,12 @@ import { ANA, TEST_ORIGIN, testSite } from './testing.ts';
 // pages, with the session's token, by a side's players or league staff.
 
 const PARSER = 'r6-0123456789abcdef';
+/** A zip file's first bytes, then zeros: what MOSS sends (M-47). */
+const zip = (size: number) => {
+  const bytes = new Uint8Array(size);
+  bytes.set([0x50, 0x4b, 3, 4]);
+  return bytes;
+};
 let hash = 0;
 
 function scheduledMatch(db: Db): LeagueMatch {
@@ -230,7 +236,7 @@ describe('POST /api/moss/sign and /stored', () => {
     });
     expect(signed.status).toBe(200);
     const { key } = (await signed.json()) as { key: string };
-    await objects.put(key, new Uint8Array(40), 'application/octet-stream');
+    await objects.put(key, zip(40), 'application/zip');
     const stored = await postJson('/api/moss/stored', { matchId: found.id, playerId: ana.id, key });
     expect(stored.status).toBe(200);
     expect(

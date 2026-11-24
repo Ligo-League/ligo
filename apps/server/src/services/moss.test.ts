@@ -22,11 +22,18 @@ import {
   storeMoss,
 } from './moss.ts';
 import { submitReplays } from './replay-uploads.ts';
+import { announceLineup, lineupChoices } from './match-lineup.ts';
 
 // MOSS files (M-47, maintainer 20 and 24 November 2026): the players the replays show on each
 // side send one each, themselves or through an official of their team; nobody else may.
 
 const PARSER = 'r6-0123456789abcdef';
+/** A zip file's first bytes, then zeros: what MOSS sends (M-47). */
+const zip = (size: number) => {
+  const bytes = new Uint8Array(size);
+  bytes.set([0x50, 0x4b, 3, 4]);
+  return bytes;
+};
 let hash = 0;
 
 function matchWith(db: Db, status: 'scheduled'): LeagueMatch {
@@ -153,7 +160,7 @@ describe('signMossUpload and storeMoss', () => {
     expect(signed.key).toMatch(
       new RegExp(`^evidence/${String(found.id)}/moss/${String(me)}-[0-9a-f]{32}\\.zip$`),
     );
-    await objects.put(signed.key, new Uint8Array(3000), 'application/octet-stream');
+    await objects.put(signed.key, zip(3000), 'application/zip');
     const stored = await storeMoss(
       db,
       objects,
@@ -210,7 +217,7 @@ describe('signMossUpload and storeMoss', () => {
     const me = player(a[0] ?? '');
     const send = async (fill: string) => {
       const key = `evidence/${String(found.id)}/moss/${String(me)}-${fill.repeat(32)}.zip`;
-      await objects.put(key, new Uint8Array(5), 'application/octet-stream');
+      await objects.put(key, zip(5), 'application/zip');
       await storeMoss(db, objects, found, { uploaderId: me, staff: false, playerId: me, key }, 9);
       return key;
     };
@@ -285,5 +292,136 @@ describe('staff and the files', () => {
       'match.moss_hold',
       'match.moss_release',
     ]);
+  });
+});
+
+describe('MOSS files are zips', () => {
+  it('refuses a name that is not a zip, and a stored file that is not one, deleting it', async () => {
+    const { db, found, a, objects, player } = setup();
+    const me = player(a[0] ?? '');
+    const sign = (name: string) =>
+      signMossUpload(db, objects, found, {
+        uploaderId: me,
+        staff: false,
+        playerId: me,
+        name,
+        size: 10,
+      });
+    expect(await sign('capture.rar')).toEqual({ ok: false, error: 'not_zip' });
+    const signed = await sign('MOSS.ZIP');
+    if (!signed.ok) throw new Error(signed.error);
+    expect(signed.key.endsWith('.zip')).toBe(true);
+    expect(objects.signed[0]?.contentType).toBe('application/zip');
+    await objects.put(signed.key, new Uint8Array(10), 'application/zip');
+    expect(
+      await storeMoss(
+        db,
+        objects,
+        found,
+        { uploaderId: me, staff: false, playerId: me, key: signed.key },
+        7,
+      ),
+    ).toEqual({ ok: false, error: 'not_zip' });
+    expect(objects.objects.has(signed.key)).toBe(false);
+  });
+});
+
+describe('MOSS players from the announced lineup (the default)', () => {
+  function lineupLeague() {
+    const db = leagueDatabase();
+    requireMoss(db);
+    for (const row of db.select().from(schema.competition).all()) {
+      db.update(schema.competition)
+        .set({
+          rulesetJson: {
+            ...row.rulesetJson,
+            moss: { ...row.rulesetJson.moss, players_from: 'lineup' },
+          },
+        })
+        .where(eq(schema.competition.id, row.id))
+        .run();
+    }
+    const found = matchWith(db, 'scheduled');
+    addRosterPlayers(db, found.seasonId, found.a.teamId, 'b');
+    addRosterPlayers(db, found.seasonId, found.b.teamId, 'c');
+    const org = db.select().from(schema.org).get();
+    const sub = db
+      .insert(schema.player)
+      .values({ orgId: org?.id ?? 0, slug: 'sub', displayName: 'Sub', createdAt: 0 })
+      .returning()
+      .get();
+    db.insert(schema.rosterEntry)
+      .values({
+        seasonId: found.seasonId,
+        teamId: found.a.teamId,
+        playerId: sub.id,
+        role: 'sub',
+        validFrom: 0,
+      })
+      .run();
+    return { db, found, sub };
+  }
+
+  it('asks each roster’s starters by default, with no replays needed', () => {
+    const { db, found } = lineupLeague();
+    const check = mossCheck(db, found);
+    expect(check.from).toBe('lineup');
+    expect(check.sides.a.map((p) => p.name)).toEqual(['b1', 'b2', 'b3', 'b4', 'b5']);
+    expect(check.gaps).toHaveLength(10);
+    expect(check.gaps.every((gap) => gap.kind === 'missing')).toBe(true);
+  });
+
+  it('asks the players the team announced for the match: a substitute in a starter’s place', () => {
+    const { db, found, sub } = lineupLeague();
+    const officialId = db
+      .insert(schema.player)
+      .values({ orgId: 1, slug: 'manager', displayName: 'Manager', createdAt: 0 })
+      .returning()
+      .get().id;
+    db.insert(schema.teamStaff)
+      .values({ teamId: found.a.teamId, playerId: officialId, role: 'manager', since: 0 })
+      .run();
+    const starters = lineupChoices(db, found, 'a').filter((c) => c.role === 'player');
+    const chosen = [...starters.slice(0, 4).map((c) => c.playerId), sub.id];
+    expect(
+      announceLineup(db, found, 'a', { playerId: officialId, staff: false }, chosen, 5),
+    ).toEqual({ ok: true });
+    expect(mossCheck(db, found).sides.a.map((p) => p.name)).toEqual([
+      'b1',
+      'b2',
+      'b3',
+      'b4',
+      'Sub',
+    ]);
+    expect(mossTargets(db, sub.id, found, false).map((t) => t.name)).toEqual(['Sub']);
+  });
+
+  it('refuses a lineup from a player, of fewer than a team, or once the result is reported', () => {
+    const { db, found, sub } = lineupLeague();
+    const ids = lineupChoices(db, found, 'a').map((c) => c.playerId);
+    const staff = { playerId: sub.id, staff: true };
+    expect(announceLineup(db, found, 'a', { playerId: sub.id, staff: false }, ids, 5)).toEqual({
+      ok: false,
+      error: 'not_allowed',
+    });
+    expect(announceLineup(db, found, 'a', staff, ids.slice(0, 4), 5)).toEqual({
+      ok: false,
+      error: 'too_few',
+    });
+    expect(announceLineup(db, found, 'a', staff, [...ids.slice(0, 4), 99_999], 5)).toEqual({
+      ok: false,
+      error: 'not_on_roster',
+    });
+    const reported = { ...found, status: 'reported' as const };
+    const captain = lineupChoices(db, found, 'a')[0]?.playerId ?? 0;
+    db.update(schema.rosterEntry)
+      .set({ captain: true })
+      .where(eq(schema.rosterEntry.playerId, captain))
+      .run();
+    expect(announceLineup(db, reported, 'a', { playerId: captain, staff: false }, ids, 5)).toEqual({
+      ok: false,
+      error: 'locked',
+    });
+    expect(announceLineup(db, reported, 'a', staff, ids, 5)).toEqual({ ok: true });
   });
 });

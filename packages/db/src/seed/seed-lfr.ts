@@ -89,7 +89,8 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
     stats: statsSettingsSchema.parse({}),
     // Season 4: every map's replays and every player's MOSS file before validation (M-47, M-49).
     replays: replaysSettingsSchema.parse({ required: true }),
-    moss: mossSettingsSchema.parse({ required: true }),
+    // LFR requires replays, so the replays say who played and owes a MOSS file (M-47).
+    moss: mossSettingsSchema.parse({ required: true, players_from: 'replays' }),
     // Ligo leaves the server alone until staff turn it on (phase 4); its names and times are
     // M-44's. MOSS files go on the website, not in Discord (M-47).
     discord: discordSettingsSchema.parse({}),

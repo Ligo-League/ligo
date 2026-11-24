@@ -1,14 +1,16 @@
 // MOSS files before validation (design doc section 4; M-47, maintainer 20 and 24 November 2026).
-// Who played comes from the match's replays: the players each side's recordings show, by their
-// game account. Each of them sends one MOSS file, and only they may: nobody else of the team can
-// upload a stand-in. A side whose replays show fewer players than a team cannot be checked yet,
-// and a player Ligo does not know cannot send a file, which leaves the decision to staff.
+// Who owes one is a league setting (`moss.players_from`): by default the players each team
+// announced for the match, its roster's starters until it announces any; or, where replays are
+// required, the players the match's recordings show, by game account. Each of them sends one
+// MOSS file, and only they may: nobody else of the team can upload a stand-in. A side with fewer
+// players than a team cannot be checked yet, and a player of the replays Ligo does not know
+// cannot send a file, which leaves the decision to staff.
 
 type Side = 'a' | 'b';
 
 export interface MossPlayer {
-  /** The game account the replays show (Ubisoft profile ID for R6). */
-  account: string;
+  /** The game account the replays show (Ubisoft profile ID for R6); null from a lineup. */
+  account: string | null;
   /** The name in the replays, or the Ligo player's. */
   name: string;
   /** The Ligo player of the account; null when Ligo knows no one with it. */
@@ -19,11 +21,11 @@ export interface MossPlayer {
 export type MossSides = Record<Side, readonly MossPlayer[]>;
 
 export type MossGap =
-  /** The side's replays show fewer players than a team: its files cannot be checked yet. */
+  /** The side shows fewer players than a team: its files cannot be checked yet. */
   | { kind: 'too_few_players'; side: Side; seen: number }
-  | { kind: 'missing'; side: Side; account: string; name: string; playerId: number }
+  | { kind: 'missing'; side: Side; account: string | null; name: string; playerId: number }
   /** Nobody on Ligo has this account, so nobody can send the file: staff decide. */
-  | { kind: 'unknown_player'; side: Side; account: string; name: string };
+  | { kind: 'unknown_player'; side: Side; account: string | null; name: string };
 
 /** What keeps the match's MOSS files from being complete; none when every file is there. */
 export function mossGaps(input: { sides: MossSides; teamSize: number }): MossGap[] {

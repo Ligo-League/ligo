@@ -66,7 +66,7 @@ const LFR_S3 = {
       min_known_players: 3,
       trade_window_s: 10,
     },
-    moss: { required: false, retention_days: null },
+    moss: { required: false, players_from: 'lineup', retention_days: null },
     // M-44 (maintainer, 19 November 2026); Season 3's server was managed by hand.
     discord: {
       manage: false,
@@ -246,7 +246,8 @@ describe('rulesetSchema', () => {
       min_known_players: 3,
       trade_window_s: 10,
     });
-    expect(parsed.moss).toEqual({ required: false, retention_days: null });
+    // MOSS files, when asked for, come from the announced lineup by default (M-47).
+    expect(parsed.moss).toEqual({ required: false, players_from: 'lineup', retention_days: null });
   });
 
   it.each([
@@ -638,6 +639,7 @@ describe('JSON round trip', () => {
         }),
         moss: fc.record({
           required: fc.boolean(),
+          players_from: fc.constantFrom('lineup', 'replays'),
           retention_days: fc.option(fc.integer({ min: 1, max: 3650 }), { nil: null }),
         }),
         discord: fc.record({

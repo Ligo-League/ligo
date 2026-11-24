@@ -200,6 +200,29 @@ describe('a competition’s rules page', () => {
     });
   });
 
+  it('takes MOSS players from the replays only where replays are required', async () => {
+    const { request, logIn, post, setRoles, lfr } = site();
+    setRoles([TEST_STAFF_ROLE], ANA.id);
+    await logIn('/admin/mlb-group/lfr/rules');
+    const fields = inputsOf(await (await request('/admin/mlb-group/lfr/rules')).text());
+    // An unticked box is not sent.
+    const withoutReplays = Object.fromEntries(
+      Object.entries(fields).filter(([name]) => name !== 'ruleset.replays.required'),
+    );
+    const before = lfr()?.rulesetJson;
+    await post('/admin/mlb-group/lfr/rules', {
+      ...withoutReplays,
+      'ruleset.moss.players_from': 'replays',
+    });
+    expect(lfr()?.rulesetJson).toEqual(before);
+    await post('/admin/mlb-group/lfr/rules', {
+      ...fields,
+      'ruleset.replays.required': 'on',
+      'ruleset.moss.players_from': 'replays',
+    });
+    expect(lfr()?.rulesetJson.moss.players_from).toBe('replays');
+  });
+
   it('says what a veto sequence must hold, and saves nothing', async () => {
     const { request, logIn, post, setRoles, lfr } = site();
     setRoles([TEST_STAFF_ROLE], ANA.id);

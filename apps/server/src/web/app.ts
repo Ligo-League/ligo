@@ -15,6 +15,7 @@ import { MOSS_MAX_BYTES, openMoss } from '../services/moss.ts';
 import { uploadRoute } from './upload-route.ts';
 import { replayApiRoutes, type ReplayApiDeps } from './replay-api.ts';
 import { replayPageRoutes } from './replay-page.ts';
+import { matchLineupRoutes } from './match-lineup.ts';
 import { contentSecurityPolicy } from './csp.ts';
 import type { UploaderFiles } from './uploader-bundle.ts';
 import { gameProfileOf, saveGameProfile, type SaveProfileError } from '../services/game-profile.ts';
@@ -758,6 +759,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   const veto = vetoRoutes(app, { deps, render, notFound, forbidden, guard });
   const matchCaptain = matchCaptainRoutes(app, { deps, render, notFound, forbidden, guard });
   const matchStaff = matchStaffRoutes(app, { deps, render, notFound, forbidden, guard });
+  const matchLineup = matchLineupRoutes(app, { deps, render, notFound, forbidden, guard });
   const matchStats = matchStatsRoutes(app, { deps, render, notFound, forbidden, guard });
   staffSanctionsRoutes(app, { deps, render, notFound, forbidden, guard });
   leagueChannelsRoutes(app, { deps, render, notFound, forbidden, guard });
@@ -772,6 +774,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
       veto.link(c, Number(id)),
       await matchStats.link(c, Number(id)),
       await replayPage.link(c, Number(id)),
+      await matchLineup.panel(c, Number(id)),
       await matchReport.panel(c, Number(id)),
       await matchTime.panel(c, Number(id)),
       matchCaptain.panel(c, Number(id)),

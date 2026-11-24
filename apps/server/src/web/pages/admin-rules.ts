@@ -286,6 +286,18 @@ export function rulesSections(view: View): SectionView[] {
           input: { type: 'checkbox' },
         },
         {
+          path: 'ruleset.moss.players_from',
+          label: 'web.admin.rules.mossPlayersFrom',
+          help: 'web.admin.rules.mossPlayersFromHelp',
+          input: {
+            type: 'select',
+            options: options([
+              ['lineup', 'web.admin.rules.mossFrom.lineup'],
+              ['replays', 'web.admin.rules.mossFrom.replays'],
+            ]),
+          },
+        },
+        {
           path: 'ruleset.moss.retention_days',
           label: 'web.admin.rules.mossRetention',
           help: 'web.admin.rules.mossRetentionHelp',

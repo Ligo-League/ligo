@@ -6,6 +6,7 @@ import {
   rulesetSchema,
   tiebreakSchema,
   UNRESOLVED_TIE_MODES,
+  MOSS_PLAYERS_FROM,
 } from '@ligo/core';
 import { schema, type Db } from '@ligo/db';
 import { eq } from 'drizzle-orm';
@@ -103,6 +104,7 @@ export function rulesFields(rules: Rules): SettingField[] {
     { path: 'ruleset.replays.min_known_players', kind: int },
     { path: 'ruleset.replays.trade_window_s', kind: int },
     { path: 'ruleset.moss.required', kind: { type: 'bool' } },
+    { path: 'ruleset.moss.players_from', kind: choice(MOSS_PLAYERS_FROM) },
     { path: 'ruleset.moss.retention_days', kind: optionalInt },
     {
       path: 'ruleset.dispute_reasons',
@@ -188,6 +190,10 @@ export function updateCompetitionRules(
   const read = readSettingsForm(rulesSchema, current, rulesFields(current), form, shapeGameScore);
   if (!read.ok) return { ok: false, error: 'invalid', errors: read.errors };
   const next = read.value;
+  // The replays can say who played only where every team must send them (M-47).
+  if (next.ruleset.moss.players_from === 'replays' && !next.ruleset.replays.required) {
+    return { ok: false, error: 'invalid', errors: { 'ruleset.moss.players_from': 'invalid' } };
+  }
   db.transaction((tx) => {
     tx.update(competition)
       .set({ pointsJson: next.points, tiebreakJson: next.tiebreak, rulesetJson: next.ruleset })

@@ -60,6 +60,7 @@ export function replayPageRoutes(
     if (!allowed) return forbidden(c);
 
     const { uploader, replays } = deps;
+    const moss = mossCheck(db, found);
     const config: UploaderConfig | null =
       uploader && replays
         ? {
@@ -72,9 +73,10 @@ export function replayPageRoutes(
               worker: '/static/parser-worker.js',
             },
             ...uploaderSetup(db, found),
-            moss: mossCheck(db, found).required
+            moss: moss.required
               ? {
                   maxBytes: MOSS_MAX_BYTES,
+                  from: moss.from,
                   players: mossTargets(db, viewer.playerId, found, allowed.staff),
                 }
               : null,

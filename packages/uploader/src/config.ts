@@ -47,6 +47,8 @@ export const UPLOADER_MESSAGES = [
   'moss.sending',
   'moss.failed',
   'moss.tooLarge',
+  'moss.notZip',
+  'moss.noPlayers',
 ] as const;
 export type UploaderMessage = (typeof UPLOADER_MESSAGES)[number];
 
@@ -82,6 +84,8 @@ export const uploaderConfigSchema = z.strictObject({
   moss: z
     .strictObject({
       maxBytes: z.int(),
+      /** Who owes a file: the announced lineup, or the replays (`moss.players_from`). */
+      from: z.enum(['lineup', 'replays']),
       players: z.array(
         z.strictObject({ playerId: z.int(), name: z.string(), side, hasFile: z.boolean() }),
       ),
