@@ -15,6 +15,7 @@
     "@ligo/parsers": "workspace:*",
     "@ligo/storage": "workspace:*",
     "@ligo/titles": "workspace:*",
+    "drizzle-orm": "^0.45.4",
     "pino": "^10.4.0",
     "zod": "^4.6.7"
   }

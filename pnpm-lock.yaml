@@ -256,6 +256,9 @@ importers:
       '@ligo/titles':
         specifier: workspace:*
         version: link:../../packages/titles
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       pino:
         specifier: ^10.4.0
         version: 10.4.0
