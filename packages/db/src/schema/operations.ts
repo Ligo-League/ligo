@@ -42,6 +42,8 @@ export const job = sqliteTable(
     lastError: text('last_error'),
     createdAt: integer('created_at').notNull(),
     finishedAt: integer('finished_at'),
+    // When the server told staff the job failed (only the server posts in Discord).
+    alertedAt: integer('alerted_at'),
   },
   (t) => [
     index('job_queue_idx').on(t.status, t.runAfter),
