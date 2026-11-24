@@ -4,6 +4,8 @@ import {
   mercatoSchema,
   registrationSchema,
   statsSettingsSchema,
+  replaysSettingsSchema,
+  mossSettingsSchema,
   discordSettingsSchema,
   requestsSchema,
   teamRolesSchema,
@@ -85,6 +87,9 @@ const COMPETITION: Omit<typeof competition.$inferInsert, 'orgId'> = {
     mercato: mercatoSchema.parse({ mode: 'windows', max_moves_per_team: 3, lock_hours: 24 }),
     // No deadline for the stat grid; a tolerance of 3 kills (M-39, 19 November 2026).
     stats: statsSettingsSchema.parse({}),
+    // Season 4: every map's replays and every player's MOSS file before validation (M-47, M-49).
+    replays: replaysSettingsSchema.parse({ required: true }),
+    moss: mossSettingsSchema.parse({ required: true }),
     // Ligo leaves the server alone until staff turn it on (phase 4); its names and times are
     // M-44's. MOSS files go on the website, not in Discord (M-47).
     discord: discordSettingsSchema.parse({}),

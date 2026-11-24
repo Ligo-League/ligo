@@ -276,6 +276,34 @@ export const statsSettingsSchema = z.strictObject({
 });
 export type StatsSettings = z.infer<typeof statsSettingsSchema>;
 
+/**
+ * Replays (design doc sections 4 and 8; phase 5). `required` (M-49): each team uploads its own
+ * recording of every game within `deadline_hours`, before the result can be validated.
+ * `rehosts_per_team` (O-14, maintainer 24 November 2026): re-hosts each team may call in each
+ * game; beyond that, in all or for one team as the teams declared, the game's replays wait for
+ * staff approval on the website. `min_known_players`: a lobby side is a team when that many of
+ * its players are in the team's lineup. `trade_window_s`: W of section 9.
+ */
+export const replaysSettingsSchema = z.strictObject({
+  required: z.boolean().default(false),
+  deadline_hours: z.int().min(1).max(720).default(24),
+  rehosts_per_team: z.int().min(0).max(10).default(1),
+  min_known_players: z.int().min(1).max(10).default(3),
+  trade_window_s: z.int().min(1).max(60).default(10),
+});
+export type ReplaysSettings = z.infer<typeof replaysSettingsSchema>;
+
+/**
+ * MOSS files on the website (M-47; phase 5): one per player who played, before validation when
+ * `required`. They are deleted when the season closes, or `retention_days` after their upload
+ * when set; files staff hold during an investigation stay.
+ */
+export const mossSettingsSchema = z.strictObject({
+  required: z.boolean().default(false),
+  retention_days: z.int().min(1).max(3650).nullable().default(null),
+});
+export type MossSettings = z.infer<typeof mossSettingsSchema>;
+
 /** `auto`: applied at once and recorded; `staff`: waits for league staff to approve or refuse. */
 export const APPROVAL_MODES = ['auto', 'staff'] as const;
 export type ApprovalMode = (typeof APPROVAL_MODES)[number];
@@ -362,6 +390,8 @@ export const rulesetSchema = z.strictObject({
   registration: registrationSchema.default(() => registrationSchema.parse({})),
   mercato: mercatoSchema.default(() => mercatoSchema.parse({})),
   stats: statsSettingsSchema.default(() => statsSettingsSchema.parse({})),
+  replays: replaysSettingsSchema.default(() => replaysSettingsSchema.parse({})),
+  moss: mossSettingsSchema.default(() => mossSettingsSchema.parse({})),
   discord: discordSettingsSchema.default(() => discordSettingsSchema.parse({})),
 });
 export type RulesetSettings = z.infer<typeof rulesetSchema>;

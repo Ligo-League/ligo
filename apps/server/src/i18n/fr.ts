@@ -1731,6 +1731,18 @@ export const fr = {
   'web.admin.rules.section.stats': 'Grille de statistiques',
   'web.admin.rules.entryDays': 'Saisie par les équipes jusqu’à tant de jours après validation',
   'web.admin.rules.tolerance': 'Écart toléré entre kills et morts',
+  'web.admin.rules.section.replays': 'Replays et MOSS',
+  'web.admin.rules.replaysRequired': 'Replays obligatoires avant validation',
+  'web.admin.rules.replaysDeadline': 'Délai d’envoi des replays après le match (heures)',
+  'web.admin.rules.rehostsPerTeam': 'Re-hosts par équipe et par carte',
+  'web.admin.rules.rehostsPerTeamHelp':
+    'Au-delà, les replays de la carte attendent l’accord du staff sur le site.',
+  'web.admin.rules.minKnownPlayers':
+    'Joueurs de l’équipe qu’un camp d’un lobby doit compter pour être reconnu',
+  'web.admin.rules.tradeWindow': 'Fenêtre d’un échange (secondes)',
+  'web.admin.rules.mossRequired': 'MOSS de chaque joueur obligatoire avant validation',
+  'web.admin.rules.mossRetention': 'Suppression des MOSS après (jours)',
+  'web.admin.rules.mossRetentionHelp': 'Vide : à la clôture de la saison.',
   'web.admin.rules.section.disputes': 'Motifs de contestation',
   'web.admin.rules.disputeReasons': 'Motifs',
   'web.admin.rules.disputeReasonsHelp':

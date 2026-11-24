@@ -175,6 +175,29 @@ describe('a competition’s rules page', () => {
     expect(after?.pointsJson).toEqual(before?.pointsJson);
   });
 
+  it('sets the replays and MOSS rules: re-hosts per team, MOSS kept until a date', async () => {
+    const { request, logIn, post, setRoles, lfr } = site();
+    setRoles([TEST_STAFF_ROLE], ANA.id);
+    await logIn('/admin/mlb-group/lfr/rules');
+    const fields = inputsOf(await (await request('/admin/mlb-group/lfr/rules')).text());
+    // LFR asks for both from Season 4 (M-47, M-49), and one re-host per team and game (O-14).
+    expect(fields).toMatchObject({
+      'ruleset.replays.required': '1',
+      'ruleset.replays.rehosts_per_team': '1',
+      'ruleset.moss.required': '1',
+      'ruleset.moss.retention_days': '',
+    });
+    await post('/admin/mlb-group/lfr/rules', {
+      ...fields,
+      'ruleset.replays.rehosts_per_team': '2',
+      'ruleset.moss.retention_days': '30',
+    });
+    expect(lfr()?.rulesetJson).toMatchObject({
+      replays: { required: true, rehosts_per_team: 2 },
+      moss: { required: true, retention_days: 30 },
+    });
+  });
+
   it('says what a veto sequence must hold, and saves nothing', async () => {
     const { request, logIn, post, setRoles, lfr } = site();
     setRoles([TEST_STAFF_ROLE], ANA.id);

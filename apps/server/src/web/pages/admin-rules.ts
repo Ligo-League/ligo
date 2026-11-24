@@ -252,6 +252,48 @@ export function rulesSections(view: View): SectionView[] {
       ],
     },
     {
+      title: 'web.admin.rules.section.replays',
+      fields: [
+        {
+          path: 'ruleset.replays.required',
+          label: 'web.admin.rules.replaysRequired',
+          input: { type: 'checkbox' },
+        },
+        {
+          path: 'ruleset.replays.deadline_hours',
+          label: 'web.admin.rules.replaysDeadline',
+          input: int(1, 720),
+        },
+        {
+          path: 'ruleset.replays.rehosts_per_team',
+          label: 'web.admin.rules.rehostsPerTeam',
+          help: 'web.admin.rules.rehostsPerTeamHelp',
+          input: int(0, 10),
+        },
+        {
+          path: 'ruleset.replays.min_known_players',
+          label: 'web.admin.rules.minKnownPlayers',
+          input: int(1, 10),
+        },
+        {
+          path: 'ruleset.replays.trade_window_s',
+          label: 'web.admin.rules.tradeWindow',
+          input: int(1, 60),
+        },
+        {
+          path: 'ruleset.moss.required',
+          label: 'web.admin.rules.mossRequired',
+          input: { type: 'checkbox' },
+        },
+        {
+          path: 'ruleset.moss.retention_days',
+          label: 'web.admin.rules.mossRetention',
+          help: 'web.admin.rules.mossRetentionHelp',
+          input: optionalInt(1),
+        },
+      ],
+    },
+    {
       title: 'web.admin.rules.section.disputes',
       fields: [
         {

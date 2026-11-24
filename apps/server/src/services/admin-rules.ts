@@ -97,6 +97,13 @@ export function rulesFields(rules: Rules): SettingField[] {
     { path: 'ruleset.mercato.intra_club_moves', kind: choice(INTRA_CLUB_MOVES) },
     { path: 'ruleset.stats.entry_days', kind: optionalInt },
     { path: 'ruleset.stats.kills_deaths_tolerance', kind: int },
+    { path: 'ruleset.replays.required', kind: { type: 'bool' } },
+    { path: 'ruleset.replays.deadline_hours', kind: int },
+    { path: 'ruleset.replays.rehosts_per_team', kind: int },
+    { path: 'ruleset.replays.min_known_players', kind: int },
+    { path: 'ruleset.replays.trade_window_s', kind: int },
+    { path: 'ruleset.moss.required', kind: { type: 'bool' } },
+    { path: 'ruleset.moss.retention_days', kind: optionalInt },
     {
       path: 'ruleset.dispute_reasons',
       kind: {

@@ -1673,6 +1673,17 @@ export const en: Record<MessageKey, string> = {
   'web.admin.rules.section.stats': 'Stat grid',
   'web.admin.rules.entryDays': 'Teams may enter stats until this many days after validation',
   'web.admin.rules.tolerance': 'Tolerated gap between kills and deaths',
+  'web.admin.rules.section.replays': 'Replays and MOSS',
+  'web.admin.rules.replaysRequired': 'Replays required before validation',
+  'web.admin.rules.replaysDeadline': 'Hours after the match to upload replays',
+  'web.admin.rules.rehostsPerTeam': 'Re-hosts per team and game',
+  'web.admin.rules.rehostsPerTeamHelp':
+    'Beyond that, the game’s replays wait for staff approval on the website.',
+  'web.admin.rules.minKnownPlayers': 'Team players a lobby side needs to be recognised',
+  'web.admin.rules.tradeWindow': 'Trade window (seconds)',
+  'web.admin.rules.mossRequired': 'Every player’s MOSS required before validation',
+  'web.admin.rules.mossRetention': 'Delete MOSS files after (days)',
+  'web.admin.rules.mossRetentionHelp': 'Empty: when the season closes.',
   'web.admin.rules.section.disputes': 'Dispute reasons',
   'web.admin.rules.disputeReasons': 'Reasons',
   'web.admin.rules.disputeReasonsHelp':

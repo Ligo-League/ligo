@@ -58,6 +58,15 @@ const LFR_S3 = {
     },
     // M-39 (maintainer, 19 November 2026): no deadline for the stat grid.
     stats: { entry_days: null, kills_deaths_tolerance: 3 },
+    // Season 3 had no replays or MOSS on the website; Season 4 turns both on (M-47, M-49).
+    replays: {
+      required: false,
+      deadline_hours: 24,
+      rehosts_per_team: 1,
+      min_known_players: 3,
+      trade_window_s: 10,
+    },
+    moss: { required: false, retention_days: null },
     // M-44 (maintainer, 19 November 2026); Season 3's server was managed by hand.
     discord: {
       manage: false,
@@ -225,6 +234,34 @@ describe('rulesetSchema', () => {
     expect(() =>
       rulesetSchema.parse({ result_validation: 'staff', stats: { entry_days: 0 } }),
     ).toThrow();
+  });
+
+  it('asks for no replays or MOSS unless set, with LFR’s re-host and trade defaults', () => {
+    const parsed = rulesetSchema.parse({ result_validation: 'staff' });
+    // O-14 (maintainer, 24 November 2026): one re-host per team and game.
+    expect(parsed.replays).toEqual({
+      required: false,
+      deadline_hours: 24,
+      rehosts_per_team: 1,
+      min_known_players: 3,
+      trade_window_s: 10,
+    });
+    expect(parsed.moss).toEqual({ required: false, retention_days: null });
+  });
+
+  it.each([
+    ['negative re-hosts', { replays: { rehosts_per_team: -1 } }],
+    ['no known player', { replays: { min_known_players: 0 } }],
+    ['a trade window of zero', { replays: { trade_window_s: 0 } }],
+    ['no time to upload', { replays: { deadline_hours: 0 } }],
+    ['MOSS kept zero days', { moss: { retention_days: 0 } }],
+  ])('refuses %s', (_label, value) => {
+    expect(accepts(rulesetSchema, { result_validation: 'staff', ...value })).toBe(false);
+  });
+
+  it('allows a league with no re-host at all', () => {
+    const value = { result_validation: 'staff', replays: { rehosts_per_team: 0 } };
+    expect(accepts(rulesetSchema, value)).toBe(true);
   });
 
   it('allows 3 managers and 1 coach, and staff approval of additions, unless set otherwise', () => {
@@ -591,6 +628,17 @@ describe('JSON round trip', () => {
         stats: fc.record({
           entry_days: fc.option(fc.integer({ min: 1, max: 365 }), { nil: null }),
           kills_deaths_tolerance: fc.integer({ min: 0, max: 50 }),
+        }),
+        replays: fc.record({
+          required: fc.boolean(),
+          deadline_hours: fc.integer({ min: 1, max: 720 }),
+          rehosts_per_team: fc.integer({ min: 0, max: 10 }),
+          min_known_players: fc.integer({ min: 1, max: 10 }),
+          trade_window_s: fc.integer({ min: 1, max: 60 }),
+        }),
+        moss: fc.record({
+          required: fc.boolean(),
+          retention_days: fc.option(fc.integer({ min: 1, max: 3650 }), { nil: null }),
         }),
         discord: fc.record({
           manage: fc.boolean(),

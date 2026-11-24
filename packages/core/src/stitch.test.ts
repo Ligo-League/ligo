@@ -55,12 +55,12 @@ function map(sequence: string, start = 0): StitchSegment[] {
 
 const stitch = (
   segments: StitchSegment[],
-  options: { reported?: { A: number; B: number } | null; maxRehosts?: number } = {},
+  options: { reported?: { A: number; B: number } | null; rehostsPerTeam?: number } = {},
 ) =>
   stitchGame({
     segments,
     rule: R6,
-    maxRehosts: options.maxRehosts ?? 2,
+    rehostsPerTeam: options.rehostsPerTeam ?? 1,
     reported: options.reported === undefined ? null : options.reported,
   });
 const check = (plan: ReturnType<typeof stitchGame>, code: string) =>
@@ -158,10 +158,36 @@ describe('stitchGame', () => {
     expect(check(stitch(wrong(12)), 'sides')).toBe(true);
   });
 
-  it('allows as many lobbies as re-hosts allow', () => {
-    const segments = map('AAA-|AAB|BAA');
-    expect(check(stitch(segments, { maxRehosts: 2 }), 'rehosts')).toBe(true);
-    expect(check(stitch(segments, { maxRehosts: 1 }), 'rehosts')).toBe(false);
+  it('allows each team its re-hosts in the game, in all: one each by default (O-14)', () => {
+    const twice = map('AAA-|AAB|BAA');
+    expect(check(stitch(twice), 'rehosts')).toBe(true);
+    const thrice = map('AA-|AAB|BA|AA');
+    expect(check(stitch(thrice), 'rehosts')).toBe(false);
+    expect(check(stitch(thrice, { rehostsPerTeam: 2 }), 'rehosts')).toBe(true);
+    expect(check(stitch(map('AA-|AAAAA'), { rehostsPerTeam: 0 }), 'rehosts')).toBe(false);
+  });
+
+  it('holds each team to its share when the teams said who called each re-host', () => {
+    const [first, second, third] = map('AAA-|AAB|BAA');
+    if (!first || !second || !third) throw new Error('three lobbies');
+    const called = (a: ReplaySide | null, b: ReplaySide | null) => [
+      first,
+      { ...second, calledBy: a },
+      { ...third, calledBy: b },
+    ];
+    expect(check(stitch(called('A', 'B')), 'rehosts')).toBe(true);
+    expect(check(stitch(called('A', null)), 'rehosts')).toBe(true);
+    expect(check(stitch(called('B', 'B')), 'rehosts')).toBe(false);
+    // The first lobby was no re-host, whatever it says.
+    expect(
+      check(
+        stitch([
+          { ...first, calledBy: 'A' },
+          { ...second, calledBy: 'A' },
+        ]),
+        'rehosts',
+      ),
+    ).toBe(true);
   });
 
   it('cannot check the score before it is reported, so does not apply yet', () => {
@@ -200,7 +226,7 @@ describe('stitchGame', () => {
       fc.property(arbitrary, ({ played, score, cuts }) => {
         if (!isDecided(score)) return;
         const sequence = played.map((side, i) => (cuts.includes(i) ? `-|${side}` : side)).join('');
-        const plan = stitch(map(sequence), { reported: score, maxRehosts: 3 });
+        const plan = stitch(map(sequence), { reported: score, rehostsPerTeam: 2 });
         expect(plan.score).toEqual(score);
         expect(plan.lobbies).toHaveLength(cuts.length + 1);
         expect(plan.ok).toBe(true);

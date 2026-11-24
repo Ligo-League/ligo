@@ -4,6 +4,8 @@ import {
   registrationSchema,
   requestsSchema,
   statsSettingsSchema,
+  replaysSettingsSchema,
+  mossSettingsSchema,
   discordSettingsSchema,
   vetoSchema,
 } from '@ligo/core';
@@ -204,6 +206,8 @@ describe('addTeamMember and removeTeamMember', () => {
           registration: registrationSchema.parse({}),
           mercato: mercatoSchema.parse({}),
           stats: statsSettingsSchema.parse({}),
+          replays: replaysSettingsSchema.parse({}),
+          moss: mossSettingsSchema.parse({}),
           discord: discordSettingsSchema.parse({}),
         },
       })

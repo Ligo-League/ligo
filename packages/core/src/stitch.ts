@@ -9,13 +9,16 @@ import type { GameScoreSettings } from './settings.ts';
 // a score not yet reported, leaves it to staff. Facts stay keyed by (lobby, round): a new plan
 // only changes which rounds count.
 
-export type StitchSegment = Segment;
+export interface StitchSegment extends Segment {
+  /** The team that called the re-host this lobby began with, as the teams declared (optional). */
+  calledBy?: ReplaySide | null;
+}
 
 export interface StitchInput {
   segments: readonly StitchSegment[];
   rule: GameScoreSettings;
-  /** Lobbies beyond the first that need no staff (O-14: one re-host per team and map). */
-  maxRehosts: number;
+  /** `replays.rehosts_per_team`: re-hosts each team may call in the game (O-14). */
+  rehostsPerTeam: number;
   /** The score reported and confirmed for the game, or null while there is none. */
   reported: Score | null;
 }
@@ -88,7 +91,7 @@ export function stitchGame(input: StitchInput): StitchPlan {
     { code: 'decided', ok: decided },
     { code: 'no_overlap', ok: noOverlap(segments) },
     { code: 'sides', ok: sidesFit(segments, input.rule) },
-    { code: 'rehosts', ok: segments.length - 1 <= input.maxRehosts },
+    { code: 'rehosts', ok: rehostsAllowed(segments, input.rehostsPerTeam) },
     {
       code: 'reported_score',
       ok:
@@ -98,6 +101,17 @@ export function stitchGame(input: StitchInput): StitchPlan {
     },
   ];
   return { lobbies, rounds, score, checks, ok: checks.every((c) => c.ok === true) };
+}
+
+/**
+ * Every lobby after the first began with a re-host: no more than both teams' share in all, and
+ * no team past its own share among those the teams said it called. Staff approve anything more
+ * on the website (O-14).
+ */
+function rehostsAllowed(segments: StitchSegment[], perTeam: number): boolean {
+  const rehosts = segments.slice(1);
+  const calledBy = (team: ReplaySide) => rehosts.filter((s) => s.calledBy === team).length;
+  return rehosts.length <= 2 * perTeam && calledBy('A') <= perTeam && calledBy('B') <= perTeam;
 }
 
 /** Each lobby starts after the previous one's last round. */
