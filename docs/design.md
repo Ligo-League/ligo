@@ -823,17 +823,19 @@ The worker claims jobs with `UPDATE job SET status='running', locked_until=now+5
 **From files to a game** (server, TypeScript, on JSON)
 
 1. **Validate:** game mode Bomb; a match type other than a custom game is accepted with a warning.
-2. **Group into segments:** a segment is (game, `lobby_id`), assigned to a game by map, or by time order if one match plays the same map twice.
-3. **Merge recordings:** for each (segment, round number), keep one canonical file. A complete round (winner set) beats an incomplete one.
+2. **Group into segments:** a segment is (game, `lobby_id`), assigned to the game of its map (the parser's name matched to the pool's, `ClubHouseY10` → Clubhouse). A map outside the match, or one two games share, leaves the lobby to staff (`packages/core/src/replay-groups.ts`).
+3. **Merge recordings:** for each (segment, round number), keep one canonical file. A complete round (winner set) beats an incomplete one, then the first stored. Two complete recordings of a round with a different winner or kill feed (compared by player name) flag the game.
 4. **Resolve teams per segment:**
     - look up each side's `profileID`s in `game_account` and match them against the match lineups, or the season rosters;
-    - a side is resolved when at least 3 known players agree, and the two teams must be the match's two sides;
+    - a side is resolved when at least 3 known players agree (a parameter, `replays.min_known_players` from 5-5), and the two teams must be the match's two sides; every recording of a lobby is resolved, and they must agree;
     - unknown or ineligible players (not on the roster, suspended, banned) go to the staff alerts channel, since playing with an unregistered player is an irregularity under the rulebook.
 5. **Facts:** the normaliser has already produced per-round facts (section 9); they are written to `segment_round`, `round_player` and `kill_event`.
 
 **Stitching re-hosted games**
 
 A restart keeps the score, so the official map is the lobbies joined in order.
+
+On the 38 maps of the test replays (pro events, Y11S1 to Y11S3), the plan gives every final score; 37 apply by themselves and the one re-hosted three times waits for staff (`packages/core/src/stitch.ts`).
 
 1. Order the game's segments by the timestamp of their first round.
 2. Draft the plan:
@@ -844,9 +846,9 @@ A restart keeps the score, so the official map is the lobbies joined in order.
     - same map in every segment;
     - no overlap in time;
     - the winner reaches the win condition exactly on the last counted round;
-    - the side sequence fits the ruleset;
-    - the number of lobbies minus one is at most the recorded re-hosts;
-    - the plan's score equals the reported score.
+    - the side sequence fits the ruleset: in regulation a team attacks one half and defends the other, halves of `win_at − 1` rounds; overtime is not checked, since its first side is the league's choice and a re-host may restart it;
+    - the number of lobbies minus one is at most the re-hosts allowed (O-14: one per team and map, so two, plus any staff granted; who called one is not in the replays);
+    - the plan's score equals the reported score; before a score is reported the plan waits, and is built again when it is.
 4. All checks pass: apply the plan and post a summary in the match channel, for example "Re-host detected: 2 lobbies, 4–2 then 3–3 → 7–5, 1 interrupted round voided".
 5. Any check fails: mark the game `needs_review` and open `/matches/:id/games/:n/stitch`. That page offers a timeline of segments, a count or void toggle with reason per round, segment reordering, and "awarded round" entries (score only, no stats) for staff rulings.
 
@@ -1062,6 +1064,8 @@ The C# Rocket League parser you found (jjbott) is MIT-licensed and current, but 
 - Add `cmd/wasm/main.go` to the fork. It exports `parseRound(bytes)` through `syscall/js`: it wraps the bytes in `bytes.NewReader`, calls `dissect.NewReader` and `Read()`, and returns the round JSON as a string. Import only the `dissect` package, so the Excel export dependency stays out of the binary.
 - Build with `GOOS=js GOARCH=wasm go build -o r6-<sha>.wasm ./cmd/wasm`, and ship Go's `wasm_exec.js` with it. Serve it Brotli-compressed with immutable caching.
 - The same `.wasm` runs in Node for verification, in a worker thread (`@ligo/parsers/node`); browsers run it in a Web Worker (`@ligo/parsers/browser`). One file at a time: a parse past 60 s, a worker that dies and a worker whose WebAssembly memory grew past 1 GB (a parse peaks near 350 MB) are replaced for the next file. The server image builds it in a Go stage of the Dockerfile, so the server and the browsers it serves run the same build. The native CLI build stays as the reference in CI: both builds must produce identical JSON on every stored replay.
+
+**Supported builds:** replays from Y11S3 on (maintainer, 24 November 2026). Older builds may parse, and the pro replays of Y11S1 and Y11S2 stay as test material, but Ligo neither fixes nor tracks them: no pages on the pro circuits.
 
 **Pitfalls the R6 normaliser must handle** (found in the old Atlas77 code)
 
