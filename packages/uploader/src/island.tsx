@@ -396,6 +396,77 @@ function Uploader({ config }: { config: UploaderConfig }) {
   );
 }
 
+type MossState = 'sent' | 'missing' | 'sending' | 'failed' | 'tooLarge';
+
+/** MOSS files (M-47): one per player the replays show, each sent on its own, staff-only. */
+function MossPanel({ config }: { config: UploaderConfig }) {
+  const m = (key: UploaderMessage, values?: Record<string, string | number>) =>
+    format(config.messages[key], values);
+  const api = useMemo(() => createReplayApi(config.matchId, config.csrf), [config]);
+  const moss = config.moss;
+  const [states, setStates] = useState(
+    new Map<number, MossState>(
+      (moss?.players ?? []).map((p) => [p.playerId, p.hasFile ? 'sent' : 'missing']),
+    ),
+  );
+  const [progress, setProgress] = useState(new Map<number, number>());
+  if (!moss) return null;
+  const set = (playerId: number, state: MossState) => {
+    setStates((before) => new Map(before).set(playerId, state));
+  };
+  const send = async (playerId: number, file: File) => {
+    if (file.size > moss.maxBytes) {
+      set(playerId, 'tooLarge');
+      return;
+    }
+    set(playerId, 'sending');
+    try {
+      const link = await api.mossSign(playerId, file.name, file.size);
+      const put = link.ok
+        ? await api.put(link, file, (fraction) => {
+            setProgress((before) => new Map(before).set(playerId, fraction));
+          })
+        : 'failed';
+      const stored = link.ok && put === 'ok' && (await api.mossStored(playerId, link.key));
+      set(playerId, stored ? 'sent' : 'failed');
+    } catch {
+      set(playerId, 'failed');
+    }
+  };
+  return (
+    <section class="card">
+      <h2>{m('moss.title')}</h2>
+      <p class="muted">{m('moss.help')}</p>
+      {moss.players.length === 0 ? (
+        <p>{m('moss.none')}</p>
+      ) : (
+        <ul class="moss-players">
+          {moss.players.map((player) => {
+            const state = states.get(player.playerId) ?? 'missing';
+            return (
+              <li key={player.playerId}>
+                <strong>{player.name}</strong> ({config.teams[player.side].tag}) :{' '}
+                {m(`moss.${state}`)}{' '}
+                {state === 'sending' ? (
+                  <progress max={1} value={progress.get(player.playerId) ?? 0} />
+                ) : (
+                  <input
+                    type="file"
+                    onChange={(event) => {
+                      const file = event.currentTarget.files?.[0];
+                      if (file) void send(player.playerId, file);
+                    }}
+                  />
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 const REFUSED = ['not_a_replay', 'invalid', 'not_bomb', 'not_this_match', 'other_match'] as const;
 const refusedKey = (error: string): UploaderMessage =>
   // An answer this page does not know reads as unreadable.
@@ -456,5 +527,11 @@ const root = document.getElementById('replay-uploader');
 const parsed = uploaderConfigSchema.safeParse(JSON.parse(root?.dataset.config ?? 'null'));
 if (root && parsed.success) {
   root.replaceChildren();
-  render(<Uploader config={parsed.data} />, root);
+  render(
+    <>
+      <Uploader config={parsed.data} />
+      <MossPanel config={parsed.data} />
+    </>,
+    root,
+  );
 }

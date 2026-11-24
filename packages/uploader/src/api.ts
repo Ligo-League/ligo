@@ -43,7 +43,21 @@ export type SubmitReply =
   | { ok: true; files: SubmitOutcome[] }
   | { ok: false; error: 'parser_version' | 'failed'; status: number };
 
+const mossSignedSchema = z.object({
+  key: z.string(),
+  url: z.string(),
+  method: z.literal('PUT'),
+  headers: z.record(z.string(), z.string()),
+});
+
 export interface ReplayApi {
+  /** A link for a player's MOSS file, or the server's reason for refusing it. */
+  mossSign(
+    playerId: number,
+    name: string,
+    size: number,
+  ): Promise<({ ok: true; key: string } & SignedLink) | { ok: false }>;
+  mossStored(playerId: number, key: string): Promise<boolean>;
   submit(parser: string, files: FileToSubmit[]): Promise<SubmitReply>;
   sign(ids: number[]): Promise<SignAnswer[]>;
   stored(ids: number[]): Promise<{ id: number; status: string }[]>;
@@ -75,6 +89,15 @@ export function createReplayApi(matchId: number, csrf: string): ReplayApi {
   const failed = (status: number): Error => new Error(`The server answered ${String(status)}`);
 
   return {
+    async mossSign(playerId, name, size) {
+      const { status, json } = await call('/api/moss/sign', { playerId, name, size });
+      const parsed = mossSignedSchema.safeParse(json);
+      return status === 200 && parsed.success ? { ok: true, ...parsed.data } : { ok: false };
+    },
+    async mossStored(playerId, key) {
+      const { status } = await call('/api/moss/stored', { playerId, key });
+      return status === 200;
+    },
     async submit(parser, files) {
       const { status, json } = await call('/api/replays', { parser, files });
       if (

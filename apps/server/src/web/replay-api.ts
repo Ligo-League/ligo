@@ -2,7 +2,8 @@ import type { LeagueMatch } from '@ligo/db';
 import type { ObjectStore } from '@ligo/storage';
 import type { Context, Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import type { z } from 'zod';
+import * as z from 'zod';
+import { signMossUpload, storeMoss, type MossUploadError } from '../services/moss.ts';
 import { requireStaff } from '../services/permissions.ts';
 import {
   markReplaysStored,
@@ -23,7 +24,8 @@ import type { RouteKit } from './route-kit.ts';
 // - `POST /api/replays`: the parser's JSON of each round file; the server reads and stores them;
 // - `POST /api/replays/sign`: one upload link per raw file;
 // - `POST /api/replays/stored`: the raw files the browser has sent, checked and queued for
-//   verification.
+//   verification;
+// - `POST /api/moss/sign` and `/api/moss/stored`: a player's MOSS file (M-47, 5-10).
 // JSON in and out, from this site's pages only: the session's CSRF token comes in a header.
 // Only a side's players, officials and captain, and league staff, send a match's replays. The
 // links signed are never logged.
@@ -45,6 +47,26 @@ const REQUESTS: RateLimit = { limit: 60, windowMs: 60_000 };
  */
 const SIGNED_PER_USER: RateLimit = { limit: 200, windowMs: 10 * 60_000 };
 const SIGNED_PER_MATCH: RateLimit = { limit: 400, windowMs: 10 * 60_000 };
+/** MOSS links per user: one file per player, a few sent again. */
+const MOSS_PER_USER: RateLimit = { limit: 30, windowMs: 10 * 60_000 };
+const mossSignSchema = z.strictObject({
+  matchId: z
+    .int()
+    .min(1)
+    .max(2 ** 31),
+  playerId: z.int().min(1),
+  name: z.string().min(1).max(255),
+  size: z.int().min(0),
+});
+const mossStoredSchema = z.strictObject({
+  matchId: z
+    .int()
+    .min(1)
+    .max(2 ** 31),
+  playerId: z.int().min(1),
+  key: z.string().max(512),
+});
+
 /** Round JSON is 5 to 15 KB: a full batch stays well under this. */
 const SUBMIT_MAX_BYTES = 2 * 1024 * 1024;
 const IDS_MAX_BYTES = 16 * 1024;
@@ -58,7 +80,9 @@ type ApiError =
   | 'closed'
   | 'rate_limited'
   | 'unavailable'
-  | 'storage';
+  | 'storage'
+  | MossUploadError
+  | 'missing';
 
 export function replayApiRoutes(app: Hono<Env>, kit: RouteKit): void {
   const { deps } = kit;
@@ -89,7 +113,15 @@ export function replayApiRoutes(app: Hono<Env>, kit: RouteKit): void {
     c: Context<Env>,
     schema: Schema,
   ): Promise<
-    { viewer: Viewer; body: z.infer<Schema>; found: LeagueMatch; replays: ReplayApiDeps } | Response
+    | {
+        viewer: Viewer;
+        body: z.infer<Schema>;
+        found: LeagueMatch;
+        replays: ReplayApiDeps;
+        /** Let in as league staff, not as one of the match's teams. */
+        staff: boolean;
+      }
+    | Response
   > {
     if (!login) return fail(c, 404, 'not_found');
     const origin = c.req.header('origin');
@@ -125,13 +157,14 @@ export function replayApiRoutes(app: Hono<Env>, kit: RouteKit): void {
     if (!match.ok)
       return match.error === 'closed' ? fail(c, 409, 'closed') : fail(c, 404, 'not_found');
     const { found } = match;
-    if (replaySides(db, viewer.playerId, found).length === 0) {
+    const staff = replaySides(db, viewer.playerId, found).length === 0;
+    if (staff) {
       const actor = await webActor(db, deps.roles, viewer, found.competitionId, deps.now());
       if (!actor || !requireStaff(db, actor, { matchId: found.id }).ok) {
         return fail(c, 403, 'forbidden');
       }
     }
-    return { viewer, body: parsed.data, found, replays: deps.replays };
+    return { viewer, body: parsed.data, found, replays: deps.replays, staff };
   }
 
   app.post('/api/replays', limit(SUBMIT_MAX_BYTES), async (c) => {
@@ -180,6 +213,65 @@ export function replayApiRoutes(app: Hono<Env>, kit: RouteKit): void {
       return c.json({ files });
     } catch {
       deps.logger.error({ matchId: found.id }, 'Stored replays could not be checked');
+      return fail(c, 503, 'storage');
+    }
+  });
+
+  // MOSS files (M-47): one per player the replays show, sent by them or an official of their
+  // side; the link is for a key made for this upload, the file staff-only once stored.
+  const MOSS_STATUS = {
+    not_played: 403,
+    not_allowed: 403,
+    too_large: 413,
+    empty: 400,
+    bad_key: 400,
+    missing: 409,
+  } as const;
+
+  app.post('/api/moss/sign', limit(IDS_MAX_BYTES), async (c) => {
+    const opened = await open(c, mossSignSchema);
+    if (opened instanceof Response) return opened;
+    const { viewer, body, found, replays, staff } = opened;
+    const wait = limiter.take(
+      [{ key: `moss:user:${String(viewer.playerId)}`, count: 1, rule: MOSS_PER_USER }],
+      deps.now(),
+    );
+    if (wait > 0) return limited(c, wait);
+    try {
+      const signed = await signMossUpload(db, replays.objects, found, {
+        uploaderId: viewer.playerId,
+        staff,
+        playerId: body.playerId,
+        name: body.name,
+        size: body.size,
+      });
+      if (!signed.ok) return fail(c, MOSS_STATUS[signed.error], signed.error);
+      c.header('Cache-Control', 'no-store');
+      const { key, url, method, headers } = signed;
+      return c.json({ key, url, method, headers });
+    } catch {
+      deps.logger.error({ matchId: found.id }, 'A MOSS upload could not be signed');
+      return fail(c, 503, 'storage');
+    }
+  });
+
+  app.post('/api/moss/stored', limit(IDS_MAX_BYTES), async (c) => {
+    const opened = await open(c, mossStoredSchema);
+    if (opened instanceof Response) return opened;
+    const { viewer, body, found, replays, staff } = opened;
+    try {
+      const stored = await storeMoss(
+        db,
+        replays.objects,
+        found,
+        { uploaderId: viewer.playerId, staff, playerId: body.playerId, key: body.key },
+        deps.now(),
+      );
+      if (!stored.ok) return fail(c, MOSS_STATUS[stored.error], stored.error);
+      c.header('Cache-Control', 'no-store');
+      return c.json({ stored: true });
+    } catch {
+      deps.logger.error({ matchId: found.id }, 'A MOSS file could not be checked');
       return fail(c, 503, 'storage');
     }
   });

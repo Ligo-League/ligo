@@ -1738,4 +1738,14 @@ export const en: Record<MessageKey, string> = {
   'web.replays.ui.refused.not_this_match': "neither of the match's teams is recognised",
   'web.replays.ui.refused.other_match': 'already sent for another match',
   'web.replays.ui.status.failed': '{n} file(s) could not be uploaded.',
+  'web.replays.ui.moss.title': 'MOSS files',
+  'web.replays.ui.moss.help':
+    'One file per player the replays show on the map: the player sends it, or a team official for them. Only the staff see them.',
+  'web.replays.ui.moss.none':
+    "Ligo doesn't know yet who played: send the replays first, then reload the page after a minute.",
+  'web.replays.ui.moss.sent': 'sent',
+  'web.replays.ui.moss.missing': 'to send',
+  'web.replays.ui.moss.sending': 'sending…',
+  'web.replays.ui.moss.failed': 'upload failed, try again',
+  'web.replays.ui.moss.tooLarge': 'file too large',
 };

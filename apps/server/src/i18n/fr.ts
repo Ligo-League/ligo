@@ -1799,6 +1799,16 @@ export const fr = {
   'web.replays.ui.refused.not_this_match': "aucune équipe du match n'y est reconnue",
   'web.replays.ui.refused.other_match': 'déjà envoyé pour un autre match',
   'web.replays.ui.status.failed': "{n} fichier(s) n'ont pas pu être envoyés.",
+  'web.replays.ui.moss.title': 'Fichiers MOSS',
+  'web.replays.ui.moss.help':
+    "Un fichier par joueur que les replays montrent sur la carte : le joueur l'envoie, ou un responsable de l'équipe pour lui. Seul le staff les voit.",
+  'web.replays.ui.moss.none':
+    "Ligo ne sait pas encore qui a joué : envoie d'abord les replays, puis recharge la page après une minute.",
+  'web.replays.ui.moss.sent': 'envoyé',
+  'web.replays.ui.moss.missing': 'à envoyer',
+  'web.replays.ui.moss.sending': 'envoi…',
+  'web.replays.ui.moss.failed': "échec de l'envoi, réessaie",
+  'web.replays.ui.moss.tooLarge': 'fichier trop lourd',
 } as const;
 
 export type MessageKey = keyof typeof fr;

@@ -182,3 +182,69 @@ describe('POST /api/replays, /sign and /stored', () => {
     );
   });
 });
+
+describe('POST /api/moss/sign and /stored', () => {
+  it('lets a player who played send their own MOSS file, and nobody else’s', async () => {
+    const { db, objects, found, postJson, file } = await setup();
+    const ana = db
+      .select()
+      .from(schema.player)
+      .where(eq(schema.player.discordUserId, ANA.id))
+      .get();
+    if (!ana) throw new Error('Ana did not log in');
+    const account = 'aaaaaaaa-0000-4000-8000-000000000000';
+    db.insert(schema.gameAccount)
+      .values({ playerId: ana.id, title: 'r6', externalId: account, displayName: 'Ana' })
+      .run();
+    // Ana plays on side A in the replays, alongside Bravo's five.
+    const round = file(0);
+    const raw = round.round as {
+      players: { profileID: string; username: string; teamIndex: number }[];
+    };
+    raw.players.push({ profileID: account, username: 'aaaaaaaa', teamIndex: 0 });
+    expect(
+      (await postJson('/api/replays', { matchId: found.id, parser: PARSER, files: [round] }))
+        .status,
+    ).toBe(200);
+    const gameId = db
+      .insert(schema.game)
+      .values({ matchId: found.id, n: 1, map: 'Clubhouse', bansJson: [] })
+      .returning()
+      .get().id;
+    db.insert(schema.replaySegment)
+      .values({
+        matchId: found.id,
+        gameId,
+        lobbyId: 'L1',
+        startedAt: 0,
+        status: 'ok',
+        teamMapJson: ['a', 'b'],
+      })
+      .run();
+
+    const signed = await postJson('/api/moss/sign', {
+      matchId: found.id,
+      playerId: ana.id,
+      name: 'moss.zip',
+      size: 40,
+    });
+    expect(signed.status).toBe(200);
+    const { key } = (await signed.json()) as { key: string };
+    await objects.put(key, new Uint8Array(40), 'application/octet-stream');
+    const stored = await postJson('/api/moss/stored', { matchId: found.id, playerId: ana.id, key });
+    expect(stored.status).toBe(200);
+    expect(
+      db.select().from(schema.evidence).where(eq(schema.evidence.kind, 'moss')).all(),
+    ).toHaveLength(1);
+
+    const teammate = db.select().from(schema.player).where(eq(schema.player.slug, 'b1')).get();
+    const refused = await postJson('/api/moss/sign', {
+      matchId: found.id,
+      playerId: teammate?.id ?? 0,
+      name: 'moss.zip',
+      size: 40,
+    });
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toEqual({ error: 'not_allowed' });
+  });
+});

@@ -3,6 +3,7 @@ import { UPLOADER_MESSAGES, type UploaderConfig } from '@ligo/uploader';
 import type { Context, Hono } from 'hono';
 import { catalogs } from '../i18n/index.ts';
 import { requireStaff } from '../services/permissions.ts';
+import { MOSS_MAX_BYTES, mossCheck, mossTargets } from '../services/moss.ts';
 import { replayMatch, replaySides, uploaderSetup } from '../services/replay-uploads.ts';
 import type { Env, Viewer } from './app.ts';
 import { contentSecurityPolicy } from './csp.ts';
@@ -28,18 +29,23 @@ export function replayPageRoutes(
   const { deps, render, notFound, forbidden } = kit;
   const { db, locale } = deps;
 
-  /** Whether the viewer sends this match's replays: re-read from the database, and Discord. */
-  const mayUpload = async (viewer: Viewer, found: LeagueMatch) => {
-    if (replaySides(db, viewer.playerId, found).length > 0) return true;
+  /**
+   * Whether the viewer sends this match's replays, as one of its teams or as league staff:
+   * re-read from the database, and Discord for staff. Null when neither.
+   */
+  const access = async (viewer: Viewer, found: LeagueMatch) => {
+    if (replaySides(db, viewer.playerId, found).length > 0) return { staff: false };
     const actor = await webActor(db, deps.roles, viewer, found.competitionId, deps.now());
-    return actor !== null && requireStaff(db, actor, { matchId: found.id }).ok;
+    return actor !== null && requireStaff(db, actor, { matchId: found.id }).ok
+      ? { staff: true }
+      : null;
   };
 
   const link = async (c: Context<Env>, matchId: number): Promise<Html | string> => {
     const viewer = c.get('viewer');
     const match = replayMatch(db, matchId);
     if (!viewer || !match.ok || !deps.uploader || !deps.replays) return '';
-    return (await mayUpload(viewer, match.found)) ? replaysLink(locale, matchId) : '';
+    return (await access(viewer, match.found)) ? replaysLink(locale, matchId) : '';
   };
 
   app.get('/matches/:id/replays', async (c) => {
@@ -50,7 +56,8 @@ export function replayPageRoutes(
     const match = ROW_ID.test(id) ? replayMatch(db, Number(id)) : null;
     if (!match?.ok) return notFound(c);
     const { found } = match;
-    if (!(await mayUpload(viewer, found))) return forbidden(c);
+    const allowed = await access(viewer, found);
+    if (!allowed) return forbidden(c);
 
     const { uploader, replays } = deps;
     const config: UploaderConfig | null =
@@ -65,6 +72,12 @@ export function replayPageRoutes(
               worker: '/static/parser-worker.js',
             },
             ...uploaderSetup(db, found),
+            moss: mossCheck(db, found).required
+              ? {
+                  maxBytes: MOSS_MAX_BYTES,
+                  players: mossTargets(db, viewer.playerId, found, allowed.staff),
+                }
+              : null,
             messages: Object.fromEntries(
               // The island fills each message's `{name}` parts itself.
               UPLOADER_MESSAGES.map((key) => [key, catalogs[locale][`web.replays.ui.${key}`]]),

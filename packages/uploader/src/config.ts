@@ -39,6 +39,14 @@ export const UPLOADER_MESSAGES = [
   'refused.not_this_match',
   'refused.other_match',
   'status.failed',
+  'moss.title',
+  'moss.help',
+  'moss.none',
+  'moss.sent',
+  'moss.missing',
+  'moss.sending',
+  'moss.failed',
+  'moss.tooLarge',
 ] as const;
 export type UploaderMessage = (typeof UPLOADER_MESSAGES)[number];
 
@@ -67,6 +75,18 @@ export const uploaderConfigSchema = z.strictObject({
   teams: z.strictObject({ a: team, b: team }),
   /** Each known R6 account, by its SHA-256: its side and the player's name on Ligo. */
   known: z.array(z.strictObject({ hash: z.string(), side, name: z.string() })),
+  /**
+   * The MOSS files this person may send (M-47): their own, or their side's as an official, for
+   * the players the replays show. Null where the league does not ask for them.
+   */
+  moss: z
+    .strictObject({
+      maxBytes: z.int(),
+      players: z.array(
+        z.strictObject({ playerId: z.int(), name: z.string(), side, hasFile: z.boolean() }),
+      ),
+    })
+    .nullable(),
   messages: z.record(z.enum(UPLOADER_MESSAGES), z.string()),
 });
 export type UploaderConfig = z.infer<typeof uploaderConfigSchema>;
