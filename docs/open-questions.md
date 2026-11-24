@@ -635,9 +635,17 @@ section 16.
     sets one (off by default).
   - Staff may hold a match's MOSS files during an investigation (with a reason, audited): held
     files are not deleted until staff release them.
+- **Who sends one (maintainer, 24 November 2026):** the players the match's replays show on each
+  side, by their Ubisoft profile ID: normally 5 per team, plus a substitute who came in. Only
+  they have a MOSS file to send, so nobody else of the team can upload a stand-in file. Until a
+  side's replays show its players, its MOSS files cannot be checked, and the result waits. A
+  player the replays show but Ligo does not know (no account) cannot send one: staff decide.
+- **Confirmation (maintainer, 24 November 2026):** where the opponent's confirmation validates,
+  a confirmation made while files are missing leaves the match `confirmed`; Ligo validates it by
+  itself when the last file arrives. Staff may validate earlier with a written reason.
 - **Where:** design doc sections 4, 6 and 7; the MOSS channels are dropped from phase 4 (4-8);
   the upload, the check before validation, deletion and holding come with phase 5, with the
-  replay uploader.
+  replay uploader (5-10).
 
 #### M-46 · Team roles on a server that already has them
 

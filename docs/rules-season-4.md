@@ -544,6 +544,14 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
 - **MOSS** obligatoire pour chaque match : chaque joueur qui a joué envoie son fichier MOSS **sur
   le site** (lui-même, ou un responsable de l'équipe pour lui), jamais sur Discord. Les fichiers
   MOSS ne sont jamais publics : seul le staff les voit.
+- **Qui envoie un MOSS** : les joueurs que les replays du match montrent dans chaque équipe,
+  reconnus par leur identifiant Ubisoft (en général 5 par équipe, plus un remplaçant entré en
+  jeu). Eux seuls peuvent en envoyer un : personne d'autre de l'équipe ne peut déposer un
+  fichier à leur place. Tant que les replays d'une équipe ne montrent pas ses joueurs, ses MOSS
+  ne peuvent pas être vérifiés et le résultat attend. Un joueur que les replays montrent mais
+  que Ligo ne connaît pas (pas de compte) ne peut pas en envoyer : le staff décide.
+- Si l'adversaire confirme le score alors qu'il manque des MOSS, le match reste confirmé et Ligo
+  le valide tout seul à l'arrivée du dernier fichier.
 - **Un match ne peut pas être validé tant qu'il manque un fichier MOSS.** Les équipes ne peuvent
   pas passer outre ; le staff de la ligue peut valider malgré tout, avec un motif écrit (par
   exemple un fichier perdu après un plantage), et peut sanctionner l'équipe à part. Un forfait
@@ -567,7 +575,8 @@ validés, des forfaits et des sanctions, à chaque consultation. Personne ne le 
   l'autre est signalé au staff. Les replays remplacent toujours la saisie manuelle.
 - **Statut** : Règlement S3 ; replays obligatoires décidés ; saisie manuelle des statistiques
   décidée (M-39, mainteneur, 19 novembre 2026) ; MOSS sur le site, avant la validation, et leur
-  conservation décidés (M-47, mainteneur, 20 novembre 2026) ; replays de chaque équipe, avant
+  conservation décidés (M-47, mainteneur, 20 novembre 2026 ; qui les envoie, d'après les replays,
+  24 novembre 2026) ; replays de chaque équipe, avant
   la validation, décidés (M-49, mainteneur, 23 novembre 2026). MOSS et replays sur le site en
   phase 5 (réglages `moss.required` et `replays.required`, activés pour la LFR), statistiques manuelles en phase 3.
 
