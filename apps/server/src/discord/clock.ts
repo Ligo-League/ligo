@@ -1,6 +1,7 @@
-import type { Db } from '@ligo/db';
+import { markJobAlerted, type Db } from '@ligo/db';
 import { t, type Locale } from '../i18n/index.ts';
 import { randomInt } from 'node:crypto';
+import { pendingJobAlerts } from '../services/job-alerts.ts';
 import { recordQueuePost } from '../services/queue-posts.ts';
 import { runRequestTick } from '../services/requests.ts';
 import { runSchedulingTick } from '../services/scheduling.ts';
@@ -31,6 +32,43 @@ export async function tick(deps: ClockDeps): Promise<void> {
   await scheduleTick(deps);
   await vetoTick(deps);
   await requestTick(deps);
+  await jobAlertTick(deps);
+}
+
+/**
+ * Tells league staff, once, about each job the worker gave up on. A post Discord refused is
+ * tried again on the next tick; a league without a staff queue gets a log line instead.
+ */
+async function jobAlertTick(deps: ClockDeps): Promise<void> {
+  let alerts: ReturnType<typeof pendingJobAlerts>;
+  try {
+    alerts = pendingJobAlerts(deps.db);
+  } catch (error) {
+    deps.logger.error({ err: error }, 'Job alert tick failed');
+    return;
+  }
+  for (const alert of alerts) {
+    if (alert.queueChannelId === null || alert.matchId === null) {
+      deps.logger.error(
+        { jobId: alert.jobId, kind: alert.kind, matchId: alert.matchId },
+        'A job failed and the league has no staff queue',
+      );
+      markJobAlerted(deps.db, alert.jobId, deps.now());
+      continue;
+    }
+    try {
+      await deps.gateway.postMessage(alert.queueChannelId, {
+        content: t(deps.locale, 'job.failed', {
+          task: t(deps.locale, `job.kind.${alert.kind}`),
+          link: new URL(`/matches/${String(alert.matchId)}`, deps.publicUrl).href,
+          error: (alert.error ?? '').slice(0, 300),
+        }),
+      });
+      markJobAlerted(deps.db, alert.jobId, deps.now());
+    } catch (error) {
+      deps.logger.error({ err: error, jobId: alert.jobId }, 'Could not post a job alert');
+    }
+  }
 }
 
 /**

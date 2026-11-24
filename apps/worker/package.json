@@ -7,7 +7,15 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "start": "node -e \"console.error('not implemented yet (phase 5)'); process.exit(1)\""
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ligo/core": "workspace:*",
+    "@ligo/db": "workspace:*",
+    "@ligo/parsers": "workspace:*",
+    "@ligo/storage": "workspace:*",
+    "@ligo/titles": "workspace:*",
+    "pino": "^10.4.0",
+    "zod": "^4.6.7"
   }
 }

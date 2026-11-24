@@ -1731,6 +1731,12 @@ export const fr = {
   'web.admin.rules.section.stats': 'Grille de statistiques',
   'web.admin.rules.entryDays': 'Saisie par les équipes jusqu’à tant de jours après validation',
   'web.admin.rules.tolerance': 'Écart toléré entre kills et morts',
+  'job.failed':
+    '⚠️ Ligo n’a pas réussi à {task} après trois essais, pour le match {link}. Erreur : {error}',
+  'job.kind.verify_replay': 'vérifier un replay',
+  'job.kind.stitch_game': 'assembler les replays',
+  'job.kind.render_images': 'créer les images',
+  'job.kind.reparse_game': 'relire les replays',
   'web.admin.rules.section.replays': 'Replays et MOSS',
   'web.admin.rules.replaysRequired': 'Replays obligatoires avant validation',
   'web.admin.rules.replaysDeadline': 'Délai d’envoi des replays après le match (heures)',

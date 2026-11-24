@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env apps/server/src/main.ts",
-    "worker": "pnpm --filter @ligo/worker start",
+    "worker": "node --env-file-if-exists=.env apps/worker/src/index.ts",
     "test": "vitest run",
     "test:core": "vitest run --project core",
     "typecheck": "tsc --noEmit && pnpm --recursive typecheck",

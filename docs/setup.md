@@ -1323,6 +1323,24 @@ backups out of the server's reach, create a second bucket for them and a token f
 (Litestream and the nightly copy get the backup one), and tell me: only `deploy/compose.yml`
 changes.
 
+## 68. Phase 5-7: the job worker
+
+A second process, the worker, now runs next to the server: it will verify uploaded replays and
+stitch re-hosted maps. It shares the database with the server, never talks to Discord, and
+reads R2 with the same settings. Locally, `pnpm worker` starts it in another terminal (it is not
+needed until replays are uploaded).
+
+On the VPS, `deploy/update.sh` starts it with the rest. To check it:
+
+```bash
+cd /opt/ligo/deploy
+docker compose ps worker                        # running
+docker compose logs worker | grep "Worker ready"
+```
+
+A job the worker could not finish after three attempts is posted once in the league's staff
+queue channel (the server posts it), with the match's page and the error.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |

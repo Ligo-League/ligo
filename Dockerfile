@@ -1,4 +1,5 @@
-# Ligo's server: the Discord bot and the website in one process (design doc section 13). Built on
+# Ligo's server: the Discord bot and the website in one process, and the job worker, which runs
+# from the same image with its own command (design doc section 13). Built on
 # the VPS by deploy/update.sh, for its own processor (ARM or x86). Node runs the TypeScript
 # sources directly, with no build step; better-sqlite3 and resvg ship their binaries for Linux
 # x64 and ARM64, so no compiler is needed either.
@@ -29,9 +30,10 @@ COPY packages/parsers/package.json packages/parsers/
 COPY packages/render/package.json packages/render/
 COPY packages/storage/package.json packages/storage/
 COPY packages/titles/package.json packages/titles/
-RUN pnpm install --frozen-lockfile --prod --filter @ligo/server...
+RUN pnpm install --frozen-lockfile --prod --filter @ligo/server... --filter @ligo/worker...
 # The sources, the migrations, the fonts and the seed's fixtures (.dockerignore keeps the rest out).
 COPY apps/server/src apps/server/src
+COPY apps/worker/src apps/worker/src
 COPY packages packages
 COPY fixtures fixtures
 

@@ -314,7 +314,8 @@ player_rating  competition_id, player_id, mu, sigma, games
 -- operations
 job            id, kind ('verify_replay'|'stitch_game'|'render_images'|'reparse_game'), payload_json,
                status ('queued'|'running'|'done'|'failed'), attempts, run_after, locked_until NULL,
-               last_error NULL, created_at, finished_at NULL (migration 0033)
+               last_error NULL, created_at, finished_at NULL (migration 0033),
+               alerted_at NULL (staff told of its failure, migration 0034)
 audit_log      id, actor_player_id NULL, actor_kind ('user'|'bot'|'system'), action, entity, entity_id,
                before_json NULL, after_json NULL, at
 queue_post     id, entity ('request'|'match'|'dispute'), entity_id, channel_id, message_id, posted_at
@@ -833,7 +834,7 @@ Replays are parsed in the uploader's browser by a WebAssembly build of the title
 | `render_images` | game committed or result validated | Match card, refreshed standings                                               |
 | `reparse_game`  | staff command or parser upgrade    | Re-parse every stored raw file of a game and re-stitch                        |
 
-The worker claims jobs with `UPDATE job SET status='running', locked_until=now+5min WHERE id = (SELECT id … WHERE status='queued' AND run_after <= now LIMIT 1) RETURNING *`. Failures retry with backoff up to 3 times, then alert staff.
+The worker claims jobs with `UPDATE job SET status='running', locked_until=now+5min WHERE id = (SELECT id … WHERE status='queued' AND run_after <= now LIMIT 1) RETURNING *`; a running job whose lock ran out (its worker stopped) is claimed again. Failures retry after 1, then 5 minutes, and the third failure fails the job. The worker never talks to Discord: the server's clock posts each failed job once in the league's staff queue, with the match's page and the error (`job.alerted_at`, migration 0034). The same work waiting twice (same kind and payload, not yet claimed) is queued once (`packages/db/src/queries/jobs.ts`, `apps/worker`, 5-7). In production the worker runs from the server's image with its own command, limited to one CPU and 1.5 GB of memory.
 
 **From files to a game** (server, TypeScript, on JSON)
 

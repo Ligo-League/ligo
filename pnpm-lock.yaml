@@ -239,7 +239,29 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
 
-  apps/worker: {}
+  apps/worker:
+    dependencies:
+      '@ligo/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@ligo/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@ligo/parsers':
+        specifier: workspace:*
+        version: link:../../packages/parsers
+      '@ligo/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
+      '@ligo/titles':
+        specifier: workspace:*
+        version: link:../../packages/titles
+      pino:
+        specifier: ^10.4.0
+        version: 10.4.0
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/core:
     dependencies:

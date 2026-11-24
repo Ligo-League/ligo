@@ -16,6 +16,7 @@ export default defineConfig({
       project('db', 'packages/db/src'),
       project('render', 'packages/render/src'),
       project('server', 'apps/server/src'),
+      project('worker', 'apps/worker/src'),
     ],
   },
 });

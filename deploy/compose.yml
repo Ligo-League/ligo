@@ -1,5 +1,5 @@
 # Ligo on the VPS (design doc section 13): Caddy in front, the server (bot and website in one
-# process), Litestream copying the database to R2. The worker joins in phase 5.
+# process), the job worker, Litestream copying the database to R2.
 #
 # Run from this folder: `docker compose up -d` (deploy/update.sh does it). Values come from
 # deploy/.env, which stays on the VPS (see .env.example). Every variable is written out below so
@@ -45,6 +45,34 @@ services:
       - ${DATA_DIR:-/srv/ligo/data}:/data
     # The server closes the Discord connection and the database on SIGTERM.
     stop_grace_period: 30s
+    logging: *logging
+
+  # The job worker (phase 5): verifies replays and stitches games, from the same image and the same
+  # database. No Discord token: only the server talks to Discord. A replay parse peaks near 350 MB
+  # and is cut at 1 GB of WebAssembly memory, so the limits leave the server its share.
+  worker:
+    image: ligo-server:latest
+    restart: unless-stopped
+    depends_on:
+      - server
+    command: ['node', 'apps/worker/src/index.ts']
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PARSERS_DIR: /app/parsers/dist
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:?set R2_ACCOUNT_ID in deploy/.env}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?set R2_ACCESS_KEY_ID in deploy/.env}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?set R2_SECRET_ACCESS_KEY in deploy/.env}
+      R2_BUCKET: ${R2_BUCKET:?set R2_BUCKET in deploy/.env}
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+    volumes:
+      - ${DATA_DIR:-/srv/ligo/data}:/data
+    cpus: 1.0
+    mem_limit: 1536m
+    # The image's check asks the website, which the worker does not serve.
+    healthcheck:
+      disable: true
+    # A job in progress (a parse takes up to 60 s) finishes before the worker stops.
+    stop_grace_period: 75s
     logging: *logging
 
   caddy:
