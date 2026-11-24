@@ -74,6 +74,15 @@ describe('createR2ObjectStore', () => {
     expect(sent[0]?.input).toMatchObject({ Bucket: 'ligo', Key: KEY, Range: 'bytes=0-10' });
   });
 
+  it('reads the first bytes of an object with a range, or null when missing', async () => {
+    const { sent, s3 } = client(() => body([80, 75, 3, 4]));
+    const store = createR2ObjectStore(SETTINGS, { client: s3, now: () => 0 });
+    expect(await store.head(KEY, 4)).toEqual(new Uint8Array([80, 75, 3, 4]));
+    expect(sent[0]?.input).toMatchObject({ Key: KEY, Range: 'bytes=0-3' });
+    const gone = createR2ObjectStore(SETTINGS, { client: client(missing).s3, now: () => 0 });
+    expect(await gone.head(KEY, 4)).toBeNull();
+  });
+
   it('tells a size, or null for a missing object, and deletes', async () => {
     const { sent, s3 } = client((name) =>
       name === 'HeadObjectCommand' ? { ContentLength: 7 } : {},

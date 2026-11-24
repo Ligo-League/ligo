@@ -39,6 +39,14 @@ describe.each([
     await expect(store.delete(KEY)).resolves.toBeUndefined();
   });
 
+  it('reads only the first bytes of an object, all of a smaller one', async () => {
+    const store = make();
+    await store.put(KEY, new Uint8Array([1, 2, 3, 4, 5]), 'image/png');
+    expect(await store.head(KEY, 2)).toEqual(new Uint8Array([1, 2]));
+    expect(await store.head(KEY, 9)).toEqual(new Uint8Array([1, 2, 3, 4, 5]));
+    expect(await store.head(`evidence/3/${'b'.repeat(64)}.png`, 2)).toBeNull();
+  });
+
   it('answers null for an object over the size asked for', async () => {
     const store = make();
     await store.put(KEY, new Uint8Array([1, 2, 3]), 'image/png');

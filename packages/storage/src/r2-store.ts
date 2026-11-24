@@ -83,6 +83,18 @@ export function createR2ObjectStore(
         throw error;
       }
     },
+    async head(key, bytes) {
+      if (!isStorageKey(key)) return null;
+      try {
+        const answer = (await client.send(
+          new GetObjectCommand({ Bucket, Key: key, Range: `bytes=0-${String(bytes - 1)}` }),
+        )) as { Body?: { transformToByteArray(): Promise<Uint8Array> } };
+        return answer.Body ? (await answer.Body.transformToByteArray()).slice(0, bytes) : null;
+      } catch (error) {
+        if (isMissing(error)) return null;
+        throw error;
+      }
+    },
     async size(key) {
       if (!isStorageKey(key)) return null;
       try {

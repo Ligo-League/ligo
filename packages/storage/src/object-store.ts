@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { signUploadToken } from './upload-token.ts';
 
@@ -36,6 +36,8 @@ export interface ObjectStore {
   get(key: string, maxBytes: number): Promise<Uint8Array | null>;
   /** Its size in bytes, or null when it is missing. */
   size(key: string): Promise<number | null>;
+  /** Its first `bytes` bytes (all of a smaller one), or null when it is missing. */
+  head(key: string, bytes: number): Promise<Uint8Array | null>;
   /** Deletes the object; a missing one is not an error. */
   delete(key: string): Promise<void>;
   /** A short-lived upload of exactly one file to `key`. */
@@ -72,6 +74,22 @@ export function createDiskObjectStore(root: string, options: DiskOptions): Objec
         return new Uint8Array(await readFile(path(key)));
       } catch {
         return null;
+      }
+    },
+    async head(key, bytes) {
+      if (!isStorageKey(key)) return null;
+      let file;
+      try {
+        file = await open(path(key), 'r');
+      } catch {
+        return null;
+      }
+      try {
+        const buffer = new Uint8Array(bytes);
+        const { bytesRead } = await file.read(buffer, 0, bytes, 0);
+        return buffer.slice(0, bytesRead);
+      } finally {
+        await file.close();
       }
     },
     async size(key) {
@@ -116,6 +134,9 @@ export function withReadFallback(primary: ObjectStore, fallback: ObjectStore): O
     async size(key) {
       return (await primary.size(key)) ?? (await fallback.size(key));
     },
+    async head(key, bytes) {
+      return (await primary.head(key, bytes)) ?? (await fallback.head(key, bytes));
+    },
     async delete(key) {
       await primary.delete(key);
       await fallback.delete(key);
@@ -158,6 +179,9 @@ export function fakeObjectStore(): ObjectStore & {
     },
     size(key: string) {
       return Promise.resolve(store.objects.get(key)?.length ?? null);
+    },
+    head(key: string, bytes: number) {
+      return Promise.resolve(store.objects.get(key)?.slice(0, bytes) ?? null);
     },
     delete(key: string) {
       if (!isStorageKey(key)) return refuse();
