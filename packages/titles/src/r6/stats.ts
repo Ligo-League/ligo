@@ -4,7 +4,9 @@ import type { Derived, Metric, StatValues, TitleStats } from '../stats.ts';
 // scoreboard shows; the rest comes only from replays with round detail (phase 5). The limits are
 // what cannot happen: five players a side, one death a round, five kills at most a round.
 
-const PLAYERS_PER_SIDE = 5;
+/** A team on the map: also how many MOSS files each side owes (M-47). */
+export const R6_PLAYERS_PER_SIDE = 5;
+const PLAYERS_PER_SIDE = R6_PLAYERS_PER_SIDE;
 
 /** A value the other limits read, when the player entered it as a whole number. */
 const known = (values: StatValues, key: string): number | null => {
