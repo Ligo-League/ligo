@@ -8,3 +8,4 @@ export * from './queries/matches.ts';
 export * from './queries/standings.ts';
 export * as schema from './schema/index.ts';
 export * from './queries/jobs.ts';
+export * from './queries/replays.ts';

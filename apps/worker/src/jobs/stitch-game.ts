@@ -6,9 +6,9 @@ import {
   type Segment,
   type StitchSegment,
 } from '@ligo/core';
-import { listLeagueMatches, schema, type Db, type LeagueMatch, type Tx } from '@ligo/db';
+import { listLeagueMatches, matchAccounts, schema, type Db, type Tx } from '@ligo/db';
 import { R6_GAME_SCORE, r6ReplayRound, type R6Unit } from '@ligo/titles';
-import { and, asc, eq, gt, inArray, isNull, lte, ne, or } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 
 // `stitch_game` (design doc section 8, "From files to a game" and "Stitching re-hosted games"),
 // for a whole match, since its lobbies are sorted into its games together:
@@ -24,14 +24,10 @@ import { and, asc, eq, gt, inArray, isNull, lte, ne, or } from 'drizzle-orm';
 const {
   competition,
   game,
-  gameAccount,
   gameRound,
   killEvent,
-  lineup,
-  lineupMember,
   replayFile,
   replaySegment,
-  rosterEntry,
   roundPlayer,
   season,
   segmentRound,
@@ -46,51 +42,6 @@ const lower = (side: ReplaySide) => (side === 'A' ? 'a' : 'b');
 const upper = (side: 'a' | 'b'): ReplaySide => (side === 'a' ? 'A' : 'B');
 /** Results whose score is the one replays are checked against. */
 const REPORTED = new Set(['reported', 'confirmed', 'validated']);
-
-/** Each side's game accounts: the season roster when the match was played, and its lineups. */
-function sideAccounts(db: Db, found: LeagueMatch) {
-  const at = found.scheduledAt ?? found.window.end - 1;
-  const players = new Map<number, ReplaySide>();
-  for (const side of ['a', 'b'] as const) {
-    const rows = db
-      .select({ playerId: rosterEntry.playerId })
-      .from(rosterEntry)
-      .where(
-        and(
-          eq(rosterEntry.seasonId, found.seasonId),
-          eq(rosterEntry.teamId, found[side].teamId),
-          ne(rosterEntry.role, 'coach'),
-          lte(rosterEntry.validFrom, at),
-          or(isNull(rosterEntry.validTo), gt(rosterEntry.validTo, at)),
-        ),
-      )
-      .all();
-    for (const row of rows) players.set(row.playerId, upper(side));
-  }
-  const members = db
-    .select({ playerId: lineupMember.playerId, side: lineup.side })
-    .from(lineupMember)
-    .innerJoin(lineup, eq(lineupMember.lineupId, lineup.id))
-    .where(eq(lineup.matchId, found.id))
-    .all();
-  for (const row of members) players.set(row.playerId, upper(row.side));
-
-  const teamOf = new Map<string, ReplaySide>();
-  const playerOf = new Map<string, number>();
-  if (players.size === 0) return { teamOf, playerOf };
-  const accounts = db
-    .select({ playerId: gameAccount.playerId, externalId: gameAccount.externalId })
-    .from(gameAccount)
-    .where(and(eq(gameAccount.title, 'r6'), inArray(gameAccount.playerId, [...players.keys()])))
-    .all();
-  for (const { playerId, externalId } of accounts) {
-    const side = players.get(playerId);
-    if (externalId === null || !side) continue;
-    teamOf.set(externalId, side);
-    playerOf.set(externalId, playerId);
-  }
-  return { teamOf, playerOf };
-}
 
 export async function stitchMatch(
   deps: StitchDeps,
@@ -130,7 +81,7 @@ export async function stitchMatch(
     n: row.n,
     map: row.map ?? (games.length === 1 && played.size === 1 ? (onlyMap ?? null) : null),
   }));
-  const { teamOf, playerOf } = sideAccounts(db, found);
+  const { teamOf, playerOf } = matchAccounts(db, found);
   const grouped = groupReplays({
     files: rounds,
     games: gameMaps,
