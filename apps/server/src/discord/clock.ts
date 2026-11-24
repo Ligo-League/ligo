@@ -11,6 +11,8 @@ import type { DiscordGateway } from './gateway.ts';
 import { discordTime, matchFixture, mention, storedLine } from './match-text.ts';
 import { announceWithCard } from './match-card.ts';
 import type { AssetStore } from '../assets/store.ts';
+import type { ObjectStore } from '@ligo/storage';
+import { deleteDueMoss } from '../services/moss-retention.ts';
 import { validateCompleted, type CompletedValidation } from '../services/complete-validation.ts';
 import { postLink, requestQueueMessage } from './request-text.ts';
 import type { ErrorLogger } from './router.ts';
@@ -26,6 +28,8 @@ export interface ClockDeps {
   /** The website's address, for the links in the bot's posts. */
   publicUrl: URL;
   now(): number;
+  /** Where MOSS files are kept, to delete them when their time is up; none, nothing deleted. */
+  objects?: ObjectStore;
   /** Logos for the result card of a result validated by the clock; none by default. */
   assets?: AssetStore;
   /** A whole number from 0 to `below` − 1, for a veto step that ran out; crypto by default. */
@@ -39,6 +43,19 @@ export async function tick(deps: ClockDeps): Promise<void> {
   await requestTick(deps);
   await jobAlertTick(deps);
   await completionTick(deps);
+  await mossRetentionTick(deps);
+}
+
+/** MOSS files whose time is up (season closed, or the league's retention): deleted. */
+async function mossRetentionTick(deps: ClockDeps): Promise<void> {
+  if (!deps.objects) return;
+  try {
+    await deleteDueMoss(deps.db, deps.objects, deps.now(), (details) => {
+      deps.logger.error(details, 'A MOSS file could not be deleted; tried again next tick');
+    });
+  } catch (error) {
+    deps.logger.error({ err: error }, 'MOSS retention tick failed');
+  }
 }
 
 /** Logos are a bonus on the result card: without the store, the card has none. */
