@@ -156,3 +156,6 @@ data/
 
 # Real replays for the golden tests: downloaded by scripts/fixtures-replays.sh, never committed
 fixtures/replays/
+
+# Claude Code worktrees: other checkouts of this repository, never committed.
+.claude/worktrees/
