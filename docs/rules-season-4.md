@@ -347,7 +347,14 @@ M-xx : mainteneur).
 - Le score d'avant l'incident est conservé. Chaque équipe peut demander **un re-host par
   carte**. Le staff peut en accorder d'autres, à sa discrétion, pour un vrai problème (bug du
   jeu, incident grave chez un joueur), et tranche en cas de désaccord.
-- **Statut** : Décidée. Pas encore appliquée par l'outil (phase 5, replays).
+- En envoyant ses replays, une équipe peut indiquer quelle équipe a demandé chaque re-host
+  (facultatif). Une carte avec plus de re-hosts que permis (au total, ou pour une équipe selon
+  ce qui a été indiqué) peut être envoyée, mais ses replays attendent l'accord du staff sur le
+  site, même si le staff l'a déjà accepté sur Discord ou à l'oral.
+- **Statut** : Décidée (O-14 ; maintainer, 24 novembre 2026). Le nombre de re-hosts par
+  équipe est un réglage de la ligue (`replays.rehosts_per_team`, 1 en LFR).
+- **Appliquée par** : l'assemblage des replays (phase 5, en cours) : Ligo reconnaît chaque
+  lobby d'une même carte et compte les re-hosts.
 
 ## 5. Résultats
 

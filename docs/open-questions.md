@@ -985,6 +985,14 @@ section 16.
 - **Answer (maintainer, 14 November 2026):** one re-host per team per map. Staff may allow more,
   at their discretion, when there is a real problem: a game bug, a serious incident at a player's
   home. Built with replays (phase 5).
+- **How Ligo applies it (maintainer, 24 November 2026):**
+  - The number of re-hosts per team and map is a league setting, `replays.rehosts_per_team`
+    (1 by default, LFR's rule).
+  - When uploading replays, a team may say which team called each re-host. It is optional; it
+    lets staff check passively that each team keeps to its share.
+  - A map with more re-hosts than the setting allows (in all, or for one team as declared) can
+    still be uploaded, but its replays wait for staff approval on the website, even when staff
+    already agreed on Discord or out loud.
 
 #### O-15 · Barrages
 
