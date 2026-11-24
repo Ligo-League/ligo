@@ -4,6 +4,7 @@ import { loadNodeParser } from '@ligo/parsers/node';
 import { createDiskObjectStore, createR2ObjectStore, withReadFallback } from '@ligo/storage';
 import { pino } from 'pino';
 import { loadWorkerConfig } from './config.ts';
+import { stitchMatch } from './jobs/stitch-game.ts';
 import { verifyReplay } from './jobs/verify-replay.ts';
 import { startWorker, type JobHandlers } from './runner.ts';
 
@@ -34,6 +35,7 @@ const parser = loadedParser.ok ? loadedParser.parser : null;
 
 const now = () => Date.now();
 const handlers: JobHandlers = {
+  stitch_game: (payload) => stitchMatch({ db, now }, payload),
   ...(parser && {
     verify_replay: (payload) => verifyReplay({ db, objects, parser, now }, payload),
   }),

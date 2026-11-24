@@ -870,6 +870,14 @@ On the 38 maps of the test replays (pro events, Y11S1 to Y11S3), the plan gives 
 
 Re-stitching rewrites only `game_round`; facts stay keyed by (segment, local round). The score inside a replay header is never used across segments.
 
+As built (`apps/worker/src/jobs/stitch-game.ts`, 5-7), one `stitch_game` job takes a whole match, since its lobbies are sorted into its games together:
+
+- `game.stitch_status` is `auto` when every check passed against the reported score, `needs_review` when a check failed or two recordings of a round disagree (check `recordings_agree`), and `none` while no score is reported yet: the rounds are written, and the next stitch (after the report) decides. Its checks are kept in `stitch_checks_json` for the review page.
+- A best-of-one game without a map (no veto on Ligo) takes its lobbies when they all played one map of the pool.
+- Each team's accounts are the season roster at the time of the match, plus its lineups. Rounds whose map, mode or file cannot be read are left out.
+- Staff decisions stay: a game staff stitched by hand (`staff`) and a lobby staff ignored are never changed by a new stitch. An ignored lobby is in no game.
+- `verify_replay` queues a new stitch when the server's reading replaces the browser's.
+
 **Retention**
 
 - Raw R6 files stay in R2 for at least one season after the match (re-parse after a parser fix, disputes, investigations); then delete them.
