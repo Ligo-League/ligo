@@ -43,6 +43,8 @@ export interface SegmentRound {
 
 export interface Segment {
   lobbyId: string;
+  /** The team on each file side of the lobby, as its players resolved them. */
+  teams: [ReplaySide, ReplaySide];
   /** In round-number order. */
   rounds: SegmentRound[];
 }
@@ -144,7 +146,11 @@ export function groupReplays(input: GroupInput): Grouped {
       continue;
     }
 
-    game.segments.push({ lobbyId, rounds: canonicalRounds(lobbyId, files, teams, game.issues) });
+    game.segments.push({
+      lobbyId,
+      teams,
+      rounds: canonicalRounds(lobbyId, files, teams, game.issues),
+    });
     game.issues.push(...playerIssues(lobbyId, files, teams, input.teamOf));
   }
   return { games, unassigned };

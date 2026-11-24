@@ -25,7 +25,7 @@ function map(sequence: string, start = 0): StitchSegment[] {
   let time = start;
   let fileId = 1;
   const close = () => {
-    segments.push({ lobbyId: `L${String(segments.length + 1)}`, rounds });
+    segments.push({ lobbyId: `L${String(segments.length + 1)}`, teams: ['A', 'B'], rounds });
     rounds = [];
   };
   for (const char of sequence) {

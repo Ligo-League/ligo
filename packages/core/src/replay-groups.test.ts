@@ -44,6 +44,7 @@ describe('groupReplays', () => {
         segments: [
           {
             lobbyId: 'L1',
+            teams: ['A', 'B'],
             rounds: [
               {
                 fileId: expect.any(Number) as number,
@@ -69,6 +70,7 @@ describe('groupReplays', () => {
 
   it('turns file sides into the match’s teams from the players, whatever the side order', () => {
     const result = group([file('L1', 0, { accounts: [B, A], winner: 0, attacker: 1 })]);
+    expect(result.games[0]?.segments[0]?.teams).toEqual(['B', 'A']);
     expect(result.games[0]?.segments[0]?.rounds[0]).toMatchObject({ winner: 'B', attacker: 'A' });
   });
 
