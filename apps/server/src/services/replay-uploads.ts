@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { actsForSide } from '@ligo/core';
 import {
   enqueueJob,
@@ -332,4 +333,57 @@ export async function markReplaysStored(
     outcomes.push({ id, status: 'stored' });
   }
   return outcomes;
+}
+
+/** What the uploader page needs of the match, for the island (`@ligo/uploader` config). */
+export interface UploaderSetup {
+  tradeWindowS: number;
+  minKnown: number;
+  /** Folders recorded in this span are picked by default: around the match, or its week. */
+  window: { start: number; end: number };
+  teams: { a: { name: string; tag: string }; b: { name: string; tag: string } };
+  /** Each known R6 account as its SHA-256 (never the profile ID itself, M-42). */
+  known: { hash: string; side: Side; name: string }[];
+}
+
+const HOUR = 3_600_000;
+
+export function uploaderSetup(db: Pick<Db, 'select'>, found: LeagueMatch): UploaderSetup {
+  const rules = db
+    .select({ ruleset: competition.rulesetJson })
+    .from(season)
+    .innerJoin(competition, eq(season.competitionId, competition.id))
+    .where(eq(season.id, found.seasonId))
+    .get();
+  if (!rules) throw new Error(`Season ${String(found.seasonId)} has no competition`);
+  const { teamOf, playerOf } = matchAccounts(db, found);
+  const ids = [...new Set(playerOf.values())];
+  const names = new Map(
+    ids.length === 0
+      ? []
+      : db
+          .select({ id: schema.player.id, name: schema.player.displayName })
+          .from(schema.player)
+          .where(inArray(schema.player.id, ids))
+          .all()
+          .map((row) => [row.id, row.name]),
+  );
+  return {
+    tradeWindowS: rules.ruleset.replays.trade_window_s,
+    minKnown: rules.ruleset.replays.min_known_players,
+    // A lobby starts a little before the time set, and a re-hosted best-of-five ends hours later.
+    window:
+      found.scheduledAt === null
+        ? found.window
+        : { start: found.scheduledAt - 2 * HOUR, end: found.scheduledAt + 8 * HOUR },
+    teams: {
+      a: { name: found.a.name, tag: found.a.tag },
+      b: { name: found.b.name, tag: found.b.tag },
+    },
+    known: [...teamOf.entries()].map(([account, team]) => ({
+      hash: createHash('sha256').update(account.toLowerCase()).digest('hex'),
+      side: team === 'A' ? 'a' : 'b',
+      name: names.get(playerOf.get(account) ?? 0) ?? '?',
+    })),
+  };
 }

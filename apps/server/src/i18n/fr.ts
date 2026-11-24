@@ -1756,6 +1756,49 @@ export const fr = {
   'web.admin.rules.reasonKey': 'Clé',
   'web.admin.rules.reasonFr': 'Libellé (français)',
   'web.admin.rules.reasonEn': 'Libellé (anglais, facultatif)',
+  'web.replays.link': 'Envoyer les replays',
+  'web.replays.title': 'Replays · {a} – {b}',
+  'web.replays.intro':
+    'Choisis ton dossier MatchReplay (dans Documents\\My Games\\Rainbow Six - Siege\\<ton ID>\\). Les fichiers sont lus dans ton navigateur ; seules les manches de ce match sont envoyées. Chaque équipe envoie son propre enregistrement de chaque carte.',
+  'web.replays.noscript':
+    'Cette page a besoin de JavaScript pour lire les replays dans ton navigateur.',
+  'web.replays.unavailable':
+    "L'envoi de replays n'est pas disponible pour le moment. Réessaie plus tard ou préviens le staff.",
+  'web.replays.ui.pick': 'Dossier MatchReplay :',
+  'web.replays.ui.pickHelp':
+    'Les dossiers enregistrés autour du match sont cochés ; tu peux changer le choix.',
+  'web.replays.ui.noFolders': 'Aucun fichier de manche (.rec) dans ce dossier.',
+  'web.replays.ui.folder': 'Partie du {date}',
+  'web.replays.ui.folderRounds': '{n} manche(s)',
+  'web.replays.ui.outsideWindow': 'hors de la date du match',
+  'web.replays.ui.parse': 'Lire les dossiers cochés',
+  'web.replays.ui.parsing': 'Lecture des manches : {done} sur {total}…',
+  'web.replays.ui.parseFailed': '{n} fichier(s) illisible(s) :',
+  'web.replays.ui.lobby': '{map} · {date}',
+  'web.replays.ui.lobbyRounds': '{n} manche(s)',
+  'web.replays.ui.notCustom': "Ce n'est pas une partie personnalisée : le staff en sera averti.",
+  'web.replays.ui.unknownTeams':
+    "Aucune équipe du match n'est reconnue dans cette partie : elle sera refusée. Vérifie que les joueurs ont renseigné leur compte Ubisoft sur Ligo.",
+  'web.replays.ui.unknownPlayer': 'inconnu',
+  'web.replays.ui.round': 'Manche {n}',
+  'web.replays.ui.roundCut': 'interrompue',
+  'web.replays.ui.send': 'Envoyer {n} manche(s)',
+  'web.replays.ui.sending': 'Envoi des manches…',
+  'web.replays.ui.uploading': 'Envoi des fichiers bruts, ne ferme pas la page.',
+  'web.replays.ui.uploaded': '{done} sur {total} fichiers envoyés.',
+  'web.replays.ui.reload': 'Recharger la page',
+  'web.replays.ui.parserChanged':
+    'Ligo vient de changer de version de lecteur de replays : recharge la page puis choisis à nouveau ton dossier.',
+  'web.replays.ui.done': 'Terminé.',
+  'web.replays.ui.back': 'Retour au match',
+  'web.replays.ui.retry': 'Réessayer',
+  'web.replays.ui.error': 'Une erreur est survenue. Réessaie ; si elle revient, préviens le staff.',
+  'web.replays.ui.refused.not_a_replay': 'pas un fichier de manche (.rec)',
+  'web.replays.ui.refused.invalid': 'illisible',
+  'web.replays.ui.refused.not_bomb': 'pas une manche en mode Bombe',
+  'web.replays.ui.refused.not_this_match': "aucune équipe du match n'y est reconnue",
+  'web.replays.ui.refused.other_match': 'déjà envoyé pour un autre match',
+  'web.replays.ui.status.failed': "{n} fichier(s) n'ont pas pu être envoyés.",
 } as const;
 
 export type MessageKey = keyof typeof fr;

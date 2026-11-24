@@ -4,7 +4,6 @@ import { dirname, resolve } from 'node:path';
 import { applyMigrations, backupFolder, openDatabase } from '@ligo/db';
 import { createEvidenceStore } from './assets/evidence-store.ts';
 import { createDiskObjectStore, createR2ObjectStore, withReadFallback } from '@ligo/storage';
-import { readParserBuild } from '@ligo/parsers/node';
 import { createTranscriptStore } from './assets/transcript-store.ts';
 import { createLocalAssetStore } from './assets/store.ts';
 import { SCREENSHOT_MAX_BYTES } from './services/results.ts';
@@ -22,6 +21,7 @@ import { keepConnecting } from './discord/connect.ts';
 import { loginHint } from './discord/login-hint.ts';
 import { createLogger } from './logger.ts';
 import { createWebApp, loadStaticFiles } from './web/app.ts';
+import { buildUploader } from './web/uploader-bundle.ts';
 import { createDiscordOAuth } from './web/oauth.ts';
 import { createRoleReader } from './web/roles.ts';
 import { botInstallUrl } from './discord/install.ts';
@@ -61,12 +61,17 @@ const objects = config.r2
   ? withReadFallback(createR2ObjectStore(config.r2, { now: Date.now }), disk)
   : disk;
 logger.info({ storage: config.r2 ? 'r2' : 'disk' }, 'Storage ready');
-// The parser build browsers must use to send replays (design doc section 8, "pinned parser
-// version"); without one, the replay API refuses uploads until `pnpm parsers:build`.
-const parserBuild = await readParserBuild(resolve(config.parsersDir));
-if (!parserBuild.ok) {
-  logger.error({ error: parserBuild.error }, 'No R6 parser build: replay uploads are off');
+// The replay uploader (design doc section 8): the parser build browsers must use, and the island
+// and Web Worker bundled from @ligo/uploader. Without a build, the website refuses replay uploads
+// until `pnpm parsers:build`.
+const uploader = await buildUploader(resolve(config.parsersDir));
+if (!uploader.ok) {
+  logger.error({ error: uploader.error }, 'No R6 parser build: replay uploads are off');
 }
+// The browser sends raw files to R2 directly: its address is let through the page's policy.
+const uploadOrigin = config.r2
+  ? new URL(config.r2.endpoint ?? `https://${config.r2.accountId}.r2.cloudflarestorage.com`).origin
+  : null;
 const evidence = createEvidenceStore(objects, SCREENSHOT_MAX_BYTES, logger);
 const transcripts = createTranscriptStore(objects);
 const newClient = () =>
@@ -102,7 +107,8 @@ const web = createWebApp({
   trustProxy: config.web.trustProxy,
   uploads:
     !config.r2 && config.web.login ? { secret: config.web.login.sessionSecret, store: disk } : null,
-  replays: { objects, parserVersion: parserBuild.ok ? parserBuild.build.version : null },
+  replays: { objects, parserVersion: uploader.ok ? uploader.files.version : null, uploadOrigin },
+  uploader: uploader.ok ? uploader.files : null,
   now: () => Date.now(),
 });
 const server = serve(

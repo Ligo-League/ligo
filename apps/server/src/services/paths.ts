@@ -28,6 +28,8 @@ export const RESERVED_ORG_SLUGS: readonly string[] = [
   'mbl-group',
   'me',
   'orgs',
+  // The replay parser's WebAssembly file (phase 5).
+  'parsers',
   'players',
   'r6',
   'recruitment',

@@ -7,6 +7,7 @@ import { fakeGateway } from '../discord/testing.ts';
 import { leagueDatabase } from '../testing.ts';
 import { createWebApp } from './app.ts';
 import type { ReplayApiDeps } from './replay-api.ts';
+import type { UploaderFiles } from './uploader-bundle.ts';
 import { fakeDiscordOAuth, type DiscordUser } from './oauth.ts';
 
 // The website with login on, and a browser that keeps its cookies: for tests through HTTP.
@@ -40,6 +41,7 @@ export function testSite(
     trustProxy?: boolean;
     discordReady?: () => boolean;
     replays?: ReplayApiDeps;
+    uploader?: UploaderFiles;
   } = {},
 ) {
   const db = options.db ?? leagueDatabase();
@@ -63,6 +65,7 @@ export function testSite(
     discordReady: options.discordReady ?? (() => true),
     trustProxy: options.trustProxy ?? false,
     replays: options.replays ?? null,
+    uploader: options.uploader ?? null,
     now: () => now,
   });
   // A browser: keeps the cookies the site sets, sends them back.

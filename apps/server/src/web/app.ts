@@ -13,6 +13,9 @@ import { t, type Locale, type MessageKey } from '../i18n/index.ts';
 import { evidenceCompetition, openEvidence } from '../services/evidence.ts';
 import { uploadRoute } from './upload-route.ts';
 import { replayApiRoutes, type ReplayApiDeps } from './replay-api.ts';
+import { replayPageRoutes } from './replay-page.ts';
+import { contentSecurityPolicy } from './csp.ts';
+import type { UploaderFiles } from './uploader-bundle.ts';
 import { gameProfileOf, saveGameProfile, type SaveProfileError } from '../services/game-profile.ts';
 import {
   fileRegistration,
@@ -151,6 +154,8 @@ export interface WebDeps {
   uploads?: { secret: string; store: ObjectStore } | null;
   /** The replay API's storage and parser build; null or absent: it answers 503. */
   replays?: ReplayApiDeps | null;
+  /** The replay uploader's browser files, bundled at start; null or absent: no uploader. */
+  uploader?: UploaderFiles | null;
   now: () => number;
 }
 
@@ -240,18 +245,6 @@ function registrationFlash(
 }
 // Pages show live data; static files change only with a release.
 const STATIC_CACHE = 'public, max-age=3600';
-// Scripts and styles from this site only; inline style attributes carry team colours.
-const CONTENT_SECURITY_POLICY = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'none'",
-  "object-src 'none'",
-].join('; ');
-
 export function createWebApp(deps: WebDeps): Hono<Env> {
   const { db, locale, login } = deps;
   const app = new Hono<Env>();
@@ -294,7 +287,10 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     c.header('X-Content-Type-Options', 'nosniff');
     c.header('X-Frame-Options', 'DENY');
     c.header('Referrer-Policy', 'same-origin');
-    c.header('Content-Security-Policy', CONTENT_SECURITY_POLICY);
+    // A page that needs more (the replay uploader) sets its own.
+    if (!c.res.headers.has('Content-Security-Policy')) {
+      c.header('Content-Security-Policy', contentSecurityPolicy());
+    }
   });
 
   // Docker's health check, from inside the container: before the one-address rule, which would
@@ -429,6 +425,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
   });
 
   replayApiRoutes(app, { deps, render, notFound, forbidden, guard });
+  const replayPage = replayPageRoutes(app, { deps, render, notFound, forbidden, guard });
 
   // Before the competition routes, which would read `/admin/x` and `/orgs/new` as one.
   adminOrgRoutes(app, { deps, render, notFound, forbidden, guard });
@@ -772,6 +769,7 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     const panels = [
       veto.link(c, Number(id)),
       await matchStats.link(c, Number(id)),
+      await replayPage.link(c, Number(id)),
       await matchReport.panel(c, Number(id)),
       await matchTime.panel(c, Number(id)),
       matchCaptain.panel(c, Number(id)),

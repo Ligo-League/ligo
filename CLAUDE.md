@@ -55,6 +55,8 @@ packages/titles    one folder per title: metric schema, ruleset defaults, consis
                    replay normaliser
 packages/parsers   ParserModule interface + WASM loaders (browser and Node)
 packages/storage   where files live: R2, a folder on disk without R2, memory in tests
+packages/uploader  the replay uploader's browser code (Preact island, parser Web Worker), bundled
+                   by the server with esbuild when it starts
 packages/db        Drizzle schema, migrations, query helpers
 packages/render    Satori templates, fonts, resvg wrapper
 apps/server        discord.js client + Hono site/API + reconciler (one process)

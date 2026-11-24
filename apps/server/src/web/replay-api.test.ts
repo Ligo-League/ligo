@@ -26,6 +26,7 @@ async function setup(options: { parserVersion?: string | null; onSide?: boolean 
     replays: {
       objects,
       parserVersion: options.parserVersion === undefined ? PARSER : options.parserVersion,
+      uploadOrigin: null,
     },
   });
   const { db } = site;

@@ -64,7 +64,7 @@ describe.each(['packages/core/src/probe.ts', 'packages/titles/src/r6/probe.ts'])
 
     it('can import zod, sibling files and a time passed in', async () => {
       const code = [
-        "import { z } from 'zod';",
+        "import * as z from 'zod';",
         "import { helper } from './events/helper.ts';",
         'export const at = (now: number) => new Date(now);',
         'export { helper, z };',
@@ -92,6 +92,19 @@ describe('other packages', () => {
     const code =
       "import { readFileSync } from 'node:fs';\nimport Database from 'better-sqlite3';\nexport { Database, readFileSync };";
     expect(await rulesFiredFor('packages/db/src/probe.ts', code)).toEqual([]);
+  });
+});
+
+describe('code bundled for the browser', () => {
+  it.each([
+    'packages/titles/src/r6/probe.ts',
+    'packages/parsers/src/probe.ts',
+    'packages/uploader/src/probe.ts',
+  ])('%s imports zod as a namespace, so its locales stay out of the bundle', async (file) => {
+    const named = "import { z } from 'zod';\nexport const s = z.string();";
+    const namespace = "import * as z from 'zod';\nexport const s = z.string();";
+    expect(await rulesFiredFor(file, named)).toContain('no-restricted-syntax');
+    expect(await rulesFiredFor(file, namespace)).toEqual([]);
   });
 });
 

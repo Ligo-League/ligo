@@ -1349,6 +1349,23 @@ There is nothing to click yet. The server reads the parser build's version from 
 `No R6 parser build: replay uploads are off` at start, and refuses uploads until you run
 `pnpm parsers:build` and restart `pnpm dev`. In production, the image always has one.
 
+## 70. Phase 5-9: uploading replays
+
+Teams now send their replays from the match page: **Envoyer les replays** appears for each
+side's players, officials and captain, and for league staff. To try it locally:
+
+1. `pnpm parsers:build` once (the server bundles the uploader with that build when it starts).
+2. `pnpm dev` and `pnpm worker`, in two terminals.
+3. Put your own R6 account (profile ID) on `/me`, and be on a roster of a match's team.
+4. Open the match, click **Envoyer les replays**, and pick your `MatchReplay` folder
+   (`Documents\My Games\Rainbow Six - Siege\<your ID>\MatchReplay`).
+5. The page lists the folders, ticks those recorded around the match, reads them, shows the
+   lobbies, then sends them. The worker logs one `verify_replay` per round and a `stitch_game`.
+
+In production, the browser sends the raw files straight to R2: the CORS rule of section 67 must be
+on the bucket. If uploads stop at 0 %, open the browser's console: a CORS error means that rule is
+missing or names another address than `https://ligoleague.eu`.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |

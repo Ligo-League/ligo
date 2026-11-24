@@ -33,6 +33,8 @@ export interface ReplayApiDeps {
   objects: ObjectStore;
   /** The parser build browsers must use; null when the server has none, which stops uploads. */
   parserVersion: string | null;
+  /** Where the browser sends raw files when it is not this site (R2's address), for the CSP. */
+  uploadOrigin: string | null;
 }
 
 /** Requests to the API per user, whatever they ask. */
