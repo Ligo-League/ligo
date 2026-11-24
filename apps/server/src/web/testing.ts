@@ -6,6 +6,7 @@ import { fakeAssetStore } from '../assets/store.ts';
 import { fakeGateway } from '../discord/testing.ts';
 import { leagueDatabase } from '../testing.ts';
 import { createWebApp } from './app.ts';
+import type { ReplayApiDeps } from './replay-api.ts';
 import { fakeDiscordOAuth, type DiscordUser } from './oauth.ts';
 
 // The website with login on, and a browser that keeps its cookies: for tests through HTTP.
@@ -38,6 +39,7 @@ export function testSite(
     publicUrl?: string;
     trustProxy?: boolean;
     discordReady?: () => boolean;
+    replays?: ReplayApiDeps;
   } = {},
 ) {
   const db = options.db ?? leagueDatabase();
@@ -60,6 +62,7 @@ export function testSite(
     botInstallUrl: 'https://discord.com/oauth2/authorize?client_id=1',
     discordReady: options.discordReady ?? (() => true),
     trustProxy: options.trustProxy ?? false,
+    replays: options.replays ?? null,
     now: () => now,
   });
   // A browser: keeps the cookies the site sets, sends them back.
@@ -117,6 +120,21 @@ export function testSite(
     for (const [name, file] of Object.entries(files)) body.set(name, file);
     return request(path, { method: 'POST', headers: { Origin: TEST_ORIGIN }, body });
   };
+  /** JSON sent by a page of this site, with the session's token in its header. */
+  const postJson = async (path: string, body: unknown, extra: Record<string, string> = {}) => {
+    const page = await (await request('/me')).text();
+    const token = /name="_csrf" value="([^"]+)"/.exec(page)?.[1] ?? '';
+    return request(path, {
+      method: 'POST',
+      headers: {
+        Origin: TEST_ORIGIN,
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': token,
+        ...extra,
+      },
+      body: JSON.stringify(body),
+    });
+  };
   const advance = (ms: number) => {
     now += ms;
   };
@@ -134,6 +152,7 @@ export function testSite(
     logIn,
     post,
     postFile,
+    postJson,
     advance,
     setRoles,
   };

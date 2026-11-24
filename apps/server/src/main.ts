@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { applyMigrations, backupFolder, openDatabase } from '@ligo/db';
 import { createEvidenceStore } from './assets/evidence-store.ts';
 import { createDiskObjectStore, createR2ObjectStore, withReadFallback } from '@ligo/storage';
+import { readParserBuild } from '@ligo/parsers/node';
 import { createTranscriptStore } from './assets/transcript-store.ts';
 import { createLocalAssetStore } from './assets/store.ts';
 import { SCREENSHOT_MAX_BYTES } from './services/results.ts';
@@ -60,6 +61,12 @@ const objects = config.r2
   ? withReadFallback(createR2ObjectStore(config.r2, { now: Date.now }), disk)
   : disk;
 logger.info({ storage: config.r2 ? 'r2' : 'disk' }, 'Storage ready');
+// The parser build browsers must use to send replays (design doc section 8, "pinned parser
+// version"); without one, the replay API refuses uploads until `pnpm parsers:build`.
+const parserBuild = await readParserBuild(resolve(config.parsersDir));
+if (!parserBuild.ok) {
+  logger.error({ error: parserBuild.error }, 'No R6 parser build: replay uploads are off');
+}
 const evidence = createEvidenceStore(objects, SCREENSHOT_MAX_BYTES, logger);
 const transcripts = createTranscriptStore(objects);
 const newClient = () =>
@@ -95,6 +102,7 @@ const web = createWebApp({
   trustProxy: config.web.trustProxy,
   uploads:
     !config.r2 && config.web.login ? { secret: config.web.login.sessionSecret, store: disk } : null,
+  replays: { objects, parserVersion: parserBuild.ok ? parserBuild.build.version : null },
   now: () => Date.now(),
 });
 const server = serve(

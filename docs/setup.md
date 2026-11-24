@@ -1341,6 +1341,14 @@ docker compose logs worker | grep "Worker ready"
 A job the worker could not finish after three attempts is posted once in the league's staff
 queue channel (the server posts it), with the match's page and the error.
 
+## 69. Phase 5-8: the replay API
+
+The website now takes replays through `/api/replays`, for the uploader page that comes in 5-9.
+There is nothing to click yet. The server reads the parser build's version from `PARSERS_DIR`
+(`./parsers/dist` by default, `/app/parsers/dist` in the image). Without a build, it logs
+`No R6 parser build: replay uploads are off` at start, and refuses uploads until you run
+`pnpm parsers:build` and restart `pnpm dev`. In production, the image always has one.
+
 ## If something goes wrong
 
 | Message or symptom                                                                | Cause and fix                                                                                                                                                                                                         |

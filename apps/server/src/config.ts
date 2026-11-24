@@ -15,6 +15,8 @@ const envSchema = z
     DATABASE_PATH: z.string().min(1).default('./data/ligo.db'),
     ASSETS_DIR: z.string().min(1).default('./data/assets/render'),
     STORAGE_DIR: z.string().min(1).default('./data/storage'),
+    // The R6 parser build (parsers/build-r6.sh): browsers must use its version to send replays.
+    PARSERS_DIR: z.string().min(1).default('./parsers/dist'),
     LOG_LEVEL: z
       .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'])
       .default('info'),
@@ -62,6 +64,8 @@ export interface Config {
   assetsDir: string;
   /** Files the server keeps on disk without R2, and read until they are copied there. */
   storageDir: string;
+  /** The parser build's folder (`pnpm parsers:build`); without one, replay uploads are off. */
+  parsersDir: string;
   /** Where the server keeps files in production; null keeps them in `storageDir`. */
   r2: R2Settings | null;
   logLevel: z.infer<typeof envSchema>['LOG_LEVEL'];
@@ -100,6 +104,7 @@ export function loadConfig(env: Record<string, string | undefined>): ConfigResul
       databasePath: parsed.data.DATABASE_PATH,
       assetsDir: parsed.data.ASSETS_DIR,
       storageDir: parsed.data.STORAGE_DIR,
+      parsersDir: parsed.data.PARSERS_DIR,
       r2:
         parsed.data.R2_ACCOUNT_ID &&
         parsed.data.R2_ACCESS_KEY_ID &&

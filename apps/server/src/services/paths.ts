@@ -12,6 +12,8 @@ import { TITLES, type Title } from '@ligo/titles';
  */
 export const RESERVED_ORG_SLUGS: readonly string[] = [
   'admin',
+  // The replay API (phase 5).
+  'api',
   'auth',
   'c',
   'clubs',
@@ -34,6 +36,8 @@ export const RESERVED_ORG_SLUGS: readonly string[] = [
   'search',
   'static',
   'staff',
+  // The server's own upload route, without R2 (phase 5).
+  'storage',
   'teams',
   'valorant',
 ];

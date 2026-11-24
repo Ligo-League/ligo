@@ -34,6 +34,8 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       # Only Caddy reaches the server (no published port), so its X-Forwarded-Proto is trusted.
       TRUST_PROXY: 'true'
+      # The parser build in the image: browsers must send replays read by its version.
+      PARSERS_DIR: /app/parsers/dist
       # Score screenshots, transcripts and replays (phase 5). What it kept on disk before is read
       # from /data/storage until apps/server/src/assets/copy-to-r2.ts has copied it.
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:?set R2_ACCOUNT_ID in deploy/.env}

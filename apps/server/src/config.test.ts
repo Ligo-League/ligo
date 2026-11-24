@@ -19,6 +19,7 @@ describe('loadConfig', () => {
         databasePath: './data/ligo.db',
         assetsDir: './data/assets/render',
         storageDir: './data/storage',
+        parsersDir: './parsers/dist',
         logLevel: 'info',
         r2: null,
         web: {

@@ -12,6 +12,7 @@ import { announceReportDecision, announceRequestDecision } from '../discord/staf
 import { t, type Locale, type MessageKey } from '../i18n/index.ts';
 import { evidenceCompetition, openEvidence } from '../services/evidence.ts';
 import { uploadRoute } from './upload-route.ts';
+import { replayApiRoutes, type ReplayApiDeps } from './replay-api.ts';
 import { gameProfileOf, saveGameProfile, type SaveProfileError } from '../services/game-profile.ts';
 import {
   fileRegistration,
@@ -148,6 +149,8 @@ export interface WebDeps {
    * secret that signs its tokens and the store it writes to. Null or absent: no route.
    */
   uploads?: { secret: string; store: ObjectStore } | null;
+  /** The replay API's storage and parser build; null or absent: it answers 503. */
+  replays?: ReplayApiDeps | null;
   now: () => number;
 }
 
@@ -424,6 +427,8 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     const url = new URL(c.req.url);
     return c.redirect(`/mlb-group${url.pathname.slice('/mbl-group'.length)}${url.search}`, 301);
   });
+
+  replayApiRoutes(app, { deps, render, notFound, forbidden, guard });
 
   // Before the competition routes, which would read `/admin/x` and `/orgs/new` as one.
   adminOrgRoutes(app, { deps, render, notFound, forbidden, guard });
