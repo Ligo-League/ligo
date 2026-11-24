@@ -844,7 +844,7 @@ The worker claims jobs with `UPDATE job SET status='running', locked_until=now+5
 
 1. **Validate:** game mode Bomb; a match type other than a custom game is accepted with a warning.
 2. **Group into segments:** a segment is (game, `lobby_id`), assigned to the game of its map (the parser's name matched to the pool's, `ClubHouseY10` → Clubhouse). A map outside the match, or one two games share, leaves the lobby to staff (`packages/core/src/replay-groups.ts`).
-3. **Merge recordings:** for each (segment, round number), keep one canonical file. A complete round (winner set) beats an incomplete one, then the first stored. Two complete recordings of a round with a different winner or kill feed (compared by player name) flag the game.
+3. **Merge recordings:** for each (segment, round number), keep one canonical file. A complete round (winner set) beats an incomplete one, then the first stored. Two complete recordings of a round with a different winner or kill feed (compared by player name) flag the game. Lag makes two players' recordings differ slightly, so what they must share is settled from real pairs before 5-11 (M-51).
 4. **Resolve teams per segment:**
     - look up each side's `profileID`s in `game_account` and match them against the match lineups, or the season rosters;
     - a side is resolved when at least 3 known players agree (a parameter, `replays.min_known_players` from 5-5), and the two teams must be the match's two sides; every recording of a lobby is resolved, and they must agree;

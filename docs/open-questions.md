@@ -230,6 +230,39 @@ section 16.
 
 ## For the maintainer
 
+#### M-51 · What two teams' recordings of a round must share
+
+- **Raised (maintainer, 24 November 2026):** an R6 replay is what one player's game recorded, not
+  what the server saw. Two teams' recordings of the same round differ slightly, through lag. The
+  end-of-round scoreboard should be the same in both, but little else is sure.
+- **What Ligo does today (5-4, 5-7):**
+  - A file's SHA-256 only names that file: it refuses the same file sent twice, and
+    `verify_replay` checks the browser's reading of that same file. It never compares two
+    recordings.
+  - Two complete recordings of a round must have the same winner and the same kill feed, in the
+    same order, by player name, timings left out (`packages/core/src/replay-groups.ts`). Any
+    difference sends the game to staff (`recordings_agree`); stats are never wrong because of
+    it, but games may wait for staff needlessly.
+  - The first complete recording stored gives the round's facts, so trades, opening kills and
+    clutches, which depend on timings, come from whoever uploaded first.
+- **What we do not know:** every lobby of the test replays (48) has one recording, made by the
+  tournament's observer, on LAN. Two players' recordings of one round, online, were never
+  compared.
+- **Why it matters:** the other team's recording is the only check against an edited `.rec`
+  file, which `verify_replay` cannot catch. The comparison must be strict where lag cannot
+  change anything, and tolerant where it can.
+- **Proposal:**
+  1. Compare real pairs first: both teams' `MatchReplay` folders of 2 or 3 online matches, through
+     a script that lists every difference, round by round.
+  2. Then split what must match (winner and win condition, the players, each player's kills,
+     deaths and assists, who killed whom in any order, probably headshots) from what may differ
+     (order of kills a moment apart, timings, a recording that started late).
+  3. Take the round's facts from a recording chosen by a fixed rule, not by upload order, and
+     flag a round whose recordings disagree on its opening kill.
+- **Until answered:** the strict comparison stays: a difference sends the game to staff. To
+  settle before 5-11, where these differences become staff alerts.
+- **Answer:**
+
 #### M-43 · Widgets for other websites (`/embed/...`)
 
 - **Decided (maintainer, 19 November 2026):** Ligo offers widgets other websites put in an
