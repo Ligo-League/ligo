@@ -1,4 +1,5 @@
-import type { ForfeitThresholds, GameScoreSettings } from '@ligo/core';
+import type { ForfeitThresholds, GameScoreSettings, MossGap } from '@ligo/core';
+import type { MossOverview } from '../../services/moss.ts';
 import { html } from 'hono/html';
 import { impossibleScore } from '../../discord/match-text.ts';
 import { t, type Locale, type MessageKey } from '../../i18n/index.ts';
@@ -15,6 +16,8 @@ export const STAFF_DONE = [
   'voided',
   'forfeited',
   'timed',
+  'moss_held',
+  'moss_released',
 ] as const;
 export type StaffDone = (typeof STAFF_DONE)[number];
 
@@ -34,6 +37,9 @@ const ERROR_KEYS = {
   invalid_time: 'schedule.error.invalid_time',
   nonexistent_time: 'schedule.error.nonexistent_time',
   not_schedulable: 'schedule.error.not_schedulable',
+  moss_missing: 'web.staffMatch.error.moss_missing',
+  already_held: 'web.staffMatch.error.already_held',
+  not_held: 'web.staffMatch.error.not_held',
 } as const satisfies Record<string, MessageKey>;
 export type StaffError = keyof typeof ERROR_KEYS;
 export const isStaffError = (value: string | undefined): value is StaffError =>
@@ -56,8 +62,80 @@ export interface StaffPanelData {
   /** Whether staff may set the time: the match is still to play. */
   canTime: boolean;
   gameScore: GameScoreSettings | null;
+  /** The match's MOSS files, where the league asks for them or some were sent (M-47). */
+  moss: MossOverview | null;
+  /** MOSS files are missing: validating or entering a result needs a written reason. */
+  waiverNeeded: boolean;
   csrf: string;
   flash: StaffFlash;
+}
+
+/** Staff's reason to validate while MOSS files are missing, kept in the audit log. */
+function waiverField(locale: Locale, data: StaffPanelData): Html | string {
+  return data.waiverNeeded
+    ? html`<label
+          >${t(locale, 'web.staffMatch.waiver')}
+          <textarea name="waiver" maxlength="500" rows="2" required></textarea>
+        </label>
+        <p class="muted">${t(locale, 'web.staffMatch.waiverHint')}</p>`
+    : '';
+}
+
+function gapText(locale: Locale, data: StaffPanelData, gap: MossGap): string | null {
+  const team = data.names[gap.side];
+  if (gap.kind === 'too_few_players')
+    return t(locale, 'web.staffMatch.moss.tooFew', { team, seen: gap.seen });
+  if (gap.kind === 'unknown_player')
+    return t(locale, 'web.staffMatch.moss.unknown', { team, name: gap.name });
+  return null;
+}
+
+function mossCard(locale: Locale, data: StaffPanelData, moss: MossOverview): Html {
+  const side = (which: 'a' | 'b') =>
+    html`<div>
+      <h4>${data.names[which]}</h4>
+      <ul>
+        ${moss.sides[which].map(
+          (row) =>
+            html`<li>
+              ${row.name} :
+              ${
+                row.evidenceId === null
+                  ? html`<span class="muted">${t(locale, 'web.staffMatch.moss.missing')}</span>`
+                  : html`<a href="/evidence/${String(row.evidenceId)}"
+                      >${t(locale, 'web.staffMatch.moss.download')}</a
+                    >`
+              }
+            </li>`,
+        )}
+      </ul>
+    </div>`;
+  const notes = moss.gaps.flatMap((gap) => {
+    const text = gapText(locale, data, gap);
+    return text === null ? [] : [text];
+  });
+  return html`<div class="card">
+    <h3>${t(locale, 'web.staffMatch.moss.title')}</h3>
+    ${moss.required ? '' : html`<p class="muted">${t(locale, 'web.staffMatch.moss.optional')}</p>`}
+    ${notes.map((note) => html`<p class="flash error">${note}</p>`)} ${side('a')} ${side('b')}
+    ${
+      moss.held
+        ? html`<p>${t(locale, 'web.staffMatch.moss.held', { reason: moss.held.reason })}</p>
+            <form method="post" action="${action(data, 'moss-release')}">
+              ${csrfField(data.csrf)}
+              <button type="submit">${t(locale, 'web.staffMatch.moss.release')}</button>
+            </form>`
+        : html`<form method="post" action="${action(data, 'moss-hold')}">
+            ${csrfField(data.csrf)}
+            <label
+              >${t(locale, 'web.staffMatch.moss.holdReason')}
+              <textarea name="reason" maxlength="500" rows="2" required></textarea>
+            </label>
+            <p class="muted">${t(locale, 'web.staffMatch.moss.holdHint')}</p>
+            <button type="submit">${t(locale, 'web.staffMatch.moss.hold')}</button>
+          </form>`
+    }
+  </div>`;
 }
 
 function flashView(locale: Locale, data: StaffPanelData): Html | string {
@@ -98,7 +176,7 @@ function reportForms(
     <h3>${t(locale, 'web.staffMatch.report')}</h3>
     <p><strong>${line}</strong></p>
     <form method="post" action="${action(data, 'validate')}">
-      ${csrfField(data.csrf)} ${evidence}
+      ${csrfField(data.csrf)} ${evidence} ${waiverField(locale, data)}
       <button type="submit">${t(locale, 'report.button.validate')}</button>
     </form>
     <form method="post" action="${action(data, 'reject')}">
@@ -130,6 +208,7 @@ function entryForm(locale: Locale, data: StaffPanelData, correcting: boolean): H
       <input type="file" name="screenshot" accept="image/png,image/jpeg,image/webp"
     /></label>
     <p class="muted">${t(locale, 'web.staffMatch.entryHint')}</p>
+    ${correcting ? '' : waiverField(locale, data)}
     <button type="submit">${t(locale, 'web.staffMatch.save')}</button>
   </form>`;
 }
@@ -199,5 +278,6 @@ export function staffPanel(locale: Locale, data: StaffPanelData): Html {
     ${data.canTime ? timeForm(locale, data) : ''}
     ${data.forfeit ? forfeitForm(locale, data, data.forfeit) : ''}
     ${data.canVoid ? voidForm(locale, data) : ''}
+    ${data.moss ? mossCard(locale, data, data.moss) : ''}
   </section>`;
 }

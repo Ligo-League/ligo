@@ -1,4 +1,5 @@
 import {
+  addRosterPlayers,
   linkGuild,
   openLfrRegistration,
   openTestDatabase,
@@ -7,7 +8,7 @@ import {
   type MatchRow,
   type TeamRow,
 } from '@ligo/db/testing';
-import { schema, type Db } from '@ligo/db';
+import { listLeagueMatches, schema, type Db } from '@ligo/db';
 import { eq } from 'drizzle-orm';
 import { fakeAssetStore } from './assets/store.ts';
 import { createClub } from './services/clubs.ts';
@@ -73,7 +74,20 @@ export function leagueDatabase() {
     2000,
   );
   linkGuild(db, { guildId: TEST_GUILD, staffRoleId: TEST_STAFF_ROLE }, 3000);
+  // MOSS files and replays before validation stay off here, as for a new league: the tests that
+  // are about them turn them on (`requireMoss`).
+  requireMoss(db, false);
   return db;
+}
+
+/** Turns the test league's MOSS requirement (M-47) on or off. */
+export function requireMoss(db: Db, on = true): void {
+  for (const row of db.select().from(schema.competition).all()) {
+    db.update(schema.competition)
+      .set({ rulesetJson: { ...row.rulesetJson, moss: { ...row.rulesetJson.moss, required: on } } })
+      .where(eq(schema.competition.id, row.id))
+      .run();
+  }
 }
 
 /**
@@ -245,4 +259,77 @@ export function disputedReport(db: Db, posts = OPEN_REPORT_POSTS): void {
       { entity: 'dispute', entityId: disputeId, ...dispute, postedAt: 2 },
     ])
     .run();
+}
+
+/**
+ * A match whose replays show five players a side (M-47): their accounts, one stitched lobby, and
+ * each player's MOSS file when `withFiles`. Returns the players by side.
+ */
+export function playedMatch(
+  db: Db,
+  matchId: number,
+  withFiles: boolean,
+): { a: number[]; b: number[] } {
+  const [found] = listLeagueMatches(db, { matchId });
+  if (!found) throw new Error(`No match ${String(matchId)}`);
+  const prefix = `m${String(matchId)}`;
+  const accounts = {
+    a: addRosterPlayers(db, found.seasonId, found.a.teamId, `${prefix}a`),
+    b: addRosterPlayers(db, found.seasonId, found.b.teamId, `${prefix}b`),
+  };
+  const idOf = (account: string) =>
+    db
+      .select({ id: schema.gameAccount.playerId })
+      .from(schema.gameAccount)
+      .where(eq(schema.gameAccount.externalId, account))
+      .get()?.id ?? 0;
+  const players = [
+    ...accounts.a.map((account) => ({ account, name: account.slice(0, 4), side: 0 })),
+    ...accounts.b.map((account) => ({ account, name: account.slice(0, 4), side: 1 })),
+  ];
+  const uploader = idOf(accounts.a[0] ?? '');
+  db.insert(schema.replayFile)
+    .values({
+      matchId,
+      uploaderPlayerId: uploader,
+      title: 'r6',
+      fileName: 'Match-R01.rec',
+      size: 1,
+      sha256: `${String(matchId).padStart(4, '0')}${'0'.repeat(60)}`,
+      lobbyId: `lobby-${String(matchId)}`,
+      unitNumber: 0,
+      parserVersion: 'r6-test',
+      parsedJson: { players },
+      createdAt: 0,
+    })
+    .run();
+  const gameId =
+    found.game?.id ??
+    db.insert(schema.game).values({ matchId, n: 1, bansJson: [] }).returning().get().id;
+  db.insert(schema.replaySegment)
+    .values({
+      matchId,
+      gameId,
+      lobbyId: `lobby-${String(matchId)}`,
+      startedAt: 0,
+      status: 'ok',
+      teamMapJson: ['a', 'b'],
+    })
+    .run();
+  const ids = { a: accounts.a.map(idOf), b: accounts.b.map(idOf) };
+  if (withFiles) {
+    for (const playerId of [...ids.a, ...ids.b]) {
+      db.insert(schema.evidence)
+        .values({
+          matchId,
+          kind: 'moss',
+          objectKey: `evidence/${String(matchId)}/moss/${String(playerId)}-${'0'.repeat(32)}.zip`,
+          uploadedBy: playerId,
+          playerId,
+          at: 0,
+        })
+        .run();
+    }
+  }
+  return ids;
 }

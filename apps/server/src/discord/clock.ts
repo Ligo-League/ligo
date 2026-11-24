@@ -8,7 +8,10 @@ import { runSchedulingTick } from '../services/scheduling.ts';
 import { runVetoTick } from '../services/veto.ts';
 import { vetoMessage } from './veto-message.ts';
 import type { DiscordGateway } from './gateway.ts';
-import { discordTime, matchFixture, mention } from './match-text.ts';
+import { discordTime, matchFixture, mention, storedLine } from './match-text.ts';
+import { announceWithCard } from './match-card.ts';
+import type { AssetStore } from '../assets/store.ts';
+import { validateCompleted, type CompletedValidation } from '../services/complete-validation.ts';
 import { postLink, requestQueueMessage } from './request-text.ts';
 import type { ErrorLogger } from './router.ts';
 
@@ -23,6 +26,8 @@ export interface ClockDeps {
   /** The website's address, for the links in the bot's posts. */
   publicUrl: URL;
   now(): number;
+  /** Logos for the result card of a result validated by the clock; none by default. */
+  assets?: AssetStore;
   /** A whole number from 0 to `below` − 1, for a veto step that ran out; crypto by default. */
   random?: (below: number) => number;
 }
@@ -33,6 +38,48 @@ export async function tick(deps: ClockDeps): Promise<void> {
   await vetoTick(deps);
   await requestTick(deps);
   await jobAlertTick(deps);
+  await completionTick(deps);
+}
+
+/** Logos are a bonus on the result card: without the store, the card has none. */
+const NO_LOGOS: AssetStore = {
+  read: () => Promise.resolve(null),
+  write: () => Promise.reject(new Error('No asset store on this clock')),
+};
+
+/**
+ * Confirmed results that waited for MOSS files and have them all now: validated, the staff
+ * queue's posts say so, and the result is announced as a confirmation's would be.
+ */
+async function completionTick(deps: ClockDeps): Promise<void> {
+  const { locale } = deps;
+  let done: CompletedValidation[];
+  try {
+    done = validateCompleted(deps.db, deps.now());
+  } catch (error) {
+    deps.logger.error({ err: error }, 'Completion tick failed');
+    return;
+  }
+  const context = { ...deps, assets: deps.assets ?? NO_LOGOS };
+  for (const completed of done) {
+    const line = storedLine(locale, completed.match);
+    for (const post of completed.posts) {
+      try {
+        await deps.gateway.editMessage(post.channelId, post.messageId, {
+          content: t(locale, 'queue.validatedWhenComplete', { line }),
+        });
+      } catch {
+        // A post deleted or out of reach only looks out of date: the result is stored.
+      }
+    }
+    await announceWithCard(
+      context,
+      completed.resultsChannelId,
+      { content: t(locale, 'result.announce', { line }) },
+      completed.match.id,
+      'result',
+    );
+  }
 }
 
 /**

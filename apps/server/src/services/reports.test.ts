@@ -3,7 +3,14 @@ import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { fakeEvidenceStore } from '../assets/evidence-store.ts';
 import { fakeGateway } from '../discord/testing.ts';
-import { leagueDatabase, setResultValidation, TEST_GUILD, TEST_STAFF_ROLE } from '../testing.ts';
+import {
+  leagueDatabase,
+  playedMatch,
+  requireMoss,
+  setResultValidation,
+  TEST_GUILD,
+  TEST_STAFF_ROLE,
+} from '../testing.ts';
 import type { Actor } from './permissions.ts';
 import {
   answerReport,
@@ -642,5 +649,65 @@ describe('voidMatch', () => {
       ok: false,
       error: 'wrong_status',
     });
+  });
+});
+
+// MOSS before validation (M-47, maintainer 20 and 24 November 2026).
+describe('MOSS files before validation', () => {
+  function withMoss() {
+    const context = league();
+    requireMoss(context.db);
+    return context;
+  }
+
+  it('keeps a confirmation waiting while a file is missing, and says why', async () => {
+    const { db, report, stored } = withMoss();
+    setResultValidation(db, 'opponent');
+    const evidenceId = await evidenceIdOf(report);
+    playedMatch(db, 3, false);
+    expect(
+      answerReport(db, CHARLIE_MANAGER, { matchId: 3, evidenceId, action: 'confirm' }, 9500),
+    ).toMatchObject({ ok: true, status: 'confirmed', waiting: ['moss'], posts: [] });
+    expect(stored()).toMatchObject({ status: 'confirmed', validatedAt: null });
+    // Nothing counts yet: Bravo's win is not in the standings.
+    expect(pointsOf(db)).toEqual({ ALP: 6, BRV: 0, CHA: 0 });
+  });
+
+  it('validates on confirmation once every player who played has sent a file', async () => {
+    const { db, report } = withMoss();
+    setResultValidation(db, 'opponent');
+    const evidenceId = await evidenceIdOf(report);
+    playedMatch(db, 3, true);
+    expect(
+      answerReport(db, CHARLIE_MANAGER, { matchId: 3, evidenceId, action: 'confirm' }, 9500),
+    ).toMatchObject({ ok: true, status: 'validated', waiting: [] });
+  });
+
+  it('lets staff validate without the files only with a reason, kept in the log', async () => {
+    const { db, report, stored } = withMoss();
+    const evidenceId = await evidenceIdOf(report);
+    expect(validateResult(db, STAFF, { matchId: 3, evidenceId }, 9600)).toEqual({
+      ok: false,
+      error: 'moss_missing',
+    });
+    expect(
+      validateResult(db, STAFF, { matchId: 3, evidenceId, waiver: '   ' }, 9600),
+    ).toMatchObject({ ok: false, error: 'moss_missing' });
+    expect(
+      validateResult(db, STAFF, { matchId: 3, evidenceId, waiver: 'Fichier perdu (crash)' }, 9600),
+    ).toMatchObject({ ok: true, status: 'validated' });
+    expect(stored()?.status).toBe('validated');
+    const audit = db.select().from(auditLog).where(eq(auditLog.action, 'match.validate')).get();
+    expect(audit?.afterJson).toMatchObject({ waived: ['moss'], waiver: 'Fichier perdu (crash)' });
+  });
+
+  it('asks a staff result for a reason too, but not a correction of one already counted', () => {
+    const { db } = withMoss();
+    const entry = { matchId: 3, scoreA: 7, scoreB: 5 };
+    expect(recordResult(db, STAFF, entry, 9000)).toEqual({ ok: false, error: 'moss_missing' });
+    expect(recordResult(db, STAFF, { ...entry, waiver: 'Décision du staff' }, 9000)).toMatchObject({
+      ok: true,
+    });
+    expect(recordResult(db, STAFF, { ...entry, scoreB: 3 }, 9100)).toMatchObject({ ok: true });
   });
 });

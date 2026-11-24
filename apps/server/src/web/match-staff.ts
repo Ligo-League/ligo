@@ -19,6 +19,8 @@ import { requireStaff, type Actor } from '../services/permissions.ts';
 import { rejectResult, validateResult, voidMatch } from '../services/reports.ts';
 import { enterResult, OPEN_STATUSES, SCREENSHOT_MAX_BYTES } from '../services/results.ts';
 import { readMatchTime, setMatchTime } from '../services/scheduling.ts';
+import { mossOverview, setMossHold } from '../services/moss.ts';
+import { validationBlockers } from '../services/validation-gates.ts';
 import type { Env, Viewer } from './app.ts';
 import type { Html } from './layout.ts';
 import { messagePage } from './pages/errors.ts';
@@ -38,13 +40,23 @@ import { webActor } from './roles.ts';
 // Discord on every request and checked again by the service.
 
 const ROW_ID = /^[1-9]\d{0,9}$/;
-const ACTIONS = ['validate', 'reject', 'void', 'forfeit', 'time'] as const;
+const ACTIONS = [
+  'validate',
+  'reject',
+  'void',
+  'forfeit',
+  'time',
+  'moss-hold',
+  'moss-release',
+] as const;
 const DONE = {
   validate: 'validated',
   reject: 'rejected',
   void: 'voided',
   forfeit: 'forfeited',
   time: 'timed',
+  'moss-hold': 'moss_held',
+  'moss-release': 'moss_released',
 } as const satisfies Record<(typeof ACTIONS)[number], StaffDone>;
 const field = (form: Record<string, unknown>, name: string) =>
   typeof form[name] === 'string' ? form[name] : '';
@@ -108,6 +120,12 @@ export function matchStaffRoutes(
       canVoid: allows('void'),
       canTime: found.status === 'scheduled',
       gameScore: rulesetJson.game_score ?? null,
+      moss: (() => {
+        const overview = mossOverview(db, found);
+        const any = overview.sides.a.length + overview.sides.b.length > 0;
+        return overview.required || any ? overview : null;
+      })(),
+      waiverNeeded: found.status !== 'validated' && validationBlockers(db, found).length > 0,
       csrf: viewer.csrf,
       flash: flashOf(c),
     });
@@ -165,6 +183,7 @@ export function matchStaffRoutes(
         scoreA: scoreOf(field(guarded.form, 'score_a')),
         scoreB: scoreOf(field(guarded.form, 'score_b')),
         screenshot,
+        waiver: field(guarded.form, 'waiver'),
       },
       deps.now(),
     );
@@ -203,6 +222,17 @@ export function matchStaffRoutes(
       return back(c, found.id, `staff=${DONE.forfeit}`);
     }
 
+    if (what === 'moss-hold' || what === 'moss-release') {
+      const reply = setMossHold(
+        db,
+        actor,
+        { matchId: found.id, hold: what === 'moss-hold', reason: field(form, 'reason') },
+        now,
+      );
+      if (!reply.ok) return refused(c, found.id, reply.error);
+      return back(c, found.id, `staff=${DONE[what]}`);
+    }
+
     if (what === 'time') {
       // Read in the league's own time zone, as the teams' proposals are.
       const time = readMatchTime(db, actor, field(form, 'date'), field(form, 'time'));
@@ -221,7 +251,7 @@ export function matchStaffRoutes(
     };
     const reply =
       what === 'validate'
-        ? validateResult(db, actor, report, now)
+        ? validateResult(db, actor, { ...report, waiver: field(form, 'waiver') }, now)
         : what === 'reject'
           ? rejectResult(db, actor, report, now)
           : voidMatch(db, actor, { matchId: found.id, reason: field(form, 'reason') }, now);

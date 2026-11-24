@@ -1748,4 +1748,33 @@ export const en: Record<MessageKey, string> = {
   'web.replays.ui.moss.sending': 'sending…',
   'web.replays.ui.moss.failed': 'upload failed, try again',
   'web.replays.ui.moss.tooLarge': 'file too large',
+  'match.error.moss_missing':
+    'MOSS files are missing: validate from the match page, with a reason.',
+  'web.staff.error.moss_missing':
+    'MOSS files are missing: validate from the match page, with a reason.',
+  'queue.confirmedWaitingMoss':
+    '{line} — confirmed by the other team ({member}). MOSS files are missing: the result will be validated when the last one arrives.',
+  'queue.validatedWhenComplete': '{line} — validated: every MOSS file has arrived.',
+  'web.staffMatch.waiver': 'Reason to validate without every MOSS file',
+  'web.staffMatch.waiverHint':
+    'MOSS files are missing: the reason is kept in the log. A sanction is decided apart.',
+  'web.staffMatch.error.moss_missing': 'MOSS files are missing: write a reason to validate anyway.',
+  'web.staffMatch.error.already_held': "This match's MOSS files are already held.",
+  'web.staffMatch.error.not_held': "This match's MOSS files are not held.",
+  'web.staffMatch.done.moss_held': "The match's MOSS files are held until released.",
+  'web.staffMatch.done.moss_released': "The match's MOSS files follow the deletion rule again.",
+  'web.staffMatch.moss.title': 'MOSS files',
+  'web.staffMatch.moss.optional': "The league doesn't require them: they don't block validation.",
+  'web.staffMatch.moss.missing': 'missing',
+  'web.staffMatch.moss.download': 'download',
+  'web.staffMatch.moss.tooFew':
+    "{team}'s replays show only {seen} player(s): its MOSS files can't be checked yet.",
+  'web.staffMatch.moss.unknown':
+    "{name} ({team}) played but has no Ligo account: they can't send a MOSS file.",
+  'web.staffMatch.moss.held': 'Held for an investigation: {reason}',
+  'web.staffMatch.moss.release': 'Release',
+  'web.staffMatch.moss.holdReason': 'Reason to hold',
+  'web.staffMatch.moss.holdHint':
+    "Held files are deleted neither at the season's close nor after the retention period, until released.",
+  'web.staffMatch.moss.hold': 'Hold the MOSS files',
 };

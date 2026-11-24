@@ -127,7 +127,7 @@ let stopReconciler: (() => void) | null = null;
 const startClockOnReady = () => {
   client.once(Events.ClientReady, () => {
     stopClock ??= startClock(
-      { db, gateway, logger, locale: DEFAULT_LOCALE, publicUrl, now: () => Date.now() },
+      { db, gateway, logger, locale: DEFAULT_LOCALE, publicUrl, assets, now: () => Date.now() },
       CLOCK_INTERVAL_MS,
     );
     stopReconciler ??= startReconciler({

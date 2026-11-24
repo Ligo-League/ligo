@@ -1,4 +1,4 @@
-import { t, type Locale } from '../i18n/index.ts';
+import { t, type Locale, type MessageKey } from '../i18n/index.ts';
 import {
   recordReportPost,
   type AnswerReply,
@@ -184,10 +184,13 @@ export async function announceReportAnswer(
     );
     return;
   }
+  // A confirmation that would have validated, waiting for MOSS files: staff see why it waits.
+  const key: MessageKey =
+    reply.waiting.length > 0 ? 'queue.confirmedWaitingMoss' : `queue.${reply.status}`;
   await notifyQueue(
     context,
     reply.queueChannelId,
-    { content: t(locale, `queue.${reply.status}`, { line, member }) },
+    { content: t(locale, key, { line, member }) },
     { entity: 'match', entityId: reply.match.id },
   );
 }

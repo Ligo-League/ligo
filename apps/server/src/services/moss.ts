@@ -1,11 +1,12 @@
 import { randomBytes } from 'node:crypto';
 import { actsForSide, mossGaps, mossSideOf, type MossGap, type MossSides } from '@ligo/core';
-import { schema, teamMapSchema, type Db, type LeagueMatch } from '@ligo/db';
+import { listLeagueMatches, schema, teamMapSchema, type Db, type LeagueMatch } from '@ligo/db';
 import type { ObjectStore, SignedPut } from '@ligo/storage';
 import { R6_PLAYERS_PER_SIDE } from '@ligo/titles';
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import * as z from 'zod';
-import { matchRolesOf } from './permissions.ts';
+import { matchRolesOf, requireStaff, type Actor } from './permissions.ts';
+import { ensurePlayer } from './players.ts';
 
 // MOSS files (design doc sections 4 and 8; M-47, maintainer 20 and 24 November 2026). Who played
 // comes from the match's replays: the players each side's recordings show, by game account.
@@ -13,8 +14,17 @@ import { matchRolesOf } from './permissions.ts';
 // no stand-in file for someone who did not play. Files go straight to storage through a signed
 // link, are staff-only, and are kept only in case of suspected cheating.
 
-const { competition, evidence, gameAccount, match, player, replayFile, replaySegment, season } =
-  schema;
+const {
+  auditLog,
+  competition,
+  evidence,
+  gameAccount,
+  match,
+  player,
+  replayFile,
+  replaySegment,
+  season,
+} = schema;
 
 /** Whether staff hold the match's MOSS files for an investigation: none is deleted meanwhile. */
 export function isHeld(db: Pick<Db, 'select'>, matchId: number): boolean {
@@ -266,3 +276,111 @@ export async function storeMoss(
   }
   return { ok: true, evidenceId };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Staff: open a file, hold the match's files during an investigation, release them
+
+export type MossStaffError =
+  'not_linked' | 'not_staff' | 'not_found' | 'reason_required' | 'already_held' | 'not_held';
+
+/** A MOSS file for staff of its match's league only, never public: where it is, and its name. */
+export function openMoss(
+  db: Pick<Db, 'select'>,
+  actor: Actor,
+  evidenceId: number,
+): { ok: true; key: string; fileName: string } | { ok: false; error: MossStaffError } {
+  const row = db.select().from(evidence).where(eq(evidence.id, evidenceId)).get();
+  if (row?.kind !== 'moss') return { ok: false, error: 'not_found' };
+  const staff = requireStaff(db, actor, { matchId: row.matchId });
+  if (!staff.ok) return staff;
+  const [found] = listLeagueMatches(db, { matchId: row.matchId });
+  if (found?.competitionId !== staff.league.competition.id || !row.objectKey || row.deletedAt) {
+    return { ok: false, error: 'not_found' };
+  }
+  const name = db
+    .select({ slug: player.slug })
+    .from(player)
+    .where(eq(player.id, row.playerId ?? 0))
+    .get()?.slug;
+  const extension = /\.([a-z0-9]{1,8})$/.exec(row.objectKey)?.[1] ?? 'bin';
+  return {
+    ok: true,
+    key: row.objectKey,
+    fileName: `moss-match-${String(row.matchId)}-${name ?? 'player'}.${extension}`,
+  };
+}
+
+/**
+ * Staff hold, or release, the match's MOSS files (M-47): held files are deleted neither at the
+ * season's close nor after the retention, until staff release them. With a reason to hold;
+ * audited both ways.
+ */
+export function setMossHold(
+  db: Db,
+  actor: Actor,
+  request: { matchId: number; hold: boolean; reason: string },
+  now: number,
+): { ok: true } | { ok: false; error: MossStaffError } {
+  const staff = requireStaff(db, actor, { matchId: request.matchId });
+  if (!staff.ok) return staff;
+  const { league } = staff;
+  const reason = request.reason.trim().slice(0, 500);
+  if (request.hold && reason === '') return { ok: false, error: 'reason_required' };
+  return db.transaction((tx) => {
+    const [found] = listLeagueMatches(tx, { matchId: request.matchId });
+    if (found?.competitionId !== league.competition.id) return { ok: false, error: 'not_found' };
+    const held = isHeld(tx, found.id);
+    if (request.hold && held) return { ok: false, error: 'already_held' };
+    if (!request.hold && !held) return { ok: false, error: 'not_held' };
+    const staffPlayer = ensurePlayer(
+      tx,
+      { orgId: league.org.id, discordUserId: actor.user.id, displayName: actor.user.displayName },
+      now,
+    );
+    tx.update(match)
+      .set(
+        request.hold
+          ? { mossHeldAt: now, mossHeldBy: staffPlayer.id, mossHoldReason: reason }
+          : { mossHeldAt: null, mossHeldBy: null, mossHoldReason: null },
+      )
+      .where(eq(match.id, found.id))
+      .run();
+    tx.insert(auditLog)
+      .values({
+        actorPlayerId: staffPlayer.id,
+        actorKind: 'user',
+        action: request.hold ? 'match.moss_hold' : 'match.moss_release',
+        entity: 'match',
+        entityId: String(found.id),
+        beforeJson: { held },
+        afterJson: { held: request.hold, ...(reason ? { reason } : {}) },
+        at: now,
+      })
+      .run();
+    return { ok: true };
+  });
+}
+
+/** What staff see of a match's MOSS files: who owes one, the files, and the hold. */
+export function mossOverview(db: Pick<Db, 'select'>, found: LeagueMatch) {
+  const check = mossCheck(db, found);
+  const files = new Map(mossFiles(db, found.id).map((row) => [row.playerId, row.id]));
+  const hold = db
+    .select({ at: match.mossHeldAt, reason: match.mossHoldReason })
+    .from(match)
+    .where(eq(match.id, found.id))
+    .get();
+  const rows = (side: Side) =>
+    check.sides[side].map((p) => ({
+      name: p.name,
+      known: p.playerId !== null,
+      evidenceId: p.playerId === null ? null : (files.get(p.playerId) ?? null),
+    }));
+  return {
+    required: check.required,
+    gaps: check.gaps,
+    sides: { a: rows('a'), b: rows('b') },
+    held: hold?.at ? { at: hold.at, reason: hold.reason ?? '' } : null,
+  };
+}
+export type MossOverview = ReturnType<typeof mossOverview>;

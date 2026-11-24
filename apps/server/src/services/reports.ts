@@ -23,6 +23,7 @@ import type { EvidenceStore } from '../assets/evidence-store.ts';
 import type { DiscordGateway } from '../discord/gateway.ts';
 import { evidenceKeyOf, imageTypeOf, keepEvidence } from './evidence.ts';
 import { matchQuery } from './match-search.ts';
+import { readWaiver, validationBlockers, type ValidationBlocker } from './validation-gates.ts';
 import {
   actsFor,
   matchActorOf,
@@ -418,6 +419,8 @@ export type AnswerReply =
       ok: true;
       match: LeagueMatch;
       status: 'confirmed' | 'disputed' | 'validated';
+      /** What a confirmation that would have validated waits for (MOSS files). */
+      waiting: ValidationBlocker['kind'][];
       /** The dispute stored, with its row's ID for its post in the staff queue. */
       dispute: (DisputeDetails & { id: number }) | null;
       /**
@@ -438,6 +441,8 @@ type AnswerCheck =
       found: LeagueMatch;
       playerId: number;
       status: 'confirmed' | 'disputed' | 'validated';
+      /** What a confirmation that would validate waits for: it stays `confirmed` meanwhile. */
+      waiting: ValidationBlocker['kind'][];
     }
   | { ok: false; error: AnswerError };
 
@@ -472,8 +477,12 @@ function checkAnswer(
     return { ok: false, error: step.error === 'not_allowed' ? 'not_opponent' : 'wrong_status' };
   }
   // `confirm` and `dispute` lead to exactly these three statuses.
-  const status = step.status as 'confirmed' | 'disputed' | 'validated';
-  return { ok: true, found, playerId: acting.playerId, status };
+  const next = step.status as 'confirmed' | 'disputed' | 'validated';
+  // Where the confirmation validates, a missing MOSS file keeps the match confirmed: the clock
+  // validates it when the last one arrives (M-47).
+  const waiting = next === 'validated' ? validationBlockers(db, found).map((b) => b.kind) : [];
+  const status = waiting.length > 0 ? 'confirmed' : next;
+  return { ok: true, found, playerId: acting.playerId, status, waiting };
 }
 
 /** A reason the league offers, or "other" with details; details are trimmed, empty is none. */
@@ -528,7 +537,7 @@ export function answerReport(
   return db.transaction((tx): AnswerReply => {
     const check = checkAnswer(tx, league, actor, request);
     if (!check.ok) return check;
-    const { found, playerId, status } = check;
+    const { found, playerId, status, waiting } = check;
     let dispute: DisputeDetails | null = null;
     if (request.action === 'dispute') {
       const input = checkDisputeInput(
@@ -579,6 +588,7 @@ export function answerReport(
           status,
           evidenceId: request.evidenceId,
           ...(dispute ? { disputeId, reason: dispute.reason } : {}),
+          ...(waiting.length > 0 ? { waiting } : {}),
         },
         at: now,
       })
@@ -589,6 +599,7 @@ export function answerReport(
       ok: true,
       match: found,
       status,
+      waiting,
       dispute: dispute && disputeId !== null ? { ...dispute, id: disputeId } : null,
       post: publicPostOf(report),
       posts:
@@ -607,7 +618,14 @@ export function answerReport(
 export type { DisputeDetails, SettledDispute } from './open-report.ts';
 
 export type StaffStepError =
-  'not_linked' | 'not_staff' | 'match_not_found' | 'stale' | 'wrong_status' | 'reason_required';
+  | 'not_linked'
+  | 'not_staff'
+  | 'match_not_found'
+  | 'stale'
+  | 'wrong_status'
+  | 'reason_required'
+  /** MOSS files are missing: staff validate only with a written reason (M-47). */
+  | 'moss_missing';
 
 export type StaffStepReply =
   | ({
@@ -629,7 +647,7 @@ const SETTLED_BY = {
 function staffStep(
   db: Db,
   actor: Actor,
-  request: { matchId: number; evidenceId?: number; reason?: string },
+  request: { matchId: number; evidenceId?: number; reason?: string; waiver?: string | null },
   action: Extract<MatchAction, 'validate' | 'reject' | 'void'>,
   apply: (tx: Tx, found: LeagueMatch, staffPlayerId: number) => void,
   now: number,
@@ -657,6 +675,10 @@ function staffStep(
     if (!step.ok) return { ok: false, error: 'wrong_status' };
     // `validate`, `reject` and `void` lead to exactly these three statuses.
     const status = step.status as 'validated' | 'scheduled' | 'void';
+    // What the result still waits for: staff get past it only with a reason, kept in the log.
+    const waived = status === 'validated' ? validationBlockers(tx, found).map((b) => b.kind) : [];
+    const waiver = readWaiver(request.waiver);
+    if (waived.length > 0 && waiver === null) return { ok: false, error: 'moss_missing' };
 
     const staffPlayer = ensurePlayer(
       tx,
@@ -674,7 +696,11 @@ function staffStep(
         entity: 'match',
         entityId: String(found.id),
         beforeJson: { status: found.status, ...scoreOf(found.game) },
-        afterJson: { status, ...(request.reason ? { reason: request.reason } : {}) },
+        afterJson: {
+          status,
+          ...(request.reason ? { reason: request.reason } : {}),
+          ...(waived.length > 0 ? { waived, waiver } : {}),
+        },
         at: now,
       })
       .run();
@@ -692,11 +718,14 @@ const setGameStatus = (tx: Tx, found: LeagueMatch, status: 'final' | 'void') => 
   if (found.game) tx.update(game).set({ status }).where(eq(game.id, found.game.id)).run();
 };
 
-/** Staff accept a reported result: from now on it counts in the standings. */
+/**
+ * Staff accept a reported result: from now on it counts in the standings. While MOSS files are
+ * missing, only with `waiver`, staff's written reason (M-47).
+ */
 export function validateResult(
   db: Db,
   actor: Actor,
-  request: { matchId: number; evidenceId?: number },
+  request: { matchId: number; evidenceId?: number; waiver?: string | null },
   now: number,
 ): StaffStepReply {
   return staffStep(

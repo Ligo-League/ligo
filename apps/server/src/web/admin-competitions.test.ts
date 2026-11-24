@@ -1,7 +1,7 @@
 import { schema } from '@ligo/db';
 import { and, eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { TEST_STAFF_ROLE } from '../testing.ts';
+import { TEST_STAFF_ROLE, requireMoss } from '../testing.ts';
 import { ANA, testSite } from './testing.ts';
 
 // Competitions in the admin panel (phase 3h; M-20): MLB Group's owner creates one; the owner and
@@ -176,11 +176,13 @@ describe('a competition’s rules page', () => {
   });
 
   it('sets the replays and MOSS rules: re-hosts per team, MOSS kept until a date', async () => {
-    const { request, logIn, post, setRoles, lfr } = site();
+    const { request, logIn, post, setRoles, lfr, db } = site();
+    // The seed's LFR asks for both from Season 4 (M-47, M-49), and one re-host per team and game
+    // (O-14); the test league turns MOSS off, so it is turned back on here.
+    requireMoss(db);
     setRoles([TEST_STAFF_ROLE], ANA.id);
     await logIn('/admin/mlb-group/lfr/rules');
     const fields = inputsOf(await (await request('/admin/mlb-group/lfr/rules')).text());
-    // LFR asks for both from Season 4 (M-47, M-49), and one re-host per team and game (O-14).
     expect(fields).toMatchObject({
       'ruleset.replays.required': '1',
       'ruleset.replays.rehosts_per_team': '1',

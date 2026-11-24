@@ -1809,6 +1809,38 @@ export const fr = {
   'web.replays.ui.moss.sending': 'envoi…',
   'web.replays.ui.moss.failed': "échec de l'envoi, réessaie",
   'web.replays.ui.moss.tooLarge': 'fichier trop lourd',
+  'match.error.moss_missing':
+    'Il manque des fichiers MOSS : valide depuis la page du match, avec un motif.',
+  'web.staff.error.moss_missing':
+    'Il manque des fichiers MOSS : valide depuis la page du match, avec un motif.',
+  'queue.confirmedWaitingMoss':
+    "{line} — confirmé par l'équipe adverse ({member}). Il manque des fichiers MOSS : le résultat sera validé à l'arrivée du dernier.",
+  'queue.validatedWhenComplete': '{line} — validé : tous les fichiers MOSS sont arrivés.',
+  'web.staffMatch.waiver': 'Motif de validation sans tous les fichiers MOSS',
+  'web.staffMatch.waiverHint':
+    'Il manque des fichiers MOSS : le motif est gardé dans le journal. Une sanction se décide à part.',
+  'web.staffMatch.error.moss_missing':
+    'Il manque des fichiers MOSS : écris un motif pour valider quand même.',
+  'web.staffMatch.error.already_held': 'Les fichiers MOSS de ce match sont déjà conservés.',
+  'web.staffMatch.error.not_held': 'Les fichiers MOSS de ce match ne sont pas conservés.',
+  'web.staffMatch.done.moss_held':
+    'Les fichiers MOSS du match sont conservés jusqu’à nouvel ordre.',
+  'web.staffMatch.done.moss_released':
+    'Les fichiers MOSS du match suivent à nouveau la règle de suppression.',
+  'web.staffMatch.moss.title': 'Fichiers MOSS',
+  'web.staffMatch.moss.optional': 'La ligue ne les exige pas : ils ne bloquent pas la validation.',
+  'web.staffMatch.moss.missing': 'manquant',
+  'web.staffMatch.moss.download': 'télécharger',
+  'web.staffMatch.moss.tooFew':
+    'Les replays de {team} ne montrent que {seen} joueur(s) : ses MOSS ne peuvent pas encore être vérifiés.',
+  'web.staffMatch.moss.unknown':
+    "{name} ({team}) a joué mais n'a pas de compte Ligo : il ne peut pas envoyer de MOSS.",
+  'web.staffMatch.moss.held': 'Conservés pour une enquête : {reason}',
+  'web.staffMatch.moss.release': 'Lever la conservation',
+  'web.staffMatch.moss.holdReason': 'Motif de conservation',
+  'web.staffMatch.moss.holdHint':
+    "Les fichiers conservés ne sont supprimés ni à la clôture de la saison ni après le délai de conservation, jusqu'à la levée.",
+  'web.staffMatch.moss.hold': 'Conserver les fichiers MOSS',
 } as const;
 
 export type MessageKey = keyof typeof fr;

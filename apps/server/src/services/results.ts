@@ -7,6 +7,7 @@ import { requireStaff, type Actor } from './permissions.ts';
 import { resultsChannelFor } from './league-channels.ts';
 import { ensurePlayer } from './players.ts';
 import { settleDisputes } from './disputes.ts';
+import { readWaiver, validationBlockers } from './validation-gates.ts';
 import { evidenceKeyOf, imageTypeOf } from './evidence.ts';
 import { openReportPosts, type OpenReportPosts } from './open-report.ts';
 
@@ -25,6 +26,8 @@ export interface RecordResultRequest {
   scoreB: number;
   /** The screenshot, already kept by the evidence store (`enterResult`); optional for staff. */
   screenshot?: { objectKey: string } | null;
+  /** Staff's reason for a result entered while MOSS files are missing (M-47). */
+  waiver?: string | null;
 }
 
 export type RecordResultError =
@@ -35,7 +38,9 @@ export type RecordResultError =
   | 'unsupported_series'
   | 'invalid_score'
   | 'invalid_screenshot'
-  | 'screenshot_unstored';
+  | 'screenshot_unstored'
+  /** MOSS files are missing: a result first entered needs staff's reason (M-47). */
+  | 'moss_missing';
 
 export type RecordResultReply =
   | ({
@@ -96,6 +101,22 @@ function checkScore(league: GuildLeague, scoreA: number, scoreB: number): Refusa
   return null;
 }
 
+/**
+ * What a result entered now waives: nothing for a correction of a result already counted, else
+ * what validation still waits for (MOSS files), which staff get past with a written reason.
+ */
+function waived(
+  db: Pick<Db, 'select'>,
+  found: LeagueMatch,
+  rawWaiver: string | null | undefined,
+): { ok: true; waived: string[]; waiver: string | null } | Refusal {
+  if (found.status === 'validated') return { ok: true, waived: [], waiver: null };
+  const kinds = validationBlockers(db, found).map((blocker) => blocker.kind);
+  const waiver = readWaiver(rawWaiver);
+  if (kinds.length > 0 && waiver === null) return { ok: false, error: 'moss_missing' };
+  return { ok: true, waived: kinds, waiver: kinds.length > 0 ? waiver : null };
+}
+
 /** The league's best-of-1 match whose result staff may enter, or why not. */
 function openMatch(
   db: Pick<Db, 'select'>,
@@ -133,7 +154,10 @@ export async function enterResult(
     checkScore(staff.league, entry.scoreA, entry.scoreB) ??
     (() => {
       const opened = openMatch(db, staff.league, entry.matchId);
-      return opened.ok ? null : opened;
+      if (!opened.ok) return opened;
+      // Refused before the file is kept: a refusal stores nothing.
+      const gate = waived(db, opened.found, entry.waiver);
+      return gate.ok ? null : gate;
     })();
   if (refusal) return refusal;
   const type = screenshot.byteLength <= SCREENSHOT_MAX_BYTES ? imageTypeOf(screenshot) : null;
@@ -170,6 +194,8 @@ export function recordResult(
     const opened = openMatch(tx, league, request.matchId);
     if (!opened.ok) return opened;
     const { found } = opened;
+    const gate = waived(tx, found, request.waiver);
+    if (!gate.ok) return gate;
 
     const staffPlayer = ensurePlayer(
       tx,
@@ -224,7 +250,13 @@ export function recordResult(
         entityId: String(found.id),
         beforeJson: { status: found.status, ...(found.game ? pickScore(found.game) : {}) },
         // The evidence row is named by ID: its address is a signed link and stays out of logs.
-        afterJson: { status: 'validated', scoreA, scoreB, evidenceId },
+        afterJson: {
+          status: 'validated',
+          scoreA,
+          scoreB,
+          evidenceId,
+          ...(gate.waived.length > 0 ? { waived: gate.waived, waiver: gate.waiver } : {}),
+        },
         at: now,
       })
       .run();

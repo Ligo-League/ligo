@@ -4,8 +4,23 @@ import { fakeObjectStore } from '@ligo/storage';
 import { rawRound } from '@ligo/titles/testing';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { leagueDatabase } from '../testing.ts';
-import { MOSS_MAX_BYTES, mossCheck, mossTargets, signMossUpload, storeMoss } from './moss.ts';
+import type { Actor } from './permissions.ts';
+import {
+  leagueDatabase,
+  playedMatch,
+  requireMoss,
+  TEST_GUILD,
+  TEST_STAFF_ROLE,
+} from '../testing.ts';
+import {
+  MOSS_MAX_BYTES,
+  mossCheck,
+  mossTargets,
+  openMoss,
+  setMossHold,
+  signMossUpload,
+  storeMoss,
+} from './moss.ts';
 import { submitReplays } from './replay-uploads.ts';
 
 // MOSS files (M-47, maintainer 20 and 24 November 2026): the players the replays show on each
@@ -31,6 +46,7 @@ const playerOf = (db: Db, account: string) =>
 /** A match whose one lobby was placed in its game by the stitch, Bravo on file side 0. */
 function setup(options: { segment?: 'ok' | 'ignored' } = {}) {
   const db = leagueDatabase();
+  requireMoss(db);
   const found = matchWith(db, 'scheduled');
   const a = addRosterPlayers(db, found.seasonId, found.a.teamId, 'b');
   const b = addRosterPlayers(db, found.seasonId, found.b.teamId, 'c');
@@ -209,5 +225,65 @@ describe('signMossUpload and storeMoss', () => {
     db.update(schema.match).set({ mossHeldAt: 1, mossHeldBy: me, mossHoldReason: 'enquête' }).run();
     await send('3');
     expect(objects.objects.has(second)).toBe(true);
+  });
+});
+
+describe('staff and the files', () => {
+  const STAFF: Actor = {
+    guildId: TEST_GUILD,
+    user: { id: '222222222222222222', displayName: 'Léa Staff' },
+    memberRoleIds: [TEST_STAFF_ROLE],
+  };
+  const TEAM: Actor = {
+    ...STAFF,
+    user: { id: '700000000000000009', displayName: 'X' },
+    memberRoleIds: [],
+  };
+
+  it('opens a file for the league’s staff only, under a plain name, and not once deleted', () => {
+    const db = leagueDatabase();
+    const players = playedMatch(db, 3, true);
+    const row = db
+      .select()
+      .from(schema.evidence)
+      .where(eq(schema.evidence.playerId, players.a[0] ?? 0))
+      .get();
+    const id = row?.id ?? 0;
+    expect(openMoss(db, STAFF, id)).toMatchObject({
+      ok: true,
+      key: row?.objectKey,
+      fileName: expect.stringMatching(/^moss-match-3-m3a1\.zip$/) as unknown,
+    });
+    expect(openMoss(db, TEAM, id)).toEqual({ ok: false, error: 'not_staff' });
+    db.update(schema.evidence).set({ deletedAt: 5 }).where(eq(schema.evidence.id, id)).run();
+    expect(openMoss(db, STAFF, id)).toEqual({ ok: false, error: 'not_found' });
+  });
+
+  it('holds the match’s files with a reason and releases them, both audited', () => {
+    const db = leagueDatabase();
+    const hold = (on: boolean, reason = '') =>
+      setMossHold(db, STAFF, { matchId: 3, hold: on, reason }, 10);
+    expect(hold(true)).toEqual({ ok: false, error: 'reason_required' });
+    expect(hold(true, 'Soupçon de triche')).toEqual({ ok: true });
+    expect(hold(true, 'encore')).toEqual({ ok: false, error: 'already_held' });
+    expect(db.select().from(schema.match).where(eq(schema.match.id, 3)).get()).toMatchObject({
+      mossHeldAt: 10,
+      mossHoldReason: 'Soupçon de triche',
+    });
+    expect(hold(false)).toEqual({ ok: true });
+    expect(hold(false)).toEqual({ ok: false, error: 'not_held' });
+    expect(setMossHold(db, TEAM, { matchId: 3, hold: true, reason: 'x' }, 10)).toEqual({
+      ok: false,
+      error: 'not_staff',
+    });
+    const actions = db
+      .select()
+      .from(schema.auditLog)
+      .all()
+      .map((row) => row.action);
+    expect(actions.filter((a) => a.startsWith('match.moss'))).toEqual([
+      'match.moss_hold',
+      'match.moss_release',
+    ]);
   });
 });

@@ -11,6 +11,7 @@ import type { DiscordGateway } from '../discord/gateway.ts';
 import { announceReportDecision, announceRequestDecision } from '../discord/staff-decisions.ts';
 import { t, type Locale, type MessageKey } from '../i18n/index.ts';
 import { evidenceCompetition, openEvidence } from '../services/evidence.ts';
+import { MOSS_MAX_BYTES, openMoss } from '../services/moss.ts';
 import { uploadRoute } from './upload-route.ts';
 import { replayApiRoutes, type ReplayApiDeps } from './replay-api.ts';
 import { replayPageRoutes } from './replay-page.ts';
@@ -214,6 +215,7 @@ const STAFF_ERRORS = [
   'invalid_division',
   'not_approvable',
   'discord_unavailable',
+  'moss_missing',
 ] as const;
 // What a filer's change sends back to the registration's page with; anything else shows nothing.
 const REGISTRATION_DONE = ['lineup', 'withdrawn'] as const;
@@ -998,6 +1000,23 @@ export function createWebApp(deps: WebDeps): Hono<Env> {
     if (competitionId === null) return notFound(c);
     const actor = await webActor(db, deps.roles, viewer, competitionId, deps.now());
     if (!actor) return forbidden(c);
+    // A MOSS file (M-47): staff only, downloaded straight from storage through a short link
+    // where it has them, else sent by the server. The link is never logged.
+    const moss = openMoss(db, actor, Number(id));
+    if (moss.ok) {
+      c.header('Cache-Control', 'private, no-store');
+      const objects = deps.replays?.objects;
+      if (!objects) return notFound(c);
+      const link = await objects.signGet(moss.key, { expiresInS: 300, fileName: moss.fileName });
+      if (link) return c.redirect(link, 302);
+      const data = await objects.get(moss.key, MOSS_MAX_BYTES);
+      if (!data) return notFound(c);
+      return c.body(new Uint8Array(data), 200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${moss.fileName}"`,
+      });
+    }
+    if (moss.error !== 'not_found') return forbidden(c);
     const shown = await openEvidence(db, deps.evidence, actor, Number(id));
     if (!shown.ok) return shown.error === 'not_found' ? notFound(c) : forbidden(c);
     return c.body(new Uint8Array(shown.data), 200, {
