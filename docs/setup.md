@@ -1303,8 +1303,8 @@ them). Locally nothing changes: without the four `R2_*` variables, every file st
 2. **Deploy:** `deploy/update.sh`. The server's log then says `Storage ready` with `storage: r2`.
    Screenshots stored before still open: the server reads from `/data/storage` what R2 does not
    have yet.
-3. **Copy what was kept on disk**, first as a dry run, from `/srv/ligo/deploy` (or wherever the
-   repository is):
+3. **Copy what was kept on disk**, first as a dry run, from `/opt/ligo/deploy`, once step 2 has
+   deployed this version (the script is not in an older image):
 
    ```bash
    docker compose exec server node apps/server/src/assets/copy-to-r2.ts --dry-run
