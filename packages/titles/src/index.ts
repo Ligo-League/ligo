@@ -8,3 +8,4 @@ export * from './stats.ts';
 export * from './r6/stats.ts';
 export * from './parsed-unit.ts';
 export * from './r6/normalize.ts';
+export * from './r6/replay-round.ts';
