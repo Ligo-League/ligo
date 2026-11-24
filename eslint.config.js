@@ -33,6 +33,14 @@ const IO = [
 // Bare built-in names ("fs", "fs/promises"), matched exactly so a local "./events.ts" stays legal.
 const NODE_BUILTIN_PATHS = builtinModules.map((name) => ({ name, message: IO_MESSAGE }));
 
+// Code the replay uploader bundles for the browser (titles, parsers, uploader): zod's named `z`
+// export keeps every locale in the bundle (about 300 KB); the namespace import lets esbuild drop
+// them.
+const ZOD_NAMESPACE = {
+  selector: "ImportDeclaration[source.value='zod'] > ImportSpecifier[imported.name='z']",
+  message: "Bundled for the browser: use `import * as z from 'zod'`.",
+};
+
 const restrictImports = ({ patterns, paths = [] }) => ({
   'no-restricted-imports': ['error', { paths, patterns }],
 });
@@ -95,8 +103,21 @@ export default defineConfig(
 
   { files: ['packages/core/**', 'packages/titles/**'], rules: PURE_RULES },
   {
-    files: ['packages/db/**', 'packages/parsers/**', 'packages/render/**'],
+    files: ['packages/titles/**'],
+    rules: {
+      'no-restricted-syntax': [...PURE_RULES['no-restricted-syntax'], ZOD_NAMESPACE],
+    },
+  },
+  {
+    files: ['packages/db/**', 'packages/render/**'],
     rules: restrictImports({ patterns: [APPS, DISCORD] }),
+  },
+  {
+    files: ['packages/parsers/**', 'packages/uploader/**'],
+    rules: {
+      ...restrictImports({ patterns: [APPS, DISCORD] }),
+      'no-restricted-syntax': ['error', ZOD_NAMESPACE],
+    },
   },
   { files: ['apps/worker/**'], rules: restrictImports({ patterns: [DISCORD] }) },
 );

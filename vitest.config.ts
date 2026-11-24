@@ -13,6 +13,7 @@ export default defineConfig({
       project('titles', 'packages/titles/src'),
       project('parsers', 'packages/parsers/src'),
       project('storage', 'packages/storage/src'),
+      project('uploader', 'packages/uploader/src'),
       project('db', 'packages/db/src'),
       project('render', 'packages/render/src'),
       project('server', 'apps/server/src'),

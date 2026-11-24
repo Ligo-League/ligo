@@ -1,0 +1,20 @@
+{
+  "name": "@ligo/uploader",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./island": "./src/island.tsx",
+    "./worker": "./src/worker.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ligo/parsers": "workspace:*",
+    "@ligo/titles": "workspace:*",
+    "preact": "^11.2.0",
+    "zod": "^4.6.7"
+  }
+}

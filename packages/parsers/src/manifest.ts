@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import type { ParserBuild } from './module.ts';
 
 // A parser build's manifest, `parsers/dist/r6.json`, written by `parsers/build-r6.sh`: which file

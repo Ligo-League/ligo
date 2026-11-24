@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 // One round as the r6-dissect fork's `parseRound` returns it (parsers/r6, cmd/wasm): the header,
 // the kill feed (`matchFeedback`) and the scoreboard (`stats`). Only what the normaliser reads is
